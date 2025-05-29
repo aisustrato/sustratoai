@@ -65,7 +65,12 @@ export async function middleware(request: NextRequest) {
   const { pathname } = url
   const requestId = Math.floor(Math.random() * 10000)
   const isProduction = process.env.NODE_ENV === 'production'
-  const domain = isProduction ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.replace('www.', '') : 'localhost'
+  const isVercel = process.env.VERCEL === '1'
+  const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
+  
+  const domain = isProduction 
+    ? new URL(process.env.NEXT_PUBLIC_SITE_URL || vercelUrl || process.env.NEXT_PUBLIC_VERCEL_URL || 'localhost').hostname.replace('www.', '')
+    : 'localhost'
   
   // Configuración de cookies seguras
   const cookieOptions = {
@@ -73,7 +78,7 @@ export async function middleware(request: NextRequest) {
     sameSite: 'lax' as const,
     secure: isProduction,
     httpOnly: false,
-    domain: domain === 'localhost' ? undefined : domain
+    domain: isVercel ? '.vercel.app' : (domain === 'localhost' ? undefined : `.${domain}`)
   }
 
   console.log(`[MW:${requestId}] Procesando ruta: ${pathname}`)

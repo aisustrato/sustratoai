@@ -6,7 +6,22 @@ import type { Database } from './database.types'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const isProduction = process.env.NODE_ENV === 'production'
-const domain = isProduction ? new URL(supabaseUrl).hostname.replace('www.', '') : 'localhost'
+const isVercel = process.env.VERCEL === '1';
+const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '';
+
+// Obtener dominio dinámicamente
+const getDomain = () => {
+  if (!isProduction) return 'localhost';
+  try {
+    const url = process.env.NEXT_PUBLIC_SITE_URL || vercelUrl || process.env.NEXT_PUBLIC_VERCEL_URL;
+    if (url) return new URL(url).hostname.replace('www.', '');
+    return new URL(supabaseUrl).hostname.replace('www.', '');
+  } catch {
+    return 'localhost';
+  }
+};
+
+const domain = getDomain();
 
 // Configuración de cookies
 const cookieOptions = {
@@ -14,7 +29,7 @@ const cookieOptions = {
   sameSite: 'lax' as const,
   secure: isProduction,
   httpOnly: false, // Permitir acceso desde JavaScript
-  domain: domain === 'localhost' ? undefined : domain
+  domain: isVercel ? '.vercel.app' : (domain === 'localhost' ? undefined : `.${domain}`)
 }
 
 // Cliente para el navegador
