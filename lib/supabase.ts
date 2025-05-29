@@ -1,47 +1,129 @@
-// Configuración de cliente Supabase
-import { createClient, type AuthChangeEvent, type AuthSession, type User } from '@supabase/supabase-js';
-import { Database } from './database.types';
-import { cookies } from 'next/headers';
+// Importar dinámicamente los clientes para evitar problemas con Server Components
+import { createClient } from '@supabase/supabase-js'
+import type { Database } from './database.types'
 
-// Obtener variables de entorno
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const isProduction = process.env.NODE_ENV === 'production';
+// Configuración común
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const isProduction = process.env.NODE_ENV === 'production'
+const domain = isProduction ? new URL(supabaseUrl).hostname.replace('www.', '') : 'localhost'
 
-// Configuración común para todos los clientes
-const options = {
+// Configuración de cookies
+const cookieOptions = {
+  path: '/',
+  sameSite: 'lax' as const,
+  secure: isProduction,
+  httpOnly: false, // Permitir acceso desde JavaScript
+  domain: domain === 'localhost' ? undefined : domain
+}
+
+// Cliente para el navegador
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    autoRefreshToken: true,
     persistSession: true,
+    autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce' as const,
-    debug: !isProduction,
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'sustratoai-web/1.0.0',
-    },
-  },
-  cookieOptions: {
-    name: 'sb-auth-token',
-    lifetime: 60 * 60 * 24 * 7, // 7 días
-    domain: isProduction ? new URL(supabaseUrl).hostname.replace('www.', '') : undefined,
-    path: '/',
-    sameSite: 'lax' as const,
+    flowType: 'pkce',
+    storage: {
+      getItem: (key: string) => {
+        if (typeof document === 'undefined') return null;
+        const value = document.cookie
+          .split('; ')
+          .find(row => row.startsWith(`${key}=`))
+          ?.split('=')[1];
+        return value ? decodeURIComponent(value) : null;
+      },
+      setItem: (key: string, value: string) => {
+        if (typeof document === 'undefined') return;
+        let cookieString = `${key}=${encodeURIComponent(value)}; path=/; samesite=lax`;
+        if (domain) cookieString += `; domain=${domain}`;
+        if (isProduction) cookieString += '; secure';
+        document.cookie = cookieString;
+      },
+      removeItem: (key: string) => {
+        if (typeof document === 'undefined') return;
+        let cookieString = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        if (domain) cookieString += `; domain=${domain}`;
+        document.cookie = cookieString;
+      }
+    }
   }
-};
+})
 
-// Crear cliente de navegador con configuración mejorada
-const createBrowserSupabaseClient = () => {
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, options);
-};
+// Función para obtener el cliente del servidor
+export async function createServerClient() {
+  if (typeof window !== 'undefined') {
+    throw new Error('Este método solo debe usarse en el servidor')
+  }
+  
+  const { createServerClient } = await import('@supabase/ssr')
+  const { cookies } = await import('next/headers')
+  
+  const cookieStore = cookies()
+  
+  return createServerClient<Database>(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+        persistSession: true
+      },
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set({ 
+              name, 
+              value, 
+              ...options,
+              domain,
+              path: '/',
+              sameSite: 'lax',
+              secure: isProduction,
+              httpOnly: true
+            })
+          } catch (error) {
+            console.error('Error setting cookie:', error)
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set({ 
+              name, 
+              value: '', 
+              ...options, 
+              domain,
+              path: '/',
+              sameSite: 'lax',
+              secure: isProduction,
+              httpOnly: true,
+              maxAge: 0 
+            })
+          } catch (error) {
+            console.error('Error removing cookie:', error)
+          }
+        },
+      },
+    }
+  )
+}
 
-export const supabase = typeof window !== 'undefined' 
-  ? createBrowserSupabaseClient() 
-  : createClient<Database>(supabaseUrl, supabaseAnonKey, options);
+// Función de ayuda para obtener el cliente correcto según el entorno
+export function getSupabase() {
+  if (typeof window !== 'undefined') {
+    return supabase
+  }
+  
+  // En el servidor, se debe usar createServerClient()
+  throw new Error('En el servidor, usa createServerClient() en lugar de getSupabase()')
+}
 
 // Para el sandbox, vamos a crear un mock de Supabase
-// Esto solo se usa en el entorno de desarrollo del sandbox
 const isSandbox =
   typeof window !== "undefined" &&
   window.location.hostname.includes("vercel.app");
