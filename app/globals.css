@@ -1,0 +1,431 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 
+  NUEVO SISTEMA DE DISEÑO SUSTRATO
+  --------------------------------
+  Sistema normalizado basado en lib/theme/colors.ts
+*/
+
+@layer base {
+  /* globals.css o tu archivo CSS principal */
+html,
+body,
+body > div:first-child, /* A menudo el div#__next de Next.js */
+div#__next,
+div#__next > div { /* Para cubrir el wrapper de FontThemeProvider y Providers si usan divs */
+  height: 100%; /* O min-height: 100% para permitir crecer más */
+  margin: 0;
+  padding: 0;
+}
+/* globals.css o similar */
+input:is(:-webkit-autofill, :autofill),
+textarea:is(:-webkit-autofill, :autofill) {
+  -webkit-box-shadow: 0 0 0 1000px var(--input-autofill-bg, white) inset !important; /* white como fallback si la var no está */
+          box-shadow: 0 0 0 1000px var(--input-autofill-bg, white) inset !important;
+  -webkit-text-fill-color: var(--input-text, black) !important; /* black como fallback */
+  filter: none !important; /* Para Firefox */
+  /* Considera también el color de la fuente para el placeholder si el autofill lo afecta */
+  /* caret-color: var(--input-text); /* Para que el cursor también tenga el color correcto */
+}
+body {
+  /* Permite scroll si el contenido es más alto que el viewport */
+  /* overflow-y: auto; /* Puedes añadir esto si es necesario, pero a menudo no lo es si height:100% está bien configurado arriba */
+}
+
+/* Si AuthLayoutWrapper usa flex flex-col y tiene height:100% (o min-height:100%), */
+/* entonces el main con flex-grow funcionará. */
+  :root {
+    /* 
+      COLORES BASE
+      ------------
+      Definición de todos los colores base del sistema.
+      Estos colores no se usan directamente en componentes.
+    */
+
+    /* Tema Azul */
+    --color-blue-primary-pure: #3d7df6;
+    --color-blue-primary-pure-dark: #2e5eb9;
+    --color-blue-primary-text: #1f4487;
+    --color-blue-primary-text-dark: #132951;
+    --color-blue-primary-bg: #dde5fa;
+    --color-blue-primary-bg-dark: #a6acbc;
+
+    /* Tema Verde */
+   
+
+    /* Tema Naranja */
+  
+
+    /* Semánticos Universales */
+    --color-accent-pure: #8a4ef6;
+    --color-accent-pure-dark: #683bb9;
+    --color-accent-text: #432578;
+    --color-accent-text-dark: #281648;
+    --color-accent-bg: #e8d9f9;
+    --color-accent-bg-dark: #aea3bb;
+
+    --color-success-pure: #3dff94;
+    --color-success-pure-dark: #2dbf6f;
+    --color-success-text: #45574d;
+    --color-success-text-dark: #33413a;
+    --color-success-bg: #cffae3;
+    --color-success-bg-dark: #9bbdaa;
+
+    --color-warning-pure: #ffee3d;
+    --color-warning-pure-dark: #bfb32f;
+    --color-warning-text: #6e671a;
+    --color-warning-text-dark: #524d13;
+    --color-warning-bg: #faf7df;
+    --color-warning-bg-dark: #bbb9a7;
+
+    --color-danger-pure: #ed3a45;
+    --color-danger-pure-dark: #b22b34;
+    --color-danger-text: #6b1a1f;
+    --color-danger-text-dark: #501317;
+    --color-danger-bg: #f7dddf;
+    --color-danger-bg-dark: #b9a6a7;
+
+    /* Neutrales */
+    --color-neutral-50: #f9fafb;
+    --color-neutral-100: #f3f4f6;
+    --color-neutral-200: #e5e7eb;
+    --color-neutral-300: #d1d5db;
+    --color-neutral-400: #9ca3af;
+    --color-neutral-500: #6b7280;
+    --color-neutral-600: #4b5563;
+    --color-neutral-700: #374151;
+    --color-neutral-800: #1f2937;
+    --color-neutral-900: #111827;
+
+    /* 
+      VARIABLES SEMÁNTICAS DEL TEMA
+      -----------------------------
+      Estas variables se asignan según el tema activo.
+      Por defecto, usan el tema azul.
+    */
+
+    /* 
+      VARIABLES DE INTERFAZ DE USUARIO
+      -------------------------------
+      Estas variables se usan directamente en los componentes.
+      Heredan de las variables semánticas del tema.
+    */
+
+    /* Colores de la interfaz */
+    --ui-background: var(--color-neutral-50);
+    --ui-foreground: var(--color-neutral-900);
+    --ui-card-bg: white;
+    --ui-card-fg: var(--color-neutral-900);
+    --ui-border-color: var(--color-neutral-200);
+
+    /* Colores de acción */
+    --ui-primary: var(--theme-primary-pure);
+    --ui-primary-hover: var(--theme-primary-pure-dark);
+    --ui-primary-fg: white;
+
+    --ui-secondary: var(--theme-secondary-pure);
+    --ui-secondary-hover: var(--theme-secondary-pure-dark);
+    --ui-secondary-fg: white;
+
+    /* Colores de estado */
+    --ui-accent: var(--color-accent-pure);
+    --ui-accent-hover: var(--color-accent-pure-dark);
+    --ui-accent-bg: var(--color-accent-bg);
+
+    --ui-success: var(--color-success-pure);
+    --ui-success-hover: var(--color-success-pure-dark);
+    --ui-success-bg: var(--color-success-bg);
+
+    --ui-warning: var(--color-warning-pure);
+    --ui-warning-hover: var(--color-warning-pure-dark);
+    --ui-warning-bg: var(--color-warning-bg);
+
+    --ui-danger: var(--color-danger-pure);
+    --ui-danger-hover: var(--color-danger-pure-dark);
+    --ui-danger-bg: var(--color-danger-bg);
+  }
+
+  /* 
+    TEMA OSCURO
+    ----------
+    Sobreescribe las variables para el modo oscuro.
+  */
+  .dark {
+    /* Variables semánticas del tema */
+    --ui-background: var(--color-neutral-900);
+    --ui-foreground: var(--color-neutral-50);
+    --ui-card-bg: var(--color-neutral-800);
+    --ui-card-fg: var(--color-neutral-50);
+    --ui-border-color: var(--color-neutral-700);
+  }
+
+  /* 
+    TEMA VERDE
+    ---------
+    Sobreescribe las variables para el tema verde.
+  */
+ 
+
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 262.1 83.3% 57.8%; /* Púrpura para el círculo central */
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+
+    /* Añadir nuevas variables para estados */
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 40% 98%;
+    --info: 200 98% 39%;
+    --info-foreground: 210 40% 98%;
+
+    /* Nuevas variables para el sistema de diseño evolucionado */
+    --ui-icon-primary: 221.2 83.2% 53.3%; /* Azul para iconos principales */
+    --ui-icon-secondary: 199 89% 48%; /* Azul claro para iconos secundarios */
+    --ui-icon-accent: 262.1 83.3% 57.8%; /* Morado para iconos de acento */
+    --ui-text-primary: 222.2 84% 4.9%; /* Color principal para texto */
+    --ui-text-secondary: 215.4 16.3% 46.9%; /* Color secundario para texto */
+    --ui-surface-primary: 0 0% 100%; /* Superficie principal */
+    --ui-surface-secondary: 210 40% 96.1%; /* Superficie secundaria */
+
+   
+
+
+  }
+
+  /* Añadir tema oscuro */
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --accent: 262.1 83.3% 57.8%; /* Púrpura para el círculo central */
+    --accent-foreground: 0 0% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    --success: 142 70% 29%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 40%;
+    --warning-foreground: 210 40% 98%;
+    --info: 200 90% 30%;
+    --info-foreground: 210 40% 98%;
+
+    /* Nuevas variables para el sistema de diseño evolucionado - tema oscuro */
+    --ui-icon-primary: 217.2 91.2% 59.8%; /* Azul para iconos principales */
+    --ui-icon-secondary: 199 89% 48%; /* Azul claro para iconos secundarios */
+    --ui-icon-accent: 262.1 83.3% 57.8%; /* Morado para iconos de acento */
+    --ui-text-primary: 210 40% 98%; /* Color principal para texto */
+    --ui-text-secondary: 215 20.2% 65.1%; /* Color secundario para texto */
+    --ui-surface-primary: 222.2 84% 4.9%; /* Superficie principal */
+    --ui-surface-secondary: 217.2 32.6% 17.5%; /* Superficie secundaria */
+
+
+    /* Color de encabezados para tema oscuro */
+    --heading-color: 217.2 91.2% 70%; /* Azul más claro para encabezados en modo oscuro */
+
+    /* Valores RGB para sombras */
+    --primary-rgb: 96, 165, 250;
+  }
+
+  /* Tema Verde (variante clara) */
+  .theme-green {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 142.1 76.2% 36.3%;
+    --primary-foreground: 355.7 100% 97.3%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --accent: 262.1 83.3% 57.8%; /* Púrpura para el círculo central */
+    --accent-foreground: 0 0% 98%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 142.1 76.2% 36.3%;
+    --radius: 0.5rem;
+
+    /* Nuevas variables para el sistema de diseño evolucionado - tema verde */
+    --ui-icon-primary: 142.1 76.2% 36.3%; /* Verde para iconos principales */
+    --ui-icon-secondary: 168 76% 42%; /* Verde azulado para iconos secundarios */
+    --ui-icon-accent: 262.1 83.3% 57.8%; /* Morado para iconos de acento */
+    --ui-text-primary: 240 10% 3.9%; /* Color principal para texto */
+    --ui-text-secondary: 240 3.8% 46.1%; /* Color secundario para texto */
+    --ui-surface-primary: 0 0% 100%; /* Superficie principal */
+    --ui-surface-secondary: 240 4.8% 95.9%; /* Superficie secundaria */
+
+   
+    /* Color de encabezados para tema verde */
+    --heading-color: 142.1 76.2% 25%; /* Verde oscuro para encabezados */
+
+    /* Valores RGB para sombras */
+    --primary-rgb: 34, 197, 94;
+  }
+
+  /* Tema Naranja (variante clara) */
+  .theme-orange {
+    --background: 0 0% 100%;
+    --foreground: 20 14.3% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14.3% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14.3% 4.1%;
+    --primary: 24.6 95% 53.1%;
+    --primary-foreground: 60 9.1% 97.8%;
+    --secondary: 60 4.8% 95.9%;
+    --secondary-foreground: 24 9.8% 10%;
+    --accent: 262.1 83.3% 57.8%; /* Púrpura para el círculo central */
+    --accent-foreground: 0 0% 98%;
+    --muted: 60 4.8% 95.9%;
+    --muted-foreground: 25 5.3% 44.7%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 20 5.9% 90%;
+    --input: 20 5.9% 90%;
+    --ring: 24.6 95% 53.1%;
+    --radius: 0.5rem;
+
+    /* Nuevas variables para el sistema de diseño evolucionado - tema naranja */
+    --ui-icon-primary: 24.6 95% 53.1%; /* Naranja para iconos principales */
+    --ui-icon-secondary: 32 95% 44%; /* Naranja amarillento para iconos secundarios */
+    --ui-icon-accent: 262.1 83.3% 57.8%; /* Morado para iconos de acento */
+    --ui-text-primary: 20 14.3% 4.1%; /* Color principal para texto */
+    --ui-text-secondary: 25 5.3% 44.7%; /* Color secundario para texto */
+    --ui-surface-primary: 0 0% 100%; /* Superficie principal */
+    --ui-surface-secondary: 60 4.8% 95.9%; /* Superficie secundaria */
+
+   
+    /* Color de encabezados para tema naranja */
+    --heading-color: 24.6 95% 35%; /* Naranja oscuro para encabezados */
+
+    /* Valores RGB para sombras */
+    --primary-rgb: 249, 115, 22;
+  }
+
+  .dark .theme-green {
+    --background: 20 14.3% 4.1%;
+    --foreground: 0 0% 95%;
+    --card: 24 9.8% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 142.1 70.6% 45.3%;
+    --primary-foreground: 144.9 80.4% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --accent: 262.1 83.3% 57.8%; /* Púrpura para el círculo central */
+    --accent-foreground: 0 0% 98%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 240 5% 64.9%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 85.7% 97.3%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 142.4 71.8% 29.2%;
+
+    /* Nuevas variables para el sistema de diseño evolucionado - tema verde oscuro */
+    --ui-icon-primary: 142.1 70.6% 45.3%; /* Verde para iconos principales */
+    --ui-icon-secondary: 168 70% 42%; /* Verde azulado para iconos secundarios */
+    --ui-icon-accent: 262.1 83.3% 57.8%; /* Morado para iconos de acento */
+    --ui-text-primary: 0 0% 95%; /* Color principal para texto */
+    --ui-text-secondary: 240 5% 64.9%; /* Color secundario para texto */
+    --ui-surface-primary: 24 9.8% 10%; /* Superficie principal */
+    --ui-surface-secondary: 240 3.7% 15.9%; /* Superficie secundaria */
+
+    
+
+    /* Color de encabezados para tema verde oscuro */
+    --heading-color: 142.1 70.6% 55%; /* Verde más brillante para encabezados en modo oscuro */
+
+    /* Valores RGB para sombras */
+    --primary-rgb: 74, 222, 128;
+  }
+
+  .dark .theme-orange {
+    --background: 20 14.3% 4.1%;
+    --foreground: 60 9.1% 97.8%;
+    --card: 20 14.3% 4.1%;
+    --card-foreground: 60 9.1% 97.8%;
+    --popover: 20 14.3% 4.1%;
+    --popover-foreground: 60 9.1% 97.8%;
+    --primary: 20.5 90.2% 48.2%;
+    --primary-foreground: 60 9.1% 97.8%;
+    --secondary: 12 6.5% 15.1%;
+    --secondary-foreground: 60 9.1% 97.8%;
+    --accent: 262.1 83.3% 57.8%; /* Púrpura para el círculo central */
+    --accent-foreground: 0 0% 98%;
+    --muted: 12 6.5% 15.1%;
+    --muted-foreground: 24 5.4% 63.9%;
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 12 6.5% 15.1%;
+    --input: 12 6.5% 15.1%;
+    --ring: 20.5 90.2% 48.2%;
+
+    /* Nuevas variables para el sistema de diseño evolucionado - tema naranja oscuro */
+    --ui-icon-primary: 20.5 90.2% 48.2%; /* Naranja para iconos principales */
+    --ui-icon-secondary: 32 90% 44%; /* Naranja amarillento para iconos secundarios */
+    --ui-icon-accent: 262.1 83.3% 57.8%; /* Morado para iconos de acento */
+    --ui-text-primary: 60 9.1% 97.8%; /* Color principal para texto */
+    --ui-text-secondary: 24 5.4% 63.9%; /* Color secundario para texto */
+    --ui-surface-primary: 20 14.3% 4.1%; /* Superficie principal */
+    --ui-surface-secondary: 12 6.5% 15.1%; /* Superficie secundaria */
+
+   
+
+    /* Color de encabezados para tema naranja oscuro */
+    --heading-color: 20.5 90.2% 60%; /* Naranja más brillante para encabezados en modo oscuro */
+
+    /* Valores RGB para sombras */
+    --primary-rgb: 251, 146, 60;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+

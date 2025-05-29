@@ -1,0 +1,49 @@
+[build]
+  command = "npm install --legacy-peer-deps && npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Configuración de Next.js
+  NEXT_TELEMETRY_DISABLED = "1"
+  NODE_VERSION = "18.x"
+  NPM_FLAGS = "--legacy-peer-deps"
+  
+  # Optimizaciones de compilación
+  NEXT_FORCE_REDEPLOY = "1"
+  NODE_OPTIONS = "--max_old_space_size=4096"
+
+# Configuración del plugin de Next.js
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+  [plugins.inputs]
+    enableStaticCache = true
+    enableImageOptimization = true
+    enablePrerender = true
+
+# Configuración de redirecciones
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# Configuración de cabeceras de seguridad
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    
+# Configuración de caché
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

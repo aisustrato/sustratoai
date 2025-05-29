@@ -1,0 +1,57 @@
+🌱 Semilla Fractal de Interacción: Flujo de Trabajo Sensible a la Dislexia y Colaboración con Agente VSCode
+Propósito: Este documento detalla las directrices y el flujo de trabajo adaptado para la colaboración en el proyecto Sustrato AI, considerando la dislexia del usuario y buscando optimizar la implementación de modificaciones de código. Es un complemento a la "Semilla de Contexto – Caleidoscopio Paradojal" y al "Prompt Raíz para Interacción Técnica con IA".
+
+Fecha de Creación: 28 de Mayo, 2025
+
+I. Fundamento: Coherencia y Sensibilidad Cognitiva 🧠🤝
+La colaboración en este entorno se valora por su capacidad para alcanzar una "coherencia profunda" en el diseño y la arquitectura de Sustrato AI. Para mantener esta calidad y, al mismo tiempo, respetar las necesidades cognitivas del usuario (dislexia), se establecen las siguientes pautas de interacción, especialmente en lo referente a la manipulación de código.
+
+La interacción con el código se entiende como "asíncrona": la conceptualización, el diseño de alto nivel y la generación de código extenso o nuevo ocurren en este entorno de chat; la implementación y prueba final ocurren en el entorno de desarrollo del usuario.
+
+II. El Desafío Central: Dislexia y Modificación de Código Específico ⚠️📄
+La dislexia del usuario implica una dificultad significativa al:
+
+Localizar líneas de código específicas dentro de archivos extensos.
+Verificar con exactitud pequeñas diferencias entre el código existente y las modificaciones propuestas.
+Realizar múltiples cambios pequeños y dispersos en un mismo archivo.
+Esto puede convertir tareas aparentemente simples en procesos largos, mentalmente agotadores y propensos a errores ("buscar una aguja en un pajar").
+
+III. Directriz Fundamental (No Negociable): ¡Siempre Código Completo! 📝✨
+Para mitigar los desafíos mencionados, la regla principal para cualquier modificación de código propuesta por la IA (Co-Creador Sustrato AI) es:
+
+Proporcionar siempre el bloque de código completo que debe ser reemplazado o insertado. Esto aplica incluso si el cambio afecta solo a una o pocas líneas dentro de ese bloque.
+Nunca dar instrucciones parciales del tipo "modifica la línea X para que diga Y y el resto déjalo igual" sin el contexto completo del bloque a reemplazar.
+Esta directriz minimiza la carga cognitiva del usuario y reduce drásticamente el riesgo de introducir errores durante la implementación manual de los cambios.
+
+IV. Explorando un Flujo Optimizado: IA como "Generadora de Prompts" para Agente VSCode 🤖➡️🧑‍💻➡️📝
+Como un paso intermedio y en fase de exploración para optimizar el flujo de trabajo para cambios muy puntuales y específicos, se propone la siguiente dinámica:
+
+Identificación del Escenario: La IA (Co-Creador Sustrato AI) puede identificar situaciones donde una modificación es extremadamente pequeña, clara, y aislada (ej. corregir un typo en un nombre de variable o comentario, cambiar un valor literal específico, una única línea bien delimitada).
+Generación de Prompt para Agente Externo: En lugar de solicitar al usuario que realice el cambio manualmente (incluso con el bloque completo si es un archivo muy grande y el cambio mínimo), la IA generará un prompt explícito y directo, diseñado para ser utilizado por un agente de IA que el usuario opera dentro de su entorno VSCode.
+Contenido del Prompt para el Agente:
+Especificación clara del archivo a modificar.
+Identificación inequívoca de la línea o líneas exactas a cambiar (si es posible, con un fragmento de contexto inmediato).
+El nuevo contenido exacto para esa línea o líneas.
+Una instrucción imperativa de no alterar ninguna otra parte del código o la lógica del archivo.
+Ejemplo conceptual:
+**Prompt para Agente VSCode:**
+
+Archivo: `ruta/al/archivo/ejemplo.tsx`
+
+Contexto de la línea a modificar (aproximado):
+`const miVariableAntigua = 'valor incorrecto';`
+
+Instrucción:
+Modifica la línea que contiene `const miVariableAntigua = 'valor incorrecto';` para que diga exactamente:
+`const miVariableCorregida = 'valor correcto';`
+
+IMPORTANTE: No modifiques ninguna otra línea ni lógica en este archivo. Solo aplica este cambio puntual.
+Rol del Usuario: Copiar el prompt generado y utilizarlo con su agente en VSCode.
+Objetivo: Reducir la manipulación directa de código por parte del usuario para ediciones menores, utilizando el agente como "manos" precisas, mientras se mantiene la discusión y estrategia de desarrollo en este entorno.
+Naturaleza de la Exploración: Este es un método en prueba. Si hay cualquier duda sobre la claridad o el impacto del cambio, se volverá por defecto a la entrega de bloques de código completos directamente al usuario.
+V. Comunicación y Ajuste Continuo 📈🗣️
+Este flujo de trabajo está vivo y sujeto a iteración. Se anima al usuario a comunicar cualquier fricción o sugerencia para mejorar la colaboración, manteniendo el núcleo ético, situado y funcional de nuestro "Caleidoscopio Paradojal".
+
+¿Este nuevo documento captura bien la esencia de tu segundo "disclaimer" y la propuesta de interacción con el agente? Si quieres que lo refine o añada algo más, házmelo saber.
+
+¡Estoy listo para que empecemos a probar esta nueva dinámica cuando lo consideres oportuno! 🚀

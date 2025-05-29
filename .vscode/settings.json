@@ -1,0 +1,944 @@
+{
+	"workbench.colorCustomizations": {
+		"activityBar.activeBackground": "#e5f2f9",
+		"activityBar.background": "#e5f2f9",
+		"activityBar.foreground": "#15202b",
+		"activityBar.inactiveForeground": "#15202b99",
+		"activityBarBadge.background": "#e17ebe",
+		"activityBarBadge.foreground": "#15202b",
+		"commandCenter.border": "#15202b99",
+		"sash.hoverBorder": "#e5f2f9",
+		"statusBar.background": "#bbdef0",
+		"statusBar.foreground": "#15202b",
+		"statusBarItem.hoverBackground": "#91cae7",
+		"statusBarItem.remoteBackground": "#bbdef0",
+		"statusBarItem.remoteForeground": "#15202b",
+		"titleBar.activeBackground": "#bbdef0",
+		"titleBar.activeForeground": "#15202b",
+		"titleBar.inactiveBackground": "#bbdef099",
+		"titleBar.inactiveForeground": "#15202b99"
+	},
+	"peacock.color": "#BBDEF0",
+
+	"files.exclude": {
+		"**/.git": false,
+		"**/.svn": false,
+		"**/.hg": false,
+		"**/.DS_Store": false,
+		"**/Thumbs.db": false,
+		"**/CVS": false,
+		"node_modules": false,
+		"out": false,
+		"next-env.d.ts": false,
+		"tailwind.config.ts": false,
+		"postcss.config.mjs": false,
+		".eslintrc.json": false,
+		".gitignore": false,
+		"components.json": false,
+		"next.config.ts": false,
+		"package-lock.json": false,
+		"package.json": false,
+		"README.md": false,
+		"setup-project.sh": false,
+		"test.css": false,
+		"tsconfig.build.json": false,
+		"tsconfig.json": false,
+		"tsconfig.node.json": false,
+		"**/*.png": false,
+		"sai/.next": false,
+		"**/node_modules": false,
+		"**/out": false,
+		"sai/next-env.d.ts": false,
+		"sai/tailwind.config.ts": false,
+		"sai/postcss.config.mjs": false,
+		"sai/.eslintrc.json": false,
+		"sai/.gitignore": false,
+		"sai/components.json": false,
+		"sai/next.config.ts": false,
+		"sai/package-lock.json": false,
+		"sai/package.json": false,
+		"sai/README.md": false,
+		"sai/setup-project.sh": false,
+		"sai/test.css": false,
+		"sai/tsconfig.build.json": false,
+		"sai/tsconfig.json": false,
+		"sai/tsconfig.node.json": false,
+		"sai/.eslintrc copy.json": false,
+		"sai/update-icons.js": false,
+		"sai/public": false,
+		"sai/app/fonts": false,
+		"sai/app/favicon.ico": false,
+		"sai/app/globals.css": false
+	},
+	"better-comments.multilineComments": true,
+	"better-comments.highlightPlainText": false,
+	"better-comments.tags": [
+		{
+			"tag": "*", //multiline
+			"color": "#3D5187",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#323546",
+			"bold": true,
+			"italic": false
+		},
+
+		{
+			"tag": ". 📍", //hubiacion del archivo
+			"color": "#F20574",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#EDDFCC",
+			"bold": true,
+			"italic": false
+		},
+		{
+			"tag": "> 💡", //comentario de aclaracion
+			"color": "#437060",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#272D2F",
+			"bold": false,
+			"italic": true
+		},
+		{
+			"tag": "TODO 👀", //todo inline
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#FF4500",
+			"bold": true,
+			"italic": false
+		},
+		// 📝 comentarios standard
+		{
+			"tag": "> 📝",
+			"color": "#5F8700",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#272D2F",
+			"bold": false,
+			"italic": false
+		},
+		// 📋 comentarios standard
+		{
+			"tag": "> 📋",
+			"color": "#5F8700",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#272D2F",
+			"bold": false,
+			"italic": false
+		},
+		{
+			"tag": "! ❌", //tarea pendiente
+			"color": "#FF0000",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#340b14",
+			"bold": true,
+			"italic": false
+		},
+		{
+			"tag": "! ✅",
+			"color": "#00FF00",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#2e3c37",
+			"bold": true,
+			"italic": false
+		}
+	],
+	"commentAnchors.tags.anchors": {
+		////////////////////////////////////////////////
+
+		"[comment]": {
+			"iconColor": "#15202b", // Verde claro
+			"highlightColor": "#E8F5E9", // Verde muy claro
+			"backgroundColor": "#bbdef099", // Verde medio
+			"borderStyle": "1px solid #66BB6A",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[secondary]": {
+			"iconColor": "#81D4FA", // Azul claro
+			"highlightColor": "#E1F5FE", // Azul muy claro
+			"backgroundColor": "#0288D1", // Azul medio
+			"borderStyle": "1px solid #29B6F6",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[accent]": {
+			"iconColor": "#CE93D8", // Violeta claro
+			"highlightColor": "#F3E5F5", // Violeta muy claro
+			"backgroundColor": "#7B1FA2", // Violeta medio
+			"borderStyle": "1px solid #AB47BC",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[neutral]": {
+			"iconColor": "#90A4AE", // Azul grisáceo
+			"highlightColor": "#ECEFF1", // Azul grisáceo muy claro
+			"backgroundColor": "#546E7A", // Azul grisáceo medio
+			"borderStyle": "1px solid #78909C",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[success]": {
+			"iconColor": "#C5E1A5", // Verde lima claro
+			"highlightColor": "#C5E1A5", // Verde lima muy claro
+			"backgroundColor": "#689F38", // Verde lima medio
+			"borderStyle": "1px dashed #9CCC65",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[warning]": {
+			"iconColor": "#FFCC80", // Naranja claro
+			"highlightColor": "#FFF3E0", // Naranja muy claro
+			"backgroundColor": "#F57C00", // Naranja medio
+			"borderStyle": "1px solid #FFA726",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[danger]": {
+			"iconColor": "#EF9A9A", // Rojo claro
+			"highlightColor": "#D32F2F", // Rojo muy claro
+			"backgroundColor": "#EF9A9A", // Rojo medio
+			"borderStyle": "1px solid #EF5350",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[empty]": {
+			"iconColor": "#EF9A9A", // Rojo claro
+			"highlightColor": "#C6E6AF", // Rojo muy claro
+			"backgroundColor": "##556677", // Rojo medio
+			"borderStyle": "1px solid #C6E6AF",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		//////////////////////////////////////////////////////
+		// Regiones Principales (Nivel 1)
+		"[meta]": {
+			"iconColor": "#90A4AE", // Azul grisáceo
+			"highlightColor": "#ECEFF1", // Azul grisáceo muy claro
+			"backgroundColor": "#546E7A", // Azul grisáceo medio
+			"borderStyle": "1px solid #78909C",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[docs]": {
+			"iconColor": "#A5D6A7", // Verde claro
+			"highlightColor": "#E8F5E9", // Verde muy claro
+			"backgroundColor": "#388E3C", // Verde medio
+			"borderStyle": "1px solid #66BB6A",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[imports]": {
+			"iconColor": "#81D4FA", // Azul claro
+			"highlightColor": "#E1F5FE", // Azul muy claro
+			"backgroundColor": "#0288D1", // Azul medio
+			"borderStyle": "1px solid #29B6F6",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[types]": {
+			"iconColor": "#CE93D8", // Violeta claro
+			"highlightColor": "#F3E5F5", // Violeta muy claro
+			"backgroundColor": "#7B1FA2", // Violeta medio
+			"borderStyle": "1px solid #AB47BC",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[constants]": {
+			"iconColor": "#FFF59D", // Amarillo claro
+			"highlightColor": "#FFFDE7", // Amarillo muy claro
+			"backgroundColor": "#FBC02D", // Amarillo medio
+			"borderStyle": "1px solid #FFEE58",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[utils]": {
+			"iconColor": "#FFCC80", // Naranja claro
+			"highlightColor": "#FFF3E0", // Naranja muy claro
+			"backgroundColor": "#F57C00", // Naranja medio
+			"borderStyle": "1px solid #FFA726",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[hooks]": {
+			"iconColor": "#80DEEA", // Turquesa claro
+			"highlightColor": "#E0F7FA", // Turquesa muy claro
+			"backgroundColor": "#0097A7", // Turquesa medio
+			"borderStyle": "1px solid #26C6DA",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[components.core]": {
+			"iconColor": "#C5E1A5", // Verde lima claro
+			"highlightColor": "#F1F8E9", // Verde lima muy claro
+			"backgroundColor": "#689F38", // Verde lima medio
+			"borderStyle": "2px double  #C5E1A5",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[components.ui]": {
+			"iconColor": "#C5E1A5", // Verde lima claro
+			"highlightColor": "#C5E1A5", // Verde lima muy claro
+			"backgroundColor": "#689F38", // Verde lima medio
+			"borderStyle": "1px dashed #9CCC65",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[main]": {
+			"iconColor": "#EF9A9A", // Rojo claro
+			"highlightColor": "#D32F2F", // Rojo muy claro
+			"backgroundColor": "#FFEBEE", // Rojo medio
+			"borderStyle": "1px solid #EF5350",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[main.sub]": {
+			"iconColor": "#EF9A9A", // Rojo claro
+			"highlightColor": "#D32F2F", // Rojo muy claro
+			"backgroundColor": "#EF9A9A", // Rojo medio
+			"borderStyle": "1px solid #EF5350",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[exports]": {
+			"iconColor": "#B39DDB", // Púrpura claro
+			"highlightColor": "#EDE7F6", // Púrpura muy claro
+			"backgroundColor": "#512DA8", // Púrpura medio
+			"borderStyle": "1px solid #7E57C2",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[tests]": {
+			"iconColor": "#9FA8DA", // Índigo claro
+			"highlightColor": "#E8EAF6", // Índigo muy claro
+			"backgroundColor": "#303F9F", // Índigo medio
+			"borderStyle": "1px solid #5C6BC0",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[todo]": {
+			"iconColor": "#FFAB91", // Naranja rojizo claro
+			"highlightColor": "#FBE9E7", // Naranja rojizo muy claro
+			"backgroundColor": "#E64A19", // Naranja rojizo medio
+			"borderStyle": "1px solid #FF7043",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		// Regiones Anidadas (Nivel 2) - Referencia al padre en el color de borde
+		// Regiones Anidadas Universales
+		"[hooks.core]": {
+			"iconColor": "#80DEEA", // Mismo que hooks (padre)
+			"highlightColor": "#8CF2FF", // Mismo que hooks (padre)
+			"backgroundColor": "#538F96", // Variación del padre
+			"borderStyle": "2px  double #80DEEA", // Dashed para indicar anidación
+			"borderRadius": 4, // Más pequeño que el padre
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[hooks.ui]": {
+			"iconColor": "#80DEEA", // Mismo que hooks (padre)
+			"highlightColor": "#3C686E", // Mismo que hooks (padre)
+			"backgroundColor": "#00BCD4", // Variación del padre
+			"borderStyle": "2px dashed #538F96", // Dashed para indicar anidación
+			"borderRadius": 4, // Más pequeño que el padre
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[debug]": {
+			"iconColor": "#80DEEA", // Mismo que hooks (padre)
+			"highlightColor": "#E0F7FA", // Mismo que hooks (padre)
+			"backgroundColor": "#26C6DA", // Variación del padre
+			"borderStyle": "3px dashed #26C6DA", // Dashed para indicar anidación
+			"borderRadius": 4, // Más pequeño que el padre
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[hooks.util]": {
+			"iconColor": "#80DEEA", // Mismo que hooks (padre)
+			"highlightColor": "#E0F7FA", // Mismo que hooks (padre)
+			"backgroundColor": "#4DD0E1", // Variación del padre
+			"borderStyle": "3px dashed #26C6DA", // Dashed para indicar anidación
+			"borderRadius": 4, // Más pequeño que el padre
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[registry.core]": {
+			"iconColor": "#B39DDB", // Mismo que registry (padre)
+			"highlightColor": "#EDE7F6", // Mismo que registry (padre)
+			"backgroundColor": "#673AB7", // Variación del padre
+			"borderStyle": "2px double #EDE7F6", // Dashed para indicar anidación
+			"borderRadius": 4, // Más pequeño que el padre
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[variant]": {
+			"iconColor": "#B39DDB", // Mismo que registry (padre)
+			"highlightColor": "#EDE7F6", // Mismo que registry (padre)
+			"backgroundColor": "#7E57C2", // Variación del padre
+			"borderStyle": "2px dashed #583D87", // Dashed para indicar anidación
+			"borderRadius": 4, // Más pequeño que el padre
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[registry.sub]": {
+			"iconColor": "#B39DDB", // Mismo que registry (padre)
+			"highlightColor": "#EDE7F6", // Mismo que registry (padre)
+			"backgroundColor": "#9575CD", // Variación del padre
+			"borderStyle": "1px dashed #7E57C2", // Dashed para indicar anidación
+			"borderRadius": 4, // Más pequeño que el padre
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[imports.core]": {
+			"iconColor": "#81D4FA", // Mismo que imports (padre)
+			"highlightColor": "#E1F5FE", // Mismo que imports (padre)
+			"backgroundColor": "#039BE5", // Variación del padre
+			"borderStyle": "1px dashed #29B6F6", // Dashed para indicar anidación
+			"borderRadius": 4, // Más pequeño que el padre
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[imports.components]": {
+			"iconColor": "#81D4FA", // Mismo que imports (padre)
+			"highlightColor": "#E1F5FE", // Mismo que imports (padre)
+			"backgroundColor": "#03A9F4", // Variación del padre
+			"borderStyle": "1px dashed #29B6F6", // Dashed para indicar anidación
+			"borderRadius": 4, // Más pequeño que el padre
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[imports.types]": {
+			"iconColor": "#81D4FA", // Mismo que imports (padre)
+			"highlightColor": "#E1F5FE", // Mismo que imports (padre)
+			"backgroundColor": "#4FC3F7", // Variación del padre
+			"borderStyle": "1px dashed #29B6F6", // Dashed para indicar anidación
+			"borderRadius": 4, // Más pequeño que el padre
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		// Regiones Específicas para Archivos de Tipos
+		"[core]": {
+			"iconColor": "#F48FB1", // Rosa claro
+			"highlightColor": "#FCE4EC", // Rosa muy claro
+			"backgroundColor": "#C2185B", // Rosa medio
+			"borderStyle": "1px solid #EC407A",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[states]": {
+			"iconColor": "#80CBC4", // Verde azulado claro
+			"highlightColor": "#E0F2F1", // Verde azulado muy claro
+			"backgroundColor": "#00796B", // Verde azulado medio
+			"borderStyle": "1px solid #26A69A",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[main.components]": {
+			"iconColor": "#FFE082", // Ámbar claro
+			"highlightColor": "#FFF8E1", // Ámbar muy claro
+			"backgroundColor": "#FFA000", // Ámbar medio
+			"borderStyle": "1px solid #FFD54F",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		// Regiones Específicas para Archivos de Tema
+		"[colors]": {
+			"iconColor": "#90CAF9", // Azul claro
+			"highlightColor": "#E3F2FD", // Azul muy claro
+			"backgroundColor": "#1976D2", // Azul medio
+			"borderStyle": "1px solid #42A5F5",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[surfaces]": {
+			"iconColor": "#A5D6A7", // Verde claro
+			"highlightColor": "#E8F5E9", // Verde muy claro
+			"backgroundColor": "#388E3C", // Verde medio
+			"borderStyle": "1px solid #66BB6A",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[semantic]": {
+			"iconColor": "#BCAAA4", // Marrón claro
+			"highlightColor": "#EFEBE9", // Marrón muy claro
+			"backgroundColor": "#6D4C41", // Marrón medio
+			"borderStyle": "1px solid #8D6E63",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		// Regiones Específicas para Archivos de Componentes React
+		"[props]": {
+			"iconColor": "#FFCC80", // Naranja claro
+			"highlightColor": "#FFF3E0", // Naranja muy claro
+			"backgroundColor": "#F57C00", // Naranja medio
+			"borderStyle": "1px solid #FFA726",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[state]": {
+			"iconColor": "#81D4FA", // Azul claro
+			"highlightColor": "#E1F5FE", // Azul muy claro
+			"backgroundColor": "#0288D1", // Azul medio
+			"borderStyle": "1px solid #29B6F6",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[handlers]": {
+			"iconColor": "#CE93D8", // Violeta claro
+			"highlightColor": "#F3E5F5", // Violeta muy claro
+			"backgroundColor": "#7B1FA2", // Violeta medio
+			"borderStyle": "1px solid #AB47BC",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		"[render]": {
+			"iconColor": "#EF9A9A", // Rojo claro
+			"highlightColor": "#FFEBEE", // Rojo muy claro
+			"backgroundColor": "#D32F2F", // Rojo medio
+			"borderStyle": "1px solid #EF5350",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		}
+	},
+
+	"explorerExclude.backup": {
+		"**/.git": false,
+		"**/.svn": false,
+		"**/.hg": false,
+		"**/.DS_Store": false,
+		"**/Thumbs.db": false,
+		"**/CVS": false,
+		"node_modules": false,
+		"out": false,
+		"next-env.d.ts": false,
+		"tailwind.config.ts": false,
+		"postcss.config.mjs": false,
+		".eslintrc.json": false,
+		".gitignore": false,
+		"components.json": false,
+		"next.config.ts": false,
+		"package-lock.json": false,
+		"package.json": false,
+		"README.md": false,
+		"setup-project.sh": false,
+		"test.css": false,
+		"tsconfig.build.json": false,
+		"tsconfig.json": false,
+		"tsconfig.node.json": false,
+		"**/*.png": false,
+		"sai/.next": false,
+		"**/node_modules": false,
+		"**/out": false,
+		"sai/next-env.d.ts": false,
+		"sai/tailwind.config.ts": false,
+		"sai/postcss.config.mjs": false,
+		"sai/.eslintrc.json": false,
+		"sai/.gitignore": false,
+		"sai/components.json": false,
+		"sai/next.config.ts": false,
+		"sai/package-lock.json": false,
+		"sai/package.json": false,
+		"sai/README.md": false,
+		"sai/setup-project.sh": false,
+		"sai/test.css": false,
+		"sai/tsconfig.build.json": false,
+		"sai/tsconfig.json": false,
+		"sai/tsconfig.node.json": false,
+		"sai/.eslintrc copy.json": false,
+		"sai/update-icons.js": false,
+		"sai/public": false,
+		"sai/app/fonts": false,
+		"sai/app/favicon.ico": false,
+		"sai/app/globals.css": false
+	},
+
+	"editor.tokenColorCustomizations": {
+		"textMateRules": [
+			{
+				// Configuración específica para el componente <Box>
+				"scope": "entity.name.tag.jsx",
+				"settings": {
+					"foreground": "#4CAF50", // Verde para <Box>
+					"fontStyle": "bold" // Negrita para diferenciarlo
+				}
+			},
+			{
+				// Props específicas de Box (row, gap)
+				"scope": "meta.tag.structure.jsx entity.other.attribute-name.jsx",
+				"settings": {
+					"foreground": "#FF9800", // Naranja para props de Box
+					"fontStyle": "italic"
+				}
+			},
+			{
+				// Valores de props (solo cadenas dentro de Box)
+				"scope": "meta.tag.structure.jsx string.quoted.double.jsx",
+				"settings": {
+					"foreground": "#3fb55b" // Azul para cadenas
+				}
+			},
+			{
+				// Símbolos específicos de <Box> (como < y >)
+				"scope": "meta.tag.structure.jsx punctuation.definition.tag.jsx",
+				"settings": {
+					"foreground": "#9C27B0" // Morado para símbolos
+				}
+			},
+			{
+				"scope": "meta.preprocessor",
+				"settings": {
+					"foreground": "#FF9800" // Color naranja para #region
+				}
+			},
+			{
+				"scope": "comment",
+				"settings": {
+					"foreground": "#adff9953" // Color verde para comentarios
+				}
+			},
+			{
+				"scope": "string",
+				"settings": {
+					"foreground": "#500deb",
+					"fontStyle": "italic bold "
+				}
+			},
+			{
+				"scope": "keyword.control.export",
+				"settings": {
+					"foreground": "#1E90FF",
+					"fontStyle": "bold"
+				}
+			},
+			{
+				"scope": "keyword.control.function",
+				"settings": {
+					"foreground": "#0eee33",
+					"fontStyle": "bold"
+				}
+			},
+			{
+				"scope": "keyword.modifier.default",
+				"settings": {
+					"foreground": "#fafa8e",
+					"fontStyle": "bold"
+				}
+			},
+			{
+				"scope": "keyword.control.import",
+				"settings": {
+					"foreground": "#B0E0E6", // Color vino tinto para imports
+					"fontStyle": "italic bold underline"
+				}
+			},
+			{
+				"scope": "keyword.control.from",
+				"settings": {
+					"foreground": "#B0E0E6", // Color vino tinto para imports
+					"fontStyle": "italic bold underline"
+				}
+			},
+			{
+				"scope": "keyword.control.const",
+				"settings": {
+					"foreground": "#1eff56", // Azul piedra para const
+					"fontStyle": "bold"
+				}
+			},
+			{
+				"scope": "keyword.control.const",
+				"settings": {
+					"foreground": "#1eff56", // Azul piedra para const
+					"fontStyle": "bold"
+				}
+			}
+		]
+	},
+	"window.zoomLevel": 2,
+
+	"editor.fontSize": 9,
+	"terminal.integrated.fontSize": 7,
+	"explorer.fileNesting.enabled": true,
+	"explorer.fileNesting.expand": true,
+	"workbench.tree.indent": 15,
+	"workbench.tree.renderIndentGuides": "always",
+	"workbench.sideBar.location": "left",
+	"workbench.iconTheme": "vscode-great-icons",
+
+	"vsicons.associations.folders": [
+		{ "icon": "tauri", "extensions": ["elements"], "format": "svg" },
+		{
+			"icon": "module",
+			"extensions": [
+				"flexUI",
+				"card",
+				"box",
+				"text",
+				"grid",
+				"button",
+				"zone",
+				"select",
+				"Input"
+			],
+			"format": "svg"
+		},
+		{ "icon": "travis", "extensions": ["Utils"], "format": "svg" },
+		{ "icon": "bloc", "extensions": ["box", "boxes"], "format": "svg" },
+		{ "icon": "cli", "extensions": ["components"], "format": "svg" },
+		{ "icon": "bloc", "extensions": ["core"], "format": "svg" },
+		{
+			"icon": "cmake",
+			"extensions": [
+				"color",
+				"color/scales",
+				"color/harmony",
+				"color/semantic",
+				"color/flavor"
+			],
+			"format": "svg"
+		},
+		{
+			"icon": "model",
+			"extensions": ["layout", "sidebar", "topbar"],
+			"format": "svg"
+		},
+		{ "icon": "nuget", "extensions": ["Card", "cards"], "format": "svg" },
+		{ "icon": "template", "extensions": ["Grid", "grid"], "format": "svg" },
+		{ "icon": "dapr", "extensions": ["Button", "buttons"], "format": "svg" },
+		{
+			"icon": "circleci",
+			"extensions": ["spheres", "sphere"],
+			"format": "svg"
+		},
+		{ "icon": "vs2", "extensions": ["app"], "format": "svg" },
+		{ "icon": "mongodb", "extensions": ["sai"], "format": "svg" },
+		{ "icon": "bower", "extensions": ["essence"], "format": "svg" },
+		{ "icon": "tauri", "extensions": ["Sphere"], "format": "svg" },
+		{ "icon": "tauri", "extensions": ["Orchestrators"], "format": "svg" },
+		{ "icon": "asset", "extensions": ["auth"], "format": "svg" },
+		{ "icon": "mock", "extensions": ["showroom"], "format": "svg" },
+		{ "icon": "meteor", "extensions": ["animations"], "format": "svg" },
+		{ "icon": "fonts", "extensions": ["texts", "text"], "format": "svg" },
+		{
+			"icon": "mock",
+			"extensions": ["grids"],
+			"format": "svg"
+		},
+
+		{
+			"icon": "script",
+			"extensions": [".vscode"],
+			"format": "svg"
+		}
+	],
+	"vsicons.associations.files": [
+		// filas
+		{ "icon": "appscript", "extensions": ["color.tsx"], "folder": "color" },
+		{ "icon": "c_al", "extensions": ["color.ts"], "folder": "color" },
+		{ "icon": "elastic", "extensions": ["flex.tsx"], "folder": "FlexUI" },
+		{
+			"icon": "typescriptdef_official",
+			"extensions": [".ts"],
+			"folder": "fonts"
+		},
+		{ "icon": "stylable", "extensions": ["theme/tsx"], "folder": "theme" },
+		{ "icon": "stylable", "extensions": ["theme.tsx"], "folder": "context" },
+		{
+			"icon": "stata",
+			"extensions": ["layout/tsx", "sidebar/tsx", "topbar/tsx"],
+			"folder": "app"
+		},
+		{ "icon": "travis", "extensions": ["utils.tsx"], "folder": "utils" },
+		{ "icon": "snapcraft", "extensions": ["essence.tsx"], "folder": "essence" },
+		{ "icon": "registry", "extensions": ["types.ts"], "folder": "*" },
+
+		{ "icon": "bitbucketpipeline", "extensions": ["zone.tsx"], "folder": "*" },
+
+		{
+			"icon": "biml",
+			"extensions": ["animation.tsx"],
+			"folder": "*"
+		},
+		{
+			"icon": "reacttemplate",
+			"extensions": ["ClientLayout.tsx"],
+			"filename": true,
+			"folder": "app"
+		},
+
+		{
+			"icon": "pipeline",
+			"extensions": ["orchestrator.tsx"],
+			"folder": "showroom"
+		},
+		{
+			"icon": "pipeline",
+			"extensions": ["orchestrator.tsx"],
+			"folder": "context"
+		},
+		{
+			"icon": "playwright",
+			"extensions": [
+				"showroom/page.tsx",
+				"spheres/page.tsx",
+				"cards/page.tsx",
+				"boxes/page.tsx",
+				"boxs/page.tsx",
+				"texts/page.tsx",
+				"grids/page.tsx",
+				"buttons/page.tsx"
+			],
+			"filename": true,
+			"folder": "showroom"
+		},
+		{
+			"icon": "map",
+			"extensions": ["app/page.tsx"],
+			"filename": true,
+			"folder": "app"
+		},
+		{
+			"icon": "qlikview",
+			"extensions": ["layout.tsx"],
+			"filename": true,
+			"folder": "app"
+		},
+		{
+			"icon": "cert",
+			"extensions": ["auth/page.tsx"],
+			"filename": true,
+			"folder": "app"
+		}
+	],
+
+	"prettier.bracketSameLine": true,
+	"prettier.experimentalTernaries": true,
+	"prettier.useTabs": true,
+
+	"betterFolding.showFoldedBodyLinesCount": true,
+	"betterFolding.showObjectPreviews": true,
+
+	"commentAnchors.tags.endTag": "!",
+	"commentAnchors.tags.matchPrefix": [
+		"<!--",
+		"//",
+		"/*",
+		"/**",
+		"*",
+		"",
+		"[",
+		"#",
+		"{/* "
+	],
+	"auto-rename-tag.activationOnLanguage": ["*"],
+	"editor.foldingStrategy": "auto",
+	"commentAnchors.tags.provideAutoCompletion": false
+}

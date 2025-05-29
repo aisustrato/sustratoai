@@ -1,0 +1,15 @@
+.nav-link {
+	background-color: transparent;
+}
+
+.nav-link:hover {
+	background-color: var(--hover-bg);
+}
+
+.nav-link-active {
+	background-color: var(--active-bg);
+}
+
+.nav-link-active:hover {
+	background-color: var(--active-hover-bg);
+}
