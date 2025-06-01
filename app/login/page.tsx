@@ -26,8 +26,8 @@ export default function LoginPage() {
   useEffect(() => {
     if (authInitialized && user && searchParams) {
       const redirectTo = searchParams.get('redirectTo') || '/';
-      console.log(`🔄 Usuario ya autenticado, redirigiendo a ${redirectTo}`);
-      router.push(redirectTo);
+      console.log(`🔄 Usuario ya autenticado, redirigiendo a ${'/'}`);
+     // router.push('/');
     }
   }, [user, authInitialized, router, searchParams]);
 
@@ -58,7 +58,7 @@ export default function LoginPage() {
       console.log(`🔄 Login exitoso, redirigiendo a ${redirectTo}`);
       
       // No desactivamos loading para evitar parpadeos durante la redirección
-      router.push(redirectTo);
+      //router.push(redirectTo);
     } catch (error) {
       console.error("Error durante el inicio de sesión:", error);
       toast.error("Ocurrió un error inesperado");
