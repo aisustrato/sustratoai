@@ -26,8 +26,11 @@ import { useLoading } from "@/contexts/LoadingContext"; // Opcional
 
 export default function CrearDimensionPage() {
   const router = useRouter();
-  const { proyectoActual, cargandoProyectos } = useAuth();
-  const { showLoading, hideLoading } = useLoading(); // Opcional
+  const { proyectoActual, loadingProyectos } = useAuth();
+  const { showLoading, hideLoading } = useLoading() as {
+    showLoading?: (message: string) => void;
+    hideLoading?: () => void;
+  }; // Opcional
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   // No necesitamos un estado de 'isPageLoading' complejo aquí,
@@ -38,11 +41,11 @@ export default function CrearDimensionPage() {
     proyectoActual?.permissions?.can_manage_master_data || false;
 
   useEffect(() => {
-    if (!cargandoProyectos && !proyectoActual?.id) {
+    if (!loadingProyectos && !proyectoActual?.id) {
       setErrorPage("No hay un proyecto activo seleccionado. Por favor, selecciona uno para continuar.");
       // Opcionalmente, redirigir si no hay proyecto y no se puede crear
       // router.replace("/datos-maestros/dimensiones");
-    } else if (!cargandoProyectos && proyectoActual?.id && !puedeGestionarDimensiones) {
+    } else if (!loadingProyectos && proyectoActual?.id && !puedeGestionarDimensiones) {
       setErrorPage("No tienes permisos para crear dimensiones en este proyecto.");
       sonnerToast.error("Acceso Denegado", { description: "No tienes los permisos necesarios."});
       router.replace("/datos-maestros/dimensiones");
@@ -50,7 +53,7 @@ export default function CrearDimensionPage() {
      else {
       setErrorPage(null);
     }
-  }, [proyectoActual, cargandoProyectos, puedeGestionarDimensiones, router]);
+  }, [proyectoActual, loadingProyectos, puedeGestionarDimensiones, router, sonnerToast]);
 
   const handleFormSubmit = async (data: DimensionFormValues) => {
     if (!proyectoActual?.id) {
@@ -65,7 +68,7 @@ export default function CrearDimensionPage() {
     }
 
     setIsSubmitting(true);
-    if (typeof showLoading === 'function') showLoading("Creando dimensión...");
+    showLoading?.("Creando dimensión...");
 
     // Necesitamos determinar el 'ordering' para la nueva dimensión.
     // Esto podría venir de una llamada para contar dimensiones existentes o un valor por defecto.
@@ -98,7 +101,7 @@ export default function CrearDimensionPage() {
       resultado = await createDimension(payload);
     } catch (err) {
       console.error("Excepción al llamar a createDimension:", err);
-      if (typeof hideLoading === 'function') hideLoading();
+      hideLoading?.();
       setIsSubmitting(false);
       sonnerToast.error("Error Inesperado", {
         description: `Ocurrió un error al procesar la solicitud: ${(err as Error).message}`,
@@ -132,7 +135,7 @@ export default function CrearDimensionPage() {
     router.push("/datos-maestros/dimensiones");
   };
   
-  if (cargandoProyectos && !proyectoActual?.id) {
+  if (loadingProyectos && !proyectoActual?.id) {
     return (
       <PageBackground>
         <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>

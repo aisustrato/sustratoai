@@ -31,7 +31,7 @@ export default function ModificarDimensionPage() {
   const params = useParams();
   const dimensionId = params?.id ? String(params.id) : "";
 
-  const { proyectoActual, cargandoProyectos } = useAuth();
+  const { proyectoActual, loadingProyectos } = useAuth();
   const { showLoading, hideLoading } = useLoading();
 
   const [dimensionActual, setDimensionActual] = useState<FullDimension | null>(null);
@@ -45,14 +45,14 @@ export default function ModificarDimensionPage() {
   const cargarDimension = useCallback(async () => {
     // Validaciones tempranas
     if (!proyectoActual?.id || !dimensionId) {
-      if (!cargandoProyectos) { // Solo mostrar error si la carga de proyectos ya terminó
+      if (!loadingProyectos) { // Solo mostrar error si la carga de proyectos ya terminó
         setErrorPage(!dimensionId ? "ID de dimensión no especificado." : "Proyecto no seleccionado.");
       }
       setIsPageLoading(false);
       setDimensionActual(null); // Asegurar que se limpie
       return;
     }
-     if (!puedeGestionarDimensiones && !cargandoProyectos) { // Si ya sabemos que no tiene permiso
+     if (!puedeGestionarDimensiones && !loadingProyectos) { // Si ya sabemos que no tiene permiso
         setErrorPage("No tienes permisos para modificar dimensiones en este proyecto.");
         sonnerToast.error("Acceso Denegado", { description: "No tienes los permisos necesarios." });
         router.replace("/datos-maestros/dimensiones");
@@ -86,14 +86,14 @@ export default function ModificarDimensionPage() {
     } finally {
       setIsPageLoading(false);
     }
-  }, [proyectoActual?.id, dimensionId, cargandoProyectos, puedeGestionarDimensiones, router]); // router añadido como dep si se usa
+  }, [proyectoActual?.id, dimensionId, loadingProyectos, puedeGestionarDimensiones, router]); // router añadido como dep si se usa
 
   useEffect(() => {
     // Disparar carga solo si tenemos la información necesaria o si la carga de proyectos ha terminado
-    if ((proyectoActual?.id && dimensionId) || !cargandoProyectos) {
+    if ((proyectoActual?.id && dimensionId) || !loadingProyectos) {
       cargarDimension();
     }
-  }, [proyectoActual?.id, dimensionId, cargandoProyectos, cargarDimension]);
+  }, [proyectoActual?.id, dimensionId,    loadingProyectos, cargarDimension]);
 
 
   const handleFormSubmit = async (data: DimensionFormValues) => {
@@ -200,7 +200,7 @@ export default function ModificarDimensionPage() {
   } : undefined;
 
 
-  if (isPageLoading || (cargandoProyectos && !dimensionActual && !errorPage)) {
+  if (isPageLoading || (loadingProyectos && !dimensionActual && !errorPage)) {
     return (
       <PageBackground>
         <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>

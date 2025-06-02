@@ -1,4 +1,5 @@
 // app/auth-provider.tsx
+// Versión: 10.16 (Contador Acumulativo "Sin Reseteos" para authLoading global)
 "use client";
 
 import React, {
@@ -10,309 +11,372 @@ import {
   signInWithEmail as clientSignIn,
   signUp as clientSignUp, 
   signOut as clientSignOut,
-  getSession as clientGetSession 
-} from "@/app/auth/client";
+} from "@/app/auth/client"; 
 import { User, Session, SupabaseClient } from "@supabase/supabase-js";
+import { type Json } from "@/lib/database.types"; 
+
 import {
   obtenerProyectosConSettingsUsuario,
   actualizarProyectoActivo,
-  type UserProjectSetting,
-} from "@/app/actions/proyecto-actions";
+  type UserProjectSetting, 
+  type ResultadoOperacion,
+} from "@/app/actions/proyecto-actions"; 
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
+import { toast } from "sonner";
+
+const LOG_PREFIX = "[AUTH_PROVIDER_V10.16]";
 
 interface AuthContextType {
   supabase: SupabaseClient;
   user: User | null;
   session: Session | null;
-  authLoading: boolean; 
+  authLoading: boolean; // Estado de carga global principal
   authInitialized: boolean; 
-  proyectoActual: UserProjectSetting | null;
-  proyectosDisponibles: UserProjectSetting[];
+  proyectoActual: UserProjectSetting | null; 
+  proyectosDisponibles: UserProjectSetting[]; 
   loadingProyectos: boolean; 
-  loadingCambioProyecto: boolean;
-  seleccionarProyecto: (proyectoId: string) => Promise<void>;
-  signIn: ( email: string, password: string) => Promise<{ error: any; success: boolean; }>;
-  signUp: ( email: string, password: string) => Promise<{ error: any; success: boolean; }>;
+  loadingCambioProyecto: boolean; 
+  loadingSignOut: boolean; // NUEVO V10.16: Loader específico para logout
+  seleccionarProyecto: (proyectoId: string) => Promise<void>; 
+  signIn: ( email: string, password: string) => Promise<{ error: any | null; success: boolean; }>;
+  signUp: ( email: string, password: string) => Promise<{ error: any | null; success: boolean; }>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+const PUBLIC_PATHS = ["/login", "/signup", "/reset-password", "/contact"];
+const isPublicPage = (pathname: string | null): boolean => {
+  if (!pathname) return false;
+  return PUBLIC_PATHS.some(path => pathname === path || pathname.startsWith(`${path}/`));
+};
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [supabase] = useState(() => createBrowserSupabaseClient());
+
+  const [supabase] = useState<SupabaseClient>(() => createBrowserSupabaseClient());
 
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  
   const [authLoading, setAuthLoading] = useState(true); 
   const [authInitialized, setAuthInitialized] = useState(false);
-  
+
   const [proyectoActual, setProyectoActual] = useState<UserProjectSetting | null>(null);
   const [proyectosDisponibles, setProyectosDisponibles] = useState<UserProjectSetting[]>([]);
+  
   const [loadingProyectos, setLoadingProyectos] = useState(false);
-  const [loadingCambioProyecto, setLoadingCambioProyecto] = useState(false);
-
-  const navigationInProgress = useRef(false);
-  const initialLoadAttempted = useRef(false); 
-  const processingAuthEvent = useRef(false);
-
-  const currentThemeRef = useRef<string | null>(null);
-  const currentFontRef = useRef<string | null>(null);
-  const currentDarkModeRef = useRef<boolean | null>(null);
+  const [loadingCambioProyecto, setLoadingCambioProyecto] = useState(false); 
+  const [loadingSignOut, setLoadingSignOut] = useState(false); // NUEVO V10.16
+  
+  const userRef = useRef(user);
+  const proyectoActualRef = useRef(proyectoActual);
+  const authInitializedRef = useRef(authInitialized);
+  const initialLoadAttemptedRef = useRef(false); 
   const configAppliedForProjectId = useRef<string | null>(null);
+  const signedInProcessedRef = useRef(false); 
+  const welcomeToastShownRef = useRef(false); 
 
-  const LOG_PREFIX = "[AUTH_PROVIDER_V8.5_ANTI_LOOP]";
+  // MODIFICACIÓN V10.16: Contador acumulativo "Sin Reseteos Post-Montaje".
+  const authLoadingGlobalActivationAttemptRef = useRef(0); 
 
-  const publicPages = ['/login', '/signup', '/reset-password', '/contact'];
-  const isPublicPage = publicPages.includes(pathname);
+  useEffect(() => { userRef.current = user; }, [user]);
+  useEffect(() => { proyectoActualRef.current = proyectoActual; }, [proyectoActual]);
+  useEffect(() => { authInitializedRef.current = authInitialized; }, [authInitialized]);
 
-  const aplicarConfiguracionUI = useCallback((proyecto: UserProjectSetting | null) => {
-    const opId = Math.floor(Math.random() * 1000);
-    if (!proyecto) { /* ... */ return; }
-    // ... (lógica sin cambios)
-    const uiTheme = proyecto.ui_theme?.trim() ?? null;
-    const uiFontPair = proyecto.ui_font_pair?.trim() ?? null;
-    const uiIsDarkMode = !!proyecto.ui_is_dark_mode;
-    if (configAppliedForProjectId.current === proyecto.id && currentThemeRef.current === uiTheme && currentFontRef.current === uiFontPair && currentDarkModeRef.current === uiIsDarkMode ) { return; }
-    const themeChanged = currentThemeRef.current !== uiTheme || currentDarkModeRef.current !== uiIsDarkMode;
-    const fontChanged = currentFontRef.current !== uiFontPair;
-    if (!themeChanged && !fontChanged) { configAppliedForProjectId.current = proyecto.id; return; }
-    if (themeChanged) { document.dispatchEvent(new CustomEvent("theme-change", { detail: { theme: uiTheme, isDarkMode: uiIsDarkMode } })); currentThemeRef.current = uiTheme; currentDarkModeRef.current = uiIsDarkMode; }
-    if (fontChanged) { document.dispatchEvent(new CustomEvent("font-change", { detail: { fontPair: uiFontPair } })); currentFontRef.current = uiFontPair; }
-    configAppliedForProjectId.current = proyecto.id;
-  }, []); // Sin dependencias de estado
-
-  const cargarProyectosUsuario = useCallback(async (userId: string, esPrimerCargaTrasLogin: boolean = false): Promise<{ success: boolean, proyectoFueSeleccionado?: boolean, error?: string }> => {
-    const opId = Math.floor(Math.random() * 1000);
-    if (!userId) { return { success: false, error: "User ID no provisto" }; }
-    // Usar una ref para el estado de carga interno si es necesario para anti-duplicación, o manejarlo con el estado
-    // if (loadingProyectos && !esPrimerCargaTrasLogin) { // 'loadingProyectos' es un estado, podría causar re-render si es dependencia
-    //   return { success: false, error: "Carga de proyectos ya en progreso" }; 
-    // }
-    console.log(`${LOG_PREFIX} [CARGAR_PROYECTOS:${opId}] Iniciando para user: ${userId.substring(0,8)}. EsPrimerCarga: ${esPrimerCargaTrasLogin}`);
+  const cargarProyectosUsuario = useCallback(async (userId: string, forceReload: boolean = false): Promise<boolean> => {
+    console.log(`${LOG_PREFIX} cargarProyectosUsuario: User: ${userId.substring(0,8)}. Forzar: ${forceReload}.`);
     setLoadingProyectos(true);
-    let proyectoFueSeleccionado = false;
+    let GenuinelyLoadedNewData = false;
     try {
-      const resultado = await obtenerProyectosConSettingsUsuario(userId); 
-      if (resultado.success) {
-        const proyectosDesdeAPI = resultado.data;
-        setProyectosDisponibles(proyectosDesdeAPI); // CAMBIO DE ESTADO -> RE-RENDER
-        const proyectoActivoEncontrado = proyectosDesdeAPI.find(p => p.is_active_for_user === true);
-        let pFinal = proyectoActivoEncontrado || (proyectosDesdeAPI.length > 0 ? proyectosDesdeAPI[0] : null);
-        setProyectoActual(pFinal); // CAMBIO DE ESTADO -> RE-RENDER
-        if (pFinal) {
-          localStorage.setItem("proyectoActualId", pFinal.id); aplicarConfiguracionUI(pFinal); proyectoFueSeleccionado = true;
-        } else {
-          localStorage.removeItem("proyectoActualId");
-        }
-        return { success: true, proyectoFueSeleccionado };
-      } else { /* ... manejo de error ... */ return { success: false, error: resultado.error }; }
-    } catch (error) { /* ... manejo de error ... */ return { success: false, error: error instanceof Error ? error.message : String(error) };
-    } finally { setLoadingProyectos(false); } // CAMBIO DE ESTADO -> RE-RENDER
-  }, [aplicarConfiguracionUI]); // Solo dependencias estables
-
-  // Guardar cargarProyectosUsuario en un ref para usar en onAuthStateChange sin causar re-suscripción
-  const cargarProyectosUsuarioRef = useRef(cargarProyectosUsuario);
-  useEffect(() => {
-    cargarProyectosUsuarioRef.current = cargarProyectosUsuario;
-  }, [cargarProyectosUsuario]);
-
-  // Guardar aplicarConfiguracionUI en un ref
-  const aplicarConfiguracionUIRef = useRef(aplicarConfiguracionUI);
-  useEffect(() => {
-    aplicarConfiguracionUIRef.current = aplicarConfiguracionUI;
-  }, [aplicarConfiguracionUI]);
-
-  const initializeAuth = useCallback(async () => {
-    // ... (sin cambios significativos, pero usa cargarProyectosUsuarioRef.current)
-    if (initialLoadAttempted.current) return; initialLoadAttempted.current = true;
-    setAuthLoading(true);
-    try {
-      const { session: currentSessionData, error: sessionFetchError } = await clientGetSession();
-      if (sessionFetchError) throw sessionFetchError;
-      setSession(currentSessionData); setUser(currentSessionData?.user ?? null);
-      if (currentSessionData?.user) {
-        await cargarProyectosUsuarioRef.current(currentSessionData.user.id, true); 
+      if (!forceReload && proyectoActualRef.current && proyectoActualRef.current.id === configAppliedForProjectId.current) {
+        console.log(`${LOG_PREFIX} cargarProyectosUsuario: No se recarga de BD (ya aplicado).`);
+        setProyectosDisponibles(prev => prev.length > 0 ? prev : (proyectoActualRef.current ? [proyectoActualRef.current] : []));
       } else {
-        setProyectoActual(null); setProyectosDisponibles([]);
+        console.log(`${LOG_PREFIX} cargarProyectosUsuario: Obteniendo proyectos de BD.`);
+        const result: ResultadoOperacion<UserProjectSetting[]> = await obtenerProyectosConSettingsUsuario(userId);
+        if (result.success) {
+          GenuinelyLoadedNewData = true; 
+          setProyectosDisponibles(result.data);
+          const activo = result.data.find(p => p.is_active_for_user) || result.data[0] || null;
+          setProyectoActual(activo); 
+          if (activo) {
+            configAppliedForProjectId.current = activo.id;
+            console.log(`${LOG_PREFIX} Proyecto activo desde BD: ${activo.id}.`);
+          } else { configAppliedForProjectId.current = null; }
+        } else {
+          console.error(`${LOG_PREFIX} Error cargar proyectos BD:`, result.error);
+          setProyectoActual(null); setProyectosDisponibles([]); configAppliedForProjectId.current = null; 
+        }
       }
-    } catch (error) { /* ... */ } 
-    finally { setAuthLoading(false); setAuthInitialized(true); }
-  }, []); // Sin dependencias dinámicas, solo se crea una vez
+    } catch (error) {
+      console.error(`${LOG_PREFIX} Excepción cargar proyectos BD:`, error);
+      setProyectoActual(null); setProyectosDisponibles([]); configAppliedForProjectId.current = null; 
+    } finally {
+      setLoadingProyectos(false);
+    }
+    return GenuinelyLoadedNewData; 
+  }, []); 
 
-  useEffect(() => { initializeAuth(); }, [initializeAuth]);
-
-  useEffect(() => {
-    console.log(`${LOG_PREFIX} [EFFECT_AUTH_LISTENER] Suscribiendo (o re-suscribiendo si supabase cambia).`);
+  useEffect(() => { // InitializeEffect
+    if (initialLoadAttemptedRef.current) return;
+    initialLoadAttemptedRef.current = true; 
     
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      const eventId = Math.floor(Math.random() * 1000);
-      console.log(`${LOG_PREFIX} [AUTH_EVENT:${eventId}] Evento: ${event}. Sesión: ${newSession ? 'Sí' : 'No'}. processingAuthEvent: ${processingAuthEvent.current}`);
+    console.log(`${LOG_PREFIX} [InitializeEffect] Iniciando. authLoading (estado inicial): ${authLoading}. Contador: ${authLoadingGlobalActivationAttemptRef.current}`);
+    // El authLoading inicial (useState(true)) es la primera activación.
+    if (authLoading) { // Si el estado inicial es true
+      authLoadingGlobalActivationAttemptRef.current++;
+      console.log(`${LOG_PREFIX} [InitializeEffect] Contador de activación de authLoading global incrementado a: ${authLoadingGlobalActivationAttemptRef.current} por carga inicial.`);
+    }
 
-      // Prevenir reentrada si un evento ya se está procesando
-      if (processingAuthEvent.current && event !== 'SIGNED_OUT') { // Permitir SIGNED_OUT para limpieza rápida
-        console.log(`${LOG_PREFIX} [AUTH_EVENT:${eventId}] Omitiendo evento ${event} (otro evento en proceso).`);
-        return; // No resetear processingAuthEvent.current aquí
-      }
-      processingAuthEvent.current = true;
-
-      const currentLocalUserSnapshot = user; // Tomar snapshot del estado user actual
-      
-      // Actualizar estados de sesión y usuario. Estos SÍ deben causar re-renders.
-      setSession(newSession); 
-      setUser(newSession?.user ?? null);
-
+    (async () => {
       try {
-        if (event === "SIGNED_IN") {
-          if (newSession?.user) {
-              console.log(`${LOG_PREFIX} [AUTH_EVENT:${eventId}] SIGNED_IN. User: ${newSession.user.id.substring(0,8)}. Iniciando carga de proyectos y UI...`);
-              setAuthLoading(true); 
-              await cargarProyectosUsuarioRef.current(newSession.user.id, true);
-              setAuthLoading(false); 
-          }
-        } else if (event === "SIGNED_OUT") {
-          setProyectoActual(null); setProyectosDisponibles([]); localStorage.removeItem("proyectoActualId");
-          configAppliedForProjectId.current = null; 
-          setAuthLoading(false); 
-        } else if ( (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") && newSession?.user ) {
-            // Solo recargar proyectos si el ID del usuario cambió o si no había proyectos antes
-            // y no hay ya una carga de proyectos en curso (verificado dentro de cargarProyectosUsuarioRef.current)
-            if (newSession.user.id !== currentLocalUserSnapshot?.id || proyectosDisponibles.length === 0) {
-              setAuthLoading(true);
-              await cargarProyectosUsuarioRef.current(newSession.user.id, newSession.user.id !== currentLocalUserSnapshot?.id); 
-              setAuthLoading(false);
-            } else if (proyectoActual) { // Mismo usuario, proyectos ya cargados, solo reaplicar UI
-              aplicarConfiguracionUIRef.current(proyectoActual);
-            }
-        } else if (!newSession && (event === "TOKEN_REFRESHED" || event === "USER_UPDATED" || event === "INITIAL_SESSION")) { 
-            // Caso donde un refresh/update/initial resulta en no sesión
-            setProyectoActual(null); setProyectosDisponibles([]); localStorage.removeItem("proyectoActualId");
-            setAuthLoading(false);
-        } else if (event === "INITIAL_SESSION" && newSession?.user) {
-            // INITIAL_SESSION con sesión válida. La carga inicial la maneja initializeAuth.
-            // Aquí podríamos solo asegurar que la UI esté actualizada si el proyectoActual ya existe.
-            console.log(`${LOG_PREFIX} [AUTH_EVENT:${eventId}] INITIAL_SESSION con sesión. Verificando UI.`);
-            if (proyectoActual) {
-                aplicarConfiguracionUIRef.current(proyectoActual);
-            } else if (!loadingProyectos) { // Si no hay proyecto actual Y no se están cargando proyectos, intentar cargar
-                console.log(`${LOG_PREFIX} [AUTH_EVENT:${eventId}] INITIAL_SESSION con sesión pero sin proyecto actual y no cargando. Intentando cargar proyectos.`);
-                setAuthLoading(true);
-                await cargarProyectosUsuarioRef.current(newSession.user.id, true);
-                setAuthLoading(false);
-            }
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        console.log(`${LOG_PREFIX} [InitializeEffect] Sesión inicial:`, initialSession ? `User: ${initialSession.user.id.substring(0,8)}` : "No hay sesión");
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null); 
+
+        if (initialSession?.user && !signedInProcessedRef.current) {
+          await cargarProyectosUsuario(initialSession.user.id, true); 
         }
       } catch (error) {
-          console.error(`${LOG_PREFIX} [AUTH_EVENT:${eventId}] Error procesando evento ${event}:`, error);
+        console.error(`${LOG_PREFIX} [InitializeEffect] Excepción:`, error);
+        setSession(null); setUser(null); setProyectoActual(null); setProyectosDisponibles([]);
+        configAppliedForProjectId.current = null; 
+        signedInProcessedRef.current = false; welcomeToastShownRef.current = false;
       } finally {
-        processingAuthEvent.current = false;
+        console.log(`${LOG_PREFIX} [InitializeEffect] Finalizando. AuthInitialized: true, AuthLoading: false.`);
+        setAuthInitialized(true); 
+        setAuthLoading(false); // Fin de la carga inicial. Contador NO se resetea.
       }
+    })();
+  }, [supabase, cargarProyectosUsuario, authLoading]);
+
+
+  useEffect(() => { // onAuthStateChangeEffect
+    if (!supabase) return;
+    console.log(`${LOG_PREFIX} [onAuthStateChangeEffect] Suscribiendo.`);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log(`${LOG_PREFIX} [EVENT:${event}] Nuevo estado. User: ${newSession?.user?.id?.substring(0,8) ?? 'ninguno'}. AuthInit: ${authInitializedRef.current}, GlobalLoadingActivations: ${authLoadingGlobalActivationAttemptRef.current}`);
+      
+      const previousUser = userRef.current; 
+      let needsProjectLoad = false;
+      let GenuinelyLoadedNewDataInEvent = false;
+      // MODIFICACIÓN V10.16: onAuthStateChange NO debe poner authLoading = true global si el contador ya se usó.
+      // Solo setAuthLoading(false) al final si una operación iniciada por handleSignIn terminó.
+
+      setSession(newSession); 
+      setUser(newSession?.user ?? null); 
+
+      if (event === "SIGNED_IN") {
+        // Este evento ocurre después de que handleSignIn (idealmente) ya puso authLoading=true y contador a 1.
+        // Ocurre también en revalidaciones de sesión.
+        // La activación del loader la hizo handleSignIn. Aquí solo procesamos datos y ponemos loader a false.
+        if (newSession?.user && (!previousUser || previousUser.id !== newSession.user.id || !proyectoActualRef.current)) {
+          needsProjectLoad = true;
+        }
+
+        if (needsProjectLoad) {
+          console.log(`${LOG_PREFIX} [EVENT:SIGNED_IN] (needsProjectLoad=true) Cargando proyectos para ${newSession!.user!.id}`);
+          configAppliedForProjectId.current = null; 
+          GenuinelyLoadedNewDataInEvent = await cargarProyectosUsuario(newSession!.user!.id, true);
+          if ((GenuinelyLoadedNewDataInEvent || proyectoActualRef.current) && !welcomeToastShownRef.current) { 
+            toast.success("¡Bienvenido de nuevo!");
+            welcomeToastShownRef.current = true; 
+          }
+        } else if (newSession?.user) { 
+          console.log(`${LOG_PREFIX} [EVENT:SIGNED_IN] (needsProjectLoad=false) Mismo usuario y proyecto ya cargado. No se recarga.`);
+          setProyectosDisponibles(prev => prev.length > 0 ? prev : (proyectoActualRef.current ? [proyectoActualRef.current] : []));
+        }
+        signedInProcessedRef.current = true; 
+
+      } else if (event === "SIGNED_OUT") {
+        console.log(`${LOG_PREFIX} [EVENT:SIGNED_OUT] Limpiando estados.`);
+        setProyectoActual(null); setProyectosDisponibles([]); configAppliedForProjectId.current = null;
+        signedInProcessedRef.current = false; welcomeToastShownRef.current = false; 
+        // authLoading se maneja en handleSignOut (pone true) y RedirectEffect (pone false). Contador no se resetea.
+      } else if ((event === "TOKEN_REFRESHED" || event === "USER_UPDATED") && newSession?.user && !proyectoActualRef.current) {
+        console.warn(`${LOG_PREFIX} [ACUSADOR-EVENT:${event}] Se necesitan proyectos pero authLoading global (Contador: ${authLoadingGlobalActivationAttemptRef.current}) ya se usó o no aplica. Cargando proyectos sin loader global.`);
+        await cargarProyectosUsuario(newSession.user.id, false); 
+      } else if (event === "INITIAL_SESSION") {
+        console.log(`${LOG_PREFIX} [EVENT:INITIAL_SESSION] Recibido.`);
+        if (!newSession?.user && authInitializedRef.current) { 
+          setProyectoActual(null); setProyectosDisponibles([]); configAppliedForProjectId.current = null;
+          signedInProcessedRef.current = false; welcomeToastShownRef.current = false;
+        } else if (newSession?.user && proyectoActualRef.current) {
+            console.log(`${LOG_PREFIX} [EVENT:INITIAL_SESSION] Confirmación de sesión existente.`);
+        } else if (newSession?.user && !authInitializedRef.current && !signedInProcessedRef.current) {
+            console.warn(`${LOG_PREFIX} [ACUSADOR-EVENT:INITIAL_SESSION] Carga por INITIAL_SESSION antes de InitializeEffect/SIGNED_IN. Contador: ${authLoadingGlobalActivationAttemptRef.current}. Cargando proyectos sin loader global.`);
+            await cargarProyectosUsuario(newSession.user.id, true);
+        }
+      }
+      
+      // MODIFICACIÓN V10.16: Poner authLoading a false si fue un ciclo de login (contador=1) que terminó.
+      if (authInitializedRef.current && authLoading && authLoadingGlobalActivationAttemptRef.current === 1 && (event === "SIGNED_IN" || (event === "INITIAL_SESSION" && signedInProcessedRef.current))) {
+          console.log(`${LOG_PREFIX} [EVENT:${event}] Fin de ciclo de login (Contador=1). Poniendo authLoading=false.`);
+          setAuthLoading(false); 
+          // NO se resetea el contador aquí, se queda en 1.
+      }
+      console.log(`${LOG_PREFIX} [EVENT:${event}] Procesamiento completado. AuthLoading: ${authLoading}, ContadorGlobal: ${authLoadingGlobalActivationAttemptRef.current}`);
     });
-    return () => { 
-      console.log(`${LOG_PREFIX} [EFFECT_AUTH_LISTENER] Desuscribiendo.`);
-      subscription?.unsubscribe(); 
-    };
-  // Dependencias MUY reducidas: solo supabase. Las funciones se acceden vía refs.
-  // Los estados se actualizan, pero no queremos que esos cambios de estado causen re-suscripción.
-  }, [supabase]); 
+
+    return () => { subscription?.unsubscribe(); };
+  }, [supabase, cargarProyectosUsuario, authLoading]);
 
 
-  // --- EFECTO DE REDIRECCIÓN V8.5 (Más estable con authLoading y authInitialized) ---
-  useEffect(() => {
-    const effectId = Math.floor(Math.random() * 1000);
-    const currentPathname = pathname;
+  useEffect(() => { // RedirectEffect
+    const currentAuthInitialized = authInitializedRef.current;
+    const currentUser = userRef.current;
 
-    // console.log(`${LOG_PREFIX} [EFFECT_REDIRECT_V8.5:${effectId}] Eval. Path: ${currentPathname}, authInit: ${authInitialized}, authLoading: ${authLoading}, session: ${!!session}, proyActual: ${!!proyectoActual}, navInProg: ${navigationInProgress.current}, isPublicPage: ${isPublicPage}`);
-
-    if (!authInitialized || authLoading) {
-      console.log(`${LOG_PREFIX} [EFFECT_REDIRECT_V8.5:${effectId}] Esperando: authInit=${authInitialized}, authLoading=${authLoading}.`);
-      return;
+    if (!currentAuthInitialized) return;
+    
+    // Si hay un usuario Y estamos en el único ciclo de authLoading global permitido para login, esperar.
+    if (authLoading && currentUser && authLoadingGlobalActivationAttemptRef.current === 1) {
+        console.log(`${LOG_PREFIX} [RedirectEffect] Esperando fin de ciclo de login (Contador=1). AuthLoading: ${authLoading}`);
+        return;
     }
-    if (navigationInProgress.current) { return; }
+    // Si authLoading es true por otra razón (ej. logout), sí permitir que actúe.
 
-    if (!session) { 
-      if (!isPublicPage) { 
-        navigationInProgress.current = true; router.push('/login'); setTimeout(() => navigationInProgress.current = false, 300);
+    const currentPageIsPublic = isPublicPage(pathname);
+
+    if (currentUser) { 
+      if (currentPageIsPublic) {
+        router.replace(proyectoActualRef.current ? '/' : '/');
       }
-    } else { 
-      if (currentPathname === '/login' || currentPathname === '/signup' || currentPathname === '/reset-password') {
-        if (loadingProyectos && !proyectoActual) { return; }
-        const puedeSalir = proyectoActual || proyectosDisponibles.length === 0;
-        if (puedeSalir) {
-          navigationInProgress.current = true; router.push('/'); setTimeout(() => navigationInProgress.current = false, 300);
-        } else if (user?.id && !loadingProyectos) {
-             console.warn(`${LOG_PREFIX} [EFFECT_REDIRECT_V8.5:${effectId}] En login con sesión pero sin proyecto. Reintentando carga.`);
-             cargarProyectosUsuarioRef.current(user.id, true); // Usar ref
-        }
-      } else if (!isPublicPage && !proyectoActual && proyectosDisponibles.length > 0 && !loadingProyectos && !loadingCambioProyecto) {
-        if (user?.id && !loadingProyectos) {
-            console.warn(`${LOG_PREFIX} [EFFECT_REDIRECT_V8.5:${effectId}] En protegida sin proyecto. Reintentando carga.`);
-            cargarProyectosUsuarioRef.current(user.id, true); // Usar ref
-        }
+    } else { // No hay usuario
+      if (!currentPageIsPublic) {
+        if (authLoading) setAuthLoading(false); // authLoading fue puesto por handleSignOut, aquí se limpia.
+        const loginUrl = new URL('/login', window.location.origin);
+        if (pathname && pathname !== "/") loginUrl.searchParams.set('redirectTo', pathname);
+        router.replace(loginUrl.toString());
+      } else { 
+        if(authLoading) setAuthLoading(false); 
       }
     }
-  }, [session, authLoading, authInitialized, loadingProyectos, proyectoActual, proyectosDisponibles, isPublicPage, router, pathname, user?.id, loadingCambioProyecto]); // cargarProyectosUsuario quitado de aquí, se usa ref
+  }, [user, authInitialized, authLoading, proyectoActual, pathname, router]); 
 
-
-  const handleSignIn = async (email: string, password: string) => {
-    // ... (sin cambios desde V8.3)
-    setAuthLoading(true); const result = await clientSignIn(email, password); 
-    if (result.error) { setAuthLoading(false); return { error: result.error, success: false }; }
+  const handleSignIn = async (email: string, password: string): Promise<{ error: any | null; success: boolean; }> => {
+    console.log(`${LOG_PREFIX} handleSignIn: Iniciado. Contador actual: ${authLoadingGlobalActivationAttemptRef.current}`);
+    
+    // MODIFICACIÓN V10.16: Lógica del contador "un solo disparo" para authLoading GLOBAL
+    if (authLoadingGlobalActivationAttemptRef.current === 0) {
+      setAuthLoading(true); 
+      authLoadingGlobalActivationAttemptRef.current++; // Incrementa y se queda en 1 para toda la vida del provider
+      console.log(`${LOG_PREFIX} handleSignIn: authLoading global puesto a TRUE (Contador ahora: ${authLoadingGlobalActivationAttemptRef.current})`);
+    } else {
+      console.warn(`${LOG_PREFIX} [ACUSADOR-handleSignIn] Intento de activar authLoading global cuando el contador ya es ${authLoadingGlobalActivationAttemptRef.current}. No se cambió authLoading global. El login usará loader local si es necesario.`);
+      // En este caso, la página de Login debería mostrar su propio loader local si 'loading' (local) es true.
+      // authLoading (global) no se activa.
+    }
+    
+    signedInProcessedRef.current = false; 
+    welcomeToastShownRef.current = false; 
+    
+    const { error } = await clientSignIn(email, password); 
+    if (error) {
+      console.error(`${LOG_PREFIX} handleSignIn: Error de Supabase:`, error.message ? error.message : error);
+      toast.error(error.message || "Error al iniciar sesión.");
+      // Si signIn falla, y habíamos puesto authLoading=true (y contador a 1), lo ponemos a false.
+      // El contador NO se resetea.
+      if (authLoadingGlobalActivationAttemptRef.current === 1 && authLoading) { 
+         setAuthLoading(false);
+         console.log(`${LOG_PREFIX} handleSignIn: authLoading global puesto a FALSE por error. Contador: ${authLoadingGlobalActivationAttemptRef.current}`);
+      }
+      return { error, success: false };
+    }
+    console.log(`${LOG_PREFIX} handleSignIn: Autenticación Supabase OK. Esperando evento SIGNED_IN para completar.`);
     return { error: null, success: true };
   };
 
-  const handleSignUp = async (email: string, password: string) => {
-    // ... (sin cambios desde V8.3)
-    setAuthLoading(true); const result = await clientSignUp(email, password); setAuthLoading(false);
-    if (result.error) { return { error: result.error, success: false };}
-    return { error: null, success: true };
-  };
-  
-  const handleSignOut = async () => {
-    // ... (sin cambios desde V8.3)
+  const handleSignUp = async (email: string, password: string): Promise<{ error: any | null; success: boolean; }> => {
+    console.log(`${LOG_PREFIX} signUp iniciado`);
+    // SignUp usa su propio ciclo de authLoading simple, no el contador global de login.
     setAuthLoading(true); 
-    setProyectoActual(null); setProyectosDisponibles([]); localStorage.removeItem("proyectoActualId");
-    configAppliedForProjectId.current = null; setAuthInitialized(false); 
-    await clientSignOut(); 
+    const { error } = await clientSignUp(email, password);
+    if (error) {
+      toast.error(error.message || "Error al registrar usuario.");
+    } else {
+      toast.success("Registro exitoso. Revisa tu email para confirmar.");
+    }
+    setAuthLoading(false); 
+    return { error, success: !error };
   };
 
-  const seleccionarProyecto = async (proyectoId: string) => {
-    // ... (sin cambios desde V8.3, pero usa cargarProyectosUsuarioRef.current)
-    if (!user) return;
-    setLoadingCambioProyecto(true); setAuthLoading(true);
+  const handleSignOut = async () => {
+    console.log(`${LOG_PREFIX} handleSignOut: Iniciado.`);
+    setLoadingSignOut(true); // Usar loader local para signOut
+    // NO usar authLoading global si el contador ya se gastó.
+    // Si quisiéramos un loader global para logout siempre: setAuthLoading(true);
+    toast.info("Cerrando sesión..."); 
+    await clientSignOut();
+    signedInProcessedRef.current = false; 
+    welcomeToastShownRef.current = false; 
+    // El contador authLoadingGlobalActivationAttemptRef NO se resetea.
+    // El evento SIGNED_OUT y RedirectEffect pondrán authLoading a false si se había puesto a true por este handle.
+    // Para asegurar, si no usamos el global:
+    setLoadingSignOut(false);
+    // Si hubiéramos usado setAuthLoading(true) aquí, RedirectEffect se encargaría de ponerlo a false.
+  };
+
+  const seleccionarProyecto = async (proyectoId: string) => { 
+    if (!userRef.current) return;
+    if (proyectoActualRef.current?.id === proyectoId) return;
+
+    console.log(`${LOG_PREFIX} Seleccionando proyecto: ${proyectoId}`);
+    // seleccionarProyecto usará su propio loader local. NO el authLoading global.
+    setLoadingCambioProyecto(true); 
+    let opSuccess = false;
     try {
-      const updateResult = await actualizarProyectoActivo(user.id, proyectoId);
-      if (!updateResult.success) { return; }
-      configAppliedForProjectId.current = null; 
-      await cargarProyectosUsuarioRef.current(user.id, true);
-    } catch (e) { console.error(e); }
-    finally { setLoadingCambioProyecto(false); setAuthLoading(false); }
+      const updateResult = await actualizarProyectoActivo(userRef.current.id, proyectoId);
+      if (!updateResult.success) {
+        toast.error(updateResult.error || "Error al cambiar de proyecto.");
+      } else {
+        opSuccess = true;
+        configAppliedForProjectId.current = null; 
+        welcomeToastShownRef.current = false; 
+        await cargarProyectosUsuario(userRef.current.id, true); 
+        toast.success("Proyecto cambiado exitosamente."); 
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Excepción al cambiar de proyecto.");
+    } finally {
+      setLoadingCambioProyecto(false);
+    }
   };
     
   const authContextValue: AuthContextType = {
     supabase, user, session,
     authLoading, authInitialized,
     proyectoActual, proyectosDisponibles, 
-    loadingProyectos, loadingCambioProyecto,
+    loadingProyectos, loadingCambioProyecto, loadingSignOut,
     seleccionarProyecto, signIn: handleSignIn, signUp: handleSignUp, logout: handleSignOut,
   };
   
-  const mostrarOverlayPrincipal = authLoading && (!isPublicPage || (isPublicPage && !!session));
-  
+  // El overlay global se muestra solo en la carga inicial crítica (antes de authInitialized)
+  // O si estamos en el ÚNICO ciclo de authLoading global permitido para el login.
+  const mostrarOverlayGlobal = (authLoading && !authInitializedRef.current) || 
+                             (authLoading && authLoadingGlobalActivationAttemptRef.current === 1);
+
   return (
     <AuthContext.Provider value={authContextValue}>
-      {mostrarOverlayPrincipal ? (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(255,255,255,0.9)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {mostrarOverlayGlobal ? (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(var(--background-rgb),0.9)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <SustratoLoadingLogo size={60} variant="spin-pulse" speed="normal" 
-            text={loadingCambioProyecto ? "Cambiando proyecto..." : (loadingProyectos ? "Cargando proyecto..." : "Inicializando...")} />
+            text={loadingSignOut ? "Cerrando sesión..." : 
+                 (loadingCambioProyecto ? "Cambiando proyecto..." : 
+                 (loadingProyectos ? "Cargando proyecto..." : 
+                 (authLoadingGlobalActivationAttemptRef.current === 1 ? "Iniciando sesión..." : "Inicializando Sustrato AI...")))} />
         </div>
       ) : children }
     </AuthContext.Provider>
   );
 }
 
-export function useAuth(): AuthContextType {
+export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) throw new Error("useAuth debe ser usado dentro de un AuthProvider");
+  if (context === undefined) {
+    throw new Error("useAuth debe ser usado dentro de un AuthProvider");
+  }
   return context;
 }

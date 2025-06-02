@@ -1,59 +1,60 @@
 // app/auth/client.ts
+// Versión: 4.1 (Corrección de importación de tipos User y Session)
 "use client";
 
 import { createBrowserClient } from "@supabase/ssr";
+// MODIFICACIÓN V4.1: Importar User y Session desde @supabase/supabase-js
+import { type User, type Session } from "@supabase/supabase-js"; 
 import { Database } from "@/lib/database.types"; // Asegúrate que la ruta sea correcta
 
-// Obtener la URL base para redirecciones
+// Definición de los tipos de retorno esperados para mayor claridad
+interface AuthResponse {
+  data: { user: User | null; session: Session | null; } | null;
+  error: { message: string; status?: number; details?: any; } | null;
+}
+
+interface SignOutResponse {
+  error: { message: string; status?: number; details?: any; } | null;
+}
+
+
+// Obtener la URL base para redirecciones (se mantiene por si se usa en emailRedirectTo de signUp)
 const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
     return window.location.origin;
   }
-  return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'; 
 };
 
-// Crear un cliente de Supabase para el navegador con la configuración más simple posible
+const LOG_PREFIX_CLIENT = '[AUTH_CLIENT_V4.1]'; // Actualizado a V4.1
+
+// Crear un cliente de Supabase para el navegador
 export function createBrowserSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  // const isProduction = process.env.NODE_ENV === 'production'; // No se usa directamente en esta config simple
   
-  const baseUrl = getBaseUrl();
-  console.log('[AUTH_CLIENT_DEBUG_V3] Base URL:', baseUrl);
-  console.log('[AUTH_CLIENT_DEBUG_V3] Node Env:', process.env.NODE_ENV);
-
-  // --- PRUEBA DRÁSTICA #3: Sin cookieOptions personalizadas, sin storage personalizado ---
   const clientOptions = {
     auth: {
       flowType: 'pkce' as const,
       autoRefreshToken: true,
       detectSessionInUrl: true,
       persistSession: true,
-      // NO auth.storage (dejar que @supabase/ssr use su default: cookies)
-      // NO auth.storageKey
     },
-    // NO cookieOptions explícitas (dejar que @supabase/ssr use sus defaults)
   };
-
-  console.log('[AUTH_CLIENT_DEBUG_V3] Opciones finales para createBrowserClient (totalmente por defecto para storage/cookies):', JSON.stringify(clientOptions, null, 2));
   
-  // Esta es la forma más "vainilla" de crear el cliente SSR para el navegador
   return createBrowserClient<Database>(
     supabaseUrl,
     supabaseKey,
-    clientOptions // Que ahora son mínimas
+    clientOptions
   );
 }
 
 // Iniciar sesión con email y contraseña
-export async function signInWithEmail(email: string, password: string) {
+export async function signInWithEmail(email: string, password: string): Promise<AuthResponse> {
   const supabase = createBrowserSupabaseClient();
   
   try {
-    console.log('[AUTH_CLIENT_V3] Iniciando signInWithEmail con:', { 
-      email: email.substring(0,3) + '...',
-      appBaseUrl: getBaseUrl()
-    });
+    console.log(`${LOG_PREFIX_CLIENT} Iniciando signInWithEmail con: {email: ${email.substring(0,3)}...}`);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -61,42 +62,21 @@ export async function signInWithEmail(email: string, password: string) {
     });
     
     if (error) {
-      console.error('[AUTH_CLIENT_V3] Error en supabase.auth.signInWithPassword:', {
+      console.error(`${LOG_PREFIX_CLIENT} Error en supabase.auth.signInWithPassword:`, {
         message: error.message, status: error.status, name: error.name,
       });
-    } else {
-      console.log('[AUTH_CLIENT_V3] Éxito en supabase.auth.signInWithPassword. User:', data.user?.id ? data.user.id.substring(0,8) + '...' : 'N/A', 'Session:', data.session ? 'Presente' : 'Ausente');
-    }
-    
-    if (data?.user && !error) {
-      console.log('[AUTH_CLIENT_V3] signInWithPassword exitoso. Esperando 100ms antes de redirigir...');
-      await new Promise(resolve => setTimeout(resolve, 100)); 
-      
-      if (typeof document !== 'undefined') {
-        const allCookies = document.cookie;
-        console.log('[AUTH_CLIENT_DEBUG_V3] Cookies actuales en document.cookie (después de signIn, antes de redirect):', allCookies);
-        if (allCookies.includes('sb-nnzjmsfllrdqxlrzrhur-auth-token')) { // Reemplaza con tu ID de proyecto REAL
-            console.log('[AUTH_CLIENT_DEBUG_V3] ¡LA COOKIE DE SESIÓN SE ENCONTRÓ EN DOCUMENT.COOKIE ANTES DE REDIRIGIR!');
-        } else {
-            console.warn('[AUTH_CLIENT_DEBUG_V3] ADVERTENCIA: La cookie de sesión NO se encontró en document.cookie antes de redirigir.');
-        }
-      }
-
-      const redirectUrl = `${getBaseUrl()}/`;
-      console.log('[AUTH_CLIENT_V3] Autenticación exitosa (cliente), intentando redirigir a:', redirectUrl);
-      window.location.href = redirectUrl;
-    }
-
-    if (error) {
       if (error.message.includes('Invalid login credentials')) {
         return { data: null, error: { message: 'Correo o contraseña incorrectos', status: 401 } };
       }
       return { data: null, error: { message: error.message || 'Error al iniciar sesión', status: error.status || 400, details: error }};
-    }
+    } 
+    
+    console.log(`${LOG_PREFIX_CLIENT} Éxito en supabase.auth.signInWithPassword. User: ${data.user?.id ? data.user.id.substring(0,8) + '...' : 'N/A'}, Session: ${data.session ? 'Presente' : 'Ausente'}`);
+    
     return { data, error: null };
 
   } catch (error: any) {
-    console.error('[AUTH_CLIENT_V3] Error inesperado (catch) en signInWithEmail:', {
+    console.error(`${LOG_PREFIX_CLIENT} Error inesperado (catch) en signInWithEmail:`, {
       message: error?.message, name: error?.name,
     });
     return {
@@ -106,49 +86,47 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 // Cerrar sesión
-export async function signOut() {
+export async function signOut(): Promise<SignOutResponse> {
   const supabase = createBrowserSupabaseClient();
-  console.log('[AUTH_CLIENT_V3] Iniciando signOut...');
+  console.log(`${LOG_PREFIX_CLIENT} Iniciando signOut...`);
   try {
     const { error } = await supabase.auth.signOut();
     
     if (error) {
-      console.error('[AUTH_CLIENT_V3] Error en supabase.auth.signOut:', error.message);
-    } else {
-      console.log('[AUTH_CLIENT_V3] Éxito en supabase.auth.signOut.');
-    }
+      console.error(`${LOG_PREFIX_CLIENT} Error en supabase.auth.signOut:`, error.message);
+      return { error: { message: error.message, status: (error as any).status || 400 } };
+    } 
     
-    if (typeof window !== 'undefined') {
-      window.location.href = "/login";
-    }
-    return { error };
+    console.log(`${LOG_PREFIX_CLIENT} Éxito en supabase.auth.signOut.`);
+    return { error: null }; 
+
   } catch (error: any) {
-    console.error('[AUTH_CLIENT_V3] Error inesperado (catch) en signOut:', error.message);
+    console.error(`${LOG_PREFIX_CLIENT} Error inesperado (catch) en signOut:`, error.message);
     return { error: { message: error?.message || 'Error al cerrar sesión', status: 500 } };
   }
 }
 
 // Registrar un nuevo usuario (signUp)
-export async function signUp(email: string, password: string) {
+export async function signUp(email: string, password: string): Promise<AuthResponse> {
   const supabase = createBrowserSupabaseClient();
-  console.log('[AUTH_CLIENT_V3] Iniciando signUp...');
+  console.log(`${LOG_PREFIX_CLIENT} Iniciando signUp...`);
   try {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${getBaseUrl()}/auth/callback`,
+        emailRedirectTo: `${getBaseUrl()}/auth/callback`, 
       },
     });
 
     if (error) {
-      console.error('[AUTH_CLIENT_V3] Error en supabase.auth.signUp:', error.message);
+      console.error(`${LOG_PREFIX_CLIENT} Error en supabase.auth.signUp:`, error.message);
       return { data: null, error: { message: error.message || 'Error al registrar el usuario', status: error.status || 400 }};
     }
-    console.log('[AUTH_CLIENT_V3] Éxito en supabase.auth.signUp. User:', data.user?.id, 'Session:', data.session ? 'Presente' : 'Ausente');
+    console.log(`${LOG_PREFIX_CLIENT} Éxito en supabase.auth.signUp. User: ${data.user?.id ? data.user.id.substring(0,8) + '...' : 'N/A'}, Session: ${data.session ? 'Presente' : 'Ausente'}`);
     return { data, error: null };
   } catch (error: any) {
-    console.error('[AUTH_CLIENT_V3] Error inesperado (catch) en signUp:', error.message);
+    console.error(`${LOG_PREFIX_CLIENT} Error inesperado (catch) en signUp:`, error.message);
     return {
       data: null, error: { message: error?.message || 'Error inesperado al registrar el usuario', status: 500 }
     };
@@ -156,13 +134,12 @@ export async function signUp(email: string, password: string) {
 }
 
 // Obtener la sesión actual (getSession)
-export async function getSession() {
+export async function getSession(): Promise<{ session: Session | null; error: any | null; }> {
   const supabase = createBrowserSupabaseClient();
   const { data: { session }, error } = await supabase.auth.getSession();
   
   if (error) {
-    console.error('[AUTH_CLIENT_V3] Error en supabase.auth.getSession:', error.message);
-    return { session: null, error };
+    console.error(`${LOG_PREFIX_CLIENT} Error en supabase.auth.getSession:`, error.message);
   }
-  return { session, error: null };
+  return { session, error };
 }

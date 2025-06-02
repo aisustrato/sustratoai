@@ -36,7 +36,7 @@ import Link from "next/link";
 export default function MiembrosPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const { proyectoActual, cargandoProyectos } = useAuth();
+	const { proyectoActual, loadingProyectos } = useAuth();
 	const { toast } = useToast();
 
 	const [miembros, setMiembros] = useState<ProjectMemberDetails[]>([]);

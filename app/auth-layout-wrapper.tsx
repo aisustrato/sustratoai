@@ -1,58 +1,46 @@
-// --- auth-layout-wrapper.tsx (OPTIMIZADO) ---
+// app/auth-layout-wrapper.tsx
+// Versión: 2.1 (Lógica de renderizado defensiva más explícita)
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "./auth-provider";
+import React from "react"; 
+import { usePathname } from "next/navigation";
+import { useAuth } from "./auth-provider"; 
 import { Navbar } from "@/components/ui/navbar";
 import { SolidNavbarWrapper } from "@/components/ui/solid-navbar-wrapper";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 
+// Constantes para las rutas donde NO se debe mostrar la Navbar principal de la app
+const NO_NAVBAR_PAGES = ["/login", "/signup", "/reset-password"]; 
+
+// Función helper para determinar si una ruta es pública (AuthProvider también la tiene)
+const PUBLIC_PATHS = ["/login", "/signup", "/reset-password", "/contact"]; // Asegurar que coincida con AuthProvider
+const isPublicPage = (pathname: string | null): boolean => {
+  if (!pathname) return false;
+  return PUBLIC_PATHS.some(path => pathname === path || pathname.startsWith(`${path}/`));
+};
+
+
 export function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
-  const { user, loading, authInitialized } = useAuth();
+  // MODIFICACIÓN V2.1: Obtenemos más estados para la lógica defensiva
+  const { user, authLoading, authInitialized, proyectoActual } = useAuth(); 
   const pathname = usePathname();
-  const router = useRouter();
   
-  // Para evitar múltiples redirecciones/renderizaciones
-  const redirected = useRef(false);
-  
-  // Determinar si estamos en una página de autenticación
-  const isAuthenticatedPage = pathname ? (
-    pathname === "/login" || 
-    pathname === "/signup" || 
-    pathname === "/reset-password" || 
-    pathname === "/contact"
-  ) : false;
-  
-  // Resetear el estado de redirección cuando cambia la ruta o el usuario
-  useEffect(() => {
-    redirected.current = false;
-  }, [pathname, user]);
+  const isNoNavbarPage = pathname ? NO_NAVBAR_PAGES.some(path => pathname === path || pathname.startsWith(`${path}/`)) : false;
+  const currentPathIsPublic = isPublicPage(pathname); // Para la lógica defensiva
 
-  // Efecto de redirección optimizado - solo se ejecuta una vez por cambio de estado
-  useEffect(() => {
-    if (!pathname) return; // Protección contra pathname undefined/null
-    
-    // Requisitos para redirección:
-    // 1. Autenticación inicializada
-    // 2. No cargando
-    // 3. No estamos en una página de autenticación
-    // 4. No hay usuario autenticado
-    // 5. No hemos redirigido previamente
-    if (authInitialized && !loading && !isAuthenticatedPage && !user && !redirected.current) {
-      // Generar un ID único para el evento de redirección (para depuración)
-      const eventId = Math.floor(Math.random() * 1000);
-      console.log(`🔀 [${eventId}] Redirigiendo a login desde: ${pathname}`); 
-      redirected.current = true;
-      
-      // Agregar parámetro redirectTo para volver a esta página después del login
-      const loginUrl = `/login?redirectTo=${encodeURIComponent(pathname || '/')}`;  // Con fallback a '/' si pathname es null
-      router.push(loginUrl);
+  const LOG_PREFIX_WRAPPER = "[AUTH_LAYOUT_WRAPPER_V2.1]";
+
+  // CASO 1: Carga Global del AuthProvider Activa (o carga inicial antes de que authInitialized sea true)
+  // `authLoading` cubre el inicio de sesión, cierre de sesión, cambio de proyecto.
+  // `!authInitialized` cubre la primerísima carga de la aplicación si no es una página pública.
+  if (authLoading || (!authInitialized && !currentPathIsPublic)) {
+    // console.log(LOG_PREFIX_WRAPPER, `CASO 1: Mostrando Loader. authLoading: ${authLoading}, authInitialized: ${authInitialized}, isPublic: ${currentPathIsPublic}`);
+    let loaderText = "Inicializando Sustrato AI...";
+    if (authInitialized) { // Si ya inicializó, el loading es por una acción
+        // Podríamos tener estados más específicos en AuthProvider para el texto aquí,
+        // como loadingSignIn, loadingSignOut, etc. Por ahora, uno genérico.
+        loaderText = "Procesando...";
     }
-  }, [user, loading, authInitialized, pathname, router, isAuthenticatedPage]);
-
-  // Mostrar pantalla de carga mejorada durante inicialización
-  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <SustratoLoadingLogo
@@ -62,32 +50,55 @@ export function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
           breathingEffect
           colorTransition
           showText
-          text="Cargando..."
+          text={loaderText} 
         />
       </div>
     );
   }
 
-  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/reset-password" || pathname === "/contact";
-
-  // Si el usuario está autenticado Y NO es una página de autenticación
-  if (user && !isAuthPage) {
+  // CASO 2: Logout en Progreso o Estado Post-Logout (Usuario es null, en Ruta Protegida, y no estamos cargando por authLoading)
+  // Esto es para evitar el "Home sin Navbar" mientras AuthProvider redirige.
+  // Se activa DESPUÉS de que authLoading (del logout) se haya puesto a false, pero ANTES de la redirección.
+  if (!user && !currentPathIsPublic && authInitialized) {
+    // console.log(LOG_PREFIX_WRAPPER, `CASO 2: Loader Defensivo (No User, Ruta Protegida, Auth Inicializado). Path: ${pathname}`);
     return (
-      // Este div es el contenedor principal de la página autenticada
-      // Debe permitir que el children (main content area) crezca
-      <div className="flex flex-col min-h-screen"> {/* O h-screen si el body ya es h-full */}
-        <SolidNavbarWrapper> {/* Esto podría tener su propio position:sticky o fixed */}
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <SustratoLoadingLogo
+          size={80}
+          variant="spin-pulse"
+          speed="normal"
+          breathingEffect
+          colorTransition
+          showText
+          text="Redirigiendo..." 
+        />
+      </div>
+    );
+  }
+  
+  // CASO 3: Usuario Autenticado, Datos del Proyecto Cargados (o no estrictamente necesarios para la ruta), en Ruta Protegida/Principal.
+  // La Navbar se muestra si hay un usuario Y no estamos en una página que explícitamente no la lleva (como login/signup).
+  // La existencia de `proyectoActual` podría ser una condición adicional si todas las rutas autenticadas lo requieren.
+  if (user && !isNoNavbarPage) { 
+    // console.log(LOG_PREFIX_WRAPPER, `CASO 3: Usuario autenticado. Mostrando Navbar. Path: ${pathname}`);
+    // Podríamos añadir una verificación aquí: if (!proyectoActual) return <Loader text="Cargando proyecto..."/>;
+    // pero si AuthProvider ya maneja el authLoading hasta que proyectoActual esté listo para las rutas principales,
+    // este caso debería ser seguro.
+    return (
+      <div className="flex flex-col min-h-screen">
+        <SolidNavbarWrapper>
           <Navbar />
         </SolidNavbarWrapper>
-        {/* Este 'main' es el área de contenido principal que debe crecer */}
         <main className="flex-grow w-full">
-          {children} {/* children es PageWrapper */}
+          {children}
         </main>
       </div>
     );
   }
 
-  // Para páginas de autenticación o si no hay usuario (y ya está en una pág de auth)
-  // Renderiza children directamente, PageWrapper/PageBackground manejarán su propio layout
+  // CASO 4: Páginas Públicas, o páginas de autenticación (donde no se muestra Navbar), o cualquier otro caso.
+  // AuthProvider ya se ha encargado de las redirecciones si son necesarias.
+  // Ej: Usuario en /login (isNoNavbarPage es true), o no hay usuario y está en /contact (currentPathIsPublic es true).
+  // console.log(LOG_PREFIX_WRAPPER, `CASO 4: Renderizando children directamente. User: ${!!user}, IsNoNavbarPage: ${isNoNavbarPage}, IsPublic: ${currentPathIsPublic} Path: ${pathname}`);
   return <>{children}</>; 
 }

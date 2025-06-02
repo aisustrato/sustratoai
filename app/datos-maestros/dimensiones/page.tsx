@@ -25,7 +25,7 @@ import { useLoading } from "@/contexts/LoadingContext"; // Opcional, si lo usas
 
 export default function DimensionesPage() {
   const router = useRouter();
-  const { proyectoActual, cargandoProyectos } = useAuth();
+  const { proyectoActual, loadingProyectos } = useAuth();
   const { showLoading, hideLoading } = useLoading(); // Opcional para feedback global
 
   const [dimensions, setDimensions] = useState<FullDimension[]>([]);
@@ -39,7 +39,7 @@ export default function DimensionesPage() {
 
   const cargarDimensiones = useCallback(async () => {
     if (!proyectoActual?.id) {
-      if (!cargandoProyectos) {
+      if (!loadingProyectos) {
         // No es un error, solo un estado sin proyecto
         // setError("No hay un proyecto seleccionado."); 
       }
@@ -67,13 +67,13 @@ export default function DimensionesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [proyectoActual?.id, cargandoProyectos]);
+  }, [proyectoActual?.id, loadingProyectos]);
 
   useEffect(() => {
-    if (proyectoActual?.id || !cargandoProyectos) {
+    if (proyectoActual?.id || !loadingProyectos) {
       cargarDimensiones();
     }
-  }, [proyectoActual?.id, cargandoProyectos, cargarDimensiones]);
+  }, [proyectoActual?.id, loadingProyectos, cargarDimensiones]);
 
   const handleCrearDimension = () => {
     router.push("/datos-maestros/dimensiones/crear");
@@ -131,11 +131,11 @@ export default function DimensionesPage() {
   };
   // --- FIN FUNCIÓN ACTUALIZADA ---
 
-  if (isLoading || (cargandoProyectos && !proyectoActual?.id && !error)) { 
+  if (isLoading || (loadingProyectos && !proyectoActual?.id && !error)) { 
      return (
       <PageBackground>
         <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <SustratoLoadingLogo showText text={cargandoProyectos ? "Cargando datos maestros..." : "Cargando dimensiones..."} />
+          <SustratoLoadingLogo showText text={loadingProyectos ? "Cargando datos maestros..." : "Cargando dimensiones..."} />
         </div>
       </PageBackground>
     );
@@ -186,7 +186,7 @@ export default function DimensionesPage() {
           </ProCard>
         )}
 
-        {!proyectoActual?.id && !cargandoProyectos && !error && (
+        {!proyectoActual?.id && !loadingProyectos && !error && (
            <ProCard className="my-6 p-6 text-center">
               <Text variant="subheading" weight="medium" className="mb-2">
                Proyecto No Seleccionado

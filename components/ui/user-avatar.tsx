@@ -1,16 +1,19 @@
+// components/ui/user-avatar.tsx
+// Versión: 1.0 (Quirúrgica - Toasts de logout y cambio de proyecto eliminados)
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react"; // Agregado useMemo si no estaba
 import { motion, AnimatePresence } from "framer-motion";
 import { LogOut,Check } from "lucide-react";
-import { useTheme } from "@/app/theme-provider";
-import { useAuth } from "@/app/auth-provider";
-import { toast } from "sonner";
+import { useTheme } from "@/app/theme-provider"; // Ajusta la ruta si es necesario
+import { useAuth } from "@/app/auth-provider";   // Ajusta la ruta si es necesario
+// MODIFICACIÓN: toast ya no se importa/usa aquí para estas acciones específicas
+// import { toast } from "sonner"; 
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { SelectCustom, type SelectOption } from "@/components/ui/select-custom";
-import React from "react";
-import { generateUserAvatarTokens } from "@/lib/theme/components/user-avatar-tokens";
+import React from "react"; // React ya está importado por defecto en Next.js con 'use client'
+import { generateUserAvatarTokens } from "@/lib/theme/components/user-avatar-tokens"; // Ajusta la ruta si es necesario
 
 // Traducciones amigables para los nombres de permisos
 const permissionTranslations = {
@@ -33,29 +36,23 @@ export function UserAvatar() {
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Usar useMemo para generar los tokens solo cuando cambian las dependencias
-  const avatarTokens = appColorTokens
-    ? generateUserAvatarTokens(appColorTokens, mode)
-    : null;
+  const avatarTokens = useMemo(() => { // Envolviendo en useMemo
+    return appColorTokens
+      ? generateUserAvatarTokens(appColorTokens, mode)
+      : null;
+  }, [appColorTokens, mode]);
 
-  // Verificar si tenemos tokens válidos
   const hasTokens = !!avatarTokens;
 
-  // Obtener la primera letra del nombre de usuario desde el perfil
   const getInitial = () => {
-    // Buscar un nombre para mostrar, con fallbacks
-  
     const displayName =
       user?.user_metadata?.public_display_name ||
       user?.user_metadata?.name ||
       user?.email ||
       "U";
-
-    // Obtener la primera letra y convertirla a mayúscula
     return displayName.charAt(0).toUpperCase();
   };
 
-  // Cerrar el menú cuando se hace clic fuera de él
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -67,107 +64,82 @@ export function UserAvatar() {
         setIsOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
-  // Variantes de animación para el menú
   const menuVariants = {
-    hidden: {
-      opacity: 0,
-      y: -5,
-      scale: 0.95,
-      transition: {
-        duration: 0.2,
-        ease: "easeInOut",
-      },
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        duration: 0.2,
-        ease: "easeOut",
-      },
-    },
-    exit: {
-      opacity: 0,
-      y: -5,
-      scale: 0.95,
-      transition: {
-        duration: 0.15,
-        ease: "easeInOut",
-      },
-    },
+    hidden: { opacity: 0, y: -5, scale: 0.95, transition: { duration: 0.2, ease: "easeInOut" }},
+    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2, ease: "easeOut" }},
+    exit: { opacity: 0, y: -5, scale: 0.95, transition: { duration: 0.15, ease: "easeInOut" }},
   };
 
-  // Variantes para los elementos del menú
   const itemVariants = {
     hidden: { opacity: 0, x: -10 },
     visible: (custom: number) => ({
       opacity: 1,
       x: 0,
-      transition: {
-        delay: custom * 0.05,
-        duration: 0.2,
-        ease: "easeOut",
-      },
+      transition: { delay: custom * 0.05, duration: 0.2, ease: "easeOut" },
     }),
   };
 
-  // Manejar el cierre de sesión
   const handleLogout = async () => {
     try {
-      await logout();
+      await logout(); // Llama a la función logout del AuthProvider
       setIsOpen(false);
-      toast.success("Sesión cerrada correctamente");
+      // MODIFICACIÓN: Eliminada la llamada a toast aquí.
+      // AuthProvider (v10.9+) ya muestra un toast.info("Cerrando sesión...")
+      // toast("Sesión cerrada correctamente", { /* ... estilos ... */ }); 
+      console.log("[UserAvatar] Logout completado, toast manejado por AuthProvider.");
     } catch (error) {
-      console.error("Error al cerrar sesión:", error);
-      toast.error("Error al cerrar sesión");
+      console.error("[UserAvatar] Error al llamar a auth.logout:", error);
+      // MODIFICACIÓN: Eliminada la llamada a toast aquí.
+      // AuthProvider debería manejar los errores de logout si es necesario,
+      // o podríamos decidir no mostrar un toast de error aquí si AuthProvider ya lo hace.
+      // toast.error("Error al cerrar sesión");
     }
   };
 
-  // Manejar cambio de proyecto
   const handleProjectChange = (projectId: string | string[] | undefined) => {
+    // Cerrar el menú al seleccionar un proyecto
+    setIsOpen(false); 
+    
     if (typeof projectId === "string" && projectId) {
-      seleccionarProyecto(projectId);
-      toast.success("Proyecto cambiado exitosamente");
+      seleccionarProyecto(projectId); // Llama a la función del AuthProvider
+      // MODIFICACIÓN: Eliminada la llamada a toast aquí.
+      // AuthProvider (v10.9+) ya muestra un toast.success/error en seleccionarProyecto.
+      // toast("Proyecto cambiado exitosamente (café)", { /* ... estilos ... */ });
+      console.log("[UserAvatar] Cambio de proyecto iniciado, toast manejado por AuthProvider.");
     } else if (Array.isArray(projectId) && projectId.length > 0) {
-      // Handle array case if needed
       seleccionarProyecto(projectId[0]);
-      toast.success("Proyecto cambiado exitosamente");
+      // MODIFICACIÓN: Eliminada la llamada a toast aquí.
+      // toast("Proyecto cambiado exitosamente (gris)", { /* ... estilos ... */ });
+      console.log("[UserAvatar] Cambio de proyecto (array) iniciado, toast manejado por AuthProvider.");
     }
   };
 
-  // Convertir proyectos disponibles a opciones para el selector
   const projectOptions: SelectOption[] = proyectosDisponibles.map(
     (proyecto) => ({
-      value: proyecto.id,
+      value: proyecto.id, // Asumiendo que UserProjectSetting tiene 'id' y 'name'
       label: proyecto.name,
       disabled: false,
     })
   );
 
-  // Verificar si hay permisos activos en el proyecto actual
   const activePermissions = proyectoActual?.permissions
     ? Object.entries(proyectoActual.permissions)
         .filter(([key, value]) => value === true && key !== "role_name")
         .map(([key]) => key as keyof typeof permissionTranslations)
     : [];
 
-  // Determinar si mostrar el selector de proyectos
   const shouldShowProjectSelector = proyectosDisponibles.length > 1;
 
-  // Valores por defecto en caso de que no haya tokens
   const defaultBackgroundColor = "rgba(200, 200, 200, 0.5)";
   const defaultBorderColor = "rgba(150, 150, 150, 0.3)";
   const defaultTextColor = "#333333";
 
-  // Obtener el nombre de usuario para mostrar
   const userDisplayName =
     user?.user_metadata?.public_display_name ||
     user?.user_metadata?.name ||
@@ -254,9 +226,9 @@ export function UserAvatar() {
               }}
             >
               <Text
-                variant="title"
-                size="base"
-                weight="medium"
+                variant="title" // Cambiado de "heading" a "title" si es más apropiado
+                size="base"   // Cambiado de "xl" a "base" si es más apropiado
+                weight="medium" // Cambiado de "default" a "medium" si es más apropiado
                 color="primary"
                 colorVariant="text"
                 style={{
@@ -270,8 +242,8 @@ export function UserAvatar() {
               <Text
                 size="xs"
                 color="neutral"
-                colorVariant="textShade"
-                className="opacity-70"
+                colorVariant="textShade" // Asumiendo que textShade es un valor válido
+                className="opacity-70" // Clase para atenuar un poco
                 style={{
                   color: hasTokens && avatarTokens
                     ? avatarTokens.menuHeader.subtitleColor
@@ -303,16 +275,9 @@ export function UserAvatar() {
                     onChange={handleProjectChange}
                     placeholder="Seleccionar proyecto"
                   />
-
-                  {/* Mostrar rol solo cuando hay un proyecto seleccionado */}
                   {proyectoActual && proyectoActual.permissions?.role_name && (
                     <div className="mt-2 flex items-center">
-                      <Text
-                        size="xs"
-                        weight="medium"
-                        color="neutral"
-                        className="mr-2"
-                      >
+                      <Text size="xs" weight="medium" color="neutral" className="mr-2">
                         Rol:
                       </Text>
                       <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
@@ -326,16 +291,9 @@ export function UserAvatar() {
                   <Text size="sm" weight="medium" color="primary">
                     {proyectoActual?.name || "No hay proyectos"}
                   </Text>
-
-                  {/* Mostrar rol solo cuando hay un proyecto seleccionado */}
                   {proyectoActual && proyectoActual.permissions?.role_name && (
                     <div className="mt-1 flex items-center">
-                      <Text
-                        size="xs"
-                        weight="medium"
-                        color="neutral"
-                        className="mr-2"
-                      >
+                       <Text size="xs" weight="medium" color="neutral" className="mr-2">
                         Rol:
                       </Text>
                       <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
@@ -347,7 +305,7 @@ export function UserAvatar() {
               )}
             </div>
 
-            {/* Permisos activos - solo si hay al menos uno */}
+            {/* Permisos activos */}
             {activePermissions.length > 0 && (
               <div className="mb-3">
                 <Text
@@ -378,7 +336,7 @@ export function UserAvatar() {
             )}
 
             <div 
-              className="h-px w-full bg-gray-200 dark:bg-gray-700 my-2"
+              className="h-px w-full bg-gray-200 dark:bg-gray-700 my-2" // Separador visual
               style={{
                 backgroundColor: hasTokens && avatarTokens
                   ? avatarTokens.menuDivider.color
@@ -390,12 +348,11 @@ export function UserAvatar() {
             ></div>
 
             <div className="grid gap-1 mt-2">
-              {/* Opción para cerrar sesión */}
               <motion.button
                 variants={itemVariants}
                 initial="hidden"
                 animate="visible"
-                custom={0}
+                custom={0} // Ajustar 'custom' según el número de ítems si es necesario
                 className="flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
                 onClick={handleLogout}
               >

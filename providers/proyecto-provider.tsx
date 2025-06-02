@@ -24,7 +24,7 @@ const ProyectoContext = createContext<ProyectoContextType | undefined>(
 
 export function ProyectoProvider({ children }: { children: React.ReactNode }) {
   // Utilizamos el contexto de autenticación para obtener información del proyecto actual
-  const { proyectoActual, cargandoProyectos } = useAuth();
+  const { proyectoActual, loadingProyectos } = useAuth();
 
   // Extraer los permisos del proyecto actual para fácil acceso
   const permisos: ProjectPermissions | null =
@@ -33,7 +33,7 @@ export function ProyectoProvider({ children }: { children: React.ReactNode }) {
   const value = {
     proyectoActual,
     permisos,
-    cargandoProyecto: cargandoProyectos,
+    cargandoProyecto: loadingProyectos,
   };
 
   return (

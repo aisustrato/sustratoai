@@ -28,7 +28,7 @@ interface AuthContextType {
   loading: boolean;
   proyectoActual: UserProjectSetting | null; // CAMBIADO A UserProjectSetting
   proyectosDisponibles: UserProjectSetting[]; // CAMBIADO A UserProjectSetting[]
-  cargandoProyectos: boolean;
+  loadingProyectos: boolean;
   seleccionarProyecto: (proyectoId: string) => Promise<void>;
   signIn: ( email: string, password: string ) => Promise<{ error: any; success: boolean; }>;
   signUp: ( email: string, password: string ) => Promise<{ error: any; success: boolean; }>;
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [proyectoActual, setProyectoActual] = useState<UserProjectSetting | null>(null); // Tipo corregido
   const [proyectosDisponibles, setProyectosDisponibles] = useState<UserProjectSetting[]>([]); // Tipo corregido
-  const [cargandoProyectos, setCargandoProyectos] = useState(false);
+  const [loadingProyectos, setCargandoProyectos] = useState(false);
   // const [mostrarSelectorProyecto, setMostrarSelectorProyecto] = useState(false); // Comentado si no se usa en el return
 
   const cargarProyectosUsuario = async (userId: string) => {
@@ -191,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Nuevo useEffect para cargar proyectos cuando el usuario cambia o se establece por primera vez
   useEffect(() => {
-    if (user?.id && !cargandoProyectos) { // Solo cargar si hay usuario y no se está cargando ya
+    if (user?.id && !loadingProyectos) { // Solo cargar si hay usuario y no se está cargando ya
         console.log("useEffect[user]: Usuario detectado/cambiado, cargando proyectos...");
         cargarProyectosUsuario(user.id);
     } else if (!user) {
@@ -215,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         proyectoActual,
         proyectosDisponibles,
-        cargandoProyectos,
+        loadingProyectos,
         seleccionarProyecto,
         signIn: login,
         signUp: signup,

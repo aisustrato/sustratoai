@@ -26,7 +26,7 @@ export default function VerDimensionPage() {
   const params = useParams();
   const dimensionId = params?.id ? String(params.id) : "";
 
-  const { proyectoActual, cargandoProyectos } = useAuth();
+  const { proyectoActual, loadingProyectos } = useAuth();
 
   const [dimensionActual, setDimensionActual] = useState<FullDimension | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -37,7 +37,7 @@ export default function VerDimensionPage() {
 
   const cargarDimension = useCallback(async () => {
     if (!proyectoActual?.id || !dimensionId) {
-      if (!cargandoProyectos) {
+      if (!loadingProyectos) {
          setErrorPage(!dimensionId ? "ID de dimensión no especificado." : "Proyecto no seleccionado.");
       }
       setIsPageLoading(false);
@@ -69,13 +69,13 @@ export default function VerDimensionPage() {
     } finally {
       setIsPageLoading(false);
     }
-  }, [proyectoActual?.id, dimensionId, cargandoProyectos]);
+  }, [proyectoActual?.id, dimensionId, loadingProyectos]);
 
   useEffect(() => {
-    if ((proyectoActual?.id && dimensionId) || !cargandoProyectos) {
+    if ((proyectoActual?.id && dimensionId) || !loadingProyectos) {
       cargarDimension();
     }
-  }, [proyectoActual?.id, dimensionId, cargandoProyectos, cargarDimension]);
+  }, [proyectoActual?.id, dimensionId, loadingProyectos, cargarDimension]);
 
   const handleVolver = () => {
     router.push("/datos-maestros/dimensiones");
@@ -96,7 +96,7 @@ export default function VerDimensionPage() {
     examples: dimensionActual.examples.map(e => ({ id: e.id, example: e.example })),
   } : undefined;
 
-  if (isPageLoading || (cargandoProyectos && !dimensionActual && !errorPage)) {
+  if (isPageLoading || (loadingProyectos && !dimensionActual && !errorPage)) {
     return (
       <PageBackground>
         <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
