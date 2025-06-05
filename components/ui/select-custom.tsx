@@ -78,7 +78,7 @@ const optionVariantsBase = {
 const SelectCustom = React.forwardRef<HTMLDivElement, SelectCustomProps>(
 	(
 		{
-			options,
+			options = [],
 			className,
 			variant = "default",
 			size = "md",
@@ -747,3 +747,9 @@ const SelectCustom = React.forwardRef<HTMLDivElement, SelectCustomProps>(
 
 SelectCustom.displayName = "SelectCustom";
 export { SelectCustom };
+// API compatible para el showroom (placeholders)
+export { SelectCustom as Select };
+export const SelectContent = React.Fragment;
+export const SelectItem = (props: any) => <div {...props} />;
+export const SelectTrigger = (props: any) => <div {...props} />;
+export const SelectValue = (props: any) => <div {...props} />;

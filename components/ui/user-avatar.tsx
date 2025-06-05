@@ -1,21 +1,21 @@
 // components/ui/user-avatar.tsx
-// Versión: 1.0 (Quirúrgica - Toasts de logout y cambio de proyecto eliminados)
+// Versión: 1.1 (Refactor handleProjectChange con setProyectoActivoLocal y toasts locales)
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react"; // Agregado useMemo si no estaba
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut,Check } from "lucide-react";
-import { useTheme } from "@/app/theme-provider"; // Ajusta la ruta si es necesario
-import { useAuth } from "@/app/auth-provider";   // Ajusta la ruta si es necesario
-// MODIFICACIÓN: toast ya no se importa/usa aquí para estas acciones específicas
-// import { toast } from "sonner"; 
+import { LogOut, Check, Loader2 } from "lucide-react"; // Añadido Loader2 para feedback visual
+import { useTheme } from "@/app/theme-provider";
+import { useAuth } from "@/app/auth-provider";
+import { toast } from "sonner"; // Re-importado para toasts locales
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
 import { SelectCustom, type SelectOption } from "@/components/ui/select-custom";
-import React from "react"; // React ya está importado por defecto en Next.js con 'use client'
-import { generateUserAvatarTokens } from "@/lib/theme/components/user-avatar-tokens"; // Ajusta la ruta si es necesario
+import React from "react";
+import { generateUserAvatarTokens } from "@/lib/theme/components/user-avatar-tokens";
+import { actualizarProyectoActivo, type UserProjectSetting } from "@/app/actions/proyecto-actions"; // Importar server action y tipo
 
-// Traducciones amigables para los nombres de permisos
+// Traducciones amigables para los nombres de permisos (sin cambios)
 const permissionTranslations = {
   can_manage_master_data: "Administrar datos maestros",
   can_create_batches: "Crear lotes",
@@ -29,14 +29,15 @@ export function UserAvatar() {
     logout,
     proyectoActual,
     proyectosDisponibles,
-    seleccionarProyecto,
+    setProyectoActivoLocal, // NUEVO: Reemplaza a seleccionarProyecto
   } = useAuth();
   const { mode, appColorTokens } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const [isChangingProject, setIsChangingProject] = useState(false); // NUEVO: Estado de carga local
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const avatarTokens = useMemo(() => { // Envolviendo en useMemo
+  const avatarTokens = useMemo(() => {
     return appColorTokens
       ? generateUserAvatarTokens(appColorTokens, mode)
       : null;
@@ -87,44 +88,79 @@ export function UserAvatar() {
 
   const handleLogout = async () => {
     try {
-      await logout(); // Llama a la función logout del AuthProvider
+      await logout();
       setIsOpen(false);
-      // MODIFICACIÓN: Eliminada la llamada a toast aquí.
-      // AuthProvider (v10.9+) ya muestra un toast.info("Cerrando sesión...")
-      // toast("Sesión cerrada correctamente", { /* ... estilos ... */ }); 
-      console.log("[UserAvatar] Logout completado, toast manejado por AuthProvider.");
+      console.log("[UserAvatar v1.1] Logout completado, toast manejado por AuthProvider.");
     } catch (error) {
-      console.error("[UserAvatar] Error al llamar a auth.logout:", error);
-      // MODIFICACIÓN: Eliminada la llamada a toast aquí.
-      // AuthProvider debería manejar los errores de logout si es necesario,
-      // o podríamos decidir no mostrar un toast de error aquí si AuthProvider ya lo hace.
-      // toast.error("Error al cerrar sesión");
+      console.error("[UserAvatar v1.1] Error al llamar a auth.logout:", error);
+      // AuthProvider maneja el toast de error de logout si es necesario.
     }
   };
 
-  const handleProjectChange = (projectId: string | string[] | undefined) => {
-    // Cerrar el menú al seleccionar un proyecto
-    setIsOpen(false); 
+  // REFACTORIZADO: handleProjectChange
+  const handleProjectChange = async (selectedProjectIdValue: string | string[] | undefined) => {
+    setIsOpen(false); // Cerrar el menú independientemente del resultado
+
+    let projectIdToProcess: string | undefined;
+
+    if (typeof selectedProjectIdValue === "string" && selectedProjectIdValue) {
+      projectIdToProcess = selectedProjectIdValue;
+    } else if (Array.isArray(selectedProjectIdValue) && selectedProjectIdValue.length > 0) {
+      projectIdToProcess = selectedProjectIdValue[0];
+    }
+
+    if (!projectIdToProcess) {
+      console.warn("[UserAvatar v1.1] No se proporcionó un ID de proyecto válido.");
+      return;
+    }
     
-    if (typeof projectId === "string" && projectId) {
-      seleccionarProyecto(projectId); // Llama a la función del AuthProvider
-      // MODIFICACIÓN: Eliminada la llamada a toast aquí.
-      // AuthProvider (v10.9+) ya muestra un toast.success/error en seleccionarProyecto.
-      // toast("Proyecto cambiado exitosamente (café)", { /* ... estilos ... */ });
-      console.log("[UserAvatar] Cambio de proyecto iniciado, toast manejado por AuthProvider.");
-    } else if (Array.isArray(projectId) && projectId.length > 0) {
-      seleccionarProyecto(projectId[0]);
-      // MODIFICACIÓN: Eliminada la llamada a toast aquí.
-      // toast("Proyecto cambiado exitosamente (gris)", { /* ... estilos ... */ });
-      console.log("[UserAvatar] Cambio de proyecto (array) iniciado, toast manejado por AuthProvider.");
+    if (projectIdToProcess === proyectoActual?.id) {
+      console.log("[UserAvatar v1.1] El proyecto seleccionado ya es el actual. No se necesita cambio.");
+      return;
+    }
+
+    if (!user?.id) {
+      console.error("[UserAvatar v1.1] User ID no disponible. No se puede cambiar el proyecto.");
+      toast.error("Error de autenticación al cambiar proyecto.");
+      return;
+    }
+
+    const finalProjectId = projectIdToProcess;
+    const proyectoSeleccionado = proyectosDisponibles.find(p => p.id === finalProjectId);
+
+    if (!proyectoSeleccionado) {
+      console.error(`[UserAvatar v1.1] Proyecto con ID ${finalProjectId} no encontrado en proyectosDisponibles.`);
+      toast.error("Error: Proyecto no encontrado en la lista disponible.");
+      return;
+    }
+
+    setIsChangingProject(true);
+    toast.loading("Cambiando proyecto...", { id: "changing-project-toast" });
+
+    try {
+      const result = await actualizarProyectoActivo(user.id, finalProjectId);
+      if (result.success) {
+        setProyectoActivoLocal(proyectoSeleccionado); // Actualiza el contexto localmente
+        toast.success("Proyecto cambiado exitosamente.", { id: "changing-project-toast" });
+        console.log(`[UserAvatar v1.1] Proyecto cambiado a ${proyectoSeleccionado.name} via setProyectoActivoLocal.`);
+      } else {
+        toast.error(result.error || "Error al cambiar de proyecto.", { id: "changing-project-toast" });
+        console.error("[UserAvatar v1.1] Error desde actualizarProyectoActivo:", result.error);
+      }
+    } catch (error) {
+      console.error("[UserAvatar v1.1] Excepción al cambiar de proyecto:", error);
+      toast.error("Se produjo una excepción al cambiar de proyecto.", { id: "changing-project-toast" });
+    } finally {
+      setIsChangingProject(false);
     }
   };
+
 
   const projectOptions: SelectOption[] = proyectosDisponibles.map(
     (proyecto) => ({
-      value: proyecto.id, // Asumiendo que UserProjectSetting tiene 'id' y 'name'
+      value: proyecto.id,
       label: proyecto.name,
-      disabled: false,
+      disabled: isChangingProject, // Deshabilitar opciones mientras se cambia
     })
   );
 
@@ -134,7 +170,7 @@ export function UserAvatar() {
         .map(([key]) => key as keyof typeof permissionTranslations)
     : [];
 
-  const shouldShowProjectSelector = proyectosDisponibles.length > 1;
+  const shouldShowProjectSelector = proyectosDisponibles.length > 0; // Mostrar siempre si hay proyectos, incluso si solo hay uno para ver el rol.
 
   const defaultBackgroundColor = "rgba(200, 200, 200, 0.5)";
   const defaultBorderColor = "rgba(150, 150, 150, 0.3)";
@@ -173,24 +209,29 @@ export function UserAvatar() {
         aria-label="Menú de usuario"
         aria-expanded={isOpen}
         aria-haspopup="true"
+        disabled={isChangingProject} // Deshabilitar botón mientras se cambia
       >
-        <Text 
-          size="2xl" 
-          weight="bold" 
-          color="primary" 
-          colorVariant="text"
-          style={{
-            fontWeight: hasTokens && avatarTokens
-              ? avatarTokens.avatar.fontWeight
-              : "700",
-          }}
-        >
-          {getInitial()}
-        </Text>
+        {isChangingProject ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Text
+            size="2xl"
+            weight="bold"
+            color="primary"
+            colorVariant="text"
+            style={{
+              fontWeight: hasTokens && avatarTokens
+                ? avatarTokens.avatar.fontWeight
+                : "700",
+            }}
+          >
+            {getInitial()}
+          </Text>
+        )}
       </motion.button>
 
       <AnimatePresence>
-        {isOpen && (
+        {isOpen && !isChangingProject && ( // No mostrar menú si está cargando cambio de proyecto
           <motion.div
             ref={menuRef}
             className="absolute right-0 top-full z-50 mt-1 w-72 rounded-lg border"
@@ -217,7 +258,7 @@ export function UserAvatar() {
             exit="exit"
           >
             {/* Información del usuario */}
-            <div 
+            <div
               className="mb-3 px-2 py-1 border-b pb-3"
               style={{
                 borderColor: hasTokens && avatarTokens
@@ -226,9 +267,9 @@ export function UserAvatar() {
               }}
             >
               <Text
-                variant="title" // Cambiado de "heading" a "title" si es más apropiado
-                size="base"   // Cambiado de "xl" a "base" si es más apropiado
-                weight="medium" // Cambiado de "default" a "medium" si es más apropiado
+                variant="title"
+                size="base"
+                weight="medium"
                 color="primary"
                 colorVariant="text"
                 style={{
@@ -242,8 +283,8 @@ export function UserAvatar() {
               <Text
                 size="xs"
                 color="neutral"
-                colorVariant="textShade" // Asumiendo que textShade es un valor válido
-                className="opacity-70" // Clase para atenuar un poco
+                colorVariant="textShade"
+                className="opacity-70"
                 style={{
                   color: hasTokens && avatarTokens
                     ? avatarTokens.menuHeader.subtitleColor
@@ -255,55 +296,63 @@ export function UserAvatar() {
             </div>
 
             {/* Proyecto actual */}
-            <div className="mb-3">
-              <Text
-                size="xs"
-                weight="medium"
-                color="neutral"
-                colorVariant="textShade"
-                className="mb-1 px-2"
-              >
-                Proyecto actual
-              </Text>
-
-              {shouldShowProjectSelector ? (
-                <div className="px-2 mb-2">
-                  <SelectCustom
-                    size="sm"
-                    options={projectOptions}
-                    value={proyectoActual?.id || ""}
-                    onChange={handleProjectChange}
-                    placeholder="Seleccionar proyecto"
-                  />
-                  {proyectoActual && proyectoActual.permissions?.role_name && (
-                    <div className="mt-2 flex items-center">
-                      <Text size="xs" weight="medium" color="neutral" className="mr-2">
-                        Rol:
-                      </Text>
-                      <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
-                        {proyectoActual.permissions.role_name}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="px-2 py-1 mb-2 bg-gray-50 dark:bg-gray-800 rounded-md">
-                  <Text size="sm" weight="medium" color="primary">
-                    {proyectoActual?.name || "No hay proyectos"}
+            {shouldShowProjectSelector ? (
+               <div className="mb-3">
+               <Text
+                 size="xs"
+                 weight="medium"
+                 color="neutral"
+                 colorVariant="textShade"
+                 className="mb-1 px-2"
+               >
+                 Proyecto actual
+               </Text>
+               <div className="px-2 mb-2">
+                 <SelectCustom
+                   size="sm"
+                   options={projectOptions}
+                   value={proyectoActual?.id || ""}
+                   onChange={handleProjectChange}
+                   placeholder="Seleccionar proyecto"
+                   disabled={isChangingProject} // Deshabilitar select mientras se cambia
+                 />
+                 {proyectoActual && proyectoActual.permissions?.role_name && (
+                   <div className="mt-2 flex items-center">
+                     <Text size="xs" weight="medium" color="neutral" className="mr-2">
+                       Rol:
+                     </Text>
+                     <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
+                       {proyectoActual.permissions.role_name}
+                     </span>
+                   </div>
+                 )}
+               </div>
+             </div>
+            ) : (
+              proyectoActual && ( // Mostrar solo si hay un proyecto actual y no hay selector
+                <div className="mb-3">
+                  <Text size="xs" weight="medium" color="neutral" colorVariant="textShade" className="mb-1 px-2">
+                    Proyecto actual
                   </Text>
-                  {proyectoActual && proyectoActual.permissions?.role_name && (
-                    <div className="mt-1 flex items-center">
-                       <Text size="xs" weight="medium" color="neutral" className="mr-2">
-                        Rol:
-                      </Text>
-                      <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
-                        {proyectoActual.permissions.role_name}
-                      </span>
-                    </div>
-                  )}
+                  <div className="px-2 py-1 mb-2 bg-gray-50 dark:bg-gray-800 rounded-md">
+                    <Text size="sm" weight="medium" color="primary">
+                      {proyectoActual.name}
+                    </Text>
+                    {proyectoActual.permissions?.role_name && (
+                      <div className="mt-1 flex items-center">
+                          <Text size="xs" weight="medium" color="neutral" className="mr-2">
+                            Rol:
+                          </Text>
+                        <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
+                          {proyectoActual.permissions.role_name}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              )
+            )}
+
 
             {/* Permisos activos */}
             {activePermissions.length > 0 && (
@@ -335,7 +384,7 @@ export function UserAvatar() {
               </div>
             )}
 
-            <div 
+            <div
               className="h-px w-full bg-gray-200 dark:bg-gray-700 my-2" // Separador visual
               style={{
                 backgroundColor: hasTokens && avatarTokens
@@ -352,7 +401,7 @@ export function UserAvatar() {
                 variants={itemVariants}
                 initial="hidden"
                 animate="visible"
-                custom={0} // Ajustar 'custom' según el número de ítems si es necesario
+                custom={0}
                 className="flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
                 onClick={handleLogout}
               >

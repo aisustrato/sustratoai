@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
 import { generateSustratoLoadingLogoTokens } from "@/lib/theme/components/sustrato-loading-logo-tokens";
 
-interface SustratoLoadingLogoProps {
+export interface SustratoLoadingLogoProps {
   size?: number;
   variant?: "spin" | "pulse" | "spin-pulse" | "dash" | "progress";
   speed?: "slow" | "normal" | "fast";

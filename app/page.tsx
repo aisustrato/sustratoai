@@ -1,9 +1,47 @@
+// app/page.tsx
+"use client"; // Necesario para usar hooks como useAuth
+
 import { Text } from "@/components/ui/text";
 import { PageBackground } from "@/components/ui/page-background";
 import { Divider } from "@/components/ui/divider";
 import { HomeCards } from "@/components/HomeCards";
+import { useAuth } from "@/app/auth-provider"; // Importar useAuth
+import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo"; // Para un posible estado de carga
 
 export default function Home() {
+  const { proyectoActual, authInitialized, user } = useAuth();
+
+  // Textos por defecto (los que están actualmente hardcodeados)
+  const defaultClientName = "Universidad Católica de Chile";
+  const defaultProjectName = "Ayudas Técnicas";
+  const defaultDepartmentName = "Escuela de Trabajo Social";
+  const defaultProjectDescription = "Plataforma de herramientas para investigación y análisis de datos cualitativos";
+
+  // Mientras la autenticación no se haya inicializado o no haya proyecto actual y el usuario sí esté (evitando flash si es público)
+  if (!authInitialized || (user && !proyectoActual)) {
+    // Podrías mostrar un loader más completo o un esqueleto de la página.
+    // El AuthProvider ya tiene un loader global, pero este es específico para el contenido de la home.
+    return (
+      <PageBackground variant="gradient">
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <SustratoLoadingLogo size={60} text="Cargando información del proyecto..." />
+        </div>
+      </PageBackground>
+    );
+  }
+
+  // Si no hay usuario y la página es pública (o si auth no está inicializado),
+  // es posible que queramos mostrar los datos por defecto.
+  // Si hay usuario, esperamos que proyectoActual tenga datos.
+  const clientName = proyectoActual?.institution_name || defaultClientName;
+  const projectName = proyectoActual?.name
+  || defaultProjectName;
+  const departmentName = proyectoActual?.description|| defaultDepartmentName;
+  const projectDescription =  "Plataforma de herramientas para investigación y análisis de datos cualitativos" ;
+  // Para el footer, si es específico del cliente también se podría obtener de proyectoActual
+  const footerProjectText = `Proyecto desarrollado por ${departmentName} de ${clientName}`;
+
+
   return (
     <PageBackground variant="gradient" >
       {/* Hero Section */}
@@ -16,7 +54,7 @@ export default function Home() {
             className="uppercase tracking-wider mb-3 font-bold"
             fontType="heading"
           >
-            Universidad Católica de Chile
+            {clientName}
           </Text>
           <Divider variant="gradient" size="md" className="mb-8" />
         </div>
@@ -29,7 +67,7 @@ export default function Home() {
           className="mb-2"
           fontType="heading"
         >
-          Ayudas Técnicas
+          {projectName}
         </Text>
 
         <Text
@@ -40,7 +78,7 @@ export default function Home() {
           className="mb-6"
           fontType="heading"
         >
-          Escuela de Trabajo Social
+          {departmentName}
         </Text>
 
         <Text
@@ -50,8 +88,7 @@ export default function Home() {
           className="max-w-2xl mx-auto"
           fontType="body"
         >
-          Plataforma de herramientas para investigación y análisis de datos
-          cualitativos
+          {projectDescription}
         </Text>
       </section>
 
@@ -61,8 +98,8 @@ export default function Home() {
       {/* Footer Section */}
       <div className="text-center mt-8">
         <Text variant="muted" className="mb-1" fontType="body">
-          Proyecto desarrollado por la Escuela de Trabajo Social de la
-          Universidad Católica de Chile
+          {/* Asumiendo que este texto también puede ser dinámico o al menos referenciar los nombres dinámicos */}
+          {footerProjectText}
         </Text>
       </div>
     </PageBackground>
