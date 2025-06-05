@@ -1,5 +1,5 @@
 // app/auth-provider.tsx
-// Versión: 10.18 (Sincronización inicial de UI con FontProvider/ThemeProvider)
+// Versión: 10.19 (useEffect de sincronización de UI con dependencias estrictas y refs para funciones externas)
 "use client";
 
 import React, {
@@ -13,7 +13,6 @@ import {
   signOut as clientSignOut,
 } from "@/app/auth/client";
 import { User, Session, SupabaseClient } from "@supabase/supabase-js";
-// import { type Json } from "@/lib/database.types"; // No se usa Json directamente aquí
 
 import {
   obtenerProyectosConSettingsUsuario,
@@ -24,11 +23,10 @@ import {
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { toast } from "sonner";
 
-// --- NUEVAS IMPORTACIONES PARA SINCRONIZACIÓN DE UI ---
-import { useFontTheme } from "@/app/font-provider"; // Para informar la fuente
-// import { useTheme } from "@/app/theme-provider"; // Descomentar cuando se implemente para temas
+import { useFontTheme } from "@/app/font-provider";
+import { useTheme } from "@/app/theme-provider";
 
-const LOG_PREFIX = "[AUTH_PROVIDER_V10.18]"; // Actualizado para la nueva versión
+const LOG_PREFIX = "[AUTH_PROVIDER_V10.19]";
 
 interface AuthContextType {
   supabase: SupabaseClient;
@@ -84,9 +82,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const welcomeToastShownRef = useRef(false);
   const authLoadingGlobalActivationAttemptRef = useRef(0);
 
-  // --- HOOKS DE PROVIDERS DE UI (PARA INFORMAR PREFERENCIAS) ---
-  const { setFontTheme: aplicarFuenteGlobalmente } = useFontTheme();
-  // const { setTheme: aplicarTemaGlobalmente, setMode: aplicarModoOscuroGlobalmente } = useTheme(); // Descomentar para temas
+  // --- Obtener funciones de providers visuales ---
+  const { setFontTheme } = useFontTheme();
+  const { setColorScheme, setMode } = useTheme();
+
+  // --- Usar useRef para mantener referencias estables a estas funciones ---
+  // Esto es para usarlas dentro del useEffect de sincronización de UI
+  // sin que este useEffect principal dependa directamente de sus cambios de referencia.
+  const aplicarFuenteRef = useRef(setFontTheme);
+  const aplicarTemaRef = useRef(setColorScheme);
+  const aplicarModoRef = useRef(setMode);
+
+  // Actualizar las refs si las funciones originales cambian
+  // (esto es una salvaguarda; si son estables en origen, estas refs no cambiarán mucho)
+  useEffect(() => { aplicarFuenteRef.current = setFontTheme; }, [setFontTheme]);
+  useEffect(() => { aplicarTemaRef.current = setColorScheme; }, [setColorScheme]);
+  useEffect(() => { aplicarModoRef.current = setMode; }, [setMode]);
+
 
   useEffect(() => { userRef.current = user; }, [user]);
   useEffect(() => { proyectoActualRef.current = proyectoActual; }, [proyectoActual]);
@@ -107,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           GenuinelyLoadedNewData = true;
           setProyectosDisponibles(result.data);
           const activo = result.data.find(p => p.is_active_for_user) || result.data[0] || null;
-          setProyectoActual(activo); // <--- Aquí se establece proyectoActual con datos de BD
+          setProyectoActual(activo);
           if (activo) {
             configAppliedForProjectId.current = activo.id;
             console.log(`${LOG_PREFIX} Proyecto activo desde BD: ${activo.id.substring(0,8)}. Nombre: ${activo.name}`);
@@ -149,34 +161,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         configAppliedForProjectId.current = null; signedInProcessedRef.current = false; welcomeToastShownRef.current = false;
       } finally {
         console.log(`${LOG_PREFIX} [InitializeEffect] Finalizando. AuthInitialized: true, AuthLoading: false.`);
-        setAuthInitialized(true); // <--- Aquí authInitialized se vuelve true
+        setAuthInitialized(true);
         setAuthLoading(false);
       }
     })();
   }, [supabase, cargarProyectosUsuario, authLoading]);
 
-
   useEffect(() => { // onAuthStateChangeEffect
-    // ... (lógica existente sin cambios)...
-    // Este useEffect maneja eventos de Supabase y actualiza user, session, y llama a cargarProyectosUsuario
-    // Es importante que el nuevo useEffect de sincronización de UI no interfiera con esta lógica anti-loop.
     if (!supabase) return;
     console.log(`${LOG_PREFIX} [onAuthStateChangeEffect] Suscribiendo.`);
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log(`${LOG_PREFIX} [EVENT:${event}] Nuevo estado. User: ${newSession?.user?.id?.substring(0,8) ?? 'ninguno'}. AuthInit: ${authInitializedRef.current}, GlobalLoadingActivations: ${authLoadingGlobalActivationAttemptRef.current}`);
-
       const previousUser = userRef.current;
       let needsProjectLoad = false;
       let GenuinelyLoadedNewDataInEvent = false;
-
       setSession(newSession);
       setUser(newSession?.user ?? null);
-
       if (event === "SIGNED_IN") {
         if (newSession?.user && (!previousUser || previousUser.id !== newSession.user.id || !proyectoActualRef.current)) {
           needsProjectLoad = true;
         }
-
         if (needsProjectLoad) {
           console.log(`${LOG_PREFIX} [EVENT:SIGNED_IN] (needsProjectLoad=true) Cargando proyectos para ${newSession!.user!.id}`);
           configAppliedForProjectId.current = null;
@@ -190,7 +194,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProyectosDisponibles(prev => prev.length > 0 ? prev : (proyectoActualRef.current ? [proyectoActualRef.current] : []));
         }
         signedInProcessedRef.current = true;
-
       } else if (event === "SIGNED_OUT") {
         console.log(`${LOG_PREFIX} [EVENT:SIGNED_OUT] Limpiando estados.`);
         setProyectoActual(null); setProyectosDisponibles([]); configAppliedForProjectId.current = null;
@@ -210,7 +213,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await cargarProyectosUsuario(newSession.user.id, true);
         }
       }
-
       if (authInitializedRef.current && authLoading && authLoadingGlobalActivationAttemptRef.current === 1 && (event === "SIGNED_IN" || (event === "INITIAL_SESSION" && signedInProcessedRef.current))) {
           console.log(`${LOG_PREFIX} [EVENT:${event}] Fin de ciclo de login (Contador=1). Poniendo authLoading=false.`);
           setAuthLoading(false);
@@ -218,51 +220,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log(`${LOG_PREFIX} [EVENT:${event}] Procesamiento completado. AuthLoading: ${authLoading}, ContadorGlobal: ${authLoadingGlobalActivationAttemptRef.current}`);
     });
     return () => { subscription?.unsubscribe(); };
-  }, [supabase, cargarProyectosUsuario, authLoading]); // Mantener dependencias originales de este efecto
+  }, [supabase, cargarProyectosUsuario, authLoading]);
 
-  // --- NUEVO USEEFFECT PARA SINCRONIZAR PREFERENCIAS DE UI CON PROVIDERS VISUALES ---
+  // --- USEEFFECT DE SINCRONIZACIÓN DE UI CON DEPENDENCIAS ESTRICTAS ---
   useEffect(() => {
+    // Solo se ejecuta si authInitialized es true o si proyectoActual.id cambia.
     if (authInitialized && proyectoActual) {
+      console.log(`${LOG_PREFIX} SINCRONIZACIÓN DE UI para proyecto ID: ${proyectoActual.id} (authInit: ${authInitialized})`);
+
       // Sincronizar Fuente
-      if (typeof proyectoActual.ui_font_pair === 'string') { // Asegurarse que no sea null si se espera string
-        console.log(`[AuthProvider v10.18] Sincronizando FontProvider con ui_font_pair: ${proyectoActual.ui_font_pair}`);
-        aplicarFuenteGlobalmente(proyectoActual.ui_font_pair as any); // El 'as any' es porque FontProvider puede tener tipos más específicos para sus IDs
-      } else {
-        // Si ui_font_pair es null o undefined en BD, FontProvider usará su default.
-        // Opcionalmente, se podría forzar un default aquí si fuera necesario:
-        // console.log("[AuthProvider v10.18] ui_font_pair no definido. Aplicando default a FontProvider.");
-        // aplicarFuenteGlobalmente('ID_FUENTE_POR_DEFECTO_DE_FONTPROVIDER');
+      if (typeof proyectoActual.ui_font_pair === 'string') {
+        console.log(`  -> Aplicando fuente: ${proyectoActual.ui_font_pair}`);
+        aplicarFuenteRef.current(proyectoActual.ui_font_pair as any);
       }
 
-      // Sincronizar Tema y Modo Oscuro (Platzhalter para futura implementación)
-      // if (typeof proyectoActual.ui_theme === 'string') {
-      //   console.log(`[AuthProvider v10.18] Sincronizando ThemeProvider con ui_theme: ${proyectoActual.ui_theme}`);
-      //   // aplicarTemaGlobalmente(proyectoActual.ui_theme);
-      // }
-      // if (proyectoActual.ui_is_dark_mode !== null && proyectoActual.ui_is_dark_mode !== undefined) {
-      //   console.log(`[AuthProvider v10.18] Sincronizando ThemeProvider con ui_is_dark_mode: ${proyectoActual.ui_is_dark_mode}`);
-      //   // aplicarModoOscuroGlobalmente(proyectoActual.ui_is_dark_mode ? "dark" : "light");
-      // }
+      // Sincronizar Esquema de Color (ui_theme)
+      if (typeof proyectoActual.ui_theme === 'string') {
+        console.log(`  -> Aplicando tema: ${proyectoActual.ui_theme}`);
+        aplicarTemaRef.current(proyectoActual.ui_theme as any);
+      }
+
+      // Sincronizar Modo Oscuro/Claro (ui_is_dark_mode)
+      // Asegúrate que el nombre del campo aquí (ui_is_dark_mode) coincida exactamente con tu UserProjectSetting
+      if (proyectoActual.ui_is_dark_mode !== null && proyectoActual.ui_is_dark_mode !== undefined) {
+        const newMode = proyectoActual.ui_is_dark_mode ? "dark" : "light";
+        console.log(`  -> Aplicando modo: ${newMode} (desde ui_is_dark_mode: ${proyectoActual.ui_is_dark_mode})`);
+        aplicarModoRef.current(newMode);
+      }
     }
-    // Este efecto se ejecuta cuando authInitialized cambia o cuando el objeto proyectoActual cambia.
-    // Esto asegura que si el usuario cambia de proyecto, las preferencias del nuevo proyecto se aplican.
-  }, [authInitialized, proyectoActual, aplicarFuenteGlobalmente /*, aplicarTemaGlobalmente, aplicarModoOscuroGlobalmente */]);
+    // Array de dependencias ESTRICTO: solo se re-ejecuta si authInitialized cambia
+    // o si la IDENTIDAD del proyecto (su ID) cambia.
+    // No se re-ejecutará si solo cambia ui_theme dentro del mismo proyectoActual.
+  }, [authInitialized, proyectoActual?.id]);
 
 
   useEffect(() => { // RedirectEffect
-    // ... (lógica existente sin cambios)...
     const currentAuthInitialized = authInitializedRef.current;
     const currentUser = userRef.current;
-
     if (!currentAuthInitialized) return;
-
     if (authLoading && currentUser && authLoadingGlobalActivationAttemptRef.current === 1) {
         console.log(`${LOG_PREFIX} [RedirectEffect] Esperando fin de ciclo de login (Contador=1). AuthLoading: ${authLoading}`);
         return;
     }
-
     const currentPageIsPublic = isPublicPage(pathname);
-
     if (currentUser) {
       if (currentPageIsPublic) {
         router.replace(proyectoActualRef.current ? '/' : '/');
@@ -277,7 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if(authLoading) setAuthLoading(false);
       }
     }
-  }, [user, authInitialized, authLoading, proyectoActual, pathname, router]); // Mantener dependencias originales
+  }, [user, authInitialized, authLoading, proyectoActual, pathname, router]);
 
   const handleSignIn = async (email: string, password: string): Promise<{ error: any | null; success: boolean; }> => { /* ... sin cambios ... */
     console.log(`${LOG_PREFIX} handleSignIn: Iniciado. Contador actual: ${authLoadingGlobalActivationAttemptRef.current}`);
@@ -324,11 +324,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     welcomeToastShownRef.current = false;
     setLoadingSignOut(false);
   };
-  const seleccionarProyecto = async (proyectoId: string) => { /* ... lógica original, considerar refactor si usa setters locales ... */
-    // Esta función es un candidato a refactorizar para que use setProyectoActivoLocal
-    // después de que la acción de BD (actualizarProyectoActivo) sea exitosa,
-    // moviendo la llamada a actualizarProyectoActivo al componente que la inicia (UserAvatar).
-    // Por ahora, se mantiene su lógica original para no introducir demasiados cambios a la vez.
+  const seleccionarProyecto = async (proyectoId: string) => { /* ... sin cambios por ahora ... */
     if (!userRef.current) return;
     if (proyectoActualRef.current?.id === proyectoId) return;
     console.log(`${LOG_PREFIX} Seleccionando proyecto: ${proyectoId}`);
@@ -340,7 +336,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         configAppliedForProjectId.current = null;
         welcomeToastShownRef.current = false;
-        await cargarProyectosUsuario(userRef.current.id, true); // Esto recarga proyectoActual y disparará el useEffect de sincronización de UI
+        await cargarProyectosUsuario(userRef.current.id, true); 
         toast.success("Proyecto cambiado exitosamente.");
       }
     } catch (e: any) {
@@ -350,10 +346,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // --- SETTERS LOCALES (v10.17) ---
   const setProyectoActivoLocal = useCallback((proyecto: UserProjectSetting | null) => {
     console.log(`${LOG_PREFIX} setProyectoActivoLocal: Cambiando proyecto localmente a:`, proyecto ? `${proyecto.name} (ID: ${proyecto.id.substring(0,8)})` : 'null');
-    setProyectoActual(proyecto); // Esto también disparará el useEffect de sincronización de UI
+    setProyectoActual(proyecto); // Este cambio en proyectoActual.id SÍ disparará el useEffect de sincronización
     if (proyecto) {
       configAppliedForProjectId.current = proyecto.id;
     } else {
@@ -364,9 +359,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProyectoActual(prev => {
       if (prev) {
         console.log(`${LOG_PREFIX} setUiThemeLocal: Cambiando tema localmente a: ${theme} para proyecto ${prev.id.substring(0,8)}`);
-        return { ...prev, ui_theme: theme }; // Disparará el useEffect de sincronización de UI
+        return { ...prev, ui_theme: theme }; // Esto cambia el objeto proyectoActual, pero NO su ID.
       }
-      console.warn(`${LOG_PREFIX} setUiThemeLocal: proyectoActual es null. No se aplicó el tema.`);
       return null;
     });
   }, []);
@@ -374,9 +368,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProyectoActual(prev => {
       if (prev) {
         console.log(`${LOG_PREFIX} setUiFontPairLocal: Cambiando font pair localmente a: ${fontPair} para proyecto ${prev.id.substring(0,8)}`);
-        return { ...prev, ui_font_pair: fontPair }; // Disparará el useEffect de sincronización de UI
+        return { ...prev, ui_font_pair: fontPair }; // Esto cambia el objeto proyectoActual, pero NO su ID.
       }
-      console.warn(`${LOG_PREFIX} setUiFontPairLocal: proyectoActual es null. No se aplicó el font pair.`);
       return null;
     });
   }, []);
@@ -384,15 +377,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProyectoActual(prev => {
       if (prev) {
         console.log(`${LOG_PREFIX} setUiIsDarkModeLocal: Cambiando modo oscuro localmente a: ${isDark} para proyecto ${prev.id.substring(0,8)}`);
-        return { ...prev, ui_is_dark_mode: isDark }; // Disparará el useEffect de sincronización de UI
+        return { ...prev, ui_is_dark_mode: isDark }; // Esto cambia el objeto proyectoActual, pero NO su ID.
       }
-      console.warn(`${LOG_PREFIX} setUiIsDarkModeLocal: proyectoActual es null. No se aplicó el modo oscuro.`);
       return null;
     });
   }, []);
-  // --- Fin de Setters Locales ---
 
-  const authContextValue: AuthContextType = {
+  const authContextValue: AuthContextType = { /* ... sin cambios ... */
     supabase, user, session,
     authLoading, authInitialized,
     proyectoActual, proyectosDisponibles,

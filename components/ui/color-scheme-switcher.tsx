@@ -1,3 +1,5 @@
+// components/ui/color-scheme-switcher.tsx
+// Versión: 1.1 (Lógica optimista: cambio visual inmediato, persistencia silenciosa de ui_theme)
 "use client";
 
 import { useTheme } from "@/app/theme-provider";
@@ -6,43 +8,89 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRef, useState, useEffect, useMemo } from "react";
 import { Text } from "@/components/ui/text";
 import { Icon } from "@/components/ui/icon";
-import { generateFontSelectorTokens } from "@/lib/theme/components/font-selector-tokens";
+import { generateFontSelectorTokens } from "@/lib/theme/components/font-selector-tokens"; // Asumo que estos tokens también son útiles aquí o se pueden adaptar
+
+// --- NUEVAS IMPORTACIONES ---
+import { useAuth } from "@/app/auth-provider";
+import { actualizarPreferenciasUI } from "@/app/actions/proyecto-actions";
+import { toast } from "sonner";
+
+// Tipos para los esquemas de color disponibles
+type ColorSchemeId = "blue" | "green" | "orange";
 
 export function ColorSchemeSwitcher() {
   const { colorScheme, mode, setColorScheme, appColorTokens } = useTheme();
+  const auth = useAuth(); // Hook para acceder al contexto de autenticación
+
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [forceUpdate, setForceUpdate] = useState({});
   
-  // Usar useMemo para generar los tokens solo cuando cambian las dependencias
+
+
   const navTokens = useMemo(() => {
     return appColorTokens ? generateFontSelectorTokens(appColorTokens, mode) : null;
   }, [appColorTokens, mode]);
-  
-  // Verificar si tenemos tokens válidos
+
   const hasTokens = !!navTokens;
-  
-  // Efecto para forzar actualización cuando cambia el tema
-  useEffect(() => {
-    setForceUpdate({});
-  }, [colorScheme, mode]);
-  
-  // Función directa para cambiar el esquema de color
-  const handleColorSchemeChange = (scheme: "blue" | "green" | "orange") => {
-    // Aplicamos el cambio de esquema
-    setColorScheme(scheme);
+
+
+  const handleColorSchemeChange = async (scheme: ColorSchemeId) => {
+    setIsOpen(false); // Cerrar el menú desplegable primero
+
+    const visualChangeNeeded = scheme !== colorScheme;
+
+    // 1. Aplicar el cambio visual inmediato si es diferente al visual actual
+    if (visualChangeNeeded) {
+      setColorScheme(scheme); // Esto actualiza ThemeProvider y la UI
+      console.log(`[ColorSchemeSwitcher v1.1] Cambio visual inmediato a tema: ${scheme}`);
+      // El setTimeout para forceUpdate se mantiene por ahora, como en el código original.
+      // Considerar si es necesario después de pruebas completas.
     
-    // Cerramos el menú
-    setIsOpen(false);
+    }
+
+    // 2. Proceder con la persistencia silenciosa si es necesario
+    const currentPersistedTheme = auth.proyectoActual?.ui_theme;
+    const needsPersistence = auth.user?.id &&
+                             auth.proyectoActual?.id &&
+                             (scheme !== currentPersistedTheme || !currentPersistedTheme);
+
+    if (!needsPersistence) {
+      if (!auth.user?.id || !auth.proyectoActual?.id) {
+        console.warn("[ColorSchemeSwitcher v1.1] Persistencia omitida: Usuario o proyecto no disponible.");
+      } else if (scheme === currentPersistedTheme) {
+        console.log("[ColorSchemeSwitcher v1.1] Persistencia omitida: El tema seleccionado ya está persistido.");
+      }
+      return;
+    }
     
-    // Forzar re-renderizado
-    setTimeout(() => {
-      setForceUpdate({});
-    }, 0);
+    console.log(`[ColorSchemeSwitcher v1.1] Iniciando persistencia silenciosa para tema: ${scheme}`);
+    try {
+      // Aseguramos que user.id y proyectoActual.id existen antes de usarlos
+      // (aunque la lógica de needsPersistence ya debería haberlo cubierto)
+      if (!auth.user?.id || !auth.proyectoActual?.id) {
+          throw new Error("Usuario o ID de proyecto no disponible para la persistencia.");
+      }
+
+      const result = await actualizarPreferenciasUI(
+        auth.user.id,
+        auth.proyectoActual.id,
+        { ui_theme: scheme } // Solo enviamos la preferencia de tema
+      );
+
+      if (result.success) {
+        auth.setUiThemeLocal(scheme); // Actualiza AuthProvider silenciosamente
+        console.log(`[ColorSchemeSwitcher v1.1] Persistencia exitosa y AuthProvider actualizado para tema: ${scheme}`);
+      } else {
+        toast.error(result.error || "Ups! Tuvimos un problema al guardar tu preferencia de tema. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.");
+        console.error("[ColorSchemeSwitcher v1.1] Error en persistencia desde actualizarPreferenciasUI:", result.error);
+      }
+    } catch (error: any) {
+      console.error("[ColorSchemeSwitcher v1.1] Excepción durante la persistencia del tema:", error);
+      toast.error(error.message || "Ups! Hubo una excepción al guardar tu preferencia de tema. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.");
+    }
   };
   
-  // Cerrar el menú cuando se hace clic fuera de él
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -54,98 +102,51 @@ export function ColorSchemeSwitcher() {
         setIsOpen(false);
       }
     };
-    
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  
-  // Variantes de animación para el menú
-  const menuVariants = {
-    hidden: {
-      opacity: 0,
-      y: -5,
-      scale: 0.95,
-      transition: {
-        duration: 0.2,
-        ease: "easeInOut",
-      },
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        duration: 0.2,
-        ease: "easeOut",
-      },
-    },
-    exit: {
-      opacity: 0,
-      y: -5,
-      scale: 0.95,
-      transition: {
-        duration: 0.15,
-        ease: "easeInOut",
-      },
-    },
+
+  const menuVariants = { /* ... sin cambios ... */
+    hidden: { opacity: 0, y: -5, scale: 0.95, transition: { duration: 0.2, ease: "easeInOut" }},
+    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2, ease: "easeOut" }},
+    exit: { opacity: 0, y: -5, scale: 0.95, transition: { duration: 0.15, ease: "easeInOut" }},
   };
-  
-  // Variantes para los elementos del menú
-  const itemVariants = {
+  const itemVariants = { /* ... sin cambios ... */
     hidden: { opacity: 0, x: -10 },
     visible: (custom: number) => ({
       opacity: 1,
       x: 0,
-      transition: {
-        delay: custom * 0.05,
-        duration: 0.2,
-        ease: "easeOut",
-      },
+      transition: { delay: custom * 0.05, duration: 0.2, ease: "easeOut" },
     }),
   };
-  
-  // Obtener el nombre del esquema de color actual
+
+  const colorSchemes: { id: ColorSchemeId, name: string, bgColorClass: string }[] = [
+    { id: "blue", name: "Azul", bgColorClass: "bg-blue-600" },
+    { id: "green", name: "Verde", bgColorClass: "bg-green-600" },
+    { id: "orange", name: "Naranja", bgColorClass: "bg-orange-500" },
+  ];
+
   const getCurrentColorSchemeName = () => {
-    const schemes = [
-      { id: "blue", name: "Azul" },
-      { id: "green", name: "Verde" },
-      { id: "orange", name: "Naranja" },
-    ];
-    
-    const currentScheme = schemes.find(scheme => scheme.id === colorScheme);
-    return currentScheme ? currentScheme.name : "Default";
+    // La UI del selector se basa en `colorScheme` de `useTheme()`, que es actualizado por `setColorScheme`
+    const current = colorSchemes.find(s => s.id === colorScheme);
+    return current ? current.name : "Azul"; // Fallback a Azul si no se encuentra
+  };
+
+  const getColorCircleClass = () => {
+    const current = colorSchemes.find(s => s.id === colorScheme);
+    return current ? current.bgColorClass : "bg-blue-600"; // Fallback
   };
   
-  // Obtener el color del círculo según el esquema
-  const getColorCircle = () => {
-    switch (colorScheme) {
-      case "blue":
-        return "bg-blue-600";
-      case "green":
-        return "bg-green-600";
-      case "orange":
-        return "bg-orange-500";
-      default:
-        return "bg-blue-600";
-    }
-  };
-  
-  // Valores por defecto en caso de que no haya tokens
   const defaultBackgroundColor = "rgba(200, 200, 200, 0.5)";
   const defaultBorderColor = "rgba(150, 150, 150, 0.3)";
   const defaultTextColor = "#333333";
   const defaultIconColor = "rgba(100, 100, 100, 0.7)";
-  
+
   return (
     <div className="relative flex items-center gap-1">
-      <Text 
-        variant="caption" 
-        color="neutral" 
-        colorVariant="textShade" 
-        className="text-xs opacity-50 whitespace-nowrap"
-      >
+      <Text variant="caption" color="neutral" colorVariant="textShade" className="text-xs opacity-50 whitespace-nowrap">
         Tema:
       </Text>
       
@@ -172,11 +173,8 @@ export function ColorSchemeSwitcher() {
         aria-haspopup="true"
       >
         <div className="flex items-center gap-1.5">
-          <div className={`h-2.5 w-2.5 rounded-full ${getColorCircle()}`} />
-          <span style={{ 
-            fontSize: "0.75rem",
-            opacity: 0.7,
-          }}>
+          <div className={`h-2.5 w-2.5 rounded-full ${getColorCircleClass()}`} />
+          <span style={{ fontSize: "0.75rem", opacity: 0.7, }}>
             {getCurrentColorSchemeName()}
           </span>
         </div>
@@ -185,9 +183,7 @@ export function ColorSchemeSwitcher() {
             color: hasTokens && navTokens 
               ? `${navTokens.icon.color}70` 
               : defaultIconColor,
-            width: "12px",
-            height: "12px",
-            transition: "transform 0.2s",
+            width: "12px", height: "12px", transition: "transform 0.2s",
             transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
           }}
         />
@@ -210,98 +206,36 @@ export function ColorSchemeSwitcher() {
                 : "0 4px 12px rgba(0, 0, 0, 0.1)",
               padding: "0.5rem",
             }}
-            variants={menuVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
+            variants={menuVariants} initial="hidden" animate="visible" exit="exit"
           >
             <div className="grid gap-1">
-              {/* Opción Azul */}
-              <motion.button
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-                custom={0}
-                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors"
-                style={{
-                  backgroundColor: colorScheme === "blue" && hasTokens && navTokens
-                    ? `${navTokens.item.selected.backgroundColor}50` 
-                    : colorScheme === "blue"
-                      ? "rgba(200, 200, 255, 0.25)"
-                      : "transparent",
-                }}
-                onClick={() => handleColorSchemeChange("blue")}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-blue-600" />
-                  <Text color="secondary" colorVariant="text" size="xs">
-                    Azul
-                  </Text>
-                </div>
-                {colorScheme === "blue" && (
-                  <Icon size="xs" color="primary" colorVariant="pure">
-                    <Check className="h-3 w-3" />
-                  </Icon>
-                )}
-              </motion.button>
-              
-              {/* Opción Verde */}
-              <motion.button
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-                custom={1}
-                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors"
-                style={{
-                  backgroundColor: colorScheme === "green" && hasTokens && navTokens
-                    ? `${navTokens.item.selected.backgroundColor}50` 
-                    : colorScheme === "green"
-                      ? "rgba(200, 255, 200, 0.25)"
-                      : "transparent",
-                }}
-                onClick={() => handleColorSchemeChange("green")}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-green-600" />
-                  <Text color="secondary" colorVariant="text" size="xs">
-                    Verde
-                  </Text>
-                </div>
-                {colorScheme === "green" && (
-                  <Icon size="xs" color="primary" colorVariant="pure">
-                    <Check className="h-3 w-3" />
-                  </Icon>
-                )}
-              </motion.button>
-              
-              {/* Opción Naranja */}
-              <motion.button
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-                custom={2}
-                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors"
-                style={{
-                  backgroundColor: colorScheme === "orange" && hasTokens && navTokens
-                    ? `${navTokens.item.selected.backgroundColor}50` 
-                    : colorScheme === "orange"
-                      ? "rgba(255, 230, 200, 0.25)"
-                      : "transparent",
-                }}
-                onClick={() => handleColorSchemeChange("orange")}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-orange-500" />
-                  <Text color="secondary" colorVariant="text" size="xs">
-                    Naranja
-                  </Text>
-                </div>
-                {colorScheme === "orange" && (
-                  <Icon size="xs" color="primary" colorVariant="pure">
-                    <Check className="h-3 w-3" />
-                  </Icon>
-                )}
-              </motion.button>
+              {colorSchemes.map((schemeItem, index) => (
+                <motion.button
+                  key={schemeItem.id}
+                  variants={itemVariants} initial="hidden" animate="visible" custom={index}
+                  className="flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors"
+                  style={{
+                    backgroundColor: colorScheme === schemeItem.id && hasTokens && navTokens
+                      ? `${navTokens.item.selected.backgroundColor}50` 
+                      : colorScheme === schemeItem.id
+                        ? "rgba(200, 200, 255, 0.25)" // Fallback si no hay tokens
+                        : "transparent",
+                  }}
+                  onClick={() => handleColorSchemeChange(schemeItem.id)}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`h-3 w-3 rounded-full ${schemeItem.bgColorClass}`} />
+                    <Text color="secondary" colorVariant="text" size="xs">
+                      {schemeItem.name}
+                    </Text>
+                  </div>
+                  {colorScheme === schemeItem.id && (
+                    <Icon size="xs" color="primary" colorVariant="pure">
+                      <Check className="h-3 w-3" />
+                    </Icon>
+                  )}
+                </motion.button>
+              ))}
             </div>
           </motion.div>
         )}
