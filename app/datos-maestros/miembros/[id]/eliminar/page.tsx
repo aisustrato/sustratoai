@@ -18,7 +18,7 @@ import { ArrowLeft, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 import { PageBackground } from "@/components/ui/page-background";
 import { PageTitle } from "@/components/ui/page-title";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CustomDialog } from "@/components/ui/custom-dialog";
 
@@ -155,7 +155,14 @@ export default function EliminarMiembroPage() {
           className="mb-6"
         />
 
-        <ProCard border="top" variant="primary" className="mb-6">
+        <StandardCard
+          accentPlacement="top"
+          colorScheme="primary"
+          accentColorScheme="primary" // Derived from colorScheme as borderVariant wasn't specified
+          className="mb-6"
+          styleType="subtle"
+          hasOutline={false} // border="top" implies no full outline
+        >
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-medium">¿Está seguro que desea eliminar a este miembro?</h3>
@@ -193,7 +200,7 @@ export default function EliminarMiembroPage() {
               </CustomButton>
             </div>
           </div>
-        </ProCard>
+        </StandardCard>
       </div>
 
       {/* Dialogo de confirmación */}

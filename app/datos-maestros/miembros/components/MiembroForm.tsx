@@ -11,7 +11,7 @@ import { TextArea } from "@/components/ui/textarea";
 import { SelectCustom, type SelectOption } from "@/components/ui/select-custom";
 import { FormField } from "@/components/ui/form-field"; // Asegúrate de que FormField pueda recibir y mostrar 'hint' y 'successMessage'
 import { CustomButton } from "@/components/ui/custom-button";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import {
   Mail, User, Briefcase, Building, Phone, Languages, MessageSquare
@@ -178,9 +178,9 @@ export const MiembroForm: React.FC<MiembroFormProps> = ({
   };
 
   return (
-    <ProCard>
+    <StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">
     
-      <ProCard.Content>
+      <StandardCard.Content>
         <form
           onSubmit={form.handleSubmit(handleFormSubmit, onInvalidSubmit)}
           className="space-y-6"
@@ -502,7 +502,7 @@ export const MiembroForm: React.FC<MiembroFormProps> = ({
             </div>
           )}
         </form>
-      </ProCard.Content>
-    </ProCard>
+      </StandardCard.Content>
+    </StandardCard>
   );
 };

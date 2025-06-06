@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import { CustomButton } from "@/components/ui/custom-button";
 import {
@@ -127,20 +127,20 @@ const handleConfirmReset = async () => {
 
 	if (!batchTokens) {
 		return (
-			<ProCard>
-				<ProCard.Content>
+			<StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">
+				<StandardCard.Content>
 					<Text className="text-muted-foreground text-center p-4">
 						Cargando estilos...
 					</Text>
-				</ProCard.Content>
-			</ProCard>
+				</StandardCard.Content>
+			</StandardCard>
 		);
 	}
 
 	if (lotes.length === 0 && !isResetting) {
 		return (
-			<ProCard>
-				<ProCard.Content className="text-center py-10">
+			<StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">
+				<StandardCard.Content className="text-center py-10">
 					<Text
 						variant="subheading"
 						weight="medium"
@@ -150,8 +150,8 @@ const handleConfirmReset = async () => {
 					<Text size="sm" className="text-muted-foreground mt-2">
 						El simulador debería estar visible para crear nuevos lotes.
 					</Text>
-				</ProCard.Content>
-			</ProCard>
+				</StandardCard.Content>
+			</StandardCard>
 		);
 	}
 
@@ -175,12 +175,15 @@ const handleConfirmReset = async () => {
 						{ label: "Lotes", href: "/datos-maestros/lote" },
 					]}
 				/>
-				<ProCard
-					variant="primary"
-					border="top"
-					borderVariant="neutral"
-					shadow="md">
-					<ProCard.Header className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+				<StandardCard
+					colorScheme="primary"
+					accentPlacement="top"
+					accentColorScheme="neutral"
+					shadow="md"
+					styleType="subtle"
+					hasOutline={false} // border="top" implies no full outline
+				>
+					<StandardCard.Header className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
 						<div>
 							<Text variant="heading" size="xl" weight="semibold" color="tertiary">
 								Total: {lotes.length} lotes.
@@ -213,8 +216,8 @@ const handleConfirmReset = async () => {
 								/>
 							</>
 						)}
-					</ProCard.Header>
-					<ProCard.Content className="space-y-6">
+					</StandardCard.Header>
+					<StandardCard.Content className="space-y-6">
 						{/* Leyenda de Miembros */}
 						{Object.keys(memberColorMap).length > 0 && (
 							<div className="mb-6 p-3 border dark:border-neutral-700 rounded-md bg-background/30">
@@ -361,8 +364,8 @@ const handleConfirmReset = async () => {
 								</div>
 							</div>
 						)}
-					</ProCard.Content>
-				</ProCard>
+					</StandardCard.Content>
+				</StandardCard>
 			</div>
 		</PageBackground>
 	);

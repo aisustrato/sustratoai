@@ -3,7 +3,7 @@
 import React from "react";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import { useTheme } from "@/app/theme-provider";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import { BadgeCustom } from "@/components/ui/badge-custom";
 import { CustomButton } from "@/components/ui/custom-button";
@@ -49,28 +49,32 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
   };
 
   return (
-    <ProCard
+    <StandardCard
       className={cn(
         "flex flex-col h-full group relative",
         isBeingDeleted && "opacity-50 pointer-events-none"
       )}
-      border="left"
-      color={cardColorVariant as any}
+      accentPlacement="left"
+      colorScheme={cardColorVariant as StandardCardColorScheme}
+      accentColorScheme={cardColorVariant as StandardCardColorScheme} // Derived from colorScheme
       shadow="md"
+      styleType="subtle"
+      hasOutline={false} // border="left" implies no full outline
+      onCardClick={handleCardClick} // Moved onClick here
     >
       {isBeingDeleted && (
         <div className="absolute inset-0 flex items-center justify-center bg-card/50 z-10">
           <span>Cargando...</span>
         </div>
       )}
+      {/* El div se mantiene por estructura, pero sin el onClick */}
       <div
-        onClick={handleCardClick}
-        className="cursor-pointer flex-grow flex flex-col p-4"
+        className="cursor-pointer flex-grow flex flex-col p-4" // onClick removed
         tabIndex={0}
         role="button"
         aria-label={`Ver detalles de ${dimension.name}`}
       >
-        <ProCard.Header className="p-0 mb-2">
+        <StandardCard.Header className="p-0 mb-2">
           <div className="flex flex-col gap-1">
             <div className="flex items-start justify-between">
               <Text
@@ -112,9 +116,9 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
               </div>
             )}
           </div>
-        </ProCard.Header>
+        </StandardCard.Header>
         {/* ... resto del contenido de la card ... */}
       </div>
-    </ProCard>
+    </StandardCard>
   );
 };

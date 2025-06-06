@@ -11,7 +11,7 @@ import {
     type ProjectRoleRow,
     type ResultadoOperacion 
 } from "@/lib/actions/proyect-role-actions";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { PageTitle } from "@/components/ui/page-title";
 import { ShieldCheck, AlertTriangle } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
@@ -135,19 +135,19 @@ export default function ModificarRolPage() {
 
   // Los siguientes checks se hacen DESPUÉS de que isPageLoading es false.
   if (!proyectoActual?.id) {
-    return ( <PageBackground > <ProCard className="max-w-md text-center">  <ProCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </ProCard.Header> <ProCard.Content><Text>{pageError || "No hay un proyecto activo."}</Text></ProCard.Content> <ProCard.Footer> <Link href="/" passHref><CustomButton variant="outline">Ir a Inicio</CustomButton></Link> </ProCard.Footer> </ProCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none">  <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError || "No hay un proyecto activo."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><CustomButton variant="outline">Ir a Inicio</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
   
   if (!puedeGestionarRoles) { 
-    return ( <PageBackground > <ProCard className="max-w-md text-center">   <ProCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Acceso Denegado" className="mt-4" /> </ProCard.Header> <ProCard.Content><Text>No tienes permisos para modificar roles en este proyecto.</Text></ProCard.Content> <ProCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </ProCard.Footer> </ProCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none">   <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Acceso Denegado" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>No tienes permisos para modificar roles en este proyecto.</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
   
   if (pageError && !rolParaEditar) { 
-    return ( <PageBackground > <ProCard className="max-w-md text-center">  <ProCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <AlertTriangle className="h-6 w-6 text-danger-600" /> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </ProCard.Header> <ProCard.Content><Text>{pageError}</Text></ProCard.Content> <ProCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </ProCard.Footer> </ProCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none">  <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <AlertTriangle className="h-6 w-6 text-danger-600" /> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
 
   if (!rolParaEditar) { 
-    return ( <PageBackground > <ProCard className="max-w-md text-center">  <ProCard.Header><PageTitle title="Rol no Encontrado" /></ProCard.Header> <ProCard.Content><Text>{pageError || "No se encontraron datos para el rol especificado."}</Text></ProCard.Content> <ProCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </ProCard.Footer> </ProCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none">  <StandardCard.Header><PageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><Text>{pageError || "No se encontraron datos para el rol especificado."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
 
   const valoresInicialesParaForm: RolFormValues = {
@@ -174,9 +174,15 @@ export default function ModificarRolPage() {
               ]}
               showBackButton={{ href: `/datos-maestros/roles` }}
             />
-        <ProCard border="top" color="primary">
+        <StandardCard
+            accentPlacement="top"
+            colorScheme="primary" // Mapped from ProCard's color="primary"
+            accentColorScheme="primary" // Derived from colorScheme
+            styleType="subtle"
+            hasOutline={false} // border="top" implies no full outline
+        >
         
-          <ProCard.Content>
+          <StandardCard.Content>
             {pageError && rolParaEditar && ( 
               <div className="mb-4 p-3 text-sm text-destructive-foreground border border-destructive bg-destructive/10 rounded-md">
                 <div className="flex items-center gap-2"> <AlertTriangle className="h-5 w-5"/> <span>{pageError}</span> </div>
@@ -189,8 +195,8 @@ export default function ModificarRolPage() {
               isEditingForm={true}
               loading={isSubmitting}
             />
-          </ProCard.Content>
-        </ProCard>
+          </StandardCard.Content>
+        </StandardCard>
       </div>
     </PageBackground>
   );

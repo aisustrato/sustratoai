@@ -16,7 +16,7 @@ import { PageBackground } from "@/components/ui/page-background";
 import { PageTitle } from "@/components/ui/page-title";
 import { CustomButton } from "@/components/ui/custom-button";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import { AlertTriangle, ArrowLeft, Edit } from "lucide-react";
 import {
@@ -214,20 +214,26 @@ export default function ModificarDimensionPage() {
      return (
       <PageBackground>
         <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
-            <ProCard variant="danger" className="max-w-lg w-full">
-                <ProCard.Header className="items-center flex flex-col text-center">
+            <StandardCard
+                colorScheme="danger"
+                className="max-w-lg w-full"
+                styleType="subtle"
+                hasOutline={false} // No border prop originally
+                accentPlacement="none" // No border prop originally
+            >
+                <StandardCard.Header className="items-center flex flex-col text-center">
                     <AlertTriangle className="h-12 w-12 text-danger-fg mb-4" />
                     <Text variant="subheading" weight="bold" color="danger">
                         Error
                     </Text>
-                </ProCard.Header>
-                <ProCard.Content className="text-center"><Text>{errorPage}</Text></ProCard.Content>
-                <ProCard.Footer className="flex justify-center">
+                </StandardCard.Header>
+                <StandardCard.Content className="text-center"><Text>{errorPage}</Text></StandardCard.Content>
+                <StandardCard.Footer className="flex justify-center">
                      <CustomButton onClick={handleVolver} leftIcon={<ArrowLeft />} variant="outline" color="danger">
                         Volver a Dimensiones
                     </CustomButton>
-                </ProCard.Footer>
-            </ProCard>
+                </StandardCard.Footer>
+            </StandardCard>
         </div>
       </PageBackground>
     );
@@ -239,13 +245,19 @@ export default function ModificarDimensionPage() {
     return (
         <PageBackground>
             <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <ProCard variant="warning" className="text-center p-6">
+                <StandardCard
+                    colorScheme="warning"
+                    className="text-center p-6"
+                    styleType="subtle"
+                    hasOutline={false} // No border prop originally
+                    accentPlacement="none" // No border prop originally
+                >
                     <Text variant="subheading">Dimensión no disponible</Text>
                     <Text color="muted" className="mt-2">No se pudo cargar la información de la dimensión. Intenta volver a la lista.</Text>
                      <CustomButton onClick={handleVolver} leftIcon={<ArrowLeft />} variant="outline" className="mt-4">
                         Volver a Dimensiones
                     </CustomButton>
-                </ProCard>
+                </StandardCard>
             </div>
         </PageBackground>
     );
@@ -267,14 +279,22 @@ export default function ModificarDimensionPage() {
             showBackButton={{ href: "/datos-maestros/dimensiones" }}
           />
 
-          <ProCard className="mt-6" border="top" color="secondary" shadow="lg">
+          <StandardCard
+            className="mt-6"
+            accentPlacement="top"
+            colorScheme="secondary" // Mapped from ProCard's color="secondary"
+            accentColorScheme="secondary" // Derived from colorScheme
+            shadow="lg"
+            styleType="subtle"
+            hasOutline={false} // border="top" implies no full outline
+          >
             <DimensionForm
               modo="editar"
               valoresIniciales={valoresFormIniciales}
               onSubmit={handleFormSubmit}
               loading={isSubmitting}
             />
-          </ProCard>
+          </StandardCard>
         </div>
       </div>
     </PageBackground>

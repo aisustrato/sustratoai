@@ -22,7 +22,7 @@ import type { SelectOption } from "@/components/ui/select-custom";
 import { Text } from "@/components/ui/text";
 import { PageBackground } from "@/components/ui/page-background";
 import { PageTitle } from "@/components/ui/page-title";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 
 export default function VerMiembroPage() {
 	const router = useRouter();
@@ -251,7 +251,13 @@ export default function VerMiembroPage() {
 						showBackButton={{ href: "/datos-maestros/miembros" }}
 					/>
 
-					<ProCard border="top" color="primary"   >
+					<StandardCard
+						accentPlacement="top"
+						colorScheme="primary" // Mapped from ProCard's color="primary"
+						accentColorScheme="primary" // Derived from colorScheme as borderVariant wasn't specified
+						styleType="subtle"
+						hasOutline={false} // border="top" implies no full outline
+					>
 						{puedeGestionarMiembros && (
               <div className="flex justify-end pt-3">
 							<CustomButton
@@ -270,7 +276,7 @@ export default function VerMiembroPage() {
 						valoresIniciales={valoresFormulario}
 						rolesDisponibles={rolesDisponibles}
 					/>
-	</ProCard>
+	</StandardCard>
 					{error && miembro && (
 						<div className="mt-4 p-4 bg-warning-muted text-warning-foreground rounded-md text-center ">
 							<Text variant="caption" weight="medium">
