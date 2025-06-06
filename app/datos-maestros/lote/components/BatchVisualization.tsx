@@ -1,6 +1,7 @@
-// app/datos-maestros/lote/components/BatchVisualization.tsx
+//. 📍 app/datos-maestros/lote/components/BatchVisualization.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion"; // Aunque no se usa activamente ahora, se deja por si acaso
 import { useTheme } from "@/app/theme-provider"; 
@@ -26,10 +27,17 @@ import { AlertTriangle, CheckCircle, Settings, Eye, BarChartBig } from "lucide-r
 import { CustomButton } from "@/components/ui/custom-button";
 import { PageTitle } from "@/components/ui/page-title"; // Para el título principal
 import { PageBackground } from "@/components/ui/page-background"; // Para el fondo
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
+// No specific props for this component, types are for internal state or imported.
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function BatchSimulatorPage() { // Renombrado el componente para reflejar que es una "página" o sección completa
   const { proyectoActual } = useAuth();
   const { appColorTokens, mode } = useTheme();
+  //#region [sub] - 🧰 HELPER FUNCTIONS, HOOKS & LOGIC 🧰
   const batchTokens = useMemo<BatchTokens | null>(
     () => appColorTokens && generateBatchTokens(appColorTokens, mode),
     [appColorTokens, mode]
@@ -147,12 +155,13 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
     }
   },[selectedMemberIds, isLoadingInitialData, runSimulation]);
 
-
+  // Derived state for rendering
   const displayableBatches = simulationData?.distribution || [];
   const totalBatchesCalculated = simulationData?.totalBatchesCalculated || 0;
   const totalEligibleArticles = simulationData?.totalEligibleArticles || 0;
   const gridColumns = totalBatchesCalculated > 0 ? Math.ceil(Math.sqrt(totalBatchesCalculated)) : 1;
   
+  // Dynamic styling for "Peso Visual del Lote"
   const barWidth = 120;
   const pesoLoteBarContainerHeight = 280; 
   const pesoLoteBarItemHeight = 3;     
@@ -161,7 +170,9 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
       (pesoLoteBarContainerHeight - pesoLoteBarItemGap) / (pesoLoteBarItemHeight + pesoLoteBarItemGap)
   ); 
   const itemsToShowInPesoLote = batchSize > 0 ? Math.min(batchSize, maxItemsInPesoLoteVisual) : 0;
+  //#endregion ![sub]
 
+  //#region [render] - 🎨 RENDER SECTION 🎨
   if (!batchTokens || isLoadingInitialData) { // Mostrar loader principal si no hay tokens o cargando datos iniciales
     return (
         <PageBackground> {/* Usar PageBackground aquí también */}
@@ -489,4 +500,17 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
         </div>
     </PageBackground>
   );
+  //#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Esta página es una visualización/simulador y no crea lotes reales.
+// Considerar si el nombre "BatchSimulatorPage" es adecuado o si debería ser más específico a visualización.
+// La funcionalidad de crear lotes reales fue movida a `BatchSimulatorPage.tsx` (el que tiene la prop `onBatchesCreatedSuccessfully`).
+// Este componente podría renombrarse a algo como `BatchDistributionVisualizer.tsx` si solo simula y visualiza.
+//#endregion ![todo]

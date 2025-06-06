@@ -1,6 +1,7 @@
-// app/datos-maestros/dimensiones/components/DimensionForm.tsx
+//. 📍 app/datos-maestros/dimensiones/components/DimensionForm.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useEffect } from "react";
 import { useForm, Controller, useFieldArray, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,7 +16,9 @@ import { StandardCard, type StandardCardColorScheme } from "@/components/ui/Stan
 import { Text } from "@/components/ui/text";
 import { AlertCircle, HelpCircle, Lightbulb, ListChecks, PlusCircle, Trash2, CheckCircle } from "lucide-react";
 import { BadgeCustom } from "@/components/ui/badge-custom";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
 // Esquemas Zod para los sub-elementos
 const optionSchema = z.object({
   id: z.string().optional(),
@@ -61,7 +64,9 @@ interface DimensionFormProps {
   loading?: boolean;
   disabled?: boolean;
 }
+//#endregion ![def]
 
+//#region [main] - 🔧 COMPONENT 🔧
 export const DimensionForm: React.FC<DimensionFormProps> = ({
   modo,
   valoresIniciales,
@@ -117,6 +122,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
     console.error("DimensionForm (Inválido):", formErrors);
   };
   
+  //#region [sub] - 🧰 HELPER FUNCTIONS 🧰
   const typeOptions: SelectOption[] = [
     { value: "finite", label: "Selección Múltiple (Opciones Predefinidas)" },
     { value: "open", label: "Respuesta Abierta (Texto Libre)" },
@@ -137,7 +143,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
     // @ts-ignore
     return fieldState.isTouched && !error && !!watch(fieldPath);
   };
+  //#endregion ![sub]
   
+  //#region [render] - 🎨 RENDER SECTION 🎨
   return (
     <StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">
       <StandardCard.Content>
@@ -145,7 +153,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
           onSubmit={handleSubmit(handleFormSubmitInternal, onInvalidSubmit)}
           className="space-y-8"
         >
-          {/* SECCIÓN: DATOS BÁSICOS DE LA DIMENSIÓN */}
+          {/* //#region [render_sub] - 🧱 SECCIÓN: DATOS BÁSICOS 🧱 */}
           <StandardCard
             colorScheme="neutral"
             accentPlacement="top"
@@ -239,8 +247,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
               </FormField>
             </StandardCard.Content>
           </StandardCard>
+          {/* //#endregion [render_sub] */}
 
-          {/* SECCIÓN: OPCIONES (Solo si tipo === 'finite') */}
+          {/* //#region [render_sub] - 🧱 SECCIÓN: OPCIONES (FINITE) 🧱 */}
           {dimensionType === "finite" && (
             <StandardCard
               colorScheme="neutral"
@@ -308,8 +317,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
               </StandardCard.Content>
             </StandardCard>
           )}
+          {/* //#endregion [render_sub] */}
           
-          {/* SECCIÓN: PREGUNTAS GUÍA */}
+          {/* //#region [render_sub] - 🧱 SECCIÓN: PREGUNTAS GUÍA 🧱 */}
           <StandardCard
             colorScheme="neutral"
             accentPlacement="top"
@@ -369,8 +379,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
             ))}
             </StandardCard.Content>
           </StandardCard>
+          {/* //#endregion [render_sub] */}
 
-          {/* SECCIÓN: EJEMPLOS ILUSTRATIVOS */}
+          {/* //#region [render_sub] - 🧱 SECCIÓN: EJEMPLOS ILUSTRATIVOS 🧱 */}
           <StandardCard
             colorScheme="neutral"
             className="p-0"
@@ -429,8 +440,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
             ))}
             </StandardCard.Content>
           </StandardCard>
+          {/* //#endregion [render_sub] */}
 
-          {/* BOTÓN DE SUBMIT */}
+          {/* //#region [render_sub] - 🧱 BOTÓN SUBMIT 🧱 */}
           {modo !== "ver" && (
             <div className="flex justify-end pt-6">
               <CustomButton
@@ -444,8 +456,21 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
               </CustomButton>
             </div>
           )}
+          {/* //#endregion [render_sub] */}
         </form>
       </StandardCard.Content>
     </StandardCard>
   );
+  //#endregion ![render]
 };
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Export is part of the component declaration and type export
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar la internacionalización de los mensajes de error y etiquetas.
+// Mejorar la accesibilidad (ARIA attributes) en campos dinámicos si es necesario.
+// Evaluar si el `getFieldSuccessState` es demasiado complejo o si se puede simplificar.
+//#endregion ![todo]

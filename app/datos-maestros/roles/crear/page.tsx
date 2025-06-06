@@ -1,6 +1,7 @@
-// app/datos-maestros/roles/crear/page.tsx
+//. 📍 app/datos-maestros/roles/crear/page.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect } from "react"; // useCallback no es necesario aquí
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
@@ -15,10 +16,18 @@ import { CustomButton } from "@/components/ui/custom-button";
 import Link from "next/link";
 import { PageBackground } from "@/components/ui/page-background";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo"; // Para estado de carga opcional
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
+// No specific types or interfaces defined directly in this file.
+// RolFormValues is imported. State types are inline.
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function CrearRolPage() {
   const router = useRouter();
   const { proyectoActual } = useAuth(); // Obtener solo proyectoActual
+  //#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HANDLERS 🧰
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null); // Para errores de página, como no tener proyecto
 
@@ -77,8 +86,10 @@ export default function CrearRolPage() {
     }
     setIsSubmitting(false);
   };
+  //#endregion ![sub]
 
-  // Manejo de estados de carga y error antes de renderizar el formulario
+  //#region [render] - 🎨 RENDER SECTION 🎨
+  //#region [render_sub] - LOADING STATE ⏳
   if (isPageLoading) {
     return (
       <PageBackground >
@@ -86,7 +97,9 @@ export default function CrearRolPage() {
       </PageBackground>
     );
   }
+  //#endregion [render_sub]
 
+  //#region [render_sub] - NO PROJECT ERROR STATE 🤚
   if (pageError && !proyectoActual?.id) { // Si el error es por no tener proyecto
     return (
       <PageBackground >
@@ -109,7 +122,9 @@ export default function CrearRolPage() {
       </PageBackground>
     );
   }
+  //#endregion [render_sub]
   
+  //#region [render_sub] - ACCESS DENIED STATE 🚫
   if (!puedeGestionarRoles && proyectoActual?.id) { // Si hay proyecto pero no permisos
     return (
       <PageBackground >
@@ -134,7 +149,9 @@ export default function CrearRolPage() {
       </PageBackground>
     );
   }
+  //#endregion [render_sub]
 
+  //#region [render_sub] - MAIN FORM DISPLAY 📝
   return (
     <PageBackground>
       <div className="container mx-auto py-6">
@@ -177,4 +194,15 @@ export default function CrearRolPage() {
       </div>
     </PageBackground>
   );
+  //#endregion [render_sub]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar si el re-route después de crear un rol debería ser a la página de edición del rol recién creado.
+// Mejorar el manejo de errores específicos del formulario (ej. pasar `setError` de react-hook-form).
+//#endregion ![todo]

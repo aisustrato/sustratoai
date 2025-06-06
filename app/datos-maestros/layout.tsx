@@ -1,8 +1,17 @@
+//. 📍 app/datos-maestros/layout.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import { SidebarNav } from "@/components/ui/sidebar-nav";
 import { Database, Users, Building2, Briefcase, UserPlus, ShieldCheck, Layers, LayoutGrid } from "lucide-react";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
+// No specific types defined directly in this file, `children` is React.ReactNode.
+// Props for SidebarNav items are inferred from its definition.
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 const sidebarNavItems = [
  
   {
@@ -43,6 +52,7 @@ export default function DatosMaestrosLayout({
 }: {
   children: React.ReactNode;
 }) {
+  //#region [render] - 🎨 RENDER SECTION 🎨
   return (
     <div className="flex min-h-screen flex-col">
       <div className="container flex-1 items-start md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10">
@@ -59,4 +69,15 @@ export default function DatosMaestrosLayout({
       </div>
     </div>
   );
+  //#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration.
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar si el `sidebarNavItems` debería ser dinámico o cargado desde otra fuente si crece mucho.
+// Evaluar la necesidad de un estado o lógica más compleja en este layout a futuro.
+//#endregion ![todo]

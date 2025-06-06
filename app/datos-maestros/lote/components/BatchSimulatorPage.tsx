@@ -1,6 +1,7 @@
-// app/datos-maestros/lote/components/BatchSimulatorPage.tsx
+//. 📍 app/datos-maestros/lote/components/BatchSimulatorPage.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 // import { motion } from "framer-motion"; // No se usa activamente por ahora
 import { useTheme } from "@/app/theme-provider"; 
@@ -32,12 +33,19 @@ import { PageBackground } from "@/components/ui/page-background";
 import { useRouter } from "next/navigation"; 
 import { toast as sonnerToast } from "sonner";
 import { Progress } from "@/components/ui/progress"; // Importar tu componente Progress
+//#endregion ![head]
+
+//#region [def] - 📦 TYPES 📦
 interface BatchSimulatorPageProps {
     onBatchesCreatedSuccessfully: () => void; // Nueva prop
   }
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
   export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: BatchSimulatorPageProps) { 
   const router = useRouter(); 
   const { proyectoActual } = useAuth();
+  //#region [sub] - 🧰 HELPER FUNCTIONS, HOOKS & LOGIC 🧰
   const { appColorTokens, mode } = useTheme();
   const batchTokens = useMemo<BatchTokens | null>(
     () => appColorTokens && generateBatchTokens(appColorTokens, mode),
@@ -175,11 +183,13 @@ interface BatchSimulatorPageProps {
     }
   };
 
+  // Derived state for rendering
   const displayableBatches = simulationData?.distribution || [];
   const totalBatchesCalculated = simulationData?.totalBatchesCalculated || 0;
   const totalEligibleArticles = simulationData?.totalEligibleArticles || 0;
   const gridColumns = totalBatchesCalculated > 0 ? Math.ceil(Math.sqrt(totalBatchesCalculated)) : 1;
   
+  // Dynamic styling for "Peso Visual del Lote"
   const barWidth = 120;
   const pesoLoteBarContainerHeight = 280; 
   let dynamicBarItemHeight: number; let dynamicBarItemGap: number;
@@ -188,7 +198,9 @@ interface BatchSimulatorPageProps {
   else if (batchSize > 1) { const totalSpaceForGaps = Math.max(minTotalGapForPeso * (batchSize - 1), pesoLoteBarContainerHeight * 0.15); const spaceForBars = pesoLoteBarContainerHeight - totalSpaceForGaps; dynamicBarItemHeight = Math.max(1, spaceForBars / batchSize); dynamicBarItemGap = totalSpaceForGaps / (batchSize - 1); } 
   else { dynamicBarItemHeight = 0; dynamicBarItemGap = 0; }
   const itemsToShowInPesoLote = batchSize > 0 ? batchSize : 0; 
+  //#endregion ![sub]
 
+  //#region [render] - 🎨 RENDER SECTION 🎨
   if (!batchTokens || isLoadingInitialData) { 
     return (
         <PageBackground>
@@ -561,4 +573,17 @@ interface BatchSimulatorPageProps {
         </div>
     </PageBackground>
   );
+  //#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar la internacionalización de los mensajes de error y etiquetas.
+// Mejorar la accesibilidad (ARIA attributes) en campos dinámicos si es necesario.
+// Evaluar la complejidad de los cálculos de layout para los BatchItem (gridColumns, itemSize).
+// Revisar el manejo de estado de carga (isSimulating, isCreating, isLoadingInitialData) para evitar condiciones complejas.
+//#endregion ![todo]

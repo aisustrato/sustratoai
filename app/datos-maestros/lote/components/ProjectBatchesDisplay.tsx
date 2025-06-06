@@ -1,6 +1,7 @@
-// app/articulos/lotes/components/ProjectBatchesDisplay.tsx
+//. 📍 app/datos-maestros/lote/components/ProjectBatchesDisplay.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useMemo } from "react";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
@@ -30,7 +31,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { PageBackground } from "@/components/ui/page-background";
 import { PageTitle } from "@/components/ui/page-title";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES, INTERFACES & CONSTANTS 📦
 export interface DisplayableBatch {
 	id: string;
 	batch_number: number;
@@ -91,7 +94,9 @@ const statusBadgeStyles: Record<
 	error: "bg-red-100 text-red-700 dark:bg-red-700/30 dark:text-red-300",
 	default: "bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200",
 };
+//#endregion ![def]
 
+//#region [main] - 🔧 COMPONENT 🔧
 export default function ProjectBatchesDisplay({
 	projectId,
 	lotes,
@@ -100,31 +105,34 @@ export default function ProjectBatchesDisplay({
 	onResetAllBatches,
 	permisoParaResetearGeneral,
 }: ProjectBatchesDisplayProps) {
+	//#region [sub] - 🧰 HOOKS, STATE & HANDLERS 🧰
 	const [isResetting, setIsResetting] = useState(false);
+	const [dialogResetOpen, setDialogResetOpen] = useState(false);
 
 	const todosLosLotesEstanPendientes =
 		lotes.length > 0 && lotes.every((lote) => lote.status === "pending");
 	const mostrarBotonReset =
 		permisoParaResetearGeneral && todosLosLotesEstanPendientes;
 
-	const [dialogResetOpen, setDialogResetOpen] = useState(false);
+	const handleConfirmReset = async () => {
+		setIsResetting(true);
+		setDialogResetOpen(false);
+		const result = await onResetAllBatches();
+		if (result.success) {
+			sonnerToast.success("Reseteo Exitoso", {
+				description: result.message || "Todos los lotes han sido eliminados.",
+			});
+		} else {
+			sonnerToast.error("Error en el Reseteo", {
+				description: result.error || "No se pudieron eliminar los lotes.",
+			});
+		}
+		setIsResetting(false);
+	};
+	//#endregion ![sub]
 
-const handleConfirmReset = async () => {
-	setIsResetting(true);
-	setDialogResetOpen(false);
-	const result = await onResetAllBatches();
-	if (result.success) {
-		sonnerToast.success("Reseteo Exitoso", {
-			description: result.message || "Todos los lotes han sido eliminados.",
-		});
-	} else {
-		sonnerToast.error("Error en el Reseteo", {
-			description: result.error || "No se pudieron eliminar los lotes.",
-		});
-	}
-	setIsResetting(false);
-};
-
+	//#region [render] - 🎨 RENDER SECTION 🎨
+	//#region [render_sub] - LOADING STYLES 🎨
 	if (!batchTokens) {
 		return (
 			<StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">
@@ -136,7 +144,9 @@ const handleConfirmReset = async () => {
 			</StandardCard>
 		);
 	}
+	//#endregion [render_sub]
 
+	//#region [render_sub] - NO BATCHES (EMPTY STATE) 🎨
 	if (lotes.length === 0 && !isResetting) {
 		return (
 			<StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">
@@ -154,7 +164,10 @@ const handleConfirmReset = async () => {
 			</StandardCard>
 		);
 	}
+	//#endregion [render_sub]
 
+	//#region [sub_render_logic] - DERIVED VALUES FOR RENDER 🎨
+	// Moved derived values closer to their usage, inside the main return or just before if needed by multiple main branches.
 	const gridColumns = Math.min(
 		12,
 		Math.ceil(Math.sqrt(lotes.length * 1.2)) || 1
@@ -162,7 +175,9 @@ const handleConfirmReset = async () => {
 	const fallbackMemberColor =
 		batchTokens.auxiliaries.find((aux) => aux.key === "auxDefault") ||
 		batchTokens.auxiliaries[0];
+	//#endregion [sub_render_logic]
 
+	//#region [render_sub] - MAIN BATCH DISPLAY 🎨
 	return (
 		<PageBackground>
 			<div className="container mx-auto py-8">
@@ -218,7 +233,7 @@ const handleConfirmReset = async () => {
 						)}
 					</StandardCard.Header>
 					<StandardCard.Content className="space-y-6">
-						{/* Leyenda de Miembros */}
+						{/* //#region [render_sub_legend] - MEMBER LEGEND 🎨 */}
 						{Object.keys(memberColorMap).length > 0 && (
 							<div className="mb-6 p-3 border dark:border-neutral-700 rounded-md bg-background/30">
 								<Text
@@ -256,7 +271,9 @@ const handleConfirmReset = async () => {
 								</div>
 							</div>
 						)}
+						{/* //#endregion [render_sub_legend] */}
 
+						{/* //#region [render_sub_batch_grid] - BATCH GRID DISPLAY 🎨 */}
 						<div
 							className={`grid gap-4 w-full items-start justify-center`}
 							style={{
@@ -278,14 +295,14 @@ const handleConfirmReset = async () => {
 								const currentStatus = lote.status as Extract<
 									BatchStatusEnum,
 									string
-								>; // Castear a los strings del enum
-								const statusKeyToUse: keyof typeof statusIcons = // Usar el mismo tipo de clave que statusIcons
+								>;
+								const statusKeyToUse: keyof typeof statusIcons =
 									statusIcons.hasOwnProperty(currentStatus)
 										? currentStatus
 										: "default";
 
 								const statusIconToDisplay = statusIcons[statusKeyToUse];
-								const badgeStyleClass = statusBadgeStyles[statusKeyToUse]; // Usar las clases de Tailwind
+								const badgeStyleClass = statusBadgeStyles[statusKeyToUse];
 
 								const itemSize = Math.max(
 									40,
@@ -338,7 +355,9 @@ const handleConfirmReset = async () => {
 								);
 							})}
 						</div>
+						{/* //#endregion [render_sub_batch_grid] */}
 
+						{/* //#region [render_sub_reset_info] - RESET INFO MESSAGE 🎨 */}
 						{!mostrarBotonReset && lotes.length > 0 && (
 							<div className="mt-6 p-3 bg-warning-50 dark:bg-warning-900/30 border-l-4 border-warning-500 dark:border-warning-400 rounded">
 								<div className="flex">
@@ -364,9 +383,22 @@ const handleConfirmReset = async () => {
 								</div>
 							</div>
 						)}
+						{/* //#endregion [render_sub_reset_info] */}
 					</StandardCard.Content>
 				</StandardCard>
 			</div>
 		</PageBackground>
 	);
+	//#endregion [render_sub]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar la paginación o virtualización si el número de lotes es muy grande.
+// Mejorar la accesibilidad de los elementos interactivos (tooltips, botones).
+// Podría haber una opción para ver detalles de un lote específico.
+//#endregion ![todo]

@@ -1,12 +1,16 @@
+//. 📍 app/datos-maestros/dimensiones/[id]/page.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import { useParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import { PageTitle } from "@/components/ui/page-title";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import { BadgeCustom } from "@/components/ui/badge-custom";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
 // Simulación de datos
 const dimensionesEjemplo = [
   {
@@ -24,7 +28,9 @@ const dimensionesEjemplo = [
     explicacion: "Permite especificar libremente el nombre del dispositivo de ayuda técnica.",
   },
 ];
+//#endregion ![def]
 
+//#region [main] - 🔧 COMPONENT 🔧
 export default function VerDimensionPage() {
   const params = useParams();
   const { proyectoActual } = useAuth();
@@ -59,6 +65,7 @@ export default function VerDimensionPage() {
     );
   }
 
+  //#region [render] - 🎨 RENDER SECTION 🎨
   return (
     <div className="container mx-auto py-8">
       <PageTitle
@@ -100,4 +107,14 @@ export default function VerDimensionPage() {
       </StandardCard>
     </div>
   );
+  //#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// No explicit exports, default export is part of the component.
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Add any future tasks here.
+//#endregion ![todo]

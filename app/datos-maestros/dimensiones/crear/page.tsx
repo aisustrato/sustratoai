@@ -1,6 +1,7 @@
-// app/datos-maestros/dimensiones/crear/page.tsx
+//. 📍 app/datos-maestros/dimensiones/crear/page.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
@@ -23,10 +24,17 @@ import {
 } from "../components/DimensionForm"; // Ajusta la ruta si es necesario
 import { toast as sonnerToast } from "sonner";
 import { useLoading } from "@/contexts/LoadingContext"; // Opcional
+//#endregion ![head]
 
+// No specific types defined directly in this file, they are imported.
+// //#region [def] - 📦 TYPES 📦
+// //#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function CrearDimensionPage() {
   const router = useRouter();
   const { proyectoActual, loadingProyectos } = useAuth();
+  //#region [sub] - 🧰 HELPER FUNCTIONS & LOGIC 🧰
   const { showLoading, hideLoading } = useLoading() as {
     showLoading?: (message: string) => void;
     hideLoading?: () => void;
@@ -134,7 +142,9 @@ export default function CrearDimensionPage() {
   const handleVolver = () => {
     router.push("/datos-maestros/dimensiones");
   };
+  //#endregion ![sub]
   
+  //#region [render] - 🎨 RENDER SECTION 🎨
   if (loadingProyectos && !proyectoActual?.id) {
     return (
       <PageBackground>
@@ -229,4 +239,15 @@ export default function CrearDimensionPage() {
       </div>
     </PageBackground>
   );
+  //#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar la gestión del 'ordering' de forma más robusta.
+// Mejorar la experiencia de usuario durante la carga y redirección.
+//#endregion ![todo]

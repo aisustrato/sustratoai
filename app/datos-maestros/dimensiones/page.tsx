@@ -1,6 +1,7 @@
-// app/datos-maestros/dimensiones/page.tsx
+//. 📍 app/datos-maestros/dimensiones/page.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
@@ -22,10 +23,17 @@ import { AlertTriangle, PlusCircle, LayoutGrid, Trash2 } from "lucide-react";
 import { DimensionCard } from "./components/DimensionCard"; // Tu componente DimensionCard
 import { toast as sonnerToast } from "sonner";
 import { useLoading } from "@/contexts/LoadingContext"; // Opcional, si lo usas
+//#endregion ![head]
 
+// No specific types defined directly in this file, they are imported or inline.
+// //#region [def] - 📦 TYPES 📦
+// //#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function DimensionesPage() {
   const router = useRouter();
   const { proyectoActual, loadingProyectos } = useAuth();
+  //#region [sub] - 🧰 HELPER FUNCTIONS & LOGIC 🧰
   const { showLoading, hideLoading } = useLoading(); // Opcional para feedback global
 
   const [dimensions, setDimensions] = useState<FullDimension[]>([]);
@@ -130,7 +138,9 @@ export default function DimensionesPage() {
     }
   };
   // --- FIN FUNCIÓN ACTUALIZADA ---
+  //#endregion ![sub]
 
+  //#region [render] - 🎨 RENDER SECTION 🎨
   if (isLoading || (loadingProyectos && !proyectoActual?.id && !error)) { 
      return (
       <PageBackground>
@@ -263,4 +273,16 @@ export default function DimensionesPage() {
       </div>
     </PageBackground>
   );
+  //#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar implementar drag-and-drop para reordenar dimensiones.
+// Añadir paginación o carga infinita si la lista de dimensiones puede crecer mucho.
+// Refinar el feedback visual durante las operaciones (ej. shimmer/esqueletos para tarjetas).
+//#endregion ![todo]
