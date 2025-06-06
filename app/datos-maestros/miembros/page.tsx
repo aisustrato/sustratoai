@@ -15,7 +15,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import { obtenerMiembrosConPerfilesYRolesDelProyecto } from "@/lib/actions/member-actions";
 import { Text } from "@/components/ui/text";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { ProTable } from "@/components/ui/pro-table";
 import { CustomButton } from "@/components/ui/custom-button";
 import { UserPlus, AlertCircle, Trash2, PenLine, Eye } from "lucide-react";
@@ -237,12 +237,18 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 							/>
 						</div>
 					) : error ? (
-						<ProCard className="border-destructive bg-destructive/5">
+						<StandardCard
+							className="border-destructive bg-destructive/5"
+							colorScheme="danger" // Assuming intent from className
+							styleType="subtle"
+							hasOutline={false} // Defaulting as no border prop was specified
+							accentPlacement="none" // Defaulting
+						>
 							<div className="flex items-center gap-3">
 								<AlertCircle className="h-6 w-6 text-destructive" />
 								<Text>Error: {error}</Text>
 							</div>
-						</ProCard>
+						</StandardCard>
 					) : miembros.length === 0 ? (
 						<EmptyState
 							icon={UserPlus}
@@ -263,11 +269,14 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 							}
 						/>
 					) : (
-						<ProCard
-							variant="secondary"
-							border="top"
+						<StandardCard
+							colorScheme="secondary"
+							accentPlacement="top"
+							accentColorScheme="primary"
 							className="overflow-hidden hover:shadow-md transition-shadow duration-300"
-							borderVariant="primary">
+							styleType="subtle"
+							hasOutline={false} // border="top" implies no full outline
+						>
 							{puedeGestionarMiembros && (
 								// ... existing code ...
 								<div className="flex justify-end mb-4 pt-4">
@@ -279,14 +288,14 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 									</CustomButton>
 								</div>
 							)}
-							<ProCard>
+							<StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">
 								<ProTable
 									data={miembros}
 									columns={columnas}
 									showColumnSelector={false}
 								/>
-							</ProCard>
-						</ProCard>
+							</StandardCard>
+						</StandardCard>
 					)}
 				</div>
 			</div>

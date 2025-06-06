@@ -11,7 +11,7 @@ import { TextArea } from "@/components/ui/textarea";
 import { SelectCustom, type SelectOption } from "@/components/ui/select-custom";
 import { FormField } from "@/components/ui/form-field";
 import { CustomButton } from "@/components/ui/custom-button";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import { AlertCircle, HelpCircle, Lightbulb, ListChecks, PlusCircle, Trash2, CheckCircle } from "lucide-react";
 import { BadgeCustom } from "@/components/ui/badge-custom";
@@ -139,20 +139,27 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
   };
   
   return (
-    <ProCard>
-      <ProCard.Content>
+    <StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">
+      <StandardCard.Content>
         <form
           onSubmit={handleSubmit(handleFormSubmitInternal, onInvalidSubmit)}
           className="space-y-8"
         >
           {/* SECCIÓN: DATOS BÁSICOS DE LA DIMENSIÓN */}
-          <ProCard variant="neutral" border="top" className="p-0">
-            <ProCard.Header className="pb-3">
+          <StandardCard
+            colorScheme="neutral"
+            accentPlacement="top"
+            accentColorScheme="neutral" // Derived from colorScheme
+            className="p-0"
+            styleType="subtle"
+            hasOutline={false} // border="top" implies no full outline
+          >
+            <StandardCard.Header className="pb-3">
               <Text variant="subheading" weight="medium" color="primary">
                 Definición de la Dimensión
               </Text>
-            </ProCard.Header>
-            <ProCard.Content className="space-y-5">
+            </StandardCard.Header>
+            <StandardCard.Content className="space-y-5">
               <FormField
                 label="Nombre de la Dimensión"
                 htmlFor="dim-name"
@@ -230,13 +237,20 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                   )}
                 />
               </FormField>
-            </ProCard.Content>
-          </ProCard>
+            </StandardCard.Content>
+          </StandardCard>
 
           {/* SECCIÓN: OPCIONES (Solo si tipo === 'finite') */}
           {dimensionType === "finite" && (
-            <ProCard variant="neutral" border="top" className="p-0">
-              <ProCard.Header className="pb-3 flex justify-between items-start"> {/* items-start para alinear mejor si los textos tienen alturas diferentes */}
+            <StandardCard
+              colorScheme="neutral"
+              accentPlacement="top"
+              accentColorScheme="neutral" // Derived
+              className="p-0"
+              styleType="subtle"
+              hasOutline={false} // border="top"
+            >
+              <StandardCard.Header className="pb-3 flex justify-between items-start"> {/* items-start para alinear mejor si los textos tienen alturas diferentes */}
                 <div className="flex-grow"> {/* Div para que el título y contador estén juntos y a la izquierda */}
                     <Text as="div" variant="subheading" weight="medium" color="primary"> {/* Usar 'as="div"' para evitar anidación p > p */}
                         Opciones de Clasificación
@@ -252,8 +266,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                     {optionFields.length === 0 ? "Añadir Opción" : "Añadir Otra Opción"}
                   </CustomButton>
                 )}
-              </ProCard.Header>
-              <ProCard.Content className="space-y-3">
+              </StandardCard.Header>
+              <StandardCard.Content className="space-y-3">
                 {errors.options && !Array.isArray(errors.options) && errors.options.message && optionFields.length === 0 && (
                      <Text color="danger" className="text-sm flex items-center gap-2 -mt-2 mb-2">
                         <AlertCircle className="h-4 w-4"/> {errors.options.message}
@@ -291,13 +305,20 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                     {getFieldSuccessState("options", index, "value") && !isReadOnlyEffective && ( <CheckCircle className="h-5 w-5 text-success" /> )}
                   </div>
                 ))}
-              </ProCard.Content>
-            </ProCard>
+              </StandardCard.Content>
+            </StandardCard>
           )}
           
           {/* SECCIÓN: PREGUNTAS GUÍA */}
-          <ProCard variant="neutral" border="top" className="p-0">
-            <ProCard.Header className="pb-3 flex justify-between items-start">
+          <StandardCard
+            colorScheme="neutral"
+            accentPlacement="top"
+            accentColorScheme="neutral" // Derived
+            className="p-0"
+            styleType="subtle"
+            hasOutline={false} // border="top"
+          >
+            <StandardCard.Header className="pb-3 flex justify-between items-start">
               <div className="flex-grow">
                 <Text as="div" variant="subheading" weight="medium" color="primary" className="flex items-center gap-2">
                   Preguntas Guía <BadgeCustom variant="neutral"  subtle>Opcional</BadgeCustom>
@@ -313,8 +334,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                     {questionFields.length === 0 ? "Añadir Pregunta" : "Añadir Otra Pregunta"}
                   </CustomButton>
                 )}
-            </ProCard.Header>
-            <ProCard.Content className="space-y-3">
+            </StandardCard.Header>
+            <StandardCard.Content className="space-y-3">
             {questionFields.length === 0 && isReadOnlyEffective && (
                 <Text color="muted" className="text-sm italic">No se definieron preguntas guía.</Text>
             )}
@@ -346,12 +367,18 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                     {getFieldSuccessState("questions", index, "question") && !isReadOnlyEffective && ( <CheckCircle className="h-5 w-5 text-success mt-1" /> )}
                   </div>
             ))}
-            </ProCard.Content>
-          </ProCard>
+            </StandardCard.Content>
+          </StandardCard>
 
           {/* SECCIÓN: EJEMPLOS ILUSTRATIVOS */}
-          <ProCard variant="neutral" className="p-0">
-            <ProCard.Header className="pb-3 flex justify-between items-start">
+          <StandardCard
+            colorScheme="neutral"
+            className="p-0"
+            styleType="subtle"
+            hasOutline={false} // No border prop
+            accentPlacement="none" // No border prop
+          >
+            <StandardCard.Header className="pb-3 flex justify-between items-start">
               <div className="flex-grow">
                 <Text as="div" variant="subheading" weight="medium" color="primary" className="flex items-center gap-2">
                   Ejemplos Ilustrativos <BadgeCustom variant="neutral" subtle>Opcional</BadgeCustom>
@@ -367,8 +394,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                      {exampleFields.length === 0 ? "Añadir Ejemplo" : "Añadir Otro Ejemplo"}
                   </CustomButton>
                 )}
-            </ProCard.Header>
-            <ProCard.Content className="space-y-3">
+            </StandardCard.Header>
+            <StandardCard.Content className="space-y-3">
             {exampleFields.length === 0 && isReadOnlyEffective && (
                 <Text color="muted" className="text-sm italic">No se definieron ejemplos.</Text>
             )}
@@ -400,8 +427,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                      {getFieldSuccessState("examples", index, "example") && !isReadOnlyEffective && ( <CheckCircle className="h-5 w-5 text-success mt-1" /> )}
                   </div>
             ))}
-            </ProCard.Content>
-          </ProCard>
+            </StandardCard.Content>
+          </StandardCard>
 
           {/* BOTÓN DE SUBMIT */}
           {modo !== "ver" && (
@@ -418,7 +445,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
             </div>
           )}
         </form>
-      </ProCard.Content>
-    </ProCard>
+      </StandardCard.Content>
+    </StandardCard>
   );
 };

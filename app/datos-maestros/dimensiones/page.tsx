@@ -16,7 +16,7 @@ import { PageTitle } from "@/components/ui/page-title";
 import { CustomButton } from "@/components/ui/custom-button";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { Text } from "@/components/ui/text";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { EmptyState } from "@/components/common/empty-state";
 import { AlertTriangle, PlusCircle, LayoutGrid, Trash2 } from "lucide-react";
 import { DimensionCard } from "./components/DimensionCard"; // Tu componente DimensionCard
@@ -171,7 +171,14 @@ export default function DimensionesPage() {
         )}
 
         {error && (
-          <ProCard variant="danger" border="left" className="my-6 p-4">
+          <StandardCard
+            colorScheme="danger"
+            accentPlacement="left"
+            accentColorScheme="danger" // Derived from colorScheme
+            className="my-6 p-4"
+            styleType="subtle"
+            hasOutline={false} // border="left" implies no full outline
+          >
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 mt-0.5 text-danger-fg" />
               <div>
@@ -183,18 +190,23 @@ export default function DimensionesPage() {
                 </Text>
               </div>
             </div>
-          </ProCard>
+          </StandardCard>
         )}
 
         {!proyectoActual?.id && !loadingProyectos && !error && (
-           <ProCard className="my-6 p-6 text-center">
+           <StandardCard
+              className="my-6 p-6 text-center"
+              styleType="subtle"
+              hasOutline={false} // No border prop
+              accentPlacement="none" // No border prop
+           >
               <Text variant="subheading" weight="medium" className="mb-2">
                Proyecto No Seleccionado
              </Text>
              <Text color="muted">
                Por favor, selecciona un proyecto activo desde el menú superior para gestionar sus dimensiones.
              </Text>
-           </ProCard>
+           </StandardCard>
         )}
 
         {proyectoActual?.id && !isLoading && !error && dimensions.length === 0 && (

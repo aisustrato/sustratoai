@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import { PageTitle } from "@/components/ui/page-title";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import { BadgeCustom } from "@/components/ui/badge-custom";
 
@@ -33,19 +33,29 @@ export default function VerDimensionPage() {
 
   if (!proyectoActual) {
     return (
-      <ProCard className="max-w-lg mx-auto mt-12 text-center">
+      <StandardCard
+        className="max-w-lg mx-auto mt-12 text-center"
+        styleType="subtle"
+        hasOutline={false}
+        accentPlacement="none"
+      >
         <PageTitle title="Detalle de Dimensión" />
         <Text color="danger">Debes seleccionar un proyecto para ver dimensiones.</Text>
-      </ProCard>
+      </StandardCard>
     );
   }
 
   if (!dimension) {
     return (
-      <ProCard className="max-w-lg mx-auto mt-12 text-center">
+      <StandardCard
+        className="max-w-lg mx-auto mt-12 text-center"
+        styleType="subtle"
+        hasOutline={false}
+        accentPlacement="none"
+      >
         <PageTitle title="Dimensión no encontrada" />
         <Text color="danger">La dimensión solicitada no existe.</Text>
-      </ProCard>
+      </StandardCard>
     );
   }
 
@@ -61,7 +71,12 @@ export default function VerDimensionPage() {
         ]}
         showBackButton={{ href: "/datos-maestros/dimensiones-preclasificacion" }}
       />
-      <ProCard className="max-w-2xl mx-auto p-6 space-y-6">
+      <StandardCard
+        className="max-w-2xl mx-auto p-6 space-y-6"
+        styleType="subtle"
+        hasOutline={false}
+        accentPlacement="none"
+      >
         <div className="flex items-center gap-3">
           <Text as="h2" variant="heading" size="lg">{dimension.nombre}</Text>
           <BadgeCustom variant={dimension.tipo === "finito" ? "success" : "secondary"} subtle>
@@ -82,7 +97,7 @@ export default function VerDimensionPage() {
             </div>
           </div>
         )}
-      </ProCard>
+      </StandardCard>
     </div>
   );
 }

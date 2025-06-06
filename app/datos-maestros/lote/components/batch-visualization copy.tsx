@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useTheme } from "@/app/theme-provider";
 import { generateBatchTokens } from "./batch-tokens";
 import { CustomSlider } from "@/components/ui/custom-slider";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import { BatchItem } from "./BatchItem";
 import tinycolor from "tinycolor2";
@@ -141,7 +141,13 @@ export default function BatchVisualization() {
 					flexDirection: "column",
 					gap: 48,
 				}}>
-				<ProCard variant="primary" shadow="lg">
+				<StandardCard
+					colorScheme="primary"
+					shadow="lg"
+					styleType="subtle"
+					hasOutline={false}
+					accentPlacement="none"
+				>
 					<Text
 						variant="heading"
 						size="2xl"
@@ -156,7 +162,13 @@ export default function BatchVisualization() {
 							marginTop: 32,
 							flexWrap: "wrap",
 						}}>
-						<ProCard variant="secondary" style={{ flex: 1, minWidth: 320 }}>
+						<StandardCard
+							colorScheme="secondary"
+							style={{ flex: 1, minWidth: 320 }}
+							styleType="subtle"
+							hasOutline={false}
+							accentPlacement="none"
+						>
 							<Text variant="subtitle" size="lg" color="primary" weight="bold">
 								Tamaño de Lote
 							</Text>
@@ -213,8 +225,14 @@ export default function BatchVisualization() {
 								<span>Lotes pequeños (muchos)</span>
 								<span>Lotes grandes (pocos)</span>
 							</div>
-						</ProCard>
-						<ProCard variant="secondary" style={{ flex: 1, minWidth: 320 }}>
+						</StandardCard>
+						<StandardCard
+							colorScheme="secondary"
+							style={{ flex: 1, minWidth: 320 }}
+							styleType="subtle"
+							hasOutline={false}
+							accentPlacement="none"
+						>
 							<Text variant="subtitle" size="lg" color="primary" weight="bold">
 								Miembros
 							</Text>
@@ -262,20 +280,24 @@ export default function BatchVisualization() {
 									);
 								})}
 							</div>
-						</ProCard>
+						</StandardCard>
 					</div>
-				</ProCard>
+				</StandardCard>
 
 				<div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
 					{/* Distribución de lotes */}
-					<ProCard
-						variant="tertiary"
+					<StandardCard
+						colorScheme="tertiary"
 						style={{
 							flex: 2,
 							minWidth: 400,
 							minHeight: 500,
 							position: "relative",
-						}}>
+						}}
+						styleType="subtle"
+						hasOutline={false}
+						accentPlacement="none"
+					>
 						<Text
 							variant="subtitle"
 							size="xl"
@@ -349,18 +371,22 @@ export default function BatchVisualization() {
 								Recalculando...
 							</motion.div>
 						)}
-					</ProCard>
+					</StandardCard>
 
 					{/* Peso del lote */}
-					<ProCard
-						variant="tertiary"
+					<StandardCard
+						colorScheme="tertiary"
 						style={{
 							flex: 1,
 							minWidth: 280,
 							minHeight: 500,
 							position: "relative",
 							background: batchTokens.batch.background,
-						}}>
+						}}
+						styleType="subtle"
+						hasOutline={false}
+						accentPlacement="none"
+					>
 						<Text
 							variant="subtitle"
 							size="xl"
@@ -414,11 +440,17 @@ export default function BatchVisualization() {
 								</Text>
 							</div>
 						</div>
-					</ProCard>
+					</StandardCard>
 				</div>
 
 				{/* Leyenda de miembros */}
-				<ProCard variant="primary" style={{ marginTop: 24 }}>
+				<StandardCard
+					colorScheme="primary"
+					style={{ marginTop: 24 }}
+					styleType="subtle"
+					hasOutline={false}
+					accentPlacement="none"
+				>
 					<Text
 						variant="subtitle"
 						size="lg"
@@ -441,12 +473,15 @@ export default function BatchVisualization() {
 									? Math.round((batchCount / batches.length) * 100)
 									: 0;
 							return (
-								<ProCard
+								<StandardCard
 									key={index}
-									variant="secondary"
-									border="left"
-									borderVariant={colorScheme.key as any}
-									style={{ padding: 24, minWidth: 120 }}>
+									colorScheme="secondary"
+									accentPlacement="left"
+									accentColorScheme={colorScheme.key as any}
+									style={{ padding: 24, minWidth: 120 }}
+									styleType="subtle"
+									hasOutline={false} // border="left" implies no full outline
+								>
 									<div
 										style={{
 											display: "flex",
@@ -486,11 +521,11 @@ export default function BatchVisualization() {
 											transition={{ duration: 0.5 }}
 										/>
 									</div>
-								</ProCard>
+								</StandardCard>
 							);
 						})}
 					</div>
-				</ProCard>
+				</StandardCard>
 			</div>
 		</div>
 	);

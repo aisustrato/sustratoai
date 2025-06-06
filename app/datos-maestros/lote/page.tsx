@@ -8,7 +8,7 @@ import ProjectBatchesDisplay, { type DisplayableBatch } from './components/Proje
 import { PageBackground } from '@/components/ui/page-background';
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
 import { Text } from '@/components/ui/text';
-import { ProCard } from '@/components/ui/pro-card';
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { PageTitle } from '@/components/ui/page-title';
 import { Boxes, AlertTriangle } from 'lucide-react';
 
@@ -141,15 +141,21 @@ export default function LotesOrquestadorPage() {
     return (
          <PageBackground>
             <PageTitle title="Gestión de Lotes" mainIcon={Boxes} />
-            <ProCard variant="primary" className="mt-6 text-center max-w-lg mx-auto p-8">
-                <ProCard.Header className="items-center flex flex-col"> 
+            <StandardCard
+                colorScheme="primary"
+                styleType="subtle"
+                className="mt-6 text-center max-w-lg mx-auto p-8"
+                hasOutline={false} // Default for ProCard variant="primary" without border prop
+                accentPlacement="none" // Default for ProCard variant="primary" without border prop
+            >
+                <StandardCard.Header className="items-center flex flex-col">
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100 mb-4">
                         <AlertTriangle className="h-6 w-6 text-warning-600" />
                     </div>
                     <Text variant="subheading" weight="bold" color="warning">Proyecto No Seleccionado</Text>
-                </ProCard.Header>
-                <ProCard.Content><Text>Por favor, selecciona un proyecto activo para gestionar los lotes.</Text></ProCard.Content>
-            </ProCard>
+                </StandardCard.Header>
+                <StandardCard.Content><Text>Por favor, selecciona un proyecto activo para gestionar los lotes.</Text></StandardCard.Content>
+            </StandardCard>
         </PageBackground>
     );
   }

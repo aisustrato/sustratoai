@@ -10,7 +10,7 @@ import {
     type ProjectRoleRow,
     type ResultadoOperacion 
 } from "@/lib/actions/proyect-role-actions";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { PageTitle } from "@/components/ui/page-title";
 import { ShieldCheck, AlertTriangle, PenLine, Trash2 } from "lucide-react";
 import { toast as sonnerToast } from "sonner"; // sonnerToast no se usa aquí, pero lo dejo por si acaso
@@ -98,7 +98,7 @@ export default function VerRolPage() {
   }
 
   if (!proyectoActual?.id) {
-    return ( <PageBackground > <ProCard className="max-w-md text-center"> <ProCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </ProCard.Header> <ProCard.Content><Text>{pageError || "No hay un proyecto activo."}</Text></ProCard.Content> <ProCard.Footer> <Link href="/" passHref><CustomButton variant="outline">Ir a Inicio</CustomButton></Link> </ProCard.Footer> </ProCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none"> <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError || "No hay un proyecto activo."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><CustomButton variant="outline">Ir a Inicio</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
   
   // Para "ver", el permiso de gestión no es estrictamente necesario para ver el formulario en modo readOnly.
@@ -106,11 +106,11 @@ export default function VerRolPage() {
   // `puedeGestionarRoles` se usa solo para los botones de acción (Editar/Eliminar).
 
   if (pageError && !rolVisualizado) { 
-    return ( <PageBackground > <ProCard className="max-w-md text-center"> <ProCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <AlertTriangle className="h-6 w-6 text-danger-600" /> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </ProCard.Header> <ProCard.Content><Text>{pageError}</Text></ProCard.Content> <ProCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </ProCard.Footer> </ProCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none"> <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <AlertTriangle className="h-6 w-6 text-danger-600" /> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
 
   if (!rolVisualizado) { 
-    return ( <PageBackground > <ProCard className="max-w-md text-center"> <ProCard.Header><PageTitle title="Rol no Encontrado" /></ProCard.Header> <ProCard.Content><Text>{pageError || "No se encontraron datos para el rol especificado."}</Text></ProCard.Content> <ProCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </ProCard.Footer> </ProCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none"> <StandardCard.Header><PageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><Text>{pageError || "No se encontraron datos para el rol especificado."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
 
   return (
@@ -127,15 +127,21 @@ export default function VerRolPage() {
               ]}
               showBackButton={{ href: "/datos-maestros/roles" }}
             />
-        <ProCard border="top" color="primary"   >
+        <StandardCard
+            accentPlacement="top"
+            colorScheme="primary" // Mapped from ProCard's color="primary"
+            accentColorScheme="primary" // Derived from colorScheme
+            styleType="subtle"
+            hasOutline={false} // border="top" implies no full outline
+        >
         
-          <ProCard.Content>
+          <StandardCard.Content>
             <RolForm
               modo="ver" 
               valoresIniciales={rolVisualizado}
             />
-          </ProCard.Content>
-          <ProCard.Footer className="flex flex-col sm:flex-row justify-end items-center gap-3 pt-6">
+          </StandardCard.Content>
+          <StandardCard.Footer className="flex flex-col sm:flex-row justify-end items-center gap-3 pt-6">
             {puedeGestionarRoles && ( // Botones de acción solo si tiene permisos
               <>
                 <CustomButton 
@@ -156,8 +162,8 @@ export default function VerRolPage() {
                 </CustomButton>
               </>
             )}
-          </ProCard.Footer>
-        </ProCard>
+          </StandardCard.Footer>
+        </StandardCard>
       </div>
     </PageBackground>
   );

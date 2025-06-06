@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import { RolForm, type RolFormValues } from "../components/RolForm";
 import { agregarRolAProyecto } from "@/lib/actions/proyect-role-actions";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { PageTitle } from "@/components/ui/page-title";
 import { ShieldPlus, AlertTriangle, ArrowLeft, User } from "lucide-react"; // Añadido ArrowLeft
 import { toast as sonnerToast } from "sonner";
@@ -90,22 +90,22 @@ export default function CrearRolPage() {
   if (pageError && !proyectoActual?.id) { // Si el error es por no tener proyecto
     return (
       <PageBackground >
-        <ProCard className="max-w-md text-center">
-          <ProCard.Header>
+        <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none">
+          <StandardCard.Header>
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100">
               <AlertTriangle className="h-6 w-6 text-warning-600" aria-hidden="true" />
             </div>
             <PageTitle title="Proyecto Requerido" className="mt-4" />
-          </ProCard.Header>
-          <ProCard.Content>
+          </StandardCard.Header>
+          <StandardCard.Content>
             <Text>{pageError}</Text>
-          </ProCard.Content>
-          <ProCard.Footer>
+          </StandardCard.Content>
+          <StandardCard.Footer>
             <Link href="/" passHref> {/* O a la página de selección de proyectos */}
               <CustomButton variant="outline">Ir a Inicio</CustomButton>
             </Link>
-          </ProCard.Footer>
-        </ProCard>
+          </StandardCard.Footer>
+        </StandardCard>
       </PageBackground>
     );
   }
@@ -113,24 +113,24 @@ export default function CrearRolPage() {
   if (!puedeGestionarRoles && proyectoActual?.id) { // Si hay proyecto pero no permisos
     return (
       <PageBackground >
-        <ProCard className="max-w-md text-center">
-          <ProCard.Header>
+        <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none">
+          <StandardCard.Header>
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100">
               <AlertTriangle className="h-6 w-6 text-warning-600" aria-hidden="true" />
             </div>
             <PageTitle title="Acceso Denegado" className="mt-4" />
-          </ProCard.Header>
-          <ProCard.Content>
+          </StandardCard.Header>
+          <StandardCard.Content>
             <Text>
               No tienes los permisos necesarios para crear nuevos roles en este proyecto.
             </Text>
-          </ProCard.Content>
-          <ProCard.Footer>
+          </StandardCard.Content>
+          <StandardCard.Footer>
             <Link href="/datos-maestros/roles" passHref>
               <CustomButton variant="outline">Volver al Listado de Roles</CustomButton>
             </Link>
-          </ProCard.Footer>
-        </ProCard>
+          </StandardCard.Footer>
+        </StandardCard>
       </PageBackground>
     );
   }
@@ -150,9 +150,15 @@ export default function CrearRolPage() {
   ]}
   showBackButton={{ href: "/datos-maestros/roles" }}
 />
-            <ProCard border="top" color="primary"   >
+            <StandardCard
+              accentPlacement="top"
+              colorScheme="primary" // Mapped from ProCard's color="primary"
+              accentColorScheme="primary" // Derived from colorScheme
+              styleType="subtle"
+              hasOutline={false} // border="top" implies no full outline
+            >
 
-          <ProCard.Content>
+          <StandardCard.Content>
             {pageError && proyectoActual?.id && ( // Mostrar error de envío si hay proyecto
               <div className="mb-4 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive-foreground">
                 <div className="flex items-center gap-2">
@@ -166,8 +172,8 @@ export default function CrearRolPage() {
               onSubmit={handleCrearRol}
               loading={isSubmitting}
             />
-          </ProCard.Content>
-        </ProCard>
+          </StandardCard.Content>
+        </StandardCard>
       </div>
     </PageBackground>
   );

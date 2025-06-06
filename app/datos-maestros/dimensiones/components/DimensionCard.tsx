@@ -5,7 +5,7 @@ import React from "react";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import { useTheme } from "@/app/theme-provider";
 import { type FullDimension } from "@/lib/actions/dimension-actions";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import { BadgeCustom } from "@/components/ui/badge-custom";
 import { CustomButton } from "@/components/ui/custom-button";
@@ -60,16 +60,20 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 
 	return (
 		// <div ref={setNodeRef} style={style}> {/* Envolver con esto para dnd-kit */}
-		<ProCard
+		<StandardCard
 			className={cn(
 				"flex flex-col h-full group relative",
 				isBeingDeleted && "opacity-50 pointer-events-none"
 			)}
-			border="left"
-			color={cardColorVariant as any} // ProCard podría no tener 'info', 'success' directamente. Adaptar.
+			accentPlacement="left"
+			colorScheme={cardColorVariant as StandardCardColorScheme}
+			accentColorScheme={cardColorVariant as StandardCardColorScheme} // Derived from colorScheme
 			shadow="md"
 			animateEntrance
-			// Añadir un efecto hover
+			styleType="subtle"
+			hasOutline={false} // border="left" implies no full outline
+			onCardClick={handleCardClick} // Moved onClick here
+			// Añadir un efecto hover (handled by className if applicable, or specific prop if StandardCard has it)
 		>
 			{isBeingDeleted && (
 				<div className="absolute inset-0 flex items-center justify-center bg-card/50 z-10">
@@ -77,15 +81,14 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 				</div>
 			)}
 
-			{/* Hacemos el cuerpo de la card clickeable para ver detalles */}
+			{/* El div se mantiene por estructura, pero sin el onClick */}
 			<div
-				onClick={handleCardClick}
-				className="cursor-pointer flex-grow flex flex-col p-4"
-				tabIndex={0}
-				role="button"
-				aria-label={`Ver detalles de ${dimension.name}`}
+				className="cursor-pointer flex-grow flex flex-col p-4" // onClick removed
+				tabIndex={0} // tabIndex can remain for focusability if needed, though card itself might handle it
+				role="button" // Role might be redundant if StandardCard handles it
+				aria-label={`Ver detalles de ${dimension.name}`} // Aria-label good for accessibility
 			>
-				<ProCard.Header className="p-0 mb-2">
+				<StandardCard.Header className="p-0 mb-2">
 					<div className="flex flex-col gap-1">
 						<div className="flex items-start justify-between">
 							<Text
@@ -127,9 +130,9 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 							</div>
 						)}
 					</div>
-				</ProCard.Header>
+				</StandardCard.Header>
 
-				<ProCard.Content className="p-0 flex-grow">
+				<StandardCard.Content className="p-0 flex-grow">
 					{" "}
 					{/* Eliminar padding por defecto */}
 					{dimension.description && (
@@ -203,14 +206,14 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 							Esta dimensión de selección múltiple no tiene opciones definidas.
 						</Text>
 					)}
-				</ProCard.Content>
+				</StandardCard.Content>
 			</div>
-			{/* <ProCard.Footer className="p-2">
+			{/* <StandardCard.Footer className="p-2">
             <CustomButton variant="outline" size="sm" onClick={onViewDetails} leftIcon={<Eye className="h-4 w-4"/>}>
                 Ver Detalles
             </CustomButton>
-        </ProCard.Footer> */}
-		</ProCard>
+        </StandardCard.Footer> */}
+		</StandardCard>
 		// </div> // Cierre del div para dnd-kit
 	);
 };
