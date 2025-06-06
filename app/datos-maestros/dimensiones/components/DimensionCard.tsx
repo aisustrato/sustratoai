@@ -206,9 +206,9 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 							Esta dimensión de selección múltiple no tiene opciones definidas.
 						</Text>
 					)}
-				</ProCard.Content>
+				</StandardCard.Content>
 			</div>
-			{/* <ProCard.Footer className="p-2">
+			{/* <StandardCard.Footer className="p-2">
             <CustomButton variant="outline" size="sm" onClick={onViewDetails} leftIcon={<Eye className="h-4 w-4"/>}>
                 Ver Detalles
             </CustomButton>
