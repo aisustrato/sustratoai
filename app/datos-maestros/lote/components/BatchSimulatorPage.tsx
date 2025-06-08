@@ -1,6 +1,7 @@
-// app/datos-maestros/lote/components/BatchSimulatorPage.tsx
+//. 📍 app/datos-maestros/lote/components/BatchSimulatorPage.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 // import { motion } from "framer-motion"; // No se usa activamente por ahora
 import { useTheme } from "@/app/theme-provider"; 
@@ -32,12 +33,19 @@ import { PageBackground } from "@/components/ui/page-background";
 import { useRouter } from "next/navigation"; 
 import { toast as sonnerToast } from "sonner";
 import { Progress } from "@/components/ui/progress"; // Importar tu componente Progress
+//#endregion ![head]
+
+//#region [def] - 📦 TYPES 📦
 interface BatchSimulatorPageProps {
     onBatchesCreatedSuccessfully: () => void; // Nueva prop
   }
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
   export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: BatchSimulatorPageProps) { 
   const router = useRouter(); 
   const { proyectoActual } = useAuth();
+  //#region [sub] - 🧰 HELPER FUNCTIONS, HOOKS & LOGIC 🧰
   const { appColorTokens, mode } = useTheme();
   const batchTokens = useMemo<BatchTokens | null>(
     () => appColorTokens && generateBatchTokens(appColorTokens, mode),
@@ -175,11 +183,13 @@ interface BatchSimulatorPageProps {
     }
   };
 
+  // Derived state for rendering
   const displayableBatches = simulationData?.distribution || [];
   const totalBatchesCalculated = simulationData?.totalBatchesCalculated || 0;
   const totalEligibleArticles = simulationData?.totalEligibleArticles || 0;
   const gridColumns = totalBatchesCalculated > 0 ? Math.ceil(Math.sqrt(totalBatchesCalculated)) : 1;
   
+  // Dynamic styling for "Peso Visual del Lote"
   const barWidth = 120;
   const pesoLoteBarContainerHeight = 280; 
   let dynamicBarItemHeight: number; let dynamicBarItemGap: number;
@@ -188,7 +198,9 @@ interface BatchSimulatorPageProps {
   else if (batchSize > 1) { const totalSpaceForGaps = Math.max(minTotalGapForPeso * (batchSize - 1), pesoLoteBarContainerHeight * 0.15); const spaceForBars = pesoLoteBarContainerHeight - totalSpaceForGaps; dynamicBarItemHeight = Math.max(1, spaceForBars / batchSize); dynamicBarItemGap = totalSpaceForGaps / (batchSize - 1); } 
   else { dynamicBarItemHeight = 0; dynamicBarItemGap = 0; }
   const itemsToShowInPesoLote = batchSize > 0 ? batchSize : 0; 
+  //#endregion ![sub]
 
+  //#region [render] - 🎨 RENDER SECTION 🎨
   if (!batchTokens || isLoadingInitialData) { 
     return (
         <PageBackground>
@@ -204,6 +216,7 @@ interface BatchSimulatorPageProps {
       <PageBackground>
         <div style={{display: "flex", alignItems: "center", justifyContent: "center", minHeight: "80vh" }}>
             <StandardCard
+                disableShadowHover={true}
                 animateEntrance
                 colorScheme="primary"
                 className="text-center max-w-lg p-8"
@@ -229,6 +242,7 @@ interface BatchSimulatorPageProps {
       <PageBackground>
         <div style={{display: "flex", alignItems: "center", justifyContent: "center", minHeight: "80vh" }}>
             <StandardCard
+                disableShadowHover={true}
                 animateEntrance
                 colorScheme="primary"
                 className="text-center max-w-lg p-8"
@@ -266,25 +280,27 @@ interface BatchSimulatorPageProps {
             <StandardCard
                 animateEntrance
                 className="mt-6 mb-8"
-                colorScheme="primary"
-                accentPlacement="top"
-                accentColorScheme="primary"
-                shadow="md"
+                colorScheme="secondary" // Rule: Main form card colorScheme is secondary
+                accentPlacement="top" // Rule: Main form card accentPlacement is top
+                accentColorScheme="primary" // Rule: Main form card accent for create/edit is primary
+                shadow="md" // Rule: Main form card shadow is md by default
+                disableShadowHover={true}
                 styleType="subtle"
-                hasOutline={false} // border="top" implies no full outline
+                // styleType and hasOutline removed to use default or theme-defined values
             >
                 <StandardCard.Header>
                     <Text variant="subheading" weight="medium" color="primary">Configuración de Lotes</Text>
                 </StandardCard.Header>
                 <StandardCard.Content className={`grid md:grid-cols-2 gap-6 ${isSimulating || isCreating ? 'opacity-60 pointer-events-none' : ''}`}>
                     <StandardCard
-                        colorScheme="primary"
-                        outlineColorScheme="primary"
-                        hasOutline={true}
+                        colorScheme="primary" 
+                        hasOutline={false} 
+                        shadow="none" 
+                        disableShadowHover={true} 
+                        styleType="subtle"
+                        accentPlacement="none" 
                         animateEntrance
                         className="p-4"
-                        styleType="subtle"
-                        accentPlacement="none" // border="normal" implies no accent
                     >
                         <Text variant="label" weight="semibold" className="mb-1 block">1. Definir Tamaño por Lote</Text>
                         <div className="flex justify-between items-baseline my-3">
@@ -313,13 +329,15 @@ interface BatchSimulatorPageProps {
                     </StandardCard>
 
                     <StandardCard
-                        colorScheme="primary"
-                        outlineColorScheme="primary"
-                        hasOutline={true}
+                        colorScheme="primary" // Rule: Inner card colorScheme is primary
+                        hasOutline={false} // Rule: Inner card hasOutline is false
+                        shadow="none" // Rule: Inner card shadow is none
+                        disableShadowHover={true} // Rule: Inner card disableShadowHover is true
+                        styleType="subtle"
+                        accentPlacement="none" // Rule: Inner card accentPlacement is none
                         animateEntrance
                         className="p-4"
-                        styleType="subtle"
-                        accentPlacement="none" // border="normal" implies no accent
+                        // styleType and outlineColorScheme removed as per new rules
                     >
                         <Text variant="label" weight="semibold" className="mb-3 block">2. Asignar a Miembros</Text>
                         <div className="flex gap-2 flex-wrap min-h-[40px]">
@@ -362,6 +380,7 @@ interface BatchSimulatorPageProps {
                     accentPlacement="left"
                     accentColorScheme="danger" // Assuming accent color should match variant
                     className="mb-8 p-4"
+                    disableShadowHover={true}
                     styleType="subtle"
                     hasOutline={false} // border="left" implies no full outline
                 >
@@ -388,6 +407,7 @@ interface BatchSimulatorPageProps {
                 accentColorScheme="secondary"
                 shadow="md"
                 className="mb-8 relative"
+                disableShadowHover={true}
                 styleType="subtle"
                 hasOutline={false} // border="top" implies no full outline
             >
@@ -514,6 +534,7 @@ interface BatchSimulatorPageProps {
                     accentPlacement="top"
                     accentColorScheme="success"
                     shadow="md"
+                    disableShadowHover={true}
                     styleType="subtle"
                     hasOutline={false} // border="top" implies no full outline
                 >
@@ -561,4 +582,17 @@ interface BatchSimulatorPageProps {
         </div>
     </PageBackground>
   );
+  //#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar la internacionalización de los mensajes de error y etiquetas.
+// Mejorar la accesibilidad (ARIA attributes) en campos dinámicos si es necesario.
+// Evaluar la complejidad de los cálculos de layout para los BatchItem (gridColumns, itemSize).
+// Revisar el manejo de estado de carga (isSimulating, isCreating, isLoadingInitialData) para evitar condiciones complejas.
+//#endregion ![todo]

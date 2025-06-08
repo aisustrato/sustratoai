@@ -1,6 +1,11 @@
+//. 📍 app/datos-maestros/lote/components/BatchItem.tsx
+
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React from "react";
 import { motion } from "framer-motion";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
 interface BatchItemProps {
 	color: string;
 	border: string;
@@ -9,7 +14,9 @@ interface BatchItemProps {
 	size?: number | string; // px o %
 	animate?: boolean;
 }
+//#endregion ![def]
 
+//#region [main] - 🔧 COMPONENT 🔧
 export const BatchItem: React.FC<BatchItemProps> = ({
 	color,
 	border,
@@ -18,6 +25,7 @@ export const BatchItem: React.FC<BatchItemProps> = ({
 	size = 48,
 	animate = false,
 }) => {
+	//#region [render] - 🎨 RENDER SECTION 🎨
 	return (
 		<motion.div
 			whileHover={{ scale: 1.08 }}
@@ -50,4 +58,15 @@ export const BatchItem: React.FC<BatchItemProps> = ({
 			</span>
 		</motion.div>
 	);
+	//#endregion ![render]
 };
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar si se necesitan más opciones de personalización (ej. forma, fuente).
+// Evaluar la complejidad de las animaciones para rendimiento en listas grandes.
+//#endregion ![todo]

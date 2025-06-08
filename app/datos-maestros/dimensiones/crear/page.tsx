@@ -1,6 +1,7 @@
-// app/datos-maestros/dimensiones/crear/page.tsx
+//. 📍 app/datos-maestros/dimensiones/crear/page.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
@@ -23,10 +24,17 @@ import {
 } from "../components/DimensionForm"; // Ajusta la ruta si es necesario
 import { toast as sonnerToast } from "sonner";
 import { useLoading } from "@/contexts/LoadingContext"; // Opcional
+//#endregion ![head]
 
+// No specific types defined directly in this file, they are imported.
+// //#region [def] - 📦 TYPES 📦
+// //#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function CrearDimensionPage() {
   const router = useRouter();
   const { proyectoActual, loadingProyectos } = useAuth();
+  //#region [sub] - 🧰 HELPER FUNCTIONS & LOGIC 🧰
   const { showLoading, hideLoading } = useLoading() as {
     showLoading?: (message: string) => void;
     hideLoading?: () => void;
@@ -134,7 +142,9 @@ export default function CrearDimensionPage() {
   const handleVolver = () => {
     router.push("/datos-maestros/dimensiones");
   };
+  //#endregion ![sub]
   
+  //#region [render] - 🎨 RENDER SECTION 🎨
   if (loadingProyectos && !proyectoActual?.id) {
     return (
       <PageBackground>
@@ -150,11 +160,15 @@ export default function CrearDimensionPage() {
       <PageBackground>
         <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
             <StandardCard
-                colorScheme="danger"
-                className="max-w-lg w-full"
+                // This is an informational/error card, should follow inner card styling.
+                colorScheme="primary" // Rule: Inner card
+                accentPlacement="none" // Rule: Inner card
+                hasOutline={false} // Rule: Inner card
+                shadow="none" // Rule: Inner card
+                disableShadowHover={true} // Rule: Inner card
                 styleType="subtle"
-                hasOutline={false} // No border prop originally
-                accentPlacement="none" // No border prop originally
+                className="max-w-lg w-full" // Keep existing layout class
+                // styleType removed
             >
                 <StandardCard.Header className="items-center flex flex-col text-center">
                     <AlertTriangle className="h-12 w-12 text-danger-fg mb-4" />
@@ -212,11 +226,12 @@ export default function CrearDimensionPage() {
           <StandardCard
             className="mt-6"
             accentPlacement="top"
-            colorScheme="primary" // Mapped from ProCard's color="primary"
-            accentColorScheme="primary" // Derived from colorScheme
-            shadow="lg"
+            colorScheme="secondary" // Rule: Main form card colorScheme is secondary
+            accentColorScheme="primary" // Rule: Main form card accent for create/edit is primary
+            shadow="md" // Rule: Main form card shadow is md by default
+            disableShadowHover={true}
             styleType="subtle"
-            hasOutline={false} // border="top" implies no full outline
+            // styleType and hasOutline removed to use default or theme-defined values
           >
             <DimensionForm
               modo="crear"
@@ -229,4 +244,15 @@ export default function CrearDimensionPage() {
       </div>
     </PageBackground>
   );
+  //#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar la gestión del 'ordering' de forma más robusta.
+// Mejorar la experiencia de usuario durante la carga y redirección.
+//#endregion ![todo]

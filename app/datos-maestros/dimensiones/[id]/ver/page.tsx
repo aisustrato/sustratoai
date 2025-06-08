@@ -1,6 +1,7 @@
-// app/datos-maestros/dimensiones/[id]/ver/page.tsx
+//. 📍 app/datos-maestros/dimensiones/[id]/ver/page.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
@@ -20,8 +21,16 @@ import {
   type DimensionFormValues,
 } from "../../components/DimensionForm"; // Ajustar ruta si es necesario
 import { toast as sonnerToast } from "sonner"; // Aunque no hay submits, por si hay errores de carga
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
+// No specific types defined directly in this file.
+// Types are imported or inferred.
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function VerDimensionPage() {
+	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HELPER FUNCTIONS 🧰
   const router = useRouter();
   const params = useParams();
   const dimensionId = params?.id ? String(params.id) : "";
@@ -95,6 +104,9 @@ export default function VerDimensionPage() {
     questions: dimensionActual.questions.map(q => ({id: q.id, question: q.question, ordering: q.ordering })),
     examples: dimensionActual.examples.map(e => ({ id: e.id, example: e.example })),
   } : undefined;
+	//#endregion ![sub]
+
+	//#region [render] - 🎨 RENDER SECTION 🎨
 
   if (isPageLoading || (loadingProyectos && !dimensionActual && !errorPage)) {
     return (
@@ -114,6 +126,7 @@ export default function VerDimensionPage() {
                 colorScheme="danger"
                 className="max-w-lg w-full"
                 styleType="subtle"
+                disableShadowHover={true}
                 hasOutline={false} // No border prop originally
                 accentPlacement="none" // No border prop originally
             >
@@ -143,6 +156,7 @@ export default function VerDimensionPage() {
                     colorScheme="warning"
                     className="text-center p-6"
                     styleType="subtle"
+                    disableShadowHover={true}
                     hasOutline={false} // No border prop originally
                     accentPlacement="none" // No border prop originally
                 >
@@ -189,12 +203,13 @@ export default function VerDimensionPage() {
           <StandardCard
             className="mt-6"
             accentPlacement="top"
-            colorScheme="neutral" // Mapped from ProCard's color="default"
-            accentColorScheme="neutral" // Derived from colorScheme
-            shadow="md"
+            colorScheme="secondary" // Rule: Main form card colorScheme is secondary
+            accentColorScheme="neutral" // Rule: Main form card accent for view is neutral
+            shadow="md" // Rule: Main form card shadow is md by default
+            disableShadowHover={true}
             styleType="subtle"
-            hasOutline={false} // border="top" implies no full outline
-          > {/* Color default o neutral para vista */}
+            // styleType and hasOutline removed to use default or theme-defined values
+          >
             <DimensionForm
               modo="ver" // Modo solo lectura
               valoresIniciales={valoresFormIniciales}
@@ -205,4 +220,15 @@ export default function VerDimensionPage() {
       </div>
     </PageBackground>
   );
+	//#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration.
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// TODO: Consider if any specific actions or information should be added to this view page.
+// For example, linking to related entities or providing more detailed explanations.
+//#endregion ![todo]

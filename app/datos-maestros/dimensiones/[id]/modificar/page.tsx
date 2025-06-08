@@ -1,6 +1,7 @@
-// app/datos-maestros/dimensiones/[id]/modificar/page.tsx
+//. 📍 app/datos-maestros/dimensiones/[id]/modificar/page.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
@@ -25,8 +26,16 @@ import {
 } from "../../components/DimensionForm"; // Doble check a la ruta
 import { toast as sonnerToast } from "sonner";
 import { useLoading } from "@/contexts/LoadingContext";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
+// No specific types defined directly in this file.
+// Types are imported or inferred.
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function ModificarDimensionPage() {
+	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HELPER FUNCTIONS 🧰
   const router = useRouter();
   const params = useParams();
   const dimensionId = params?.id ? String(params.id) : "";
@@ -198,6 +207,9 @@ export default function ModificarDimensionPage() {
         // exampleSchema no tiene ordering, así que no se mapea aquí
     })),
   } : undefined;
+	//#endregion ![sub]
+
+	//#region [render] - 🎨 RENDER SECTION 🎨
 
 
   if (isPageLoading || (loadingProyectos && !dimensionActual && !errorPage)) {
@@ -215,11 +227,15 @@ export default function ModificarDimensionPage() {
       <PageBackground>
         <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
             <StandardCard
-                colorScheme="danger"
-                className="max-w-lg w-full"
+                // Informational error card
+                colorScheme="primary" // Rule: Inner card
+                accentPlacement="none" // Rule: Inner card
+                hasOutline={false} // Rule: Inner card
+                shadow="none" // Rule: Inner card
+                disableShadowHover={true} // Rule: Inner card
                 styleType="subtle"
-                hasOutline={false} // No border prop originally
-                accentPlacement="none" // No border prop originally
+                className="max-w-lg w-full"
+                // styleType removed
             >
                 <StandardCard.Header className="items-center flex flex-col text-center">
                     <AlertTriangle className="h-12 w-12 text-danger-fg mb-4" />
@@ -243,23 +259,25 @@ export default function ModificarDimensionPage() {
     // Si llegamos aquí y no hay errorPage, pero tampoco dimensión, es un estado inesperado.
     // Esto podría pasar si cargarDimension() termina sin setear errorPage pero tampoco dimensionActual.
     return (
-        <PageBackground>
-            <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <StandardCard
-                    colorScheme="warning"
-                    className="text-center p-6"
-                    styleType="subtle"
-                    hasOutline={false} // No border prop originally
-                    accentPlacement="none" // No border prop originally
-                >
-                    <Text variant="subheading">Dimensión no disponible</Text>
-                    <Text color="muted" className="mt-2">No se pudo cargar la información de la dimensión. Intenta volver a la lista.</Text>
-                     <CustomButton onClick={handleVolver} leftIcon={<ArrowLeft />} variant="outline" className="mt-4">
-                        Volver a Dimensiones
-                    </CustomButton>
-                </StandardCard>
-            </div>
-        </PageBackground>
+      <PageBackground>
+        <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <StandardCard
+            colorScheme="primary"
+            accentPlacement="none"
+            hasOutline={false}
+            shadow="none"
+            disableShadowHover={true}
+            styleType="subtle"
+            className="text-center p-6"
+          >
+            <Text variant="subheading">Dimensión no disponible</Text>
+            <Text color="muted" className="mt-2">No se pudo cargar la información de la dimensión. Intenta volver a la lista.</Text>
+            <CustomButton onClick={handleVolver} leftIcon={<ArrowLeft />} variant="outline" className="mt-4">
+              Volver a Dimensiones
+            </CustomButton>
+          </StandardCard>
+        </div>
+      </PageBackground>
     );
   }
 
@@ -282,11 +300,12 @@ export default function ModificarDimensionPage() {
           <StandardCard
             className="mt-6"
             accentPlacement="top"
-            colorScheme="secondary" // Mapped from ProCard's color="secondary"
-            accentColorScheme="secondary" // Derived from colorScheme
-            shadow="lg"
+            colorScheme="secondary" // Rule: Main form card colorScheme is secondary
+            accentColorScheme="primary" // Rule: Main form card accent for create/edit is primary
+            shadow="md" // Rule: Main form card shadow is md by default
+            disableShadowHover={true}
             styleType="subtle"
-            hasOutline={false} // border="top" implies no full outline
+            // styleType and hasOutline removed to use default or theme-defined values
           >
             <DimensionForm
               modo="editar"
@@ -299,4 +318,15 @@ export default function ModificarDimensionPage() {
       </div>
     </PageBackground>
   );
+	//#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration.
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// TODO: Review if any specific todos are needed for this modification page.
+// For example, consider edge cases or further UI/UX enhancements.
+//#endregion ![todo]

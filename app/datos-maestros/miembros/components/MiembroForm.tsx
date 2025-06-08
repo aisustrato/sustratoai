@@ -1,6 +1,7 @@
-// app/datos-maestros/miembros/components/MiembroForm.tsx
+//. 📍 app/datos-maestros/miembros/components/MiembroForm.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React from "react";
 import { useForm, Controller, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +17,9 @@ import { Text } from "@/components/ui/text";
 import {
   Mail, User, Briefcase, Building, Phone, Languages, MessageSquare
 } from "lucide-react";
+//#endregion ![head]
 
+//#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
 const formSchema = z.object({
   emailUsuario: z.string().email("Email inválido").min(1, "El email es requerido"),
   rolId: z.string().min(1, "Debe seleccionar un rol"),
@@ -82,7 +85,9 @@ interface MiembroFormProps {
   disabled?: boolean;
   loading?: boolean;
 }
+//#endregion ![def]
 
+//#region [main] - 🔧 COMPONENT 🔧
 export const MiembroForm: React.FC<MiembroFormProps> = ({
   modo,
   valoresIniciales,
@@ -91,7 +96,7 @@ export const MiembroForm: React.FC<MiembroFormProps> = ({
   disabled = false,
   loading = false,
 }) => {
-
+  //#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
   const initialFormValues = React.useMemo(() => {
     if (modo === "crear") {
       return (valoresIniciales && Object.keys(valoresIniciales).length > 0) 
@@ -176,15 +181,18 @@ export const MiembroForm: React.FC<MiembroFormProps> = ({
   const onInvalidSubmit = (errors: FieldErrors<MiembroFormValues>) => {
     console.log("MiembroForm (Inválido):", errors);
   };
+  //#endregion ![sub]
 
+  //#region [render] - 🎨 RENDER SECTION 🎨
   return (
-    <StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">
+    <StandardCard disableShadowHover={true} styleType="subtle" hasOutline={false} accentPlacement="none">
     
       <StandardCard.Content>
         <form
           onSubmit={form.handleSubmit(handleFormSubmit, onInvalidSubmit)}
           className="space-y-6"
         >
+          {/* //#region [render_sub] - 🧑‍💼 Información del Miembro (Principal) 🧑‍💼 */}
           <Text variant="heading" size="md" color="tertiary" className="pb-2 border-b">
             Información del Miembro
           </Text>
@@ -247,7 +255,9 @@ export const MiembroForm: React.FC<MiembroFormProps> = ({
               />
             </FormField>
           </div>
+          {/* //#endregion [render_sub] */}
 
+          {/* //#region [render_sub] - 📝 Información Adicional de Perfil (Opcional) 📝 */}
           <Text variant="heading" size="md" color="tertiary" className="pt-4 pb-2 border-b">
             Información Adicional de Perfil (Opcional)
           </Text>
@@ -486,7 +496,9 @@ export const MiembroForm: React.FC<MiembroFormProps> = ({
               )}
             />
           </FormField>
+          {/* //#endregion [render_sub] */}
 
+          {/* //#region [render_sub] - 💾 Botones de Acción 💾 */}
           {modo !== "ver" && (
             <div className="flex justify-end gap-3 pt-4">
               <CustomButton
@@ -501,8 +513,21 @@ export const MiembroForm: React.FC<MiembroFormProps> = ({
               </CustomButton>
             </div>
           )}
+          {/* //#endregion [render_sub] */}
         </form>
       </StandardCard.Content>
     </StandardCard>
   );
+  //#endregion ![render]
 };
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Export is part of the component declaration and type export
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar la internacionalización de etiquetas y mensajes de error.
+// Evaluar si la lógica de `getSuccessState` puede ser simplificada o integrada con `FormField` directamente.
+// Podría haber un estado de "éxito" más visual después de una acción de submit exitosa antes de un posible redirect.
+//#endregion ![todo]

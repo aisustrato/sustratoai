@@ -1,6 +1,10 @@
+//.📍 components/ui/StandardCard.tsx
+
 "use client";
 
-import type React from "react";
+//#region [head] - 🏷️ IMPORTS 🏷️
+
+import * as React from "react";
 import { forwardRef, useMemo } from "react";
 import { motion, AnimatePresence, type HTMLMotionProps, type Transition, type Variants } from "framer-motion";
 import { Check, Square } from "lucide-react";
@@ -23,6 +27,9 @@ import {
 
 import { Text, type TextProps as ActualTextProps, type FontPairType } from "@/components/ui/text";
 import { SustratoLoadingLogo, type SustratoLoadingLogoProps } from "@/components/ui/sustrato-loading-logo";
+//#endregion ![head]
+
+//#region [def] - 📦 INTERFACES, TYPES & VARIANTS 📦
 
 // Tipos para las props de Title/Subtitle
 type CardTextTypographicVariant = ActualTextProps["variant"];
@@ -69,11 +76,23 @@ interface StandardCardContentProps extends React.HTMLAttributes<HTMLDivElement> 
 interface StandardCardActionsProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
 interface StandardCardFooterProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
 
+interface StandardCardComposition extends React.ForwardRefExoticComponent<StandardCardProps & React.RefAttributes<HTMLDivElement>> {
+  Header: (props: StandardCardHeaderProps) => JSX.Element;
+  Title: (props: StandardCardTitleProps) => JSX.Element;
+  Subtitle: (props: StandardCardSubtitleProps) => JSX.Element;
+  Media: (props: StandardCardMediaProps) => JSX.Element;
+  Content: (props: StandardCardContentProps) => JSX.Element;
+  Actions: (props: StandardCardActionsProps) => JSX.Element;
+  Footer: (props: StandardCardFooterProps) => JSX.Element;
+}
 
 const cardEntranceVariants: Variants = { hidden: { opacity: 0, y: 20, scale: 0.98 }, visible: { opacity: 1, y: 0, scale: 1 }, };
 const overlayVariants: Variants = { hidden: { opacity: 0 }, visible: { opacity: 1 }, exit: { opacity: 0 } };
 const MotionDiv = motion.div;
+//#endregion ![def]
 
+
+//#region [main_root] - 🧱 ROOT CARD COMPONENT 🧱
 const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
   (
     {
@@ -86,6 +105,7 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
     },
     ref,
   ) => {
+    //#region [sub_init] - 🪝 HOOKS, STATE, MEMOS 🪝
     const { appColorTokens, mode } = useTheme();
     const cardIdentifier = dataTestId || ""; 
 
@@ -167,6 +187,9 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
       cardTokens, colorScheme, styleType, hasOutline, outlineColorScheme,
       accentPlacement, accentColorScheme, selected, inactive
     ]);
+    //#endregion ![sub_init]
+
+    //#region [sub_logic] - 💡 DERIVED LOGIC, CLASSES, TRANSITIONS 💡
 
     const paddingClass = noPadding ? "" : (cardTokens?.padding || "p-4");
     const shadowClass = cardTokens?.shadows[shadow] || "shadow-md";
@@ -218,6 +241,9 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
       ...htmlProps,
     };
     if (dataTestId) motionRootProps["data-testid"] = dataTestId;
+    //#endregion ![sub_logic]
+
+    //#region [sub_render_helpers] - 🎨 HELPER RENDER FUNCTIONS 🎨
 
     const renderInnerContent = () => (
       // CORREGIDO: Eliminada la clase 'invisible' cuando showLoadingIndicator es true
@@ -283,6 +309,9 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
       if (!inactive || showLoadingIndicator) return null; 
       return <MotionDiv key="inactive-overlay" variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-[5] backdrop-blur-sm rounded-lg pointer-events-auto" style={{ backgroundColor: "var(--sc-inactive-overlay-bg)" }} /> 
     };
+    //#endregion ![sub_render_helpers]
+
+    //#region [render] - 🖼️ ROOT JSX STRUCTURE 🖼️
 
     return ( 
       <MotionDiv {...motionRootProps}> 
@@ -294,38 +323,48 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
         <AnimatePresence>{showLoadingIndicator && renderLoadingState()}</AnimatePresence>
       </MotionDiv> 
     );
+    //#endregion ![render]
   },
 );
 StandardCardRoot.displayName = "StandardCard";
+//#endregion ![main_root]
+
+//#region [main_subcomponents] -🧩 SUBCOMPONENTS (Header, Title, etc.) 🧩
 
 // --- Subcomponentes (React.FC) ---
 // (Sin cambios respecto a la versión anterior que ya estaba "en verde" para linters)
-const Header: React.FC<StandardCardHeaderProps> = ({ className, children, ...props }) => (<div className={cn("mb-3", className)} {...props}>{children}</div>);
+const Header = ({ className, children, ...props }: StandardCardHeaderProps): JSX.Element => (<div className={cn("mb-3", className)} {...props}>{children}</div>);
 Header.displayName = "StandardCard.Header";
-const Title: React.FC<StandardCardTitleProps> = ({ children, className, typographicVariant = "heading", size = "lg", colorScheme, colorShade, fontType, weight, gradient, truncate, ...htmlProps }) => (<Text as="h3" variant={typographicVariant} size={size} color={colorScheme as CardTextColor} colorVariant={colorShade} fontType={fontType} weight={weight || (typographicVariant === "heading" ? "semibold" : "normal")} gradient={gradient} truncate={truncate} className={cn( !colorScheme && !colorShade && "text-[var(--sc-text-color)]", className)} {...htmlProps}>{children}</Text>);
+const Title = ({ children, className, typographicVariant = "heading", size = "lg", colorScheme, colorShade, fontType, weight, gradient, truncate, ...htmlProps }: StandardCardTitleProps): JSX.Element => (<Text as="h3" variant={typographicVariant} size={size} color={colorScheme as CardTextColor} colorVariant={colorShade} fontType={fontType} weight={weight || (typographicVariant === "heading" ? "semibold" : "normal")} gradient={gradient} truncate={truncate} className={cn( !colorScheme && !colorShade && "text-[var(--sc-text-color)]", className)} {...htmlProps}>{children}</Text>);
 Title.displayName = "StandardCard.Title";
-const Subtitle: React.FC<StandardCardSubtitleProps> = ({ children, className, typographicVariant = "default", size = "sm", colorScheme, colorShade, fontType, weight, gradient, truncate, ...htmlProps }) => (<Text as="p" variant={typographicVariant} size={size} color={colorScheme as CardTextColor} colorVariant={colorShade} fontType={fontType} weight={weight} gradient={gradient} truncate={truncate} className={cn("opacity-80", !colorScheme && !colorShade && "text-[var(--sc-text-color)]", className)} {...htmlProps}>{children}</Text>);
+const Subtitle = ({ children, className, typographicVariant = "default", size = "sm", colorScheme, colorShade, fontType, weight, gradient, truncate, ...htmlProps }: StandardCardSubtitleProps): JSX.Element => (<Text as="p" variant={typographicVariant} size={size} color={colorScheme as CardTextColor} colorVariant={colorShade} fontType={fontType} weight={weight} gradient={gradient} truncate={truncate} className={cn("opacity-80", !colorScheme && !colorShade && "text-[var(--sc-text-color)]", className)} {...htmlProps}>{children}</Text>);
 Subtitle.displayName = "StandardCard.Subtitle";
-const Media: React.FC<StandardCardMediaProps> = ({ className, children, ...props }) => (<div className={cn("mb-3 overflow-hidden", className)} {...props}>{children}</div>);
+const Media = ({ className, children, ...props }: StandardCardMediaProps): JSX.Element => (<div className={cn("mb-3 overflow-hidden", className)} {...props}>{children}</div>);
 Media.displayName = "StandardCard.Media";
-const Content: React.FC<StandardCardContentProps> = ({ className, children, ...props }) => (<div className={cn(className)} {...props}>{children}</div>);
+const Content = ({ className, children, ...props }: StandardCardContentProps): JSX.Element => (<div className={cn(className)} {...props}>{children}</div>);
 Content.displayName = "StandardCard.Content";
-const Actions: React.FC<StandardCardActionsProps> = ({ className, children, ...props }) => (<div className={cn("mt-4 flex flex-wrap items-center gap-2", className)} {...props}>{children}</div>);
+const Actions = ({ className, children, ...props }: StandardCardActionsProps): JSX.Element => (<div className={cn("mt-4 flex flex-wrap items-center gap-2", className)} {...props}>{children}</div>);
 Actions.displayName = "StandardCard.Actions";
-const Footer: React.FC<StandardCardFooterProps> = ({ className, children, ...props }) => (<div className={cn("mt-4 pt-3 text-sm opacity-70", "border-t border-[var(--sc-outline-border-color)]/30 dark:border-[var(--sc-outline-border-color)]/20", className)} {...props}>{children}</div>);
+const Footer = ({ className, children, ...props }: StandardCardFooterProps): JSX.Element => (<div className={cn("mt-4 pt-3 text-sm opacity-70", "border-t border-[var(--sc-outline-border-color)]/30 dark:border-[var(--sc-outline-border-color)]/20", className)} {...props}>{children}</div>);
 Footer.displayName = "StandardCard.Footer";
+//#endregion ![main_subcomponents]
 
-interface StandardCardComposition extends React.ForwardRefExoticComponent<StandardCardProps & React.RefAttributes<HTMLDivElement>> {
-  Header: React.FC<StandardCardHeaderProps>;
-  Title: React.FC<StandardCardTitleProps>;
-  Subtitle: React.FC<StandardCardSubtitleProps>;
-  Media: React.FC<StandardCardMediaProps>;
-  Content: React.FC<StandardCardContentProps>;
-  Actions: React.FC<StandardCardActionsProps>;
-  Footer: React.FC<StandardCardFooterProps>;
-}
+// Moved StandardCardComposition interface into [def] region
 
+
+
+//#region [main_composition] - 🏗️ COMPONENT COMPOSITION 🏗️
 const StandardCard = StandardCardRoot as StandardCardComposition;
 StandardCard.Header = Header; StandardCard.Title = Title; StandardCard.Subtitle = Subtitle; StandardCard.Media = Media; StandardCard.Content = Content; StandardCard.Actions = Actions; StandardCard.Footer = Footer;
+//#endregion ![main_composition]
+
+//#region [foo] - 🔚 EXPORTS 🔚
 
 export { StandardCard, type StandardCardColorScheme };
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// - Review responsiveness of card elements.
+// - Add more detailed tests for interaction states (loading, selected, inactive).
+// - Consider performance implications of complex hover/tap animations.
+//#endregion ![todo]

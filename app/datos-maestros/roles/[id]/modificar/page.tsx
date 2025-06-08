@@ -1,9 +1,11 @@
-// app/datos-maestros/roles/[id]/modificar/page.tsx
+//. 📍 app/datos-maestros/roles/[id]/modificar/page.tsx
+
+//#region [head] - 🏷️ IMPORTS 🏷️
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useAuth } from "@/app/auth-provider"; // Solo se usa proyectoActual y user
+import { useAuth } from "@/app/auth-provider"; //> 📝 Solo se usa proyectoActual y user
 import { RolForm, type RolFormValues } from "../../components/RolForm";
 import { 
     modificarRolEnProyecto, 
@@ -20,29 +22,36 @@ import { CustomButton } from "@/components/ui/custom-button";
 import Link from "next/link";
 import { PageBackground } from "@/components/ui/page-background";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
+//> 📝 No local types defined in this file, types are imported or inline with usage.
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function ModificarRolPage() {
   const router = useRouter();
   const params = useParams(); 
-  const { proyectoActual } = useAuth(); // CORRECCIÓN: Eliminado isLoading de aquí
+  const { proyectoActual } = useAuth(); //> 📝 CORRECCIÓN: Eliminado isLoading de aquí
   
   const roleId = (params && typeof params.id === "string") ? params.id : null;
 
   const [rolParaEditar, setRolParaEditar] = useState<ProjectRoleRow | null>(null);
-  // isPageLoading: true inicialmente, se pone a false después del primer useEffect o dentro de cargarDetallesRol
+  //> 📝 isPageLoading: true inicialmente, se pone a false después del primer useEffect o dentro de cargarDetallesRol
   const [isPageLoading, setIsPageLoading] = useState(true); 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
 
   const puedeGestionarRoles = proyectoActual?.permissions?.can_manage_master_data || false;
 
+  //#region [sub] - 🧰 HELPER FUNCTIONS 🧰
   const cargarDetallesRol = useCallback(async () => {
     if (!roleId || !proyectoActual?.id) {
       setIsPageLoading(false); 
       return;
     }
 
-    // No necesitamos setIsPageLoading(true) aquí porque ya está en true o useEffect lo maneja
+    //> 📝 No necesitamos setIsPageLoading(true) aquí porque ya está en true o useEffect lo maneja
     setPageError(null);
     setRolParaEditar(null);
 
@@ -77,14 +86,14 @@ export default function ModificarRolPage() {
   }, [roleId, proyectoActual?.id, proyectoActual?.name]);
 
   useEffect(() => {
-    // Este useEffect determina si se puede proceder a cargar el rol.
-    // Se asume que `proyectoActual` de `useAuth` está disponible (o es null) sincrónicamente
-    // después de la carga inicial de la app/layout.
+    //> 📝 Este useEffect determina si se puede proceder a cargar el rol.
+    //> 📝 Se asume que `proyectoActual` de `useAuth` está disponible (o es null) sincrónicamente
+    //> 📝 después de la carga inicial de la app/layout.
     if (roleId && proyectoActual?.id) {
-      // Si tenemos todo, procedemos a cargar, isPageLoading ya está true.
+      //> 📝 Si tenemos todo, procedemos a cargar, isPageLoading ya está true.
       cargarDetallesRol();
     } else {
-      // Si falta algo crucial al inicio, terminamos la carga y establecemos error.
+      //> 📝 Si falta algo crucial al inicio, terminamos la carga y establecemos error.
       setIsPageLoading(false); 
       if (!proyectoActual?.id) {
         setPageError("No hay un proyecto activo seleccionado.");
@@ -92,7 +101,7 @@ export default function ModificarRolPage() {
         setPageError("No se ha especificado un ID de rol para modificar.");
       }
     }
-  }, [roleId, proyectoActual, cargarDetallesRol]); // Depender de proyectoActual completo
+  }, [roleId, proyectoActual, cargarDetallesRol]); //> 📝 Depender de proyectoActual completo
 
   const handleModificarRol = async (data: RolFormValues) => {
     if (!roleId || !proyectoActual?.id || !rolParaEditar) {
@@ -127,27 +136,45 @@ export default function ModificarRolPage() {
     }
     setIsSubmitting(false);
   };
+  //#endregion ![sub]
 
-  // ------ RENDERIZADO CONDICIONAL ------
-  if (isPageLoading) { // Solo este estado de carga para la página
+  //#region [render] - 🎨 RENDER SECTION 🎨
+  //> 📝 ------ RENDERIZADO CONDICIONAL ------
+  if (isPageLoading) { //> 📝 Solo este estado de carga para la página
     return ( <PageBackground> <SustratoLoadingLogo size={50} showText text="Cargando..." /> </PageBackground> );
   }
 
-  // Los siguientes checks se hacen DESPUÉS de que isPageLoading es false.
+  //> 📝 Los siguientes checks se hacen DESPUÉS de que isPageLoading es false.
   if (!proyectoActual?.id) {
-    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none">  <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError || "No hay un proyecto activo."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><CustomButton variant="outline">Ir a Inicio</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none" disableShadowHover={true}>  <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError || "No hay un proyecto activo."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><CustomButton variant="outline">Ir a Inicio</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
   
   if (!puedeGestionarRoles) { 
-    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none">   <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Acceso Denegado" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>No tienes permisos para modificar roles en este proyecto.</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none" disableShadowHover={true}>   <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Acceso Denegado" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>No tienes permisos para modificar roles en este proyecto.</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
   
   if (pageError && !rolParaEditar) { 
-    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none">  <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <AlertTriangle className="h-6 w-6 text-danger-600" /> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard 
+          styleType="subtle"
+          className="max-w-md text-center" 
+          colorScheme="primary" // Rule: Inner card for info/error block
+          accentPlacement="none" // Rule: Inner card
+          hasOutline={false} // Rule: Inner card
+          shadow="none" // Rule: Inner card
+          disableShadowHover={true} // Rule: Inner card
+        >  <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <AlertTriangle className="h-6 w-6 text-danger-600" /> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
 
   if (!rolParaEditar) { 
-    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none">  <StandardCard.Header><PageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><Text>{pageError || "No se encontraron datos para el rol especificado."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard 
+          styleType="subtle"
+          className="max-w-md text-center" 
+          colorScheme="primary" // Rule: Inner card for info/error block
+          accentPlacement="none" // Rule: Inner card
+          hasOutline={false} // Rule: Inner card
+          shadow="none" // Rule: Inner card
+          disableShadowHover={true} // Rule: Inner card
+        >  <StandardCard.Header><PageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><Text>{pageError || "No se encontraron datos para el rol especificado."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
 
   const valoresInicialesParaForm: RolFormValues = {
@@ -175,11 +202,13 @@ export default function ModificarRolPage() {
               showBackButton={{ href: `/datos-maestros/roles` }}
             />
         <StandardCard
-            accentPlacement="top"
-            colorScheme="primary" // Mapped from ProCard's color="primary"
-            accentColorScheme="primary" // Derived from colorScheme
+            colorScheme="secondary" // Rule: Main form card colorScheme is secondary
+            accentPlacement="top" // Rule: Main form card accentPlacement is top
+            accentColorScheme="primary" // Rule: Main form card accent for create/edit is primary
+            shadow="md" // Rule: Main form card shadow is md by default
+            disableShadowHover={true}
             styleType="subtle"
-            hasOutline={false} // border="top" implies no full outline
+            // styleType and hasOutline removed
         >
         
           <StandardCard.Content>
@@ -200,4 +229,14 @@ export default function ModificarRolPage() {
       </div>
     </PageBackground>
   );
+  //#endregion ![render]
+
+  //#region [todo] - 👀 PENDIENTES 👀
+  // ! ❌ Considerar si hay tareas pendientes específicas para esta página.
+  //#endregion ![todo]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+//> 📝 Default export is part of the [main] component definition.
+//#endregion ![foo]

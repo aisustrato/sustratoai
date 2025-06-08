@@ -1,10 +1,13 @@
-// app/datos-maestros/lote/components/batch-tokens.ts
+//. 📍 app/datos-maestros/lote/components/batch-tokens.ts
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import type { AppColorTokens, Mode, ColorShade } from "@/lib/theme/ColorToken";
 import type { BatchStatusEnum } from '@/lib/database.types';
 import tinycolor from "tinycolor2";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES, INTERFACES & CONSTANTS 📦
 export type BatchMemberColorKey = "aux1" | "aux2" | "aux3" | "aux4" | "aux5" | "auxDefault";
 
 export interface BatchAuxColor {
@@ -32,7 +35,9 @@ export interface BatchTokens {
         containerBorder: string;
     };
 }
+//#endregion ![def]
 
+//#region [main] - ⚙️ MODULE LOGIC ⚙️
 // --- Función para generar paleta de miembros (SIN CAMBIOS) ---
 function generatePastelPalette(baseColor: string, count: number): BatchAuxColor[] {
   // ... tu código existente ...
@@ -109,3 +114,12 @@ export function generateBatchTokens(
         }
 	};
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// All type and function exports are inline with their definitions.
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// No specific todos for this file at the moment.
+//#endregion ![todo]

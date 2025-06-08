@@ -1,5 +1,7 @@
-// app/datos-maestros/miembros/[id]/modificar/page.tsx
+//. 📍 app/datos-maestros/miembros/[id]/modificar/page.tsx
 "use client";
+
+//#region [head] - 🏷️ IMPORTS 🏷️
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -23,13 +25,18 @@ import { useLoading } from "@/contexts/LoadingContext";
 import { PageBackground } from "@/components/ui/page-background";
 import { PageTitle } from "@/components/ui/page-title";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+//#endregion ![head]
 
+//#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
 interface RolOption {
   value: string;
   label: string;
 }
+//#endregion ![def]
 
+//#region [main] - 🔧 COMPONENT 🔧
 export default function ModificarMiembroPage() {
+  //#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
   const router = useRouter();
   const params = useParams();
   const memberId = params?.id ? String(params.id) : "";
@@ -221,7 +228,9 @@ export default function ModificarMiembroPage() {
     language: miembro.profile?.preferred_language || "",
     pronouns: miembro.profile?.pronouns || "",
   } : undefined;
+  //#endregion ![sub]
 
+  //#region [render] - 🎨 RENDER SECTION 🎨
   if (isPageLoading) {
     return (
       <div className="flex justify-center py-8">
@@ -302,11 +311,13 @@ export default function ModificarMiembroPage() {
 
           {valoresIniciales && roles.length > 0 && (
             <StandardCard
-              accentPlacement="top"
-              colorScheme="primary" // Mapped from ProCard's color="primary"
-              accentColorScheme="primary" // Derived from colorScheme as borderVariant wasn't specified
+              disableShadowHover={true}
               styleType="subtle"
-              hasOutline={false} // border="top" implies no full outline
+              colorScheme="secondary" // Rule: Main form card colorScheme is secondary
+              accentPlacement="top" // Rule: Main form card accentPlacement is top
+              accentColorScheme="primary" // Rule: Main form card accent for create/edit is primary
+              shadow="md" // Rule: Main form card shadow is md by default
+              // styleType and hasOutline removed
             >
             <MiembroForm
               modo="editar"
@@ -322,3 +333,15 @@ export default function ModificarMiembroPage() {
     </PageBackground>
   );
 }
+//#endregion ![render]
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+//> 📝 Default export is part of the component declaration. No other exports.
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// TODO: Review and potentially simplify the loading state management (isGlobalLoading, isPageLoading, isButtonSubmitting).
+// TODO: Ensure error messages are user-friendly and provide clear guidance.
+// TODO: Consider abstracting data fetching logic if it becomes too complex or repetitive across pages.
+//#endregion ![todo]

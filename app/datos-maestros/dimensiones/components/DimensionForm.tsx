@@ -1,6 +1,7 @@
-// app/datos-maestros/dimensiones/components/DimensionForm.tsx
+//. 📍 app/datos-maestros/dimensiones/components/DimensionForm.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useEffect } from "react";
 import { useForm, Controller, useFieldArray, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,7 +16,9 @@ import { StandardCard, type StandardCardColorScheme } from "@/components/ui/Stan
 import { Text } from "@/components/ui/text";
 import { AlertCircle, HelpCircle, Lightbulb, ListChecks, PlusCircle, Trash2, CheckCircle } from "lucide-react";
 import { BadgeCustom } from "@/components/ui/badge-custom";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
 // Esquemas Zod para los sub-elementos
 const optionSchema = z.object({
   id: z.string().optional(),
@@ -61,7 +64,9 @@ interface DimensionFormProps {
   loading?: boolean;
   disabled?: boolean;
 }
+//#endregion ![def]
 
+//#region [main] - 🔧 COMPONENT 🔧
 export const DimensionForm: React.FC<DimensionFormProps> = ({
   modo,
   valoresIniciales,
@@ -69,6 +74,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
   loading = false,
   disabled = false,
 }) => {
+	//#region [sub] - 🧰 HOOKS, STATE, FORM SETUP & EFFECTS 🧰
   const form = useForm<DimensionFormValues>({
     resolver: zodResolver(dimensionFormSchema),
     defaultValues: {
@@ -116,7 +122,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
   const onInvalidSubmit = (formErrors: FieldErrors<DimensionFormValues>) => {
     console.error("DimensionForm (Inválido):", formErrors);
   };
+	//#endregion ![sub]
   
+  //#region [sub] - 🧰 HELPER FUNCTIONS 🧰
   const typeOptions: SelectOption[] = [
     { value: "finite", label: "Selección Múltiple (Opciones Predefinidas)" },
     { value: "open", label: "Respuesta Abierta (Texto Libre)" },
@@ -137,22 +145,33 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
     // @ts-ignore
     return fieldState.isTouched && !error && !!watch(fieldPath);
   };
+  //#endregion ![sub]
   
+  //#region [render] - 🎨 RENDER SECTION 🎨
   return (
-    <StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">
+    <StandardCard
+      colorScheme="primary"
+      accentPlacement="none"
+      hasOutline={false}
+      shadow="none"
+      disableShadowHover={true}
+      styleType="subtle"
+      className="w-full max-w-4xl mx-auto"
+    >
       <StandardCard.Content>
         <form
           onSubmit={handleSubmit(handleFormSubmitInternal, onInvalidSubmit)}
           className="space-y-8"
         >
-          {/* SECCIÓN: DATOS BÁSICOS DE LA DIMENSIÓN */}
+          {/* //#region [render_sub] - 🧱 SECCIÓN: DATOS BÁSICOS 🧱 */}
           <StandardCard
-            colorScheme="neutral"
-            accentPlacement="top"
-            accentColorScheme="neutral" // Derived from colorScheme
-            className="p-0"
+            colorScheme="primary"
+            accentPlacement="none"
+            hasOutline={false}
+            shadow="none"
+            disableShadowHover={true}
             styleType="subtle"
-            hasOutline={false} // border="top" implies no full outline
+            className="p-0"
           >
             <StandardCard.Header className="pb-3">
               <Text variant="subheading" weight="medium" color="primary">
@@ -239,16 +258,18 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
               </FormField>
             </StandardCard.Content>
           </StandardCard>
+          {/* //#endregion [render_sub] */}
 
-          {/* SECCIÓN: OPCIONES (Solo si tipo === 'finite') */}
+          {/* //#region [render_sub] - 🧱 SECCIÓN: OPCIONES (FINITE) 🧱 */}
           {dimensionType === "finite" && (
             <StandardCard
-              colorScheme="neutral"
-              accentPlacement="top"
-              accentColorScheme="neutral" // Derived
-              className="p-0"
+              colorScheme="primary"
+              accentPlacement="none"
+              hasOutline={false}
+              shadow="none"
+              disableShadowHover={true}
               styleType="subtle"
-              hasOutline={false} // border="top"
+              className="p-0"
             >
               <StandardCard.Header className="pb-3 flex justify-between items-start"> {/* items-start para alinear mejor si los textos tienen alturas diferentes */}
                 <div className="flex-grow"> {/* Div para que el título y contador estén juntos y a la izquierda */}
@@ -307,16 +328,16 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                 ))}
               </StandardCard.Content>
             </StandardCard>
-          )}
-          
-          {/* SECCIÓN: PREGUNTAS GUÍA */}
+          )} {/* Cierre del bloque condicional dimensionType === "finite" */}
+          {/* //#region [render_sub] - 🧱 SECCIÓN: PREGUNTAS GUÍA 🧱 */}
           <StandardCard
-            colorScheme="neutral"
-            accentPlacement="top"
-            accentColorScheme="neutral" // Derived
-            className="p-0"
+            colorScheme="primary"
+            accentPlacement="none"
+            hasOutline={false}
+            shadow="none"
+            disableShadowHover={true}
             styleType="subtle"
-            hasOutline={false} // border="top"
+            className="p-0"
           >
             <StandardCard.Header className="pb-3 flex justify-between items-start">
               <div className="flex-grow">
@@ -369,14 +390,17 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
             ))}
             </StandardCard.Content>
           </StandardCard>
+          {/* //#endregion [render_sub] */}
 
-          {/* SECCIÓN: EJEMPLOS ILUSTRATIVOS */}
+          {/* //#region [render_sub] - 🧱 SECCIÓN: EJEMPLOS ILUSTRATIVOS 🧱 */}
           <StandardCard
-            colorScheme="neutral"
-            className="p-0"
+            colorScheme="primary"
+            accentPlacement="none"
+            hasOutline={false}
+            shadow="none"
+            disableShadowHover={true}
             styleType="subtle"
-            hasOutline={false} // No border prop
-            accentPlacement="none" // No border prop
+            className="p-0"
           >
             <StandardCard.Header className="pb-3 flex justify-between items-start">
               <div className="flex-grow">
@@ -429,8 +453,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
             ))}
             </StandardCard.Content>
           </StandardCard>
+          {/* //#endregion [render_sub] */}
 
-          {/* BOTÓN DE SUBMIT */}
+          {/* //#region [render_sub] - 🧱 BOTÓN SUBMIT 🧱 */}
           {modo !== "ver" && (
             <div className="flex justify-end pt-6">
               <CustomButton
@@ -444,8 +469,21 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
               </CustomButton>
             </div>
           )}
+          {/* //#endregion [render_sub] */}
         </form>
       </StandardCard.Content>
     </StandardCard>
   );
+  //#endregion ![render]
 };
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Export is part of the component declaration and type export
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar la internacionalización de los mensajes de error y etiquetas.
+// Mejorar la accesibilidad (ARIA attributes) en campos dinámicos si es necesario.
+// Evaluar si el `getFieldSuccessState` es demasiado complejo o si se puede simplificar.
+//#endregion ![todo]

@@ -1,5 +1,7 @@
-// app/datos-maestros/miembros/[id]/eliminar/page.tsx
+//. 📍 app/datos-maestros/miembros/[id]/eliminar/page.tsx
 "use client";
+
+//#region [head] - 🏷️ IMPORTS 🏷️
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -21,8 +23,15 @@ import { PageTitle } from "@/components/ui/page-title";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CustomDialog } from "@/components/ui/custom-dialog";
+//#endregion ![head]
 
+//#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
+//> 📝 No local schema, types, or props defined for this page component.
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function EliminarMiembroPage() {
+  //#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
   const router = useRouter();
   const params = useParams();
   const memberId = params?.id ? String(params.id) : "";
@@ -89,7 +98,9 @@ export default function EliminarMiembroPage() {
       setShowDeleteDialog(false);
     }
   };
+  //#endregion ![sub]
 
+  //#region [render] - 🎨 RENDER SECTION 🎨
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -156,6 +167,7 @@ export default function EliminarMiembroPage() {
         />
 
         <StandardCard
+          disableShadowHover={true}
           accentPlacement="top"
           colorScheme="primary"
           accentColorScheme="primary" // Derived from colorScheme as borderVariant wasn't specified
@@ -224,3 +236,15 @@ export default function EliminarMiembroPage() {
     </PageBackground>
   );
 }
+//#endregion ![render]
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+//> 📝 Default export is part of the component declaration. No other exports.
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// TODO: Re-enable actual member deletion in CustomDialog onConfirm (currently console.log and commented out call).
+// TODO: Consider adding more robust error handling or user feedback for the deletion process.
+// TODO: Review permissions check for deleting members if applicable.
+//#endregion ![todo]

@@ -1,6 +1,7 @@
-// app/datos-maestros/dimensiones/components/DimensionCard.tsx
+//. 📍 app/datos-maestros/dimensiones/components/DimensionCard.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React from "react";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import { useTheme } from "@/app/theme-provider";
@@ -15,7 +16,9 @@ import { cn } from "@/lib/utils";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 // import { useSortable } from '@dnd-kit/sortable'; // Descomentar para dnd-kit
 // import { CSS } from '@dnd-kit/utilities'; // Descomentar para dnd-kit
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
 interface DimensionCardProps {
 	dimension: FullDimension;
 	onEdit: () => void;
@@ -24,7 +27,9 @@ interface DimensionCardProps {
 	canManage: boolean;
 	isBeingDeleted?: boolean;
 }
+//#endregion ![def]
 
+//#region [main] - 🔧 COMPONENT 🔧
 export const DimensionCard: React.FC<DimensionCardProps> = ({
 	dimension,
 	onEdit,
@@ -37,6 +42,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 	// const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({id: id}); // Para dnd-kit
 	// const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 10 : undefined, opacity: isDragging ? 0.8 : 1 }; // Para dnd-kit
 
+	//#region [sub] - 🧰 HELPER FUNCTIONS 🧰
 	const tipoLabel =
 		dimension.type === "finite" ? "Selección Múltiple" : "Respuesta Abierta";
 
@@ -57,7 +63,9 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 		triggerRipple(e, accentBg, 10);
 		onViewDetails();
 	};
+	//#endregion ![sub]
 
+	//#region [render] - 🎨 RENDER SECTION 🎨
 	return (
 		// <div ref={setNodeRef} style={style}> {/* Envolver con esto para dnd-kit */}
 		<StandardCard
@@ -65,15 +73,14 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 				"flex flex-col h-full group relative",
 				isBeingDeleted && "opacity-50 pointer-events-none"
 			)}
-			accentPlacement="left"
-			colorScheme={cardColorVariant as StandardCardColorScheme}
-			accentColorScheme={cardColorVariant as StandardCardColorScheme} // Derived from colorScheme
+			accentPlacement="top"
+			colorScheme="primary"
+			accentColorScheme="neutral"
+			disableShadowHover={true}
+			styleType="subtle"
 			shadow="md"
 			animateEntrance
-			styleType="subtle"
-			hasOutline={false} // border="left" implies no full outline
-			onCardClick={handleCardClick} // Moved onClick here
-			// Añadir un efecto hover (handled by className if applicable, or specific prop if StandardCard has it)
+			onCardClick={handleCardClick}
 		>
 			{isBeingDeleted && (
 				<div className="absolute inset-0 flex items-center justify-center bg-card/50 z-10">
@@ -216,4 +223,15 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 		</StandardCard>
 		// </div> // Cierre del div para dnd-kit
 	);
+	//#endregion ![render]
 };
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Descomentar y configurar dnd-kit para drag and drop functionality.
+// Considerar optimizaciones de rendimiento para listas muy largas.
+//#endregion ![todo]

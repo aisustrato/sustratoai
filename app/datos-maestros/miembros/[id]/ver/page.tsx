@@ -1,6 +1,7 @@
-// app/datos-maestros/miembros/[id]/ver/page.tsx
+//. 📍 app/datos-maestros/miembros/[id]/ver/page.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
@@ -23,8 +24,15 @@ import { Text } from "@/components/ui/text";
 import { PageBackground } from "@/components/ui/page-background";
 import { PageTitle } from "@/components/ui/page-title";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+//#endregion ![head]
 
+//#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
+//> 📝 No custom types or schemas defined outside the component for this page.
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function VerMiembroPage() {
+  //#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
 	const router = useRouter();
 	const params = useParams();
 	const memberId = params?.id ? String(params.id) : "";
@@ -172,7 +180,9 @@ export default function VerMiembroPage() {
 				pronouns: miembro.profile?.pronouns || "",
 		  }
 		: undefined;
+  //#endregion ![sub]
 
+  //#region [render] - 🎨 RENDER SECTION 🎨
 	if (isLoading) {
 		return (
 			<div className="flex justify-center py-8">
@@ -252,12 +262,13 @@ export default function VerMiembroPage() {
 					/>
 
 					<StandardCard
-						accentPlacement="top"
-						colorScheme="primary" // Mapped from ProCard's color="primary"
-						accentColorScheme="primary" // Derived from colorScheme as borderVariant wasn't specified
-						styleType="subtle"
-						hasOutline={false} // border="top" implies no full outline
-					>
+            disableShadowHover={true}
+            styleType="subtle"
+            colorScheme="secondary"
+            accentPlacement="top"
+            accentColorScheme="neutral"
+            shadow="md"
+          >
 						{puedeGestionarMiembros && (
               <div className="flex justify-end pt-3">
 							<CustomButton
@@ -297,3 +308,27 @@ export default function VerMiembroPage() {
 		</PageBackground>
 	);
 }
+//#endregion ![render]
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+//> 📝 Default export is part of the component declaration. No other exports.
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// TODO: Review the `isMounted` pattern in `cargarDatosCompletos` for potential simplification or replacement with AbortController if applicable, though for React state updates, the current pattern is common.
+// TODO: Ensure all user-facing messages (errors, warnings) are internationalized if the application supports multiple languages.
+// TODO: The warning message for `error && miembro` (lines 279-293) could be made more specific if the nature of the partial error is known.
+//#endregion ![todo]
+//#endregion ![render]
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+//> 📝 Default export is part of the component declaration. No other exports.
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// TODO: Review the `isMounted` pattern in `cargarDatosCompletos` for potential simplification or replacement with AbortController if applicable, though for React state updates, the current pattern is common.
+// TODO: Ensure all user-facing messages (errors, warnings) are internationalized if the application supports multiple languages.
+// TODO: The warning message for `error && miembro` (lines 279-293) could be made more specific if the nature of the partial error is known.
+//#endregion ![todo]

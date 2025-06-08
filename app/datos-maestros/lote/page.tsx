@@ -1,6 +1,7 @@
-// app/articulos/lotes/page.tsx
+//. 📍 app/datos-maestros/lote/page.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import BatchSimulatorPage from './components/BatchSimulatorPage'; 
@@ -23,11 +24,18 @@ import {
 import { useTheme } from "@/app/theme-provider"; 
 import { generateBatchTokens, type BatchTokens, type BatchAuxColor } from "./components/batch-tokens";
 import { obtenerMiembrosConPerfilesYRolesDelProyecto, type ProjectMemberDetails } from "@/lib/actions/member-actions";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
+// Type for viewMode is defined inline in useState.
+// Other types are imported or standard React types.
+//#endregion ![def]
 
+//#region [main] - 🔧 COMPONENT 🔧
 export default function LotesOrquestadorPage() {
   const { proyectoActual, user } = useAuth();
   const [viewMode, setViewMode] = useState<'loading' | 'simulator' | 'displayBatches'>('loading');
+  //#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HANDLERS 🧰
   const [lotesExistentes, setLotesExistentes] = useState<DisplayableBatch[]>([]);
   const [isLoadingPageData, setIsLoadingPageData] = useState(true); 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -126,7 +134,10 @@ export default function LotesOrquestadorPage() {
       return { success: false, error: result.error };
     }
   };
+  //#endregion ![sub]
 
+  //#region [render] - 🎨 RENDER SECTION 🎨
+  //#region [render_sub] - LOADING STATE 🎨
   if (isLoadingPageData || (!batchTokens && viewMode === 'displayBatches')) { // Loader si carga datos o si batchTokens no está listo para displayBatches
     return (
       <PageBackground>
@@ -136,12 +147,15 @@ export default function LotesOrquestadorPage() {
       </PageBackground>
     );
   }
+  //#endregion [render_sub]
   
+  //#region [render_sub] - NO PROJECT STATE 🎨
   if (!proyectoActual) { // Chequeo más robusto
     return (
          <PageBackground>
             <PageTitle title="Gestión de Lotes" mainIcon={Boxes} />
             <StandardCard
+                disableShadowHover={true}
                 colorScheme="primary"
                 styleType="subtle"
                 className="mt-6 text-center max-w-lg mx-auto p-8"
@@ -159,9 +173,12 @@ export default function LotesOrquestadorPage() {
         </PageBackground>
     );
   }
+  //#endregion [render_sub]
   
+  // TODO: Considerar un render_sub para el errorMessage && viewMode === 'simulator' si se reimplementa
   if (errorMessage && viewMode === 'simulator') { /* ... (manejo de error como antes) ... */ }
 
+  //#region [render_sub] - MAIN CONTENT (SIMULATOR OR DISPLAY) 🎨
   return (
     <PageBackground>
       {viewMode === 'simulator' ? (
@@ -181,4 +198,16 @@ export default function LotesOrquestadorPage() {
       )}
     </PageBackground>
   );
+  //#endregion [render_sub]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// El manejo de `errorMessage` cuando `viewMode` es 'simulator' está comentado. Revisar si es necesario.
+// Considerar si el estado `loading` global de `useLoading` podría simplificar `isLoadingPageData`.
+// Refinar la UX para el cambio entre 'simulator' y 'displayBatches' (ej. con animaciones o transiciones suaves).
+//#endregion ![todo]

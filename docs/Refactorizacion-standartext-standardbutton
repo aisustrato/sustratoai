@@ -1,0 +1,139 @@
+
+INSTRUCCIONES PARA REFACTORIZACION DE STANDARDBUTTON Y STANDARTEXT EN {PATH_TO_REFACTOR}= /datos-maestros/ (INCLUUDAS TODAS SUS SUBCARPETAS )
+
+
+🤖 Prompt de Instrucción para IA de Refactorización: CustomButton a StandardButton
+Objetivo Principal:
+Refactorizar de manera exhaustiva y precisa todos los usos del componente CustomButton al nuevo componente estandarizado StandardButton dentro de los archivos .tsx ubicados en la ruta especificada: {PATH_TO_REFACTOR}. El objetivo es actualizar la API del componente (props) a la nueva "jerga" establecida, manteniendo la funcionalidad y apariencia originales.
+
+Contexto General:
+El antiguo componente CustomButton será reemplazado por StandardButton para estandarizar la API de props (styleType, colorScheme) y alinearla con la nueva filosofía del sistema de diseño (StandardCard, StandardText). La lógica interna del componente ha sido preservada en StandardButton, por lo que esta tarea se centra en un mapeo cuidadoso de la interfaz.
+
+Pasos Detallados para la Refactorización (por cada archivo .tsx en {PATH_TO_REFACTOR}):
+
+Revisión Exhaustiva: Antes de comenzar, asegúrate de identificar todos los archivos dentro de la ruta {PATH_TO_REFACTOR} que importan y utilizan el componente CustomButton. Es crucial que no se omita ningún archivo para asegurar una refactorización completa.
+
+Actualizar Importaciones:
+
+En cada archivo identificado, busca la importación de CustomButton (ej. import { CustomButton } from "@/components/ui/custom-button"; o similar).
+Reemplázala para importar StandardButton y sus tipos asociados desde su nueva ubicación: import { StandardButton, type StandardButtonColorScheme, ... } from "@/components/ui/StandardButton";.
+Reemplazar Componente y Mapear Props:
+
+En el cuerpo del archivo, reemplaza cada instancia de <CustomButton ... /> por <StandardButton ... />.
+
+Al reemplazar, debes mapear las props antiguas a las nuevas según el siguiente "Manual de Cortapalos". Esta es la parte más crítica de la tarea.
+
+Mapeo de Props de CustomButton a StandardButton ("Manual de Cortapalos"):
+
+| Prop de CustomButton (Antigua) | Prop de StandardButton (Nueva) | Notas para la IA                                                                                                                                 |
+| :------------------------------- | :------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
+| variant                        | styleType                      | Cambio de nombre. Mapeo directo de valores (ej. variant="solid" -> styleType="solid").                                                     |
+| color                          | colorScheme                    | Cambio de nombre y de valor. &lt;br> - Mapea color="default" a colorScheme="neutral". &lt;br> - El resto de los valores (primary, danger, etc.) se mapean directamente. |
+| size                           | size                           | Mapeo directo.                                                                                                                                   |
+| rounded                        | rounded                        | Mapeo directo.                                                                                                                                   |
+| bordered                       | bordered                       | Mapeo directo.                                                                                                                                   |
+| gradient                       | gradient                       | Mapeo directo.                                                                                                                                   |
+| elevated                       | elevated                       | Mapeo directo.                                                                                                                                   |
+| loading                        | loading                        | Mapeo directo.                                                                                                                                   |
+| loadingText                    | loadingText                    | Mapeo directo.                                                                                                                                   |
+| leftIcon                       | leftIcon                       | Mapeo directo.                                                                                                                                   |
+| rightIcon                      | rightIcon                      | Mapeo directo.                                                                                                                                   |
+| iconOnly                       | iconOnly                       | Mapeo directo.                                                                                                                                   |
+| fullWidth                      | fullWidth                      | Mapeo directo.                                                                                                                                   |
+| disableRipple                  | disableRipple                  | Mapeo directo.                                                                                                                                   |
+| tooltip                        | tooltip                        | Mapeo directo.                                                                                                                                   |
+| asChild                        | asChild                        | Mapeo directo.                                                                                                                                   |
+| className                      | className                      | Mapeo directo.                                                                                                                                   |
+| children                       | children                       | Mapeo directo.                                                                                                                                   |
+| ...otrasHtmlProps              | ...otrasHtmlProps              | Mantener cualquier otra prop HTML estándar (id, aria-label, onClick, etc.).                                                                |
+
+Consideraciones Adicionales para la IA:
+
+No Cambiar Lógica: La tarea es una refactorización de API. No alteres la lógica de negocio, los event handlers (onClick) ni el contenido (children) de los componentes.
+Preservar Props Clave: Asegúrate de preservar props importantes como key.
+Verificación Final: Después de modificar un archivo, verifica que el código siga siendo válido y que todas las instancias de CustomButton hayan sido reemplazadas por StandardButton con sus props correctamente mapeadas.
+Ejemplo de Refactorización:
+
+Código Original:
+
+TypeScript
+
+<CustomButton variant="outline" color="default" size="sm" leftIcon={<Icono />}>
+  Ver Detalles
+</CustomButton>
+Código Refactorizado:
+
+TypeScript
+
+<StandardButton styleType="outline" colorScheme="neutral" size="sm" leftIcon={<Icono />}>
+  Ver Detalles
+</StandardButton>
+
+
+
+
+
+
+
+🤖 Prompt de Instrucción para IA de Refactorización: Text a StandardText
+Objetivo Principal:
+Refactorizar de manera exhaustiva todos los usos del componente Text al nuevo componente estandarizado StandardText dentro de los archivos .tsx ubicados en la ruta especificada: {PATH_TO_REFACTOR}. El objetivo es actualizar la API del componente (props) a la nueva "jerga" establecida, manteniendo la funcionalidad y apariencia originales.
+
+Contexto General:
+El antiguo componente Text será reemplazado por StandardText. StandardText ofrece una API de props más clara, estandarizada y consistente con otros componentes del nuevo sistema de diseño como StandardCard. Esta tarea consiste en adaptar todos los lugares donde se usa Text para que usen StandardText con su nueva interfaz de props.
+
+Pasos Detallados para la Refactorización (por cada archivo .tsx en {PATH_TO_REFACTOR}):
+
+Revisión Exhaustiva: Antes de comenzar, asegúrate de identificar todos los archivos dentro de la ruta {PATH_TO_REFACTOR} que importan y utilizan el componente Text. Es crucial que no se omita ningún archivo.
+
+Actualizar Importaciones:
+
+En cada archivo identificado, busca la importación de Text (ej. import { Text } from "@/components/ui/text"; o similar).
+Reemplázala para importar StandardText desde su nueva ubicación: import { StandardText } from "@/components/ui/StandardText";. Asegúrate de importar también cualquier tipo de prop de StandardText si es necesario (ej. StandardTextProps).
+Reemplazar Componente y Mapear Props:
+
+En el cuerpo del archivo, reemplaza cada instancia de <Text ... /> por <StandardText ... />.
+
+Al reemplazar, debes mapear las props antiguas a las nuevas según el siguiente "Manual de Cortapalos". Presta especial atención a los cambios de nombre.
+
+Mapeo de Props de Text a StandardText ("Manual de Cortapalos"):
+
+| Prop de Text (Antigua) | Prop de StandardText (Nueva) | Notas para la IA                                                                                                                                               |
+| :----------------------- | :----------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| variant                | variant                      | El nombre se mantiene. Su valor sigue siendo un rol semántico como "heading", "caption", "muted", etc.                                                     |
+| color                  | colorScheme                  | Cambio de nombre. Mapeo directo de valores (ej. color="primary" -> colorScheme="primary").                                                                |
+| colorVariant           | colorShade                   | Cambio de nombre. Mapeo directo de valores (ej. colorVariant="pure" -> colorShade="pure"). El tipo de la nueva prop es "pure" \| "text" \| "textShade".  |
+| gradient               | applyGradient                | Cambio de nombre. La funcionalidad es la misma: true o un string como "secondary".                                                                         |
+| as                     | asElement                    | Cambio de nombre. Mapea el valor a esta nueva prop (ej. as="h1" -> asElement="h1").                                                                       |
+| useHeadingFont         | (Eliminar) | Prop depreciada. Esta prop debe ser eliminada. La selección de fuente ahora se maneja exclusivamente con la prop fontType.                                    |
+| size                   | size                         | Mapeo directo.                                                                                                                                                 |
+| weight                 | weight                       | Mapeo directo.                                                                                                                                                 |
+| align                  | align                        | Mapeo directo.                                                                                                                                                 |
+| truncate               | truncate                     | Mapeo directo.                                                                                                                                                 |
+| fontType               | fontType                     | Mapeo directo.                                                                                                                                                 |
+| className              | className                    | Mapeo directo.                                                                                                                                                 |
+| children               | children                     | Mapeo directo.                                                                                                                                                 |
+| ...otrasHtmlProps      | ...otrasHtmlProps            | Mantener cualquier otra prop HTML estándar (id, aria-label, etc.) que se estuviera pasando.                                                                  |
+
+Consideraciones Adicionales para la IA:
+
+No Cambiar Lógica: No modifiques la lógica de negocio ni el contenido (children) de los componentes. El objetivo es una refactorización de la API del componente Text.
+Preservar Props Clave: Asegúrate de preservar props importantes como key y cualquier event handler (ej. onClick) que pudiera estar presente en una instancia de Text.
+Verificación Final: Después de modificar un archivo, asegúrate de que el código siga siendo válido y que todas las instancias de Text hayan sido reemplazadas por StandardText con sus props correctamente mapeadas.
+Ejemplo de Refactorización:
+
+Código Original:
+
+TypeScript
+
+<Text as="h2" variant="title" color="secondary" colorVariant="pure">
+  Mi Título
+</Text>
+Código Refactorizado:
+
+TypeScript
+
+<StandardText asElement="h2" variant="title" colorScheme="secondary" colorShade="pure">
+  Mi Título
+</StandardText>
+Finalización:

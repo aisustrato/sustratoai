@@ -1,4 +1,5 @@
-// app/datos-maestros/roles/[id]/eliminar/page.tsx
+//. 📍 app/datos-maestros/roles/[id]/eliminar/page.tsx
+//#region [head] - 🏷️ IMPORTS 🏷️
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -30,6 +31,13 @@ import {
   AlertDialogTitle,
   // AlertDialogTrigger, // No lo usaremos directamente, el botón de la página lo manejará
 } from "@/components/ui/alert-dialog";
+//#endregion ![head]
+
+//#region [def] - 📦 TYPES 📦
+// No custom types defined directly in this file. Types are imported.
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 
 export default function EliminarRolPage() {
   const router = useRouter();
@@ -47,6 +55,7 @@ export default function EliminarRolPage() {
 
   const puedeGestionarRoles = proyectoActual?.permissions?.can_manage_master_data || false;
 
+//#region [sub] - 🧰 HELPER FUNCTIONS 🧰
   const cargarNombreRol = useCallback(async () => {
     if (!roleId || !proyectoActual?.id) {
       setIsPageLoading(false);
@@ -105,27 +114,61 @@ export default function EliminarRolPage() {
     setIsSubmitting(false);
     setShowConfirmDialog(false);
   };
+//#endregion ![sub]
 
 
+//#region [render] - 🎨 RENDER SECTION 🎨
   // ------ RENDERIZADO CONDICIONAL ------
   if (isPageLoading) {
     return ( <PageBackground > <SustratoLoadingLogo size={50} showText text="Cargando..." /> </PageBackground> );
   }
 
   if (!proyectoActual?.id) {
-    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none"> <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError || "No hay un proyecto activo."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><CustomButton variant="outline">Ir a Inicio</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard 
+          styleType="subtle"
+          className="max-w-md text-center" 
+          colorScheme="primary" // Rule: Inner card
+          accentPlacement="none" // Rule: Inner card
+          hasOutline={false} // Rule: Inner card
+          shadow="none" // Rule: Inner card
+          disableShadowHover={true} // Rule: Inner card
+        > <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError || "No hay un proyecto activo."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><CustomButton variant="outline">Ir a Inicio</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
   
   if (!puedeGestionarRoles) { 
-    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none"> <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Acceso Denegado" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>No tienes permisos para eliminar roles en este proyecto.</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard 
+          styleType="subtle"
+          className="max-w-md text-center" 
+          colorScheme="primary" // Rule: Inner card
+          accentPlacement="none" // Rule: Inner card
+          hasOutline={false} // Rule: Inner card
+          shadow="none" // Rule: Inner card
+          disableShadowHover={true} // Rule: Inner card
+        > <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Acceso Denegado" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>No tienes permisos para eliminar roles en este proyecto.</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
   
   if (pageError && !rolParaEliminar) { // Error durante la carga del rol
-    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none"> <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <AlertTriangle className="h-6 w-6 text-danger-600" /> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard 
+          styleType="subtle"
+          className="max-w-md text-center" 
+          colorScheme="primary" // Rule: Inner card
+          accentPlacement="none" // Rule: Inner card
+          hasOutline={false} // Rule: Inner card
+          shadow="none" // Rule: Inner card
+          disableShadowHover={true} // Rule: Inner card
+        > <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <AlertTriangle className="h-6 w-6 text-danger-600" /> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
 
   if (!rolParaEliminar) { // Rol no encontrado
-    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none"> <StandardCard.Header><PageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><Text>{pageError || "No se encontraron datos para el rol especificado."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard 
+          styleType="subtle"
+          className="max-w-md text-center" 
+          colorScheme="primary" // Rule: Inner card
+          accentPlacement="none" // Rule: Inner card
+          hasOutline={false} // Rule: Inner card
+          shadow="none" // Rule: Inner card
+          disableShadowHover={true} // Rule: Inner card
+        > <StandardCard.Header><PageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><Text>{pageError || "No se encontraron datos para el rol especificado."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
 
 
@@ -144,7 +187,16 @@ export default function EliminarRolPage() {
           ]}
           showBackButton={{ href: `/datos-maestros/roles/${roleId}/ver` }}
         />
-        <StandardCard className="mt-6" styleType="subtle" hasOutline={false} accentPlacement="none">
+        <StandardCard 
+          className="mt-6" 
+          colorScheme="secondary" // Rule: Main action card (view-like)
+          accentPlacement="top" // Rule: Main action card
+          accentColorScheme="danger" // Rule: Main action card (delete context)
+          shadow="md" // Rule: Main action card
+          disableShadowHover={true}
+          styleType="subtle"
+          // styleType and hasOutline removed
+        >
           <StandardCard.Header>
             <Text variant="heading" size="lg" color="danger">
               Confirmar Eliminación
@@ -210,4 +262,10 @@ export default function EliminarRolPage() {
       </div>
     </PageBackground>
   );
+//#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+
+//#endregion ![foo]

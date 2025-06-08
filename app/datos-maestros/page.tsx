@@ -1,13 +1,22 @@
-// app/datos-maestros/page.tsx
+//. 📍 app/datos-maestros/page.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import { PageTitle } from "@/components/ui/page-title";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import Link from "next/link";
 import { UserPlus, Shield, Layers } from "lucide-react";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
+// No specific types or interfaces defined in this file.
+// Props for components are inferred from their definitions.
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function DatosMaestrosHome() {
+  //#region [render] - 🎨 RENDER SECTION 🎨
   return (
     <div className="container mx-auto py-8">
       <PageTitle
@@ -17,6 +26,7 @@ export default function DatosMaestrosHome() {
       />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         {/* Miembros */}
+        {/* //#region [render_sub] - CARD: Miembros 🧑‍🤝‍🧑 */}
         <StandardCard
           className="hover:shadow-lg transition-shadow duration-200 group"
           styleType="subtle"
@@ -33,7 +43,9 @@ export default function DatosMaestrosHome() {
             </Text>
           </Link>
         </StandardCard>
-        {/* Roles */}
+        {/* //#endregion [render_sub] */}
+
+        {/* //#region [render_sub] - CARD: Roles 🛡️ */}
         <StandardCard
           className="hover:shadow-lg transition-shadow duration-200 group"
           styleType="subtle"
@@ -50,7 +62,9 @@ export default function DatosMaestrosHome() {
             </Text>
           </Link>
         </StandardCard>
-        {/* Lotes */}
+        {/* //#endregion [render_sub] */}
+
+        {/* //#region [render_sub] - CARD: Lotes 📦 */}
         <StandardCard
           className="hover:shadow-lg transition-shadow duration-200 group"
           styleType="subtle"
@@ -67,7 +81,19 @@ export default function DatosMaestrosHome() {
             </Text>
           </Link>
         </StandardCard>
+        {/* //#endregion [render_sub] */}
       </div>
     </div>
   );
+  //#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration.
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar si esta página debería cargar dinámicamente las secciones disponibles en lugar de tenerlas hardcodeadas.
+// Añadir más secciones de Datos Maestros a medida que se desarrollen (ej. Instituciones, Tipos de Artículo, etc.).
+//#endregion ![todo]

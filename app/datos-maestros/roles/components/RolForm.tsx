@@ -1,6 +1,7 @@
-// app/datos-maestros/roles/components/RolForm.tsx
+//. 📍 app/datos-maestros/roles/components/RolForm.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React from "react";
 import {
 	useForm,
@@ -24,7 +25,9 @@ import {
 	DatabaseZap,
 	Edit,
 } from "lucide-react";
+//#endregion ![head]
 
+//#region [def] - 📦 SCHEMA, TYPES, PROPS & CONSTANTS 📦
 const rolFormSchema = z.object({
 	role_name: z
 		.string()
@@ -52,6 +55,21 @@ interface RolFormProps {
   isEditingForm?: boolean; // NUEVA PROP para el estilo de edición
 }
 
+// permissionFields is now a module-level constant.
+const permissionFields: {
+	name: keyof Pick<RolFormValues, "can_manage_master_data" | "can_create_batches" | "can_upload_files" | "can_bulk_edit_master_data">;
+	label: string;
+	hint: string;
+	icon: React.ElementType;
+}[] = [
+	{ name: "can_manage_master_data", label: "Gestionar Datos Maestros", hint: "Permite crear, editar y eliminar miembros, roles, y otros datos clave del proyecto.", icon: DatabaseZap },
+	{ name: "can_create_batches", label: "Crear Lotes de Trabajo", hint: "Permite iniciar y configurar nuevos lotes de análisis o procesamiento.", icon: ListChecks },
+	{ name: "can_upload_files", label: "Subir Archivos", hint: "Permite cargar archivos (documentos, imágenes, datos) al proyecto.", icon: UploadCloud },
+	{ name: "can_bulk_edit_master_data", label: "Edición Masiva de Datos Maestros", hint: "Permite realizar cambios en múltiples registros de datos maestros a la vez.", icon: Edit },
+];
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export const RolForm: React.FC<RolFormProps> = ({
 	modo,
 	valoresIniciales,
@@ -60,6 +78,9 @@ export const RolForm: React.FC<RolFormProps> = ({
 	loading = false,
   isEditingForm = false, // Valor por defecto para la nueva prop
 }) => {
+	//#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
+	// permissionFields constant has been moved outside the component.
+
 	const defaultFormValues: RolFormValues = React.useMemo(() => {
 		return {
 			role_name: valoresIniciales?.role_name || "",
@@ -114,26 +135,17 @@ export const RolForm: React.FC<RolFormProps> = ({
 		return !!fieldValue && !form.formState.errors[fieldName];
 	};
 
-	type PermissionFieldName = keyof Pick<
-		RolFormValues,
+	type PermissionFieldName = keyof Pick< // This type alias is local to the component if its logic might use it.
+		RolFormValues,                   // permissionFields array itself now uses the direct keyof Pick for its type.
 		| "can_manage_master_data"
 		| "can_create_batches"
 		| "can_upload_files"
 		| "can_bulk_edit_master_data"
 	>;
+	// The permissionFields constant definition has been removed from here.
+	//#endregion ![sub]
 
-	const permissionFields: {
-		name: PermissionFieldName;
-		label: string;
-		hint: string;
-		icon: React.ElementType;
-	}[] = [
-		{ name: "can_manage_master_data", label: "Gestionar Datos Maestros", hint: "Permite crear, editar y eliminar miembros, roles, y otros datos clave del proyecto.", icon: DatabaseZap },
-		{ name: "can_create_batches", label: "Crear Lotes de Trabajo", hint: "Permite iniciar y configurar nuevos lotes de análisis o procesamiento.", icon: ListChecks },
-		{ name: "can_upload_files", label: "Subir Archivos", hint: "Permite cargar archivos (documentos, imágenes, datos) al proyecto.", icon: UploadCloud },
-		{ name: "can_bulk_edit_master_data", label: "Edición Masiva de Datos Maestros", hint: "Permite realizar cambios en múltiples registros de datos maestros a la vez.", icon: Edit },
-	];
-
+	//#region [render] - 🎨 RENDER SECTION 🎨
 	return (
 		<form
 			onSubmit={form.handleSubmit(handleFormSubmit, onInvalidSubmit)}
@@ -188,6 +200,7 @@ export const RolForm: React.FC<RolFormProps> = ({
 				/>
 			</FormField>
 
+			{/* //#region [render_sub] - PERMISOS ESPECÍFICOS 🛡️ */}
 			<div>
 				<Text variant="label" weight="medium" className="mb-3 block">
 					Permisos Específicos del Rol
@@ -227,7 +240,9 @@ export const RolForm: React.FC<RolFormProps> = ({
 					))}
 				</div>
 			</div>
+			{/* //#endregion [render_sub] */}
 
+			{/* //#region [render_sub] - ACTION BUTTONS 💾 */}
 			{modo !== "ver" && (
 				<div className="flex justify-end pt-4">
 					<CustomButton
@@ -246,6 +261,18 @@ export const RolForm: React.FC<RolFormProps> = ({
 					</CustomButton>
 				</div>
 			)}
+			{/* //#endregion [render_sub] */}
 		</form>
 	);
+	//#endregion ![render]
 };
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Export is part of the component declaration and type export
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar si los hints de los permisos podrían ser tooltips para un UI más limpio.
+// Evaluar si el estado de "éxito" en los campos es realmente necesario o si solo el error es suficiente.
+//#endregion ![todo]

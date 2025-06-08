@@ -1,6 +1,7 @@
-// app/datos-maestros/roles/page.tsx
+//. 📍 app/datos-maestros/roles/page.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -33,9 +34,16 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Icon } from "@/components/ui/icon";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
+// Types are imported (ProjectRoleRow, ColumnDef) or defined by usage (columnas for ProTable).
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function RolesPage() {
 	const router = useRouter();
+	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HANDLERS 🧰
 	const { proyectoActual } = useAuth();
 	const { toast } = useToast();
 
@@ -109,7 +117,9 @@ export default function RolesPage() {
 	const handleEliminarRol = (rol: ProjectRoleRow) => {
 		router.push(`/datos-maestros/roles/${rol.id}/eliminar`);
 	};
+	//#endregion ![sub]
 
+	//#region [sub_render_logic] - 📊 Pro-Table Column Definitions & Helpers 📊
 	// Helper para renderizar celdas de permisos
 	const PermisoCell = ({
 		value,
@@ -247,7 +257,9 @@ export default function RolesPage() {
 			},
 		},
 	];
+	//#endregion ![sub_render_logic]
 
+	//#region [render] - 🎨 RENDER SECTION 🎨
 	return (
 		<PageBackground>
 			<div className="container mx-auto py-6">
@@ -275,6 +287,7 @@ export default function RolesPage() {
 						</div>
 					)}
 
+					{/* //#region [render_sub] - LOADING, ERROR, EMPTY STATES & TABLE DISPLAY 🎨 */}
 					{isLoading ? (
 						<div className="flex justify-center py-10">
 							<SustratoLoadingLogo
@@ -286,14 +299,22 @@ export default function RolesPage() {
 						</div>
 					) : error ? (
 						<StandardCard
+							disableShadowHover={true}
+							styleType="subtle"
 							colorScheme="secondary"
 							accentPlacement="top"
-							accentColorScheme="primary"
+							accentColorScheme="neutral"
+							shadow="md"
 							className="overflow-hidden hover:shadow-md transition-shadow duration-300"
-							styleType="subtle"
-							hasOutline={false} // border="top"
 						>
-							<StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">
+							<StandardCard
+								styleType="subtle"
+								colorScheme="primary"
+								accentPlacement="none"
+								hasOutline={false}
+								shadow="none"
+								disableShadowHover={true}
+							>
 								<StandardCard.Header>
 									<Text
 										variant="subheading"
@@ -337,14 +358,23 @@ export default function RolesPage() {
 						/>
 					) : (
 						<StandardCard
+							disableShadowHover={true}
+							styleType="subtle"
 							colorScheme="secondary"
 							accentPlacement="top"
-							accentColorScheme="primary"
+							accentColorScheme="neutral"
+							shadow="md"
 							className="overflow-hidden hover:shadow-md transition-shadow duration-300"
-							styleType="subtle"
-							hasOutline={false} // border="top"
 						>
-							<StandardCard className="overflow-x-auto" styleType="subtle" hasOutline={false} accentPlacement="none">
+							<StandardCard
+								styleType="subtle"
+								className="overflow-x-auto"
+								colorScheme="primary"
+								accentPlacement="none"
+								hasOutline={false}
+								shadow="none"
+								disableShadowHover={true}
+							>
 								<ProTable<ProjectRoleRow>
 									data={roles}
 									columns={columnas}
@@ -354,8 +384,21 @@ export default function RolesPage() {
 							</StandardCard>
 						</StandardCard>
 					)}
+					{/* //#endregion [render_sub] */}
 				</div>
 			</div>
 		</PageBackground>
 	);
+	//#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Implementar la funcionalidad de eliminación real (actualmente redirige a una página de confirmación).
+// Considerar feedback visual más integrado para acciones de edición/eliminación en la tabla.
+// La paginación para la tabla ProTable podría ser necesaria si la lista de roles es extensa.
+//#endregion ![todo]

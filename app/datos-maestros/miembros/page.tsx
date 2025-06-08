@@ -1,14 +1,14 @@
 //. 📍 app/datos-maestros/miembros/page.tsx
 "use client";
 
-//#region [comment] - 📚 DOCUMENTACIÓN 📚
+// 📚 DOCUMENTACIÓN 📚
 /* *
  * Definiciones de animaciones para el componente Button                       *
  * Contiene configuraciones y utilidades de animación                          *
  */
-//#endregion ![comment]
+// Note: Removed custom region for documentation to adhere to standard format.
 
-//#region [imports] - 🏷️ IMPORTS 🏷️
+//#region [head] - 🏷️ IMPORTS 🏷️
 import { Variants, Variant } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -30,12 +30,18 @@ import { BadgeCustom } from "@/components/ui/badge-custom"; //
 import type { BadgeVariant } from "@/lib/theme/components/badge-tokens";
 import { PageTitle } from "@/components/ui/page-title";
 import Link from "next/link";
-//#endregion ![imports]
+//#endregion ![head]
 
-//#region [main] - 🏷️ DEFAULT 🏷️
+//#region [def] - 📦 TYPES 📦
+// Types are imported (ProjectMemberDetails, BadgeVariant, CellVariant)
+// or defined by usage (columnas for ProTable).
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function MiembrosPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HANDLERS 🧰
 	const { proyectoActual, loadingProyectos } = useAuth();
 	const { toast } = useToast();
 
@@ -106,8 +112,9 @@ export default function MiembrosPage() {
 			`/datos-maestros/miembros/${miembro.project_member_id}/eliminar`
 		);
 	};
+	//#endregion ![sub]
 
-	//#region [setup] - 🏷️ Pro-Table 🏷️
+	//#region [sub_render_logic] - 📊 Pro-Table Column Definitions 📊
 	const columnas = [
 		{
 			header: "Nombre",
@@ -208,10 +215,9 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
     return undefined;
   };
 */
-	//#endregion ![setup]
-	//#endregion ![main]
+	//#endregion ![sub_render_logic]
 
-	//#region [render] - 🏷️ Render 🏷️
+	//#region [render] - 🎨 RENDER SECTION 🎨
 	return (
 		<PageBackground>
 			<div className="container mx-auto py-6">
@@ -227,6 +233,7 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 						]}
 					/>
 
+					{/* //#region [render_sub] - LOADING, ERROR, EMPTY STATES & MAIN CONTENT 🎨 */}
 					{isLoading ? (
 						<div className="flex justify-center py-8">
 							<SustratoLoadingLogo
@@ -238,6 +245,7 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 						</div>
 					) : error ? (
 						<StandardCard
+							disableShadowHover={true}
 							className="border-destructive bg-destructive/5"
 							colorScheme="danger" // Assuming intent from className
 							styleType="subtle"
@@ -270,25 +278,33 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 						/>
 					) : (
 						<StandardCard
+							disableShadowHover={true}
+							styleType="subtle"
 							colorScheme="secondary"
 							accentPlacement="top"
-							accentColorScheme="primary"
+							accentColorScheme="neutral"
+							shadow="md"
 							className="overflow-hidden hover:shadow-md transition-shadow duration-300"
-							styleType="subtle"
-							hasOutline={false} // border="top" implies no full outline
 						>
 							{puedeGestionarMiembros && (
-								// ... existing code ...
 								<div className="flex justify-end mb-4 pt-4">
 									<CustomButton
 										onClick={handleAgregarMiembro}
 										leftIcon={<UserPlus className="h-4 w-4" />}
-										color="primary">
+										color="primary"
+									>
 										Agregar Miembro
 									</CustomButton>
 								</div>
 							)}
-							<StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">
+							<StandardCard
+								styleType="subtle"
+								colorScheme="primary"
+								hasOutline={false}
+								shadow="none"
+								disableShadowHover={true}
+								accentPlacement="none"
+							>
 								<ProTable
 									data={miembros}
 									columns={columnas}
@@ -297,9 +313,21 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 							</StandardCard>
 						</StandardCard>
 					)}
+					{/* //#endregion [render_sub] */}
 				</div>
 			</div>
 		</PageBackground>
 	);
+	//#endregion ![render]
 }
-//#endregion ![render]
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Implementar la funcionalidad de eliminación real (actualmente redirige a una página de confirmación).
+// Considerar paginación para la tabla si la lista de miembros puede ser muy larga.
+// Mejorar el feedback visual durante la carga o errores (ej. skeletons).
+//#endregion ![todo]

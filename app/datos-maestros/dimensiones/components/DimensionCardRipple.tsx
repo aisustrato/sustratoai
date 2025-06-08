@@ -1,5 +1,7 @@
+//. 📍 app/datos-maestros/dimensiones/components/DimensionCardRipple.tsx
 "use client";
 
+//#region [head] - 🏷️ IMPORTS 🏷️
 import React from "react";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import { useTheme } from "@/app/theme-provider";
@@ -11,7 +13,9 @@ import { PenLine, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FullDimension } from "@/lib/actions/dimension-actions";
 import type { BadgeVariant } from "@/lib/theme/components/badge-tokens";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
 interface DimensionCardProps {
   dimension: FullDimension;
   onEdit: () => void;
@@ -20,7 +24,9 @@ interface DimensionCardProps {
   canManage: boolean;
   isBeingDeleted?: boolean;
 }
+//#endregion ![def]
 
+//#region [main] - 🔧 COMPONENT 🔧
 export const DimensionCard: React.FC<DimensionCardProps> = ({
   dimension,
   onEdit,
@@ -29,6 +35,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
   canManage,
   isBeingDeleted = false,
 }) => {
+	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HELPER FUNCTIONS 🧰
   const { appColorTokens, mode } = useTheme();
   const triggerRipple = useRipple();
 
@@ -47,7 +54,9 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
     triggerRipple(e, accentBg, 10);
     onViewDetails();
   };
+  //#endregion ![sub]
 
+  //#region [render] - 🎨 RENDER SECTION 🎨
   return (
     <StandardCard
       className={cn(
@@ -57,6 +66,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
       accentPlacement="left"
       colorScheme={cardColorVariant as StandardCardColorScheme}
       accentColorScheme={cardColorVariant as StandardCardColorScheme} // Derived from colorScheme
+      disableShadowHover={true}
       shadow="md"
       styleType="subtle"
       hasOutline={false} // border="left" implies no full outline
@@ -121,4 +131,15 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
       </div>
     </StandardCard>
   );
+  //#endregion ![render]
 };
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// Considerar si este componente sigue siendo necesario o si DimensionCard.tsx lo reemplaza.
+// Si se mantiene, sincronizar funcionalidades con DimensionCard.tsx (mostrar opciones, preguntas, ejemplos, etc.).
+//#endregion ![todo]

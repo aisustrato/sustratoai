@@ -1,4 +1,6 @@
+//. 📍 app/datos-maestros/lote/components/batch-visualization copy.tsx
 "use client";
+//#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/app/theme-provider";
@@ -8,7 +10,13 @@ import { StandardCard, type StandardCardColorScheme } from "@/components/ui/Stan
 import { Text } from "@/components/ui/text";
 import { BatchItem } from "./BatchItem";
 import tinycolor from "tinycolor2";
+//#endregion ![head]
 
+//#region [def] - 📦 TYPES 📦
+// No specific props for this component, types are for internal state or inferred.
+//#endregion ![def]
+
+//#region [main] - 🔧 COMPONENT 🔧
 export default function BatchVisualization() {
 	const [batchSize, setBatchSize] = useState(50);
 	const [memberCount, setMemberCount] = useState(3);
@@ -21,6 +29,7 @@ export default function BatchVisualization() {
 	);
 
 	// Theme tokens
+	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HELPER FUNCTIONS 🧰
 	const { appColorTokens, mode } = useTheme();
 	const batchTokens = useMemo(
 		() => appColorTokens && generateBatchTokens(appColorTokens, mode),
@@ -80,9 +89,7 @@ export default function BatchVisualization() {
 		return acc;
 	}, {} as Record<number, number>);
 
-	if (!batchTokens) return null;
-
-	const auxColors = batchTokens.auxiliaries;
+	const auxColors = batchTokens?.auxiliaries; // Added null check for batchTokens
 
 	// Peso visual: recalcular gap y líneas cada vez que batchSize cambie
 	const barHeight = 180; // px, fijo
@@ -125,6 +132,10 @@ export default function BatchVisualization() {
 		}, 300);
 		return () => clearTimeout(timer);
 	}, [batchSize, memberCount, selectedMembers]);
+	//#endregion ![sub]
+
+	//#region [render] - 🎨 RENDER SECTION 🎨
+	if (!batchTokens || !auxColors) return null; // Ensure batchTokens and auxColors are available
 
 	return (
 		<div
@@ -142,6 +153,7 @@ export default function BatchVisualization() {
 					gap: 48,
 				}}>
 				<StandardCard
+					disableShadowHover={true}
 					colorScheme="primary"
 					shadow="lg"
 					styleType="subtle"
@@ -163,6 +175,7 @@ export default function BatchVisualization() {
 							flexWrap: "wrap",
 						}}>
 						<StandardCard
+							disableShadowHover={true}
 							colorScheme="secondary"
 							style={{ flex: 1, minWidth: 320 }}
 							styleType="subtle"
@@ -227,6 +240,7 @@ export default function BatchVisualization() {
 							</div>
 						</StandardCard>
 						<StandardCard
+							disableShadowHover={true}
 							colorScheme="secondary"
 							style={{ flex: 1, minWidth: 320 }}
 							styleType="subtle"
@@ -287,6 +301,7 @@ export default function BatchVisualization() {
 				<div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
 					{/* Distribución de lotes */}
 					<StandardCard
+						disableShadowHover={true}
 						colorScheme="tertiary"
 						style={{
 							flex: 2,
@@ -445,6 +460,7 @@ export default function BatchVisualization() {
 
 				{/* Leyenda de miembros */}
 				<StandardCard
+					disableShadowHover={true}
 					colorScheme="primary"
 					style={{ marginTop: 24 }}
 					styleType="subtle"
@@ -474,6 +490,7 @@ export default function BatchVisualization() {
 									: 0;
 							return (
 								<StandardCard
+									disableShadowHover={true}
 									key={index}
 									colorScheme="secondary"
 									accentPlacement="left"
@@ -529,4 +546,16 @@ export default function BatchVisualization() {
 			</div>
 		</div>
 	);
+	//#endregion ![render]
 }
+//#endregion ![main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration
+//#endregion ![foo]
+
+//#region [todo] - 👀 PENDIENTES 👀
+// TODO: VERIFY - This file is named "batch-visualization copy.tsx". Check if it's a duplicate or deprecated and can be removed.
+// Consider if this component should take `totalItems` as a prop for more flexibility.
+// The animation on recalculation could be smoother or provide more feedback.
+//#endregion ![todo]
