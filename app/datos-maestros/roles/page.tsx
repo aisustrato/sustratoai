@@ -11,7 +11,7 @@ import { Text } from "@/components/ui/text";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { ProTable } from "@/components/ui/pro-table";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import {
 	ShieldPlus,
 	AlertCircle,
@@ -206,36 +206,40 @@ export default function RolesPage() {
 				const rol = row.original;
 				return (
 					<div className="flex gap-1 justify-end">
-						<CustomButton
-							variant="ghost"
+						<StandardButton
+							styleType="ghost" // Mapped variant
 							size="icon"
 							onClick={() => handleVerRol(rol)}
 							iconOnly
 							aria-label={`Ver detalles del rol ${rol.role_name}`}
-							tooltip="Ver detalles">
+							tooltip="Ver detalles"
+							colorScheme="neutral" // Added default colorScheme
+						>
 							<Eye className="h-5 w-5" />
-						</CustomButton>
+						</StandardButton>
 						{puedeGestionarRoles && (
 							<>
-								<CustomButton
-									variant="ghost"
+								<StandardButton
+									styleType="ghost" // Mapped variant
 									size="icon"
 									onClick={() => handleEditarRol(rol)}
 									iconOnly
 									aria-label={`Editar el rol ${rol.role_name}`}
-									tooltip="Editar rol">
+									tooltip="Editar rol"
+									colorScheme="neutral" // Added default colorScheme
+								>
 									<PenLine className="h-5 w-5" />
-								</CustomButton>
-								<CustomButton
-									variant="ghost"
+								</StandardButton>
+								<StandardButton
+									styleType="ghost" // Mapped variant
 									size="icon"
 									onClick={() => handleEliminarRol(rol)}
 									iconOnly
-									color="danger"
+									colorScheme="danger" // Mapped color
 									aria-label={`Eliminar el rol ${rol.role_name}`}
 									tooltip="Eliminar rol">
 									<Trash2 className="h-5 w-5 text-destructive" />
-								</CustomButton>
+								</StandardButton>
 							</>
 						)}
 					</div>
@@ -266,12 +270,14 @@ export default function RolesPage() {
 
 					{puedeGestionarRoles && (
 						<div className="flex justify-end">
-							<CustomButton
+							<StandardButton
 								onClick={handleAgregarRol}
 								leftIcon={<ShieldPlus className="h-4 w-4" />}
-								color="primary">
+								colorScheme="primary" // Mapped color
+								styleType="solid" // Assumed default variant
+							>
 								Agregar Nuevo Rol
-							</CustomButton>
+							</StandardButton>
 						</div>
 					)}
 
@@ -304,13 +310,15 @@ export default function RolesPage() {
 								</StandardCard.Header>
 								<StandardCard.Content>
 									<Text>{error}</Text>
-									<CustomButton
+									<StandardButton
 										onClick={cargarRoles}
-										variant="outline"
-										className="mt-4">
+										styleType="outline" // Mapped variant
+										className="mt-4"
+										colorScheme="neutral" // Added default colorScheme
+									>
 										{" "}
 										Reintentar Carga{" "}
-									</CustomButton>
+									</StandardButton>
 								</StandardCard.Content>
 							</StandardCard>
 						</StandardCard>
@@ -327,10 +335,10 @@ export default function RolesPage() {
 								puedeGestionarRoles ? (
 									<Link href="/datos-maestros/roles/crear" passHref>
 										{" "}
-										<CustomButton color="primary" leftIcon={<ShieldPlus />}>
+										<StandardButton colorScheme="primary" styleType="solid" leftIcon={<ShieldPlus />}>
 											{" "}
 											Crear Primer Rol{" "}
-										</CustomButton>{" "}
+										</StandardButton>{" "}
 									</Link>
 								) : undefined
 							}

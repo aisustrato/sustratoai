@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import { PageTitle } from "@/components/ui/page-title";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText"; // Changed import
 import { BadgeCustom } from "@/components/ui/badge-custom";
 // Attempting to replace a CustomButton import, though it's not present.
 // import { CustomButton } from "@/components/ui/CustomButton";
@@ -43,7 +43,7 @@ export default function VerDimensionPage() {
         accentPlacement="none"
       >
         <PageTitle title="Detalle de Dimensión" />
-        <Text color="danger">Debes seleccionar un proyecto para ver dimensiones.</Text>
+        <StandardText colorScheme="danger">Debes seleccionar un proyecto para ver dimensiones.</StandardText>
       </StandardCard>
     );
   }
@@ -57,7 +57,7 @@ export default function VerDimensionPage() {
         accentPlacement="none"
       >
         <PageTitle title="Dimensión no encontrada" />
-        <Text color="danger">La dimensión solicitada no existe.</Text>
+        <StandardText colorScheme="danger">La dimensión solicitada no existe.</StandardText>
       </StandardCard>
     );
   }
@@ -81,18 +81,18 @@ export default function VerDimensionPage() {
         accentPlacement="none"
       >
         <div className="flex items-center gap-3">
-          <Text as="h2" variant="heading" size="lg">{dimension.nombre}</Text>
+          <StandardText asElement="h2" variant="heading" size="lg">{dimension.nombre}</StandardText>
           <BadgeCustom variant={dimension.tipo === "finito" ? "success" : "secondary"} subtle>
             {dimension.tipo === "finito" ? "Conjunto Finito" : "Abierta"}
           </BadgeCustom>
         </div>
         <div>
-          <Text variant="subheading" className="mb-1">Explicación de la Dimensión:</Text>
-          <Text color="neutral">{dimension.explicacion}</Text>
+          <StandardText variant="subheading" className="mb-1">Explicación de la Dimensión:</StandardText>
+          <StandardText colorScheme="neutral">{dimension.explicacion}</StandardText>
         </div>
         {dimension.tipo === "finito" && (
           <div>
-            <Text variant="subheading" className="mb-1">Opciones Permitidas:</Text>
+            <StandardText variant="subheading" className="mb-1">Opciones Permitidas:</StandardText>
             <div className="flex flex-wrap gap-2">
               {dimension.opciones.map((op) => (
                 <BadgeCustom key={op} variant="default">{op}</BadgeCustom>

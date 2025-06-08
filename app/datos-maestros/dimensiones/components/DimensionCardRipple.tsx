@@ -4,7 +4,7 @@ import React from "react";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import { useTheme } from "@/app/theme-provider";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText"; // Changed import for Text
 import { BadgeCustom } from "@/components/ui/badge-custom";
 import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { PenLine, Trash2 } from "lucide-react";
@@ -77,7 +77,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
         <StandardCard.Header className="p-0 mb-2">
           <div className="flex flex-col gap-1">
             <div className="flex items-start justify-between">
-              <Text
+              <StandardText
                 variant="heading"
                 size="md"
                 weight="semibold"
@@ -85,7 +85,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
                 truncate
               >
                 {dimension.name}
-              </Text>
+              </StandardText>
               <BadgeCustom variant={cardColorVariant} className="flex-shrink-0">
                 {tipoLabel}
               </BadgeCustom>

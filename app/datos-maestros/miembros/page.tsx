@@ -17,7 +17,7 @@ import { obtenerMiembrosConPerfilesYRolesDelProyecto } from "@/lib/actions/membe
 import { Text } from "@/components/ui/text";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { ProTable } from "@/components/ui/pro-table";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { UserPlus, AlertCircle, Trash2, PenLine, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { EmptyState } from "@/components/common/empty-state";
@@ -160,36 +160,40 @@ export default function MiembrosPage() {
 				const miembro = row.original as ProjectMemberDetails;
 				return (
 					<div className="flex gap-2 justify-end">
-						<CustomButton
-							variant="ghost"
+						<StandardButton
+							styleType="ghost" // Mapped variant
 							size="icon"
 							onClick={() => handleVerMiembro(miembro)}
 							iconOnly
-							tooltip="Ver detalles">
+							tooltip="Ver detalles"
+							colorScheme="neutral" // Added default colorScheme
+						>
 							<Eye className="h-5 w-5" />
 							<span className="sr-only">Ver detalles</span>
-						</CustomButton>
+						</StandardButton>
 						{puedeGestionarMiembros && (
 							<>
-								<CustomButton
-									variant="ghost"
+								<StandardButton
+									styleType="ghost" // Mapped variant
 									size="icon"
 									onClick={() => handleEditarMiembro(miembro)}
 									iconOnly
-									tooltip="Editar miembro">
+									tooltip="Editar miembro"
+									colorScheme="neutral" // Added default colorScheme
+								>
 									<PenLine className="h-5 w-5" />
 									<span className="sr-only">Editar</span>
-								</CustomButton>
-								<CustomButton
-									variant="ghost"
+								</StandardButton>
+								<StandardButton
+									styleType="ghost" // Mapped variant
 									size="icon"
 									onClick={() => handleEliminarMiembro(miembro)}
 									iconOnly
-									color="danger"
+									colorScheme="danger" // Mapped color
 									tooltip="Eliminar miembro">
 									<Trash2 className="h-5 w-5 text-destructive" />
 									<span className="sr-only">Eliminar</span>
-								</CustomButton>
+								</StandardButton>
 							</>
 						)}
 					</div>
@@ -261,9 +265,9 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 							action={
 								puedeGestionarMiembros ? (
 									<Link href="/datos-maestros/miembros/crear" passHref>
-										<CustomButton color="primary" leftIcon={<UserPlus />}>
+										<StandardButton colorScheme="primary" styleType="solid" leftIcon={<UserPlus />}>
 											Agregar Nuevo Miembro
-										</CustomButton>
+										</StandardButton>
 									</Link>
 								) : undefined
 							}
@@ -280,12 +284,14 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 							{puedeGestionarMiembros && (
 								// ... existing code ...
 								<div className="flex justify-end mb-4 pt-4">
-									<CustomButton
+									<StandardButton
 										onClick={handleAgregarMiembro}
 										leftIcon={<UserPlus className="h-4 w-4" />}
-										color="primary">
+										colorScheme="primary" // Mapped color
+										styleType="solid" // Assumed default variant
+									>
 										Agregar Miembro
-									</CustomButton>
+									</StandardButton>
 								</div>
 							)}
 							<StandardCard styleType="subtle" hasOutline={false} accentPlacement="none">

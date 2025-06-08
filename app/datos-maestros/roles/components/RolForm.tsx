@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { TextArea } from "@/components/ui/textarea";
 import { CustomCheck } from "@/components/ui/custom-check";
 import { FormField } from "@/components/ui/form-field";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { Text } from "@/components/ui/text";
 import {
 	Shield,
@@ -230,9 +230,10 @@ export const RolForm: React.FC<RolFormProps> = ({
 
 			{modo !== "ver" && (
 				<div className="flex justify-end pt-4">
-					<CustomButton
+					<StandardButton
 						type="submit"
-						color="primary"
+						colorScheme="primary" // Mapped color
+						styleType="solid" // Assumed default variant
 						loading={loading || form.formState.isSubmitting}
 						disabled={
 							isReadOnlyEffective ||
@@ -243,7 +244,7 @@ export const RolForm: React.FC<RolFormProps> = ({
 						{modo === "crear"
 							? loading || form.formState.isSubmitting ? "Creando Rol..." : "Crear Rol"
 							: loading || form.formState.isSubmitting ? "Guardando Cambios..." : "Guardar Cambios"}
-					</CustomButton>
+					</StandardButton>
 				</div>
 			)}
 		</form>

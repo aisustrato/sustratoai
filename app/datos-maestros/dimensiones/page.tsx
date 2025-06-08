@@ -15,7 +15,7 @@ import { CustomDialog } from "@/components/ui/custom-dialog";
 import { PageTitle } from "@/components/ui/page-title";
 import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText"; // Changed import for Text
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { EmptyState } from "@/components/common/empty-state";
 import { AlertTriangle, PlusCircle, LayoutGrid, Trash2 } from "lucide-react";
@@ -183,12 +183,12 @@ export default function DimensionesPage() {
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 mt-0.5 text-danger-fg" />
               <div>
-                <Text weight="bold" color="danger">
+                <StandardText weight="bold" colorScheme="danger">
                   Error al Cargar Dimensiones
-                </Text>
-                <Text size="sm" className="text-danger-fg/90 mt-1">
+                </StandardText>
+                <StandardText size="sm" className="text-danger-fg/90 mt-1">
                   {error}
-                </Text>
+                </StandardText>
               </div>
             </div>
           </StandardCard>
@@ -201,12 +201,12 @@ export default function DimensionesPage() {
               hasOutline={false} // No border prop
               accentPlacement="none" // No border prop
            >
-              <Text variant="subheading" weight="medium" className="mb-2">
+              <StandardText variant="subheading" weight="medium" className="mb-2">
                Proyecto No Seleccionado
-             </Text>
-             <Text color="muted">
+             </StandardText>
+             <StandardText colorScheme="muted">
                Por favor, selecciona un proyecto activo desde el menú superior para gestionar sus dimensiones.
-             </Text>
+             </StandardText>
            </StandardCard>
         )}
 

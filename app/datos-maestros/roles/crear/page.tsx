@@ -11,7 +11,7 @@ import { PageTitle } from "@/components/ui/page-title";
 import { ShieldPlus, AlertTriangle, ArrowLeft, User } from "lucide-react"; // Añadido ArrowLeft
 import { toast as sonnerToast } from "sonner";
 import { Text } from "@/components/ui/text";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import Link from "next/link";
 import { PageBackground } from "@/components/ui/page-background";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo"; // Para estado de carga opcional
@@ -102,7 +102,7 @@ export default function CrearRolPage() {
           </StandardCard.Content>
           <StandardCard.Footer>
             <Link href="/" passHref> {/* O a la página de selección de proyectos */}
-              <CustomButton variant="outline">Ir a Inicio</CustomButton>
+              <StandardButton styleType="outline" colorScheme="neutral">Ir a Inicio</StandardButton>
             </Link>
           </StandardCard.Footer>
         </StandardCard>
@@ -127,7 +127,7 @@ export default function CrearRolPage() {
           </StandardCard.Content>
           <StandardCard.Footer>
             <Link href="/datos-maestros/roles" passHref>
-              <CustomButton variant="outline">Volver al Listado de Roles</CustomButton>
+              <StandardButton styleType="outline" colorScheme="neutral">Volver al Listado de Roles</StandardButton>
             </Link>
           </StandardCard.Footer>
         </StandardCard>

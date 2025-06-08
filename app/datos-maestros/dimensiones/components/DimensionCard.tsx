@@ -6,7 +6,7 @@ import { useRipple } from "@/components/ripple/RippleProvider";
 import { useTheme } from "@/app/theme-provider";
 import { type FullDimension } from "@/lib/actions/dimension-actions";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText"; // Changed import for Text
 import { BadgeCustom } from "@/components/ui/badge-custom";
 import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { PenLine, Trash2, Eye, GripVertical } from "lucide-react"; // GripVertical para drag handle
@@ -91,7 +91,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 				<StandardCard.Header className="p-0 mb-2">
 					<div className="flex flex-col gap-1">
 						<div className="flex items-start justify-between">
-							<Text
+							<StandardText
 								styleType="heading"
 								size="md"
 								weight="semibold"
@@ -99,7 +99,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 								truncate
 							>
 								{dimension.name}
-							</Text>
+							</StandardText>
 							<BadgeCustom variant={cardColorVariant} className="flex-shrink-0">
 								{tipoLabel}
 							</BadgeCustom>
@@ -137,26 +137,26 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 					{" "}
 					{/* Eliminar padding por defecto */}
 					{dimension.description && (
-						<Text
+						<StandardText
 							styleType="default"
-							color="muted"
+							colorScheme="muted" // Mapped color to colorScheme
 							size="sm"
 							className="mb-3 line-clamp-3">
 							{" "}
 							{/* Limitar líneas de descripción */}
 							{dimension.description}
-						</Text>
+						</StandardText>
 					)}
 					{dimension.type === "finite" && dimension.options.length > 0 && (
 						<div className="mb-3">
-							<Text
+							<StandardText
 								styleType="label"
 								size="xs"
 								weight="medium"
-								color="secondary"
+								colorScheme="secondary" // Mapped color to colorScheme
 								className="mb-1 block">
 								Opciones Principales:
-							</Text>
+							</StandardText>
 							<div className="flex flex-wrap gap-1">
 								{dimension.options.slice(0, 4).map(
 									(
@@ -190,21 +190,21 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 					{dimension.type === "open" &&
 						dimension.questions.length === 0 &&
 						dimension.examples.length === 0 && (
-							<Text
+							<StandardText
 								styleType="caption"
-								color="muted"
+								colorScheme="muted" // Mapped color to colorScheme
 								className="italic mt-auto pt-2">
 								Esta dimensión abierta no tiene preguntas guía ni ejemplos
 								definidos aún.
-							</Text>
+							</StandardText>
 						)}
 					{dimension.type === "finite" && dimension.options.length === 0 && (
-						<Text
+						<StandardText
 							styleType="caption"
-							color="warning"
+							colorScheme="warning" // Mapped color to colorScheme
 							className="italic mt-auto pt-2">
 							Esta dimensión de selección múltiple no tiene opciones definidas.
-						</Text>
+						</StandardText>
 					)}
 				</StandardCard.Content>
 			</div>

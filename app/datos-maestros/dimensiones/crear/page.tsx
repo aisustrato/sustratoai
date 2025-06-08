@@ -15,7 +15,7 @@ import { PageTitle } from "@/components/ui/page-title";
 import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText"; // Changed import for Text
 import { AlertTriangle, ArrowLeft, LayoutGrid, PlusCircle } from "lucide-react"; // LayoutGrid para dimensiones
 import {
   DimensionForm,
@@ -158,12 +158,12 @@ export default function CrearDimensionPage() {
             >
                 <StandardCard.Header className="items-center flex flex-col text-center">
                     <AlertTriangle className="h-12 w-12 text-danger-fg mb-4" />
-                    <Text variant="subheading" weight="bold" color="danger">
+                    <StandardText variant="subheading" weight="bold" colorScheme="danger">
                         {puedeGestionarDimensiones ? "Error de Configuración" : "Acceso Denegado"}
-                    </Text>
+                    </StandardText>
                 </StandardCard.Header>
                 <StandardCard.Content className="text-center">
-                    <Text>{errorPage}</Text>
+                    <StandardText>{errorPage}</StandardText>
                 </StandardCard.Content>
                 <StandardCard.Footer className="flex justify-center">
                      <StandardButton
@@ -186,7 +186,7 @@ export default function CrearDimensionPage() {
     return (
          <PageBackground>
             <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Text>Cargando o acceso no permitido...</Text>
+                <StandardText>Cargando o acceso no permitido...</StandardText>
             </div>
         </PageBackground>
     );

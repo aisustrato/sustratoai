@@ -5,7 +5,7 @@ import { useTheme } from "@/app/theme-provider";
 import { generateBatchTokens } from "./batch-tokens";
 import { CustomSlider } from "@/components/ui/custom-slider";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText"; // Changed import for Text
 import { BatchItem } from "./BatchItem";
 import tinycolor from "tinycolor2";
 
@@ -148,13 +148,14 @@ export default function BatchVisualization() {
 					hasOutline={false}
 					accentPlacement="none"
 				>
-					<Text
+					<StandardText
 						variant="heading"
+						asElement="h2"
 						size="2xl"
-						color="primary"
+						colorScheme="primary"
 						style={{ textAlign: "center" }}>
 						Distribución de Lotes por Miembros
-					</Text>
+					</StandardText>
 					<div
 						style={{
 							display: "flex",
@@ -169,16 +170,16 @@ export default function BatchVisualization() {
 							hasOutline={false}
 							accentPlacement="none"
 						>
-							<Text variant="subtitle" size="lg" color="primary" weight="bold">
+							<StandardText variant="subtitle" size="lg" colorScheme="primary" weight="bold">
 								Tamaño de Lote
-							</Text>
+							</StandardText>
 							<div
 								style={{
 									display: "flex",
 									justifyContent: "space-between",
 									margin: "16px 0",
 								}}>
-								<Text size="md">
+								<StandardText size="md">
 									Tamaño:{" "}
 									<span
 										style={{
@@ -188,8 +189,8 @@ export default function BatchVisualization() {
 										}}>
 										{batchSize}
 									</span>
-								</Text>
-								<Text size="md">
+								</StandardText>
+								<StandardText size="md">
 									Total:{" "}
 									<span
 										style={{
@@ -200,7 +201,7 @@ export default function BatchVisualization() {
 										{batches.length}
 									</span>{" "}
 									lotes
-								</Text>
+								</StandardText>
 							</div>
 							<CustomSlider
 								value={[batchSize]}
@@ -233,9 +234,9 @@ export default function BatchVisualization() {
 							hasOutline={false}
 							accentPlacement="none"
 						>
-							<Text variant="subtitle" size="lg" color="primary" weight="bold">
+							<StandardText variant="subtitle" size="lg" colorScheme="primary" weight="bold">
 								Miembros
-							</Text>
+							</StandardText>
 							<div
 								style={{
 									display: "flex",
@@ -298,17 +299,17 @@ export default function BatchVisualization() {
 						hasOutline={false}
 						accentPlacement="none"
 					>
-						<Text
+						<StandardText
 							variant="subtitle"
 							size="xl"
-							color="primary"
+							colorScheme="primary"
 							weight="bold"
 							style={{ marginBottom: 8 }}>
 							Distribución de Lotes
-						</Text>
-						<Text size="md" color="neutral" style={{ marginBottom: 16 }}>
+						</StandardText>
+						<StandardText size="md" colorScheme="neutral" style={{ marginBottom: 16 }}>
 							{batches.length} lotes de {batchSize}
-						</Text>
+						</StandardText>
 						<div
 							style={{
 								display: "grid",
@@ -387,14 +388,14 @@ export default function BatchVisualization() {
 						hasOutline={false}
 						accentPlacement="none"
 					>
-						<Text
+						<StandardText
 							variant="subtitle"
 							size="xl"
-							color="primary"
+							colorScheme="primary"
 							weight="bold"
 							style={{ marginBottom: 16 }}>
 							Peso del Lote
-						</Text>
+						</StandardText>
 						<div
 							style={{
 								display: "flex",
@@ -429,15 +430,16 @@ export default function BatchVisualization() {
 								))}
 							</div>
 							<div style={{ marginTop: 24, textAlign: "center" }}>
-								<Text
+								<StandardText
 									variant="heading"
+									asElement="h2"
 									size="2xl"
 									style={{ color: appColorTokens.primary.pure, fontSize: 40 }}>
 									{batchSize}
-								</Text>
-								<Text size="md" color="neutral">
+								</StandardText>
+								<StandardText size="md" colorScheme="neutral">
 									elementos por lote
-								</Text>
+								</StandardText>
 							</div>
 						</div>
 					</StandardCard>
@@ -451,14 +453,14 @@ export default function BatchVisualization() {
 					hasOutline={false}
 					accentPlacement="none"
 				>
-					<Text
+					<StandardText
 						variant="subtitle"
 						size="lg"
-						color="primary"
+						colorScheme="primary"
 						weight="bold"
 						style={{ marginBottom: 16 }}>
 						Distribución por Miembros
-					</Text>
+					</StandardText>
 					<div
 						style={{
 							display: "grid",
@@ -489,19 +491,19 @@ export default function BatchVisualization() {
 											justifyContent: "space-between",
 											marginBottom: 8,
 										}}>
-										<Text size="md" color="primary" weight="bold">
+										<StandardText size="md" colorScheme="primary" weight="bold">
 											Miembro {index + 1}
-										</Text>
-										<Text size="sm" color="neutral">
+										</StandardText>
+										<StandardText size="sm" colorScheme="neutral">
 											{percentage}%
-										</Text>
+										</StandardText>
 									</div>
-									<Text variant="heading" size="xl" color="primary">
+									<StandardText variant="heading" asElement="h2" size="xl" colorScheme="primary">
 										{batchCount}
-									</Text>
-									<Text size="sm" color="neutral">
+									</StandardText>
+									<StandardText size="sm" colorScheme="neutral">
 										lotes asignados
-									</Text>
+									</StandardText>
 									<div
 										style={{
 											marginTop: 8,
