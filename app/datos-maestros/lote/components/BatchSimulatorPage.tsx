@@ -26,7 +26,7 @@ import {
 } from "@/lib/actions/member-actions";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo"; 
 import { AlertTriangle, CheckCircle, Layers, Settings } from "lucide-react"; 
-import { CustomButton, type CustomButtonProps } from "@/components/ui/custom-button";
+import { StandardButton, type StandardButtonProps } from "@/components/ui/StandardButton"; // Changed import
 import { PageTitle } from "@/components/ui/page-title"; 
 import { PageBackground } from "@/components/ui/page-background"; 
 import { useRouter } from "next/navigation"; 
@@ -370,11 +370,15 @@ interface BatchSimulatorPageProps {
                         <div>
                             <Text variant="label" weight="bold" color="danger">Problema en la Simulación/Creación</Text>
                             <Text size="sm" className="text-danger-fg/90">{uiError}</Text>
-                            <CustomButton 
-                                variant="outline" size="xs" onClick={runSimulation} className="mt-3"
+                            <StandardButton
+                                styleType="outline" // Mapped variant
+                                size="xs"
+                                onClick={runSimulation}
+                                className="mt-3"
                                 disabled={isSimulating || isCreating || selectedMemberIds.length === 0}
                                 leftIcon={<Settings className="h-3 w-3"/>}
-                            >Reintentar Simulación</CustomButton>
+                                colorScheme="neutral" // Added default colorScheme
+                            >Reintentar Simulación</StandardButton>
                         </div>
                     </div>
                 </StandardCard>
@@ -543,9 +547,9 @@ interface BatchSimulatorPageProps {
                                 </div>
                             )}
                         </div>
-                        <CustomButton
-                            color="success"
-                            variant={"outline"} 
+                        <StandardButton
+                            colorScheme="success" // Mapped color
+                            styleType="outline" // Mapped variant
                             size="lg"
                             onClick={handleCrearLotes} 
                             disabled={isSimulating || isCreating || !simulationData || totalBatchesCalculated === 0 || selectedMemberIds.length === 0}
@@ -554,7 +558,7 @@ interface BatchSimulatorPageProps {
                             className="w-full md:w-auto"
                         >
                             {isCreating ? "Creando Lotes..." : `Crear ${totalBatchesCalculated} Lotes`}
-                        </CustomButton>
+                        </StandardButton>
                     </StandardCard.Content>
                 </StandardCard>
             )}

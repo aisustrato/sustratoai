@@ -6,7 +6,7 @@ import { useTheme } from "@/app/theme-provider";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import { BadgeCustom } from "@/components/ui/badge-custom";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { PenLine, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FullDimension } from "@/lib/actions/dimension-actions";
@@ -92,27 +92,28 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
             </div>
             {canManage && (
               <div className="flex justify-end gap-1 mt-1">
-                <CustomButton
+                <StandardButton
                   size="sm"
-                  variant="ghost"
+                  styleType="ghost" // Mapped variant to styleType
                   iconOnly
                   onClick={onEdit}
                   disabled={isBeingDeleted}
                   tooltip="Editar dimensión"
+                  colorScheme="neutral" // Added default colorScheme
                 >
                   <PenLine className="h-5 w-5" />
-                </CustomButton>
-                <CustomButton
+                </StandardButton>
+                <StandardButton
                   size="sm"
-                  variant="ghost"
+                  styleType="ghost" // Mapped variant to styleType
                   iconOnly
-                  color="danger"
+                  colorScheme="danger" // Mapped color to colorScheme
                   onClick={onDelete}
                   disabled={isBeingDeleted}
                   tooltip="Eliminar dimensión"
                 >
                   <Trash2 className="h-5 w-5" />
-                </CustomButton>
+                </StandardButton>
               </div>
             )}
           </div>

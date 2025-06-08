@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { TextArea } from "@/components/ui/textarea";
 import { SelectCustom, type SelectOption } from "@/components/ui/select-custom";
 import { FormField } from "@/components/ui/form-field";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import { AlertCircle, HelpCircle, Lightbulb, ListChecks, PlusCircle, Trash2, CheckCircle } from "lucide-react";
@@ -262,9 +262,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                     )}
                 </div>
                 {!isReadOnlyEffective && (
-                  <CustomButton type="button" variant="outline" size="sm" onClick={addNewOption} leftIcon={<PlusCircle className="h-4 w-4" />}>
+                  <StandardButton type="button" styleType="outline" size="sm" onClick={addNewOption} leftIcon={<PlusCircle className="h-4 w-4" />} colorScheme="neutral">
                     {optionFields.length === 0 ? "Añadir Opción" : "Añadir Otra Opción"}
-                  </CustomButton>
+                  </StandardButton>
                 )}
               </StandardCard.Header>
               <StandardCard.Content className="space-y-3">
@@ -301,7 +301,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                             </Text>
                         )}
                     </div>
-                    {!isReadOnlyEffective && ( <CustomButton type="button" variant="ghost" color="danger" size="sm" onClick={() => removeOption(index)}> <Trash2 className="h-4 w-4" /> </CustomButton> )}
+                    {!isReadOnlyEffective && ( <StandardButton type="button" styleType="ghost" colorScheme="danger" size="sm" onClick={() => removeOption(index)}> <Trash2 className="h-4 w-4" /> </StandardButton> )}
                     {getFieldSuccessState("options", index, "value") && !isReadOnlyEffective && ( <CheckCircle className="h-5 w-5 text-success" /> )}
                   </div>
                 ))}
@@ -330,9 +330,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                 )}
               </div>
               {!isReadOnlyEffective && (
-                  <CustomButton type="button" variant="outline" size="sm" onClick={addNewQuestion} leftIcon={<HelpCircle className="h-4 w-4" />}>
+                  <StandardButton type="button" styleType="outline" size="sm" onClick={addNewQuestion} leftIcon={<HelpCircle className="h-4 w-4" />} colorScheme="neutral">
                     {questionFields.length === 0 ? "Añadir Pregunta" : "Añadir Otra Pregunta"}
-                  </CustomButton>
+                  </StandardButton>
                 )}
             </StandardCard.Header>
             <StandardCard.Content className="space-y-3">
@@ -363,7 +363,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                             </Text>
                         )}
                     </div>
-                    {!isReadOnlyEffective && ( <CustomButton type="button" variant="ghost" color="danger"  onClick={() => removeQuestion(index)}  className="mt-1"> <Trash2 className="h-4 w-4" /> </CustomButton> )}
+                    {!isReadOnlyEffective && ( <StandardButton type="button" styleType="ghost" colorScheme="danger" size="sm" onClick={() => removeQuestion(index)}  className="mt-1"> <Trash2 className="h-4 w-4" /> </StandardButton> )}
                     {getFieldSuccessState("questions", index, "question") && !isReadOnlyEffective && ( <CheckCircle className="h-5 w-5 text-success mt-1" /> )}
                   </div>
             ))}
@@ -390,9 +390,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                 )}
               </div>
               {!isReadOnlyEffective && (
-                  <CustomButton type="button" variant="outline" size="sm" onClick={addNewExample} leftIcon={<Lightbulb className="h-4 w-4" />}>
+                  <StandardButton type="button" styleType="outline" size="sm" onClick={addNewExample} leftIcon={<Lightbulb className="h-4 w-4" />} colorScheme="neutral">
                      {exampleFields.length === 0 ? "Añadir Ejemplo" : "Añadir Otro Ejemplo"}
-                  </CustomButton>
+                  </StandardButton>
                 )}
             </StandardCard.Header>
             <StandardCard.Content className="space-y-3">
@@ -423,7 +423,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                             </Text>
                         )}
                     </div>
-                    {!isReadOnlyEffective && ( <CustomButton type="button" variant="ghost" color="danger" size="sm" onClick={() => removeExample(index)}  className="mt-1"> <Trash2 className="h-4 w-4" /> </CustomButton> )}
+                    {!isReadOnlyEffective && ( <StandardButton type="button" styleType="ghost" colorScheme="danger" size="sm" onClick={() => removeExample(index)}  className="mt-1"> <Trash2 className="h-4 w-4" /> </StandardButton> )}
                      {getFieldSuccessState("examples", index, "example") && !isReadOnlyEffective && ( <CheckCircle className="h-5 w-5 text-success mt-1" /> )}
                   </div>
             ))}
@@ -433,15 +433,16 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
           {/* BOTÓN DE SUBMIT */}
           {modo !== "ver" && (
             <div className="flex justify-end pt-6">
-              <CustomButton
+              <StandardButton
                 type="submit"
-                color="primary"
+                colorScheme="primary" // Mapped color to colorScheme
                 size="lg"
                 loading={loading}
                 disabled={loading || (modo === "editar" && !dirtyFields) || (!isValid && isSubmitted) }
+                styleType="solid" // Assumed default variant maps to styleType solid
               >
                 {modo === "crear" ? "Crear Dimensión" : "Guardar Cambios"}
-              </CustomButton>
+              </StandardButton>
             </div>
           )}
         </form>

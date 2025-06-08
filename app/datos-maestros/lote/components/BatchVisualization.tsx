@@ -23,7 +23,7 @@ import {
 } from "@/lib/actions/member-actions"; // Ajusta la ruta si es necesario
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo"; 
 import { AlertTriangle, CheckCircle, Settings, Eye, BarChartBig } from "lucide-react"; // Iconos
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { PageTitle } from "@/components/ui/page-title"; // Para el título principal
 import { PageBackground } from "@/components/ui/page-background"; // Para el fondo
 
@@ -342,14 +342,17 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                         <div>
                             <Text variant="label" weight="bold" color="danger">Problema en la Simulación</Text>
                             <Text size="sm" className="text-danger-fg/90">{uiError}</Text>
-                            <CustomButton 
-                                variant="outline" size="xs" 
-                                onClick={runSimulation} className="mt-3"
+                            <StandardButton
+                                styleType="outline" // Mapped variant
+                                size="xs"
+                                onClick={runSimulation}
+                                className="mt-3"
                                 disabled={isSimulating || selectedMemberIds.length === 0}
                                 leftIcon={<Settings className="h-3 w-3"/>} // Reintentar
+                                colorScheme="neutral" // Added default colorScheme
                             >
                                 Reintentar Simulación
-                            </CustomButton>
+                            </StandardButton>
                         </div>
                     </div>
                 </StandardCard>
@@ -472,9 +475,9 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                             </Text>
                             {/* El desglose de articlesPerMember ya no está aquí para la prueba */}
                         </div>
-                        <CustomButton
-                            color="success"
-                            variant="outline"
+                        <StandardButton
+                            colorScheme="success" // Mapped color
+                            styleType="outline" // Mapped variant
                             size="lg"
                             // onClick={handleCrearLotes} // Implementar esta función
                             disabled={isSimulating} // Añadir otros disabled si es necesario
@@ -482,7 +485,7 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                             className="w-full md:w-auto"
                         >
                             Crear {totalBatchesCalculated} Lotes
-                        </CustomButton>
+                        </StandardButton>
                     </StandardCard.Content>
                 </StandardCard>
             )}

@@ -6,6 +6,9 @@ import { PageTitle } from "@/components/ui/page-title";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import { BadgeCustom } from "@/components/ui/badge-custom";
+// Attempting to replace a CustomButton import, though it's not present.
+// import { CustomButton } from "@/components/ui/CustomButton";
+import { StandardButton } from "@/components/ui/StandardButton"; // Added StandardButton import
 
 // Simulación de datos
 const dimensionesEjemplo = [

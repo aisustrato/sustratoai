@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { TextArea } from "@/components/ui/textarea";
 import { SelectCustom, type SelectOption } from "@/components/ui/select-custom";
 import { FormField } from "@/components/ui/form-field"; // Asegúrate de que FormField pueda recibir y mostrar 'hint' y 'successMessage'
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import {
@@ -489,16 +489,17 @@ export const MiembroForm: React.FC<MiembroFormProps> = ({
 
           {modo !== "ver" && (
             <div className="flex justify-end gap-3 pt-4">
-              <CustomButton
+              <StandardButton
                 type="submit"
-                color="primary"
+                colorScheme="primary" // Mapped color
+                styleType="solid" // Assumed default variant
                 loading={loading || form.formState.isSubmitting}
                 disabled={loading || form.formState.isSubmitting || (modo === "editar" && !form.formState.isDirty)}
               >
                 {modo === "crear"
                   ? (loading || form.formState.isSubmitting) ? "Agregando..." : "Agregar Miembro"
                   : (loading || form.formState.isSubmitting) ? "Guardando..." : "Guardar Cambios"}
-              </CustomButton>
+              </StandardButton>
             </div>
           )}
         </form>

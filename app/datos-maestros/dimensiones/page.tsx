@@ -13,7 +13,7 @@ import {
 import { PageBackground } from "@/components/ui/page-background";
 import { CustomDialog } from "@/components/ui/custom-dialog";
 import { PageTitle } from "@/components/ui/page-title";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { Text } from "@/components/ui/text";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
@@ -159,14 +159,15 @@ export default function DimensionesPage() {
 
         {puedeGestionarDimensiones && proyectoActual?.id && (
           <div className="my-6 flex justify-end">
-            <CustomButton
+            <StandardButton
               onClick={handleCrearDimension}
               leftIcon={<PlusCircle className="h-5 w-5" />}
-              color="primary"
+              colorScheme="primary" // Mapped color to colorScheme
               size="sm"
+              styleType="solid" // Assumed default variant
             >
               Nueva Dimensión
-            </CustomButton>
+            </StandardButton>
           </div>
         )}
 
@@ -220,13 +221,14 @@ export default function DimensionesPage() {
             }
             action={
               puedeGestionarDimensiones ? (
-                <CustomButton
+                <StandardButton
                   onClick={handleCrearDimension}
                   leftIcon={<PlusCircle />}
-                  color="primary"
+                  colorScheme="primary" // Mapped color to colorScheme
+                  styleType="solid" // Assumed default variant
                 >
                   Crear Primera Dimensión
-                </CustomButton>
+                </StandardButton>
               ) : undefined
             }
           />

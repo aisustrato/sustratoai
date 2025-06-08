@@ -8,7 +8,7 @@ import { type FullDimension } from "@/lib/actions/dimension-actions";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
 import { BadgeCustom } from "@/components/ui/badge-custom";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { PenLine, Trash2, Eye, GripVertical } from "lucide-react"; // GripVertical para drag handle
 import { BadgeVariant } from "@/lib/theme/components/badge-tokens";
 import { cn } from "@/lib/utils";
@@ -92,7 +92,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 					<div className="flex flex-col gap-1">
 						<div className="flex items-start justify-between">
 							<Text
-								variant="heading"
+								styleType="heading"
 								size="md"
 								weight="semibold"
 								className="flex-grow mr-2"
@@ -106,27 +106,28 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 						</div>
 						{canManage && (
 							<div className="flex justify-end gap-1 mt-1">
-								<CustomButton
+								<StandardButton
 									size="sm"
-									variant="ghost"
+									styleType="ghost"
 									iconOnly
 									onClick={onEdit}
 									disabled={isBeingDeleted}
 									tooltip="Editar dimensión"
+									colorScheme="neutral" // Added default colorScheme
 								>
 									<PenLine className="h-5 w-5" />
-								</CustomButton>
-								<CustomButton
+								</StandardButton>
+								<StandardButton
 									size="sm"
-									variant="ghost"
+									styleType="ghost"
 									iconOnly
-									color="danger"
+									colorScheme="danger" // Mapped color to colorScheme
 									onClick={onDelete}
 									disabled={isBeingDeleted}
 									tooltip="Eliminar dimensión"
 								>
 									<Trash2 className="h-5 w-5" />
-								</CustomButton>
+								</StandardButton>
 							</div>
 						)}
 					</div>
@@ -137,7 +138,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 					{/* Eliminar padding por defecto */}
 					{dimension.description && (
 						<Text
-							variant="default"
+							styleType="default"
 							color="muted"
 							size="sm"
 							className="mb-3 line-clamp-3">
@@ -149,7 +150,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 					{dimension.type === "finite" && dimension.options.length > 0 && (
 						<div className="mb-3">
 							<Text
-								variant="label"
+								styleType="label"
 								size="xs"
 								weight="medium"
 								color="secondary"
@@ -177,7 +178,6 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 					{(dimension.questions.length > 0 ||
 						dimension.examples.length > 0) && (
 						<div className="mt-auto pt-2 text-xs text-muted-foreground space-y-0.5">
-							{" "}
 							{/* mt-auto para empujar al fondo si es flex-col */}
 							{dimension.questions.length > 0 && (
 								<div>{dimension.questions.length} Pregunta(s) Guía</div>
@@ -191,7 +191,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 						dimension.questions.length === 0 &&
 						dimension.examples.length === 0 && (
 							<Text
-								variant="caption"
+								styleType="caption"
 								color="muted"
 								className="italic mt-auto pt-2">
 								Esta dimensión abierta no tiene preguntas guía ni ejemplos
@@ -200,7 +200,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 						)}
 					{dimension.type === "finite" && dimension.options.length === 0 && (
 						<Text
-							variant="caption"
+							styleType="caption"
 							color="warning"
 							className="italic mt-auto pt-2">
 							Esta dimensión de selección múltiple no tiene opciones definidas.
@@ -209,9 +209,9 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 				</StandardCard.Content>
 			</div>
 			{/* <StandardCard.Footer className="p-2">
-            <CustomButton variant="outline" size="sm" onClick={onViewDetails} leftIcon={<Eye className="h-4 w-4"/>}>
+            <StandardButton styleType="outline" size="sm" onClick={onViewDetails} leftIcon={<Eye className="h-4 w-4"/>}>
                 Ver Detalles
-            </CustomButton>
+            </StandardButton>
         </StandardCard.Footer> */}
 		</StandardCard>
 		// </div> // Cierre del div para dnd-kit

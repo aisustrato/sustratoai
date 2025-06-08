@@ -4,7 +4,7 @@
 import React, { useState, useMemo } from "react";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import {
 	AlertTriangle,
 	Trash2,
@@ -191,17 +191,17 @@ const handleConfirmReset = async () => {
 						</div>
 						{mostrarBotonReset && (
 							<>
-								<CustomButton
+								<StandardButton
 									type="button"
-									color="danger"
-									variant="solid"
+									colorScheme="danger" // Mapped color
+									styleType="solid" // Mapped variant
 									leftIcon={<Trash2 className="w-4 h-4" />}
 									className="ml-auto"
 									onClick={() => setDialogResetOpen(true)}
 									loading={isResetting}
 								>
 									Eliminar todos los lotes
-								</CustomButton>
+								</StandardButton>
 								<CustomDialog
 									open={dialogResetOpen}
 									onOpenChange={(open: boolean) => setDialogResetOpen(open)}

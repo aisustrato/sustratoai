@@ -12,7 +12,7 @@ import {
 } from "@/lib/actions/dimension-actions";
 import { PageBackground } from "@/components/ui/page-background";
 import { PageTitle } from "@/components/ui/page-title";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton"; // Changed import
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { Text } from "@/components/ui/text";
@@ -166,14 +166,14 @@ export default function CrearDimensionPage() {
                     <Text>{errorPage}</Text>
                 </StandardCard.Content>
                 <StandardCard.Footer className="flex justify-center">
-                     <CustomButton
+                     <StandardButton
                         onClick={handleVolver}
                         leftIcon={<ArrowLeft className="h-4 w-4" />}
-                        variant="outline"
-                        color="danger"
+                        styleType="outline" // Mapped variant to styleType
+                        colorScheme="danger" // Mapped color to colorScheme
                     >
                         Volver a Dimensiones
-                    </CustomButton>
+                    </StandardButton>
                 </StandardCard.Footer>
             </StandardCard>
         </div>
