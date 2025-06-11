@@ -15,10 +15,11 @@ import {
 } from "@/lib/actions/dimension-actions"; // Asegúrate que estas exportaciones sean correctas
 import { PageBackground } from "@/components/ui/page-background";
 import { PageTitle } from "@/components/ui/page-title";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 import { AlertTriangle, ArrowLeft, Edit } from "lucide-react";
 import {
   DimensionForm,
@@ -238,16 +239,17 @@ export default function ModificarDimensionPage() {
                 // styleType removed
             >
                 <StandardCard.Header className="items-center flex flex-col text-center">
-                    <AlertTriangle className="h-12 w-12 text-danger-fg mb-4" />
-                    <Text variant="subheading" weight="bold" color="danger">
-                        Error
-                    </Text>
+                    <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
+                    <StandardText variant="subheading" weight="bold" colorScheme="danger">
+                      Error
+                    </StandardText>
                 </StandardCard.Header>
-                <StandardCard.Content className="text-center"><Text>{errorPage}</Text></StandardCard.Content>
+                <StandardCard.Content className="text-center"><StandardText>{errorPage}</StandardText></StandardCard.Content>
                 <StandardCard.Footer className="flex justify-center">
-                     <CustomButton onClick={handleVolver} leftIcon={<ArrowLeft />} variant="outline" color="danger">
+                     <StandardButton onClick={handleVolver} styleType="outline" colorScheme="danger">
+                        <StandardIcon><ArrowLeft /></StandardIcon>
                         Volver a Dimensiones
-                    </CustomButton>
+                    </StandardButton>
                 </StandardCard.Footer>
             </StandardCard>
         </div>
@@ -270,11 +272,12 @@ export default function ModificarDimensionPage() {
             styleType="subtle"
             className="text-center p-6"
           >
-            <Text variant="subheading">Dimensión no disponible</Text>
-            <Text color="muted" className="mt-2">No se pudo cargar la información de la dimensión. Intenta volver a la lista.</Text>
-            <CustomButton onClick={handleVolver} leftIcon={<ArrowLeft />} variant="outline" className="mt-4">
+            <StandardText variant="subheading">Dimensión no disponible</StandardText>
+            <StandardText colorScheme="neutral" className="mt-2">No se pudo cargar la información de la dimensión. Intenta volver a la lista.</StandardText>
+            <StandardButton onClick={handleVolver} styleType="outline" className="mt-4">
+              <StandardIcon><ArrowLeft /></StandardIcon>
               Volver a Dimensiones
-            </CustomButton>
+            </StandardButton>
           </StandardCard>
         </div>
       </PageBackground>

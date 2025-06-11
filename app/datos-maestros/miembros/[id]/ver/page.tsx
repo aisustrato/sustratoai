@@ -11,7 +11,8 @@ import {
 	type ProjectMemberDetails,
 	type ProjectRoleInfo,
 } from "@/lib/actions/member-actions";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { PageHeader } from "@/components/common/page-header";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { ArrowLeft, PenLine, User } from "lucide-react";
@@ -20,7 +21,7 @@ import {
 	type MiembroFormValues,
 } from "@/app/datos-maestros/miembros/components/MiembroForm";
 import type { SelectOption } from "@/components/ui/select-custom";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 import { PageBackground } from "@/components/ui/page-background";
 import { PageTitle } from "@/components/ui/page-title";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
@@ -205,12 +206,12 @@ export default function VerMiembroPage() {
 							title="Error"
 							description={error}
 							actions={
-								<CustomButton
+								<StandardButton
 									onClick={handleVolver}
-									leftIcon={<ArrowLeft className="h-4 w-4" />}
-									variant="outline">
+									styleType="outline">
+									<StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
 									Volver a Miembros
-								</CustomButton>
+								</StandardButton>
 							}
 						/>
 					</div>
@@ -231,12 +232,12 @@ export default function VerMiembroPage() {
 								"No se pudo cargar la información del miembro o el miembro no existe."
 							}
 							actions={
-								<CustomButton
+								<StandardButton
 									onClick={handleVolver}
-									leftIcon={<ArrowLeft className="h-4 w-4" />}
-									variant="outline">
+									styleType="outline">
+									<StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
 									Volver a Miembros
-								</CustomButton>
+								</StandardButton>
 							}
 						/>
 					</div>
@@ -271,13 +272,13 @@ export default function VerMiembroPage() {
           >
 						{puedeGestionarMiembros && (
               <div className="flex justify-end pt-3">
-							<CustomButton
-								onClick={handleEditar}
-								leftIcon={<PenLine className="h-4 w-4" />}
-								color="primary"
+							<StandardButton
+									onClick={handleEditar}
+									colorScheme="primary"
                 className="w-full text-right-0 py=3">
-								Editar Miembro
-							</CustomButton>
+									<StandardIcon><PenLine className="h-4 w-4" /></StandardIcon>
+									Editar Miembro
+								</StandardButton>
               </div>
 						)}
 				
@@ -290,17 +291,17 @@ export default function VerMiembroPage() {
 	</StandardCard>
 					{error && miembro && (
 						<div className="mt-4 p-4 bg-warning-muted text-warning-foreground rounded-md text-center ">
-							<Text variant="caption" weight="medium">
+							<StandardText variant="caption">
 								Advertencia:
-							</Text>
-							<Text variant="caption" className="mt-1">
+							</StandardText>
+							<StandardText variant="caption" className="mt-1">
 								{error}
-							</Text>
-							<Text variant="caption" size="xs" className="mt-1 opacity-80">
+							</StandardText>
+							<StandardText variant="caption" size="xs" className="mt-1 opacity-80">
 								(Se muestran los datos de miembro disponibles. Alguna
 								información adicional, como la lista completa de roles, podría
 								no haberse cargado correctamente).
-							</Text>
+							</StandardText>
 						</div>
 					)}
 				</div>

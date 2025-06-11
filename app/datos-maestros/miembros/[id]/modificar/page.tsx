@@ -15,7 +15,8 @@ import {
   ResultadoOperacion,
   MemberProfileData,
 } from "@/lib/actions/member-actions";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { PageHeader } from "@/components/common/page-header";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { MiembroForm, MiembroFormValues } from "@/app/datos-maestros/miembros/components/MiembroForm";
@@ -253,13 +254,13 @@ export default function ModificarMiembroPage() {
               title="Error al Cargar Datos"
               description={error}
               actions={
-                <CustomButton
+                <StandardButton
                   onClick={handleCancel}
-                  leftIcon={<ArrowLeft className="h-4 w-4" />}
-                  variant="outline"
+                  styleType="outline"
                 >
+                  <StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
                   Volver a Miembros
-                </CustomButton>
+                </StandardButton>
               }
             />
           </div>
@@ -277,13 +278,13 @@ export default function ModificarMiembroPage() {
               title="Miembro no Encontrado"
               description="No se pudieron cargar los datos del miembro o el miembro no existe."
               actions={
-                <CustomButton
+                <StandardButton
                   onClick={handleCancel}
-                  leftIcon={<ArrowLeft className="h-4 w-4" />}
-                  variant="outline"
+                  styleType="outline"
                 >
+                  <StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
                   Volver a Miembros
-                </CustomButton>
+                </StandardButton>
               }
             />
           </div>

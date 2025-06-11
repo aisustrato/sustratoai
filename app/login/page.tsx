@@ -6,11 +6,11 @@ import { useState, useEffect, FormEvent } from "react"; // Asegurado FormEvent
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/auth-provider";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
-import { Text } from "@/components/ui/text";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardText } from "@/components/ui/StandardText";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { Mail, Lock, LogIn } from "lucide-react";
 // MODIFICACIÓN: toast ya no se importa/usa aquí para el flujo principal de signIn, AuthProvider lo maneja.
 // Sin embargo, se mantiene por si lo usas para la validación de campos vacíos.
@@ -82,11 +82,10 @@ export default function LoginPage() {
       // Dado que handleSignIn en AuthProvider pone authLoading=true, el loading del botón se puede quitar aquí.
       setLoading(false);
 
-    } catch (error) {
-      console.error("[LOGIN_PAGE] Error durante el inicio de sesión (catch):", error);
-      // MODIFICACIÓN: AuthProvider ya maneja el toast de error para errores de signIn.
-      // Si este catch es para errores diferentes, se podría mantener un toast genérico.
-      // toast.error("Ocurrió un error inesperado"); // Comentado o ajustar según necesidad
+    } catch (err: any) {
+      console.error("[LOGIN_PAGE] Excepción no esperada durante signIn:", err);
+      // MODIFICACIÓN: AuthProvider debería capturar y manejar errores de Supabase. Este catch es un fallback.
+      // toast.error(err.message || "Error inesperado al iniciar sesión"); // Comentado
       setLoading(false);
     }
   };
@@ -104,24 +103,23 @@ export default function LoginPage() {
               speed="fast"
               initialTheme="blue"
             />
-            <Text variant="heading" color="primary" className="mt-4">
+            <StandardText variant="heading" colorScheme="primary" className="mt-4">
               Ya has iniciado sesión
-            </Text>
-            <Text variant="default" color="neutral" className="mt-2">
+            </StandardText>
+            <StandardText variant="default" colorScheme="neutral" className="mt-2">
               Redirigiendo a tu página...
-            </Text>
+            </StandardText>
           </div>
         </div>
       </SustratoPageBackground>
     );
   }
 
-  // Se mantiene toda tu estructura JSX original.
   return (
     <SustratoPageBackground variant="ambient" bubbles={true}>
       <div className="flex items-center justify-center min-h-screen p-4">
-        <ProCard className="max-w-4xl w-full" border="top" variant="primary">
-          <ProCard.Content className="p-0">
+        <StandardCard className="max-w-4xl w-full" accentPlacement="top" colorScheme="primary">
+          <StandardCard.Content className="p-0">
             <div className="grid grid-cols-1 md:grid-cols-2">
               {/* Columna izquierda con imagen/información */}
               <div className="bg-gradient-to-br from-primary/5 to-secondary/5 p-8 hidden md:flex md:flex-col md:justify-center rounded-l-lg">
@@ -136,31 +134,33 @@ export default function LoginPage() {
 
                 <div className="space-y-4 mt-8">
                   <div className="bg-white/30 dark:bg-gray-800/30 p-4 rounded-lg">
-                    <Text
-                      variant="heading"
-                      color="tertiary"
+                    <StandardText
+                      asElement="h3"
+                      size="lg"
+                      weight="semibold"
+                      colorScheme="tertiary"
                       className="mb-2"
                     >
                       Investigación Cualitativa Aumentada
-                    </Text>
-                    <Text variant="default" color="neutral" size="sm">
+                    </StandardText>
+                    <StandardText asElement="p" colorScheme="neutral" size="sm">
                       Potencia tu análisis cualitativo con nuestra plataforma
                       que combina el rigor académico con la innovación
                       tecnológica. Diseñada por humanistas, para humanistas.
-                    </Text>
+                    </StandardText>
                   </div>
 
                   <div className="bg-white/30 dark:bg-gray-800/30 p-4 rounded-lg">
-                    <Text
-                      variant="default"
-                      color="neutral"
+                    <StandardText
+                      asElement="p"
+                      colorScheme="neutral"
                       size="sm"
                       className="italic"
                     >
                       "No buscamos reemplazar el pensamiento crítico, sino
                       expandir su alcance a través de la co-creación entre la
                       perspectiva humana y las capacidades de la IA."
-                    </Text>
+                    </StandardText>
                   </div>
                 </div>
               </div>
@@ -176,22 +176,24 @@ export default function LoginPage() {
                   />
                 </div>
 
-                <Text
-                  variant="heading"
+                <StandardText
+                  asElement="h1"
                   size="xl"
-                  color="primary"
+                  weight="bold"
+                  colorScheme="primary"
                   className="mb-2"
                 >
                   Inicio de sesión
-                </Text>
-                <Text
-                  variant="default"
-                  color="neutral"
-                  colorVariant="text"
+                </StandardText>
+                <StandardText
+                  asElement="p"
+                  size="base"
+                  colorScheme="neutral"
+                  colorShade="text"
                   className="mb-6"
                 >
                   Ingresa tus credenciales para acceder a la plataforma
-                </Text>
+                </StandardText>
 
                 <form onSubmit={handleSubmit} className="space-y-4" action="javascript:void(0)"> {/* Manteniendo tu action */}
                   <FormField label="Correo electrónico" htmlFor="email">
@@ -235,38 +237,21 @@ export default function LoginPage() {
                   </div>
 
                   <div className="pt-2">
-                    <CustomButton
+                    <StandardButton
                       type="submit"
                       fullWidth
                       loading={loading}
                       loadingText="Iniciando sesión..."
-                      color="primary"
-                      leftIcon={<LogIn />}
-                      disabled={loading || authProviderLoading} // Añadido authProviderLoading
-                      // El onClick del botón es redundante si type="submit" y el form tiene onSubmit.
-                      // Lo comento para evitar doble llamada a handleSubmit o e.preventDefault().
-                      // onClick={(e) => { 
-                      //   e.preventDefault();
-                      //   if (!loading) {
-                      //     handleSubmit(e as any); 
-                      //   }
-                      // }}
+                      colorScheme="primary"
+                      leftIcon={LogIn} // Pass component reference
+                      disabled={loading || authProviderLoading} 
                     >
                       Iniciar sesión 
-                      {/* En tu archivo, el texto "Iniciar sesión" estaba fuera del ícono.
-                          Si el componente CustomButton renderiza `leftIcon` y luego `children`,
-                          este texto "Iniciar sesión" debería estar dentro del children.
-                          Asumiendo que CustomButton lo maneja así. */}
-                    </CustomButton>
+                    </StandardButton>
                   </div>
 
                   <div className="flex items-center justify-center mt-6">
-                    <Text
-                      variant="default"
-                      size="sm"
-                      color="neutral"
-                      colorVariant="text"
-                    >
+                    <div className="text-sm text-neutral-600 dark:text-neutral-400">
                       ¿No tienes una cuenta?{" "}
                       <Link
                         href="/signup"
@@ -274,13 +259,13 @@ export default function LoginPage() {
                       >
                         Solicita acceso
                       </Link>
-                    </Text>
+                    </div>
                   </div>
                 </form>
               </div>
             </div>
-          </ProCard.Content>
-        </ProCard>
+          </StandardCard.Content>
+        </StandardCard>
       </div>
     </SustratoPageBackground>
   );

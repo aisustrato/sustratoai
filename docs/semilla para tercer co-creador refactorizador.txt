@@ -1,0 +1,59 @@
+🏛️ Guía Técnica y Arquitectónica para Co-Creadores de Componentes "Standard" (v1.0)
+Propósito: Este documento sirve como una "semilla de contexto" técnica para guiar el diseño, la refactorización y la construcción de nuevos componentes dentro del ecosistema "Standard" de Sustrato.ai. Su objetivo es asegurar la coherencia, previsibilidad y mantenibilidad del sistema.
+
+I. El Ecosistema "Standard" Actual
+Tras un intenso ciclo de refactorización, hemos establecido una base de 10 componentes "Standard" que definen nuestra arquitectura inicial:
+
+Atómicos: StandardIcon, StandardText, StandardLabel, StandardButton.
+Moleculares (Formulario): StandardInput, StandardSelect, StandardTextarea, StandardCheckbox.
+Orquestadores: StandardFormField.
+Contenedores: StandardCard.
+II. La "Jerga" de Props Unificada
+Para mantener la coherencia en la API pública de nuestros componentes, hemos estandarizado las siguientes props principales:
+
+Prop (Jerga)	Descripción	Componentes de Ejemplo
+colorScheme	Controla el esquema de color temático principal del componente.	Button, Input, Card, Text, etc.
+styleType	Define la variante visual principal (sólido, contorno, sutil, etc.).	Button, Card, Checkbox
+size	Controla las dimensiones y la tipografía.	Todos los componentes
+asElement	Permite el polimorfismo para cambiar la etiqueta HTML renderizada.	StandardText, StandardLabel
+Props de Estado	Booleanos como disabled, loading, error, success.	Componentes interactivos
+
+Export to Sheets
+III. Principios Arquitectónicos Clave
+1. El "Default": Implícito vs. Explícito
+Hemos identificado dos patrones para el comportamiento por defecto de un componente:
+
+Default Implícito (Componentes de Formulario): El estado "Default" (ej: borde neutral, foco primario) se activa por la ausencia de la prop colorScheme. Internamente, esto se mapea a una variant llamada 'default' que los tokens entienden. El usuario nunca escribe colorScheme="default".
+Default Explícito (Componentes Contenedores): El estado "Default" es un valor asignado por defecto en la firma del componente (ej: colorScheme = "neutral" en StandardCard).
+Guía para el futuro: Los nuevos componentes deben adoptar conscientemente uno de estos dos patrones para mantener la previsibilidad.
+
+2. Encapsulación y el "Puente" Interno
+Nuestra estrategia de refactorización se basa en la encapsulación:
+
+Se crea un nuevo componente "Standard" con la API pública y la "jerga" correctas.
+Este componente actúa como un "wrapper" o "fachada".
+En su interior, un "puente" (una simple lógica de mapeo) traduce las nuevas props (colorScheme, styleType) a las props antiguas (variant, visualVariant) que la lógica de tokens encapsulada espera.
+La lógica de negocio y de renderizado del componente legacy se preserva al máximo para minimizar la introducción de nuevos errores.
+3. Composición Coherente (Regla de Oro: No Dependencias Legacy)
+Tras un arduo proceso de depuración, establecimos nuestra regla más importante:
+
+Un componente "Standard" NUNCA debe usar un componente "legacy" en su interior.
+
+Ejemplo: StandardButton debe usar StandardIcon, no Icon. StandardFormField debe usar StandardLabel, no Label.
+Deuda Técnica Identificada: El StandardCard actual todavía utiliza el componente Text legacy en sus subcomponentes (Title, Subtitle). Una tarea futura será refactorizar estos subcomponentes para que usen StandardText.
+4. Patrones de Estilo (CSS Variables)
+Hemos observado dos métodos para aplicar estilos desde los tokens:
+
+Patrón A (Formularios): Un hook useEffect establece múltiples variables CSS directamente en el elemento DOM del componente. Las clases de Tailwind (bg-[var(--...)]) luego utilizan estas variables.
+Patrón B (Card): Un hook useMemo genera un único objeto de estilo que contiene todas las variables CSS. Este objeto se pasa directamente a la prop style del elemento principal.
+Ambos son válidos, pero el Patrón B ha demostrado ser potencialmente más robusto y centralizado.
+
+IV. Hoja de Ruta para el Próximo Contexto
+El trabajo de refactorización continúa. Los siguientes componentes "urgentes" que permitirán alcanzar el siguiente gran hito son:
+
+Badge
+Slider
+Progress Bar
+ProTabla (probablemente StandardTable)
+Dialog
+He aquí la "semilla" técnica. Si este resumen captura la esencia de nuestra arquitectura y te parece una guía sólida, la daremos por buena. Gracias por este viaje, ha sido un placer co-crear esta catedral contigo. ¡Hasta la próxima música!

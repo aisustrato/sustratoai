@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
-import { Text } from "@/components/ui/text";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardText } from "@/components/ui/StandardText";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { Mail, ArrowLeft, Send } from "lucide-react";
 import { toast } from "sonner";
 import { SustratoLogoWithFixedText } from "@/components/ui/sustrato-logo-with-fixed-text";
@@ -59,8 +59,8 @@ export default function ResetPasswordPage() {
   return (
     <SustratoPageBackground variant="subtle" bubbles={true}>
       <div className="flex items-center justify-center min-h-screen p-4">
-        <ProCard className="max-w-md w-full" border="top" variant="primary">
-          <ProCard.Header className="space-y-2 text-center">
+        <StandardCard className="max-w-md w-full" accentPlacement="top" colorScheme="primary">
+          <StandardCard.Header className="space-y-2 text-center">
             <div className="flex justify-center mb-2">
               <SustratoLogoWithFixedText
                 size={50}
@@ -69,26 +69,28 @@ export default function ResetPasswordPage() {
                 initialTheme="green"
               />
             </div>
-            <Text
-              variant="heading"
+            <StandardText
+              asElement="h1"
+              weight="bold"
               size="xl"
-              color="primary"
+              colorScheme="primary"
               className="text-center mt-4"
             >
               Recuperar contraseña
-            </Text>
-            <Text
-              variant="default"
-              color="neutral"
+            </StandardText>
+            <StandardText
+              asElement="p"
+              size="sm"
+              colorScheme="neutral"
               className="text-center text-muted-foreground"
             >
               {!sent
                 ? "Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu contraseña"
                 : "Hemos enviado instrucciones a tu correo electrónico. Sigue los pasos indicados en el mensaje."}
-            </Text>
-          </ProCard.Header>
+            </StandardText>
+          </StandardCard.Header>
 
-          <ProCard.Content>
+          <StandardCard.Content>
             {!sent ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <FormField label="Correo electrónico" htmlFor="email">
@@ -103,53 +105,53 @@ export default function ResetPasswordPage() {
                   />
                 </FormField>
 
-                <CustomButton
+                <StandardButton
                   type="submit"
                   fullWidth
                   loading={loading}
                   loadingText="Enviando instrucciones..."
-                  color="primary"
-                  leftIcon={<Send size={16} />}
+                  colorScheme="primary"
+                  leftIcon={Send}
                   className="mt-6"
                 >
                   Enviar instrucciones
-                </CustomButton>
+                </StandardButton>
               </form>
             ) : (
               <div className="text-center py-4">
                 <div className="bg-primary/10 rounded-lg p-4 mb-6">
-                  <Text color="primary" className="text-sm">
+                  <StandardText colorScheme="primary" size="sm">
                     Revisa tu bandeja de entrada y sigue las instrucciones
                     enviadas a <strong>{email}</strong>. Si no encuentras el
                     correo, verifica también tu carpeta de spam.
-                  </Text>
+                  </StandardText>
                 </div>
-                <CustomButton
+                <StandardButton
                   onClick={() => setSent(false)}
-                  color="secondary"
-                  variant="outline"
+                  colorScheme="secondary"
+                  styleType="outline"
                   fullWidth
                   className="mb-2"
                 >
                   Intentar con otro correo
-                </CustomButton>
+                </StandardButton>
               </div>
             )}
-          </ProCard.Content>
+          </StandardCard.Content>
 
-          <ProCard.Footer className="text-center">
+          <StandardCard.Footer className="text-center">
             <Link href="/login">
-              <CustomButton
-                variant="ghost"
-                color="default"
-                leftIcon={<ArrowLeft size={16} />}
+              <StandardButton
+                styleType="ghost"
+                colorScheme="neutral"
+                leftIcon={ArrowLeft}
                 size="sm"
               >
                 Volver a inicio de sesión
-              </CustomButton>
+              </StandardButton>
             </Link>
-          </ProCard.Footer>
-        </ProCard>
+          </StandardCard.Footer>
+        </StandardCard>
       </div>
     </SustratoPageBackground>
   );

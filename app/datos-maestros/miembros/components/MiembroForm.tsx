@@ -11,9 +11,9 @@ import { Input } from "@/components/ui/input";
 import { TextArea } from "@/components/ui/textarea";
 import { SelectCustom, type SelectOption } from "@/components/ui/select-custom";
 import { FormField } from "@/components/ui/form-field"; // Asegúrate de que FormField pueda recibir y mostrar 'hint' y 'successMessage'
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 import {
   Mail, User, Briefcase, Building, Phone, Languages, MessageSquare
 } from "lucide-react";
@@ -88,14 +88,14 @@ interface MiembroFormProps {
 //#endregion ![def]
 
 //#region [main] - 🔧 COMPONENT 🔧
-export const MiembroForm: React.FC<MiembroFormProps> = ({
+export const MiembroForm = ({
   modo,
   valoresIniciales,
   rolesDisponibles,
   onSubmit,
   disabled = false,
   loading = false,
-}) => {
+}: MiembroFormProps) => {
   //#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
   const initialFormValues = React.useMemo(() => {
     if (modo === "crear") {
@@ -193,9 +193,9 @@ export const MiembroForm: React.FC<MiembroFormProps> = ({
           className="space-y-6"
         >
           {/* //#region [render_sub] - 🧑‍💼 Información del Miembro (Principal) 🧑‍💼 */}
-          <Text variant="heading" size="md" color="tertiary" className="pb-2 border-b">
+          <StandardText size="md" colorScheme="tertiary" className="pb-2 border-b">
             Información del Miembro
-          </Text>
+          </StandardText>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
             <FormField
               label="Email del Usuario"
@@ -258,9 +258,9 @@ export const MiembroForm: React.FC<MiembroFormProps> = ({
           {/* //#endregion [render_sub] */}
 
           {/* //#region [render_sub] - 📝 Información Adicional de Perfil (Opcional) 📝 */}
-          <Text variant="heading" size="md" color="tertiary" className="pt-4 pb-2 border-b">
+          <StandardText variant="heading" size="md" colorScheme="tertiary" className="pt-4 pb-2 border-b">
             Información Adicional de Perfil (Opcional)
-          </Text>
+          </StandardText>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
             <FormField 
@@ -501,16 +501,17 @@ export const MiembroForm: React.FC<MiembroFormProps> = ({
           {/* //#region [render_sub] - 💾 Botones de Acción 💾 */}
           {modo !== "ver" && (
             <div className="flex justify-end gap-3 pt-4">
-              <CustomButton
+              <StandardButton
                 type="submit"
-                color="primary"
+                colorScheme="primary"
+                styleType="solid"
                 loading={loading || form.formState.isSubmitting}
                 disabled={loading || form.formState.isSubmitting || (modo === "editar" && !form.formState.isDirty)}
               >
                 {modo === "crear"
                   ? (loading || form.formState.isSubmitting) ? "Agregando..." : "Agregar Miembro"
                   : (loading || form.formState.isSubmitting) ? "Guardando..." : "Guardar Cambios"}
-              </CustomButton>
+              </StandardButton>
             </div>
           )}
           {/* //#endregion [render_sub] */}

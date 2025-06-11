@@ -5,6 +5,7 @@ import { SustratoLogo } from "./sustrato-logo";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
 import { generateSustratoLoadingLogoTokens } from "@/lib/theme/components/sustrato-loading-logo-tokens";
+import { StandardText } from "./StandardText";
 
 export interface SustratoLoadingLogoProps {
   size?: number;
@@ -354,12 +355,18 @@ export function SustratoLoadingLogo({
 
       {/* Texto de carga opcional */}
       {showText && (
-        <p
-          className="mt-3 text-sm font-medium"
-          style={{ color: actualPrimaryTextColor }}
-        >
-          {text}
-        </p>
+        <div className="mt-3">
+          <StandardText
+            variant="default"
+            size="sm"
+            weight="medium"
+            colorScheme={actualPrimaryTextColor?.startsWith('#') ? undefined : (actualPrimaryTextColor as any)}
+            className={actualPrimaryTextColor?.startsWith('#') ? undefined : ''}
+            style={actualPrimaryTextColor?.startsWith('#') ? { color: actualPrimaryTextColor } : undefined}
+          >
+            {text}
+          </StandardText>
+        </div>
       )}
     </div>
   );

@@ -3,7 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { ChevronRight, ArrowLeft } from "lucide-react";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +50,7 @@ export function PageTitle({
           {breadcrumbs.map((crumb, index) => (
             <React.Fragment key={index}>
               {index > 0 && (
-                <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground/70" />
+                <StandardIcon><ChevronRight className="h-4 w-4 mx-1 text-muted-foreground/70" /></StandardIcon>
               )}
               {crumb.href ? (
                 <Link
@@ -72,7 +73,7 @@ export function PageTitle({
           href={backButton.href}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-2"
         >
-          <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+          <StandardIcon><ArrowLeft className="h-3.5 w-3.5 mr-1" /></StandardIcon>
           {backButton.label || "Volver"}
         </Link>
       )}
@@ -86,23 +87,23 @@ export function PageTitle({
             </Icon>
           )}
           <div>
-            <Text
-              as="h1"
-              variant="heading"
-              size="2xl"
-              className="leading-tight"
-            >
-              {title}
-            </Text>
+            <h1 className="leading-tight">
+              <StandardText
+                variant="heading"
+                size="2xl"
+              >
+                {title}
+              </StandardText>
+            </h1>
             {subtitle && (
-              <Text
-                as="p"
+              <p className="mt-1 text-muted-foreground">
+              <StandardText
                 variant="default"
-                color="neutral"
-                className="mt-1 text-muted-foreground"
+                colorScheme="neutral"
               >
                 {subtitle}
-              </Text>
+              </StandardText>
+            </p>
             )}
           </div>
         </div>

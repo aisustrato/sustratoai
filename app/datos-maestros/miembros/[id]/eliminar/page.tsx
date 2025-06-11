@@ -13,7 +13,8 @@ import {
   type ResultadoOperacion
 } from "@/lib/actions/member-actions";
 import type { MemberProfileData } from "@/lib/actions/member-actions";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { PageHeader } from "@/components/common/page-header";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { ArrowLeft, Trash2, User } from "lucide-react";
@@ -114,14 +115,14 @@ export default function EliminarMiembroPage() {
       <PageBackground>
         <div className="max-w-4xl mx-auto p-6">
           <div className="mb-6">
-            <CustomButton
-              variant="outline"
+            <StandardButton
+              styleType="outline"
               onClick={() => router.back()}
               className="mb-6"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <StandardIcon><ArrowLeft className="h-4 w-4 mr-2" /></StandardIcon>
               Volver
-            </CustomButton>
+            </StandardButton>
           </div>
           
           <Alert variant="destructive">
@@ -193,23 +194,23 @@ export default function EliminarMiembroPage() {
             </div>
 
             <div className="flex justify-end space-x-3 pt-4">
-              <CustomButton
-                variant="outline"
+              <StandardButton
+                styleType="outline"
                 onClick={() => router.back()}
                 disabled={isDeleting}
               >
                 Cancelar
-              </CustomButton>
-              <CustomButton
-                variant="solid"
-                color="danger"
+              </StandardButton>
+              <StandardButton
+                styleType="solid"
+                colorScheme="danger"
                 onClick={() => setShowDeleteDialog(true)}
                 disabled={isDeleting}
                 loading={isDeleting}
-                leftIcon={<Trash2 className="h-4 w-4 mr-2" />}
               >
+                <StandardIcon><Trash2 className="h-4 w-4 mr-2" /></StandardIcon>
                 {isDeleting ? 'Eliminando...' : 'Eliminar miembro'}
-              </CustomButton>
+              </StandardButton>
             </div>
           </div>
         </StandardCard>

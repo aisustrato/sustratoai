@@ -14,12 +14,13 @@ import {
 import { PageBackground } from "@/components/ui/page-background";
 import { CustomDialog } from "@/components/ui/custom-dialog";
 import { PageTitle } from "@/components/ui/page-title";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { EmptyState } from "@/components/common/empty-state";
-import { AlertTriangle, PlusCircle, LayoutGrid, Trash2 } from "lucide-react";
+import { AlertTriangle, PlusCircle, LayoutGrid } from "lucide-react";
 import { DimensionCard } from "./components/DimensionCard"; // Tu componente DimensionCard
 import { toast as sonnerToast } from "sonner";
 import { useLoading } from "@/contexts/LoadingContext"; // Opcional, si lo usas
@@ -169,14 +170,14 @@ export default function DimensionesPage() {
 
         {puedeGestionarDimensiones && proyectoActual?.id && (
           <div className="my-6 flex justify-end">
-            <CustomButton
+            <StandardButton
               onClick={handleCrearDimension}
-              leftIcon={<PlusCircle className="h-5 w-5" />}
-              color="primary"
+              colorScheme="primary"
               size="sm"
             >
+              <StandardIcon><PlusCircle className="h-5 w-5" /></StandardIcon>
               Nueva Dimensión
-            </CustomButton>
+            </StandardButton>
           </div>
         )}
 
@@ -193,14 +194,14 @@ export default function DimensionesPage() {
             // styleType removed
           >
             <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 mt-0.5 text-danger-fg" />
+              <StandardIcon><AlertTriangle className="h-5 w-5 mt-0.5 text-danger-fg" /></StandardIcon>
               <div>
-                <Text weight="bold" color="danger">
+                <StandardText weight="bold" colorScheme="danger">
                   Error al Cargar Dimensiones
-                </Text>
-                <Text size="sm" className="text-danger-fg/90 mt-1">
+                </StandardText>
+                <StandardText size="sm" className="text-danger-fg/90 mt-1">
                   {error}
-                </Text>
+                </StandardText>
               </div>
             </div>
           </StandardCard>
@@ -218,12 +219,12 @@ export default function DimensionesPage() {
               className="my-6 p-6 text-center"
               // styleType removed
            >
-              <Text variant="subheading" weight="medium" className="mb-2">
+              <StandardText variant="subheading" weight="medium" className="mb-2">
                Proyecto No Seleccionado
-             </Text>
-             <Text color="muted">
+             </StandardText>
+             <StandardText colorScheme="neutral">
                Por favor, selecciona un proyecto activo desde el menú superior para gestionar sus dimensiones.
-             </Text>
+             </StandardText>
            </StandardCard>
         )}
 
@@ -238,13 +239,13 @@ export default function DimensionesPage() {
             }
             action={
               puedeGestionarDimensiones ? (
-                <CustomButton
+                <StandardButton
                   onClick={handleCrearDimension}
-                  leftIcon={<PlusCircle />}
-                  color="primary"
+                  colorScheme="primary"
                 >
+                  <StandardIcon><PlusCircle /></StandardIcon>
                   Crear Primera Dimensión
-                </CustomButton>
+                </StandardButton>
               ) : undefined
             }
           />

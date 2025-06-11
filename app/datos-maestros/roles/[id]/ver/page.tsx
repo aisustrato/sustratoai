@@ -16,8 +16,9 @@ import { StandardCard, type StandardCardColorScheme } from "@/components/ui/Stan
 import { PageTitle } from "@/components/ui/page-title";
 import { ShieldCheck, AlertTriangle, PenLine, Trash2 } from "lucide-react";
 import { toast as sonnerToast } from "sonner"; //> 📝 sonnerToast no se usa aquí, pero lo dejo por si acaso
-import { Text } from "@/components/ui/text";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardText } from "@/components/ui/StandardText";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import Link from "next/link";
 import { PageBackground } from "@/components/ui/page-background";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
@@ -109,7 +110,7 @@ export default function VerRolPage() {
   }
 
   if (!proyectoActual?.id) {
-    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none" disableShadowHover={true}> <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <AlertTriangle className="h-6 w-6 text-warning-600" /> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError || "No hay un proyecto activo."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><CustomButton variant="outline">Ir a Inicio</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none" disableShadowHover={true}> <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <StandardIcon colorScheme="warning" size="md"><AlertTriangle /></StandardIcon> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>{pageError || "No hay un proyecto activo."}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><StandardButton styleType="outline">Ir a Inicio</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
   
   //> 📝 Para "ver", el permiso de gestión no es estrictamente necesario para ver el formulario en modo readOnly.
@@ -125,7 +126,7 @@ export default function VerRolPage() {
           hasOutline={false} // Rule: Inner card
           shadow="none" // Rule: Inner card
           disableShadowHover={true} // Rule: Inner card
-        > <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <AlertTriangle className="h-6 w-6 text-danger-600" /> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><Text>{pageError}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+        > <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <StandardIcon colorScheme="danger" size="md"><AlertTriangle /></StandardIcon> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>{pageError}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
 
   if (!rolVisualizado) { 
@@ -137,7 +138,7 @@ export default function VerRolPage() {
           hasOutline={false} // Rule: Inner card
           shadow="none" // Rule: Inner card
           disableShadowHover={true} // Rule: Inner card
-        > <StandardCard.Header><PageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><Text>{pageError || "No se encontraron datos para el rol especificado."}</Text></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><CustomButton variant="outline">Volver al Listado</CustomButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+        > <StandardCard.Header><PageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><StandardText>{pageError || "No se encontraron datos para el rol especificado."}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
   }
 
   return (
@@ -173,22 +174,22 @@ export default function VerRolPage() {
           <StandardCard.Footer className="flex flex-col sm:flex-row justify-end items-center gap-3 pt-6">
             {puedeGestionarRoles && ( //> 📝 Botones de acción solo si tiene permisos
               <>
-                <CustomButton 
-                  variant="outline" 
-                  color="secondary"
-                  leftIcon={<PenLine className="h-4 w-4" />}
+                <StandardButton 
+                  styleType="outline" 
+                  colorScheme="secondary"
+                  leftIcon={PenLine}
                   onClick={() => router.push(`/datos-maestros/roles/${roleId}/modificar`)}
                 >
                   Modificar Rol
-                </CustomButton>
-                <CustomButton 
-                  variant="outline" 
-                  color="danger"
-                  leftIcon={<Trash2 className="h-4 w-4" />}
+                </StandardButton>
+                <StandardButton 
+                  styleType="outline" 
+                  colorScheme="danger"
+                  leftIcon={Trash2}
                   onClick={() => router.push(`/datos-maestros/roles/${roleId}/eliminar`)}
                 >
                   Eliminar Rol
-                </CustomButton>
+                </StandardButton>
               </>
             )}
           </StandardCard.Footer>

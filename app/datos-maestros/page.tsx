@@ -4,7 +4,8 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { PageTitle } from "@/components/ui/page-title";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import Link from "next/link";
 import { UserPlus, Shield, Layers } from "lucide-react";
 //#endregion ![head]
@@ -35,12 +36,12 @@ export default function DatosMaestrosHome() {
         >
           <Link href="/datos-maestros/miembros" className="block p-4">
             <div className="flex items-center gap-3 mb-2">
-              <UserPlus className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-              <Text as="h2" variant="heading" size="lg">Miembros</Text>
+              <StandardIcon><UserPlus className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" /></StandardIcon>
+              <StandardText asElement="h2" weight="semibold" size="lg">Miembros</StandardText>
             </div>
-            <Text color="neutral">
+            <StandardText colorScheme="neutral">
               Gestiona los investigadores y colaboradores de tu proyecto. Permite agregar, editar y eliminar miembros.
-            </Text>
+            </StandardText>
           </Link>
         </StandardCard>
         {/* //#endregion [render_sub] */}
@@ -54,12 +55,12 @@ export default function DatosMaestrosHome() {
         >
           <Link href="/datos-maestros/roles" className="block p-4">
             <div className="flex items-center gap-3 mb-2">
-              <Shield className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-              <Text as="h2" variant="heading" size="lg">Roles</Text>
+              <StandardIcon><Shield className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" /></StandardIcon>
+              <StandardText asElement="h2" weight="semibold" size="lg">Roles</StandardText>
             </div>
-            <Text color="neutral">
+            <StandardText colorScheme="neutral">
               Define los permisos y responsabilidades de cada miembro. Crea y ajusta roles según las necesidades del proyecto.
-            </Text>
+            </StandardText>
           </Link>
         </StandardCard>
         {/* //#endregion [render_sub] */}
@@ -73,12 +74,12 @@ export default function DatosMaestrosHome() {
         >
           <Link href="/datos-maestros/lote" className="block p-4">
             <div className="flex items-center gap-3 mb-2">
-              <Layers className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-              <Text as="h2" variant="heading" size="lg">Lotes</Text>
+              <StandardIcon><Layers className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" /></StandardIcon>
+              <StandardText asElement="h2" weight="semibold" size="lg">Lotes</StandardText>
             </div>
-            <Text color="neutral">
+            <StandardText colorScheme="neutral">
               Administra los lotes de datos, simulaciones o agrupaciones relevantes para el flujo de trabajo del proyecto.
-            </Text>
+            </StandardText>
           </Link>
         </StandardCard>
         {/* //#endregion [render_sub] */}

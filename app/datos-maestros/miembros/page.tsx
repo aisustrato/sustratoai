@@ -14,10 +14,11 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import { obtenerMiembrosConPerfilesYRolesDelProyecto } from "@/lib/actions/member-actions";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { ProTable } from "@/components/ui/pro-table";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { UserPlus, AlertCircle, Trash2, PenLine, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { EmptyState } from "@/components/common/empty-state";
@@ -167,36 +168,39 @@ export default function MiembrosPage() {
 				const miembro = row.original as ProjectMemberDetails;
 				return (
 					<div className="flex gap-2 justify-end">
-						<CustomButton
-							variant="ghost"
+						<StandardButton
+							styleType="ghost"
 							size="icon"
 							onClick={() => handleVerMiembro(miembro)}
-							iconOnly
-							tooltip="Ver detalles">
-							<Eye className="h-5 w-5" />
+							tooltip="Ver detalles"
+							
+						>
+							<StandardIcon><Eye /></StandardIcon>
 							<span className="sr-only">Ver detalles</span>
-						</CustomButton>
+						</StandardButton>
 						{puedeGestionarMiembros && (
 							<>
-								<CustomButton
-									variant="ghost"
+								<StandardButton
+									styleType="ghost"
 									size="icon"
 									onClick={() => handleEditarMiembro(miembro)}
-									iconOnly
-									tooltip="Editar miembro">
-									<PenLine className="h-5 w-5" />
+									tooltip="Editar miembro"
+									
+								>
+									<StandardIcon><PenLine /></StandardIcon>
 									<span className="sr-only">Editar</span>
-								</CustomButton>
-								<CustomButton
-									variant="ghost"
+								</StandardButton>
+								<StandardButton
+									styleType="ghost"
 									size="icon"
 									onClick={() => handleEliminarMiembro(miembro)}
-									iconOnly
-									color="danger"
-									tooltip="Eliminar miembro">
-									<Trash2 className="h-5 w-5 text-destructive" />
+									colorScheme="danger"
+									tooltip="Eliminar miembro"
+									
+								>
+									<StandardIcon><Trash2 /></StandardIcon>
 									<span className="sr-only">Eliminar</span>
-								</CustomButton>
+								</StandardButton>
 							</>
 						)}
 					</div>
@@ -253,8 +257,8 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 							accentPlacement="none" // Defaulting
 						>
 							<div className="flex items-center gap-3">
-								<AlertCircle className="h-6 w-6 text-destructive" />
-								<Text>Error: {error}</Text>
+								<StandardIcon><AlertCircle className="h-6 w-6 text-destructive" /></StandardIcon>
+								<StandardText>Error: {error}</StandardText>
 							</div>
 						</StandardCard>
 					) : miembros.length === 0 ? (
@@ -269,9 +273,10 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 							action={
 								puedeGestionarMiembros ? (
 									<Link href="/datos-maestros/miembros/crear" passHref>
-										<CustomButton color="primary" leftIcon={<UserPlus />}>
+										<StandardButton colorScheme="primary" styleType="solid">
+											<StandardIcon><UserPlus /></StandardIcon>
 											Agregar Nuevo Miembro
-										</CustomButton>
+										</StandardButton>
 									</Link>
 								) : undefined
 							}
@@ -288,13 +293,14 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 						>
 							{puedeGestionarMiembros && (
 								<div className="flex justify-end mb-4 pt-4">
-									<CustomButton
+									<StandardButton
 										onClick={handleAgregarMiembro}
-										leftIcon={<UserPlus className="h-4 w-4" />}
-										color="primary"
+										colorScheme="primary"
+										styleType="solid"
 									>
+										<StandardIcon><UserPlus /></StandardIcon>
 										Agregar Miembro
-									</CustomButton>
+									</StandardButton>
 								</div>
 							)}
 							<StandardCard

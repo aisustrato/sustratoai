@@ -1,5 +1,4 @@
-import { colors } from "@/lib/theme/colors";
-import type { ColorScheme, Mode } from "@/lib/theme/color-tokens";
+
 import type { AppColorTokens } from "../ColorToken";
 
 export type ProgressVariant =

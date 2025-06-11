@@ -6,9 +6,10 @@ import React from "react";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import { useTheme } from "@/app/theme-provider";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 import { BadgeCustom } from "@/components/ui/badge-custom";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { PenLine, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FullDimension } from "@/lib/actions/dimension-actions";
@@ -87,7 +88,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
         <StandardCard.Header className="p-0 mb-2">
           <div className="flex flex-col gap-1">
             <div className="flex items-start justify-between">
-              <Text
+              <StandardText
                 variant="heading"
                 size="md"
                 weight="semibold"
@@ -95,34 +96,34 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
                 truncate
               >
                 {dimension.name}
-              </Text>
+              </StandardText>
               <BadgeCustom variant={cardColorVariant} className="flex-shrink-0">
                 {tipoLabel}
               </BadgeCustom>
             </div>
             {canManage && (
               <div className="flex justify-end gap-1 mt-1">
-                <CustomButton
+                <StandardButton
                   size="sm"
-                  variant="ghost"
+                  styleType="ghost"
                   iconOnly
                   onClick={onEdit}
                   disabled={isBeingDeleted}
                   tooltip="Editar dimensión"
                 >
-                  <PenLine className="h-5 w-5" />
-                </CustomButton>
-                <CustomButton
+                  <StandardIcon><PenLine className="h-5 w-5" /></StandardIcon>
+                </StandardButton>
+                <StandardButton
                   size="sm"
-                  variant="ghost"
+                  styleType="ghost"
                   iconOnly
-                  color="danger"
+                  colorScheme="danger"
                   onClick={onDelete}
                   disabled={isBeingDeleted}
                   tooltip="Eliminar dimensión"
                 >
-                  <Trash2 className="h-5 w-5" />
-                </CustomButton>
+                  <StandardIcon><Trash2 className="h-5 w-5" /></StandardIcon>
+                </StandardButton>
               </div>
             )}
           </div>

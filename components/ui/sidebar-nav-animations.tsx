@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 import { LucideIcon } from "lucide-react";
 
 interface SidebarNavItem {
@@ -38,7 +38,7 @@ export function SidebarNavAnimations({ items, activeHref, hoverStyles, appColorT
                   style={{ color: appColorTokens.neutral.textShade }}
                 />
               )}
-              <Text variant="muted">{item.title}</Text>
+              <StandardText variant="muted">{item.title}</StandardText>
             </div>
           );
         }
@@ -77,17 +77,17 @@ export function SidebarNavAnimations({ items, activeHref, hoverStyles, appColorT
                   }}
                 />
               )}
-              <Text
+              <StandardText
                 variant={isActive ? "subtitle" : "default"}
-                color={isActive ? "primary" : "neutral"}
-                colorVariant={isActive ? "pure" : "text"}
+                colorScheme={isActive ? "primary" : "neutral"}
+                colorShade={isActive ? "pure" : "text"}
                 className={cn(
                   "transition-colors duration-200",
                   isActive ? "font-medium" : "font-normal"
                 )}
               >
                 {item.title}
-              </Text>
+              </StandardText>
             </Link>
           </motion.div>
         );

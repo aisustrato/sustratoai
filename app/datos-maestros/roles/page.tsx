@@ -8,11 +8,11 @@ import Link from "next/link";
 import { useAuth } from "@/app/auth-provider";
 import { obtenerRolesDelProyecto } from "@/lib/actions/proyect-role-actions";
 import type { ProjectRoleRow } from "@/lib/actions/proyect-role-actions"; // Corregido el nombre del archivo
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { ProTable } from "@/components/ui/pro-table";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CustomButton } from "@/components/ui/custom-button";
+
 import {
 	ShieldPlus,
 	AlertCircle,
@@ -33,7 +33,8 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Icon } from "@/components/ui/icon";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -133,13 +134,13 @@ export default function RolesPage() {
 				<TooltipTrigger asChild>
 					<span className="flex justify-center items-center w-full">
 						{value ? (
-							<Icon color="success" size="sm" colorVariant="pure">
-								<CheckSquare className="h-4 w-4" />
-							</Icon>
+							<StandardIcon colorScheme="success" size="sm">
+								<CheckSquare />
+							</StandardIcon>
 						) : (
-							<Icon color="neutral" size="sm" colorVariant="pure">
-								<XSquare className="h-4 w-4" />
-							</Icon>
+							<StandardIcon colorScheme="neutral" size="sm">
+								<XSquare />
+							</StandardIcon>
 						)}
 					</span>
 				</TooltipTrigger>
@@ -153,12 +154,8 @@ export default function RolesPage() {
 	const columnas: ColumnDef<ProjectRoleRow>[] = [
 		{
 			accessorKey: "role_name",
-			header: "Nombre del Rol",
-			cell: (info) => (
-				<Text variant="default" weight="medium" className="text-primary-text">
-					{info.getValue() as string}
-				</Text>
-			),
+			header: () => <StandardText weight="semibold">Nombre del Rol</StandardText>,
+			cell: (info) => <StandardText>{String(info.getValue())}</StandardText>,
 			meta: {
 				className: "min-w-[150px] w-1/5", // Ajustar ancho
 			},
@@ -216,36 +213,35 @@ export default function RolesPage() {
 				const rol = row.original;
 				return (
 					<div className="flex gap-1 justify-end">
-						<CustomButton
-							variant="ghost"
-							size="icon"
+						<StandardButton
+							styleType="ghost"
+							colorScheme="secondary"
 							onClick={() => handleVerRol(rol)}
-							iconOnly
 							aria-label={`Ver detalles del rol ${rol.role_name}`}
-							tooltip="Ver detalles">
-							<Eye className="h-5 w-5" />
-						</CustomButton>
+							tooltip="Ver detalles"
+							leftIcon={Eye}
+							iconOnly={true}
+						/>
 						{puedeGestionarRoles && (
 							<>
-								<CustomButton
-									variant="ghost"
-									size="icon"
+								<StandardButton
+									styleType="ghost"
+									colorScheme="secondary"
 									onClick={() => handleEditarRol(rol)}
-									iconOnly
 									aria-label={`Editar el rol ${rol.role_name}`}
-									tooltip="Editar rol">
-									<PenLine className="h-5 w-5" />
-								</CustomButton>
-								<CustomButton
-									variant="ghost"
-									size="icon"
+									tooltip="Editar rol"
+									leftIcon={PenLine}
+									iconOnly={true}
+								/>
+								<StandardButton
+									styleType="ghost"
+									colorScheme="danger"
 									onClick={() => handleEliminarRol(rol)}
-									iconOnly
-									color="danger"
 									aria-label={`Eliminar el rol ${rol.role_name}`}
-									tooltip="Eliminar rol">
-									<Trash2 className="h-5 w-5 text-destructive" />
-								</CustomButton>
+									tooltip="Eliminar rol"
+									leftIcon={Trash2}
+									iconOnly={true}
+								/>
 							</>
 						)}
 					</div>
@@ -278,12 +274,12 @@ export default function RolesPage() {
 
 					{puedeGestionarRoles && (
 						<div className="flex justify-end">
-							<CustomButton
+							<StandardButton
 								onClick={handleAgregarRol}
-								leftIcon={<ShieldPlus className="h-4 w-4" />}
-								color="primary">
+								leftIcon={ShieldPlus}
+								colorScheme="primary">
 								Agregar Nuevo Rol
-							</CustomButton>
+							</StandardButton>
 						</div>
 					)}
 
@@ -316,22 +312,21 @@ export default function RolesPage() {
 								disableShadowHover={true}
 							>
 								<StandardCard.Header>
-									<Text
+									<StandardText
 										variant="subheading"
-										color="danger"
+										colorScheme="danger"
 										className="flex items-center gap-2">
-										<AlertCircle className="h-5 w-5" /> Error al Cargar Roles
-									</Text>
+										<StandardIcon colorScheme="danger"><AlertCircle className="h-5 w-5" /></StandardIcon> Error al Cargar Roles
+									</StandardText>
 								</StandardCard.Header>
 								<StandardCard.Content>
-									<Text>{error}</Text>
-									<CustomButton
+									<StandardText>{error}</StandardText>
+									<StandardButton
 										onClick={cargarRoles}
-										variant="outline"
+										styleType="outline"
 										className="mt-4">
-										{" "}
-										Reintentar Carga{" "}
-									</CustomButton>
+										Reintentar Carga
+									</StandardButton>
 								</StandardCard.Content>
 							</StandardCard>
 						</StandardCard>
@@ -347,11 +342,9 @@ export default function RolesPage() {
 							action={
 								puedeGestionarRoles ? (
 									<Link href="/datos-maestros/roles/crear" passHref>
-										{" "}
-										<CustomButton color="primary" leftIcon={<ShieldPlus />}>
-											{" "}
-											Crear Primer Rol{" "}
-										</CustomButton>{" "}
+										<StandardButton colorScheme="primary" leftIcon={ShieldPlus}>
+											Crear Primer Rol
+										</StandardButton>
 									</Link>
 								) : undefined
 							}

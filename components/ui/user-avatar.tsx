@@ -5,11 +5,11 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogOut, Check, Loader2 } from "lucide-react"; // Añadido Loader2 para feedback visual
+import { StandardIcon } from "@/components/ui/StandardIcon"; // Added StandardIcon import
 import { useTheme } from "@/app/theme-provider";
 import { useAuth } from "@/app/auth-provider";
 import { toast } from "sonner"; // Re-importado para toasts locales
-import { Text } from "@/components/ui/text";
-import { Icon } from "@/components/ui/icon";
+import { StandardText } from "@/components/ui/StandardText";
 import { SelectCustom, type SelectOption } from "@/components/ui/select-custom";
 import React from "react";
 import { generateUserAvatarTokens } from "@/lib/theme/components/user-avatar-tokens";
@@ -212,13 +212,13 @@ export function UserAvatar() {
         disabled={isChangingProject} // Deshabilitar botón mientras se cambia
       >
         {isChangingProject ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <StandardIcon><Loader2 className="h-4 w-4 animate-spin" /></StandardIcon>
         ) : (
-          <Text
+          <StandardText
             size="2xl"
             weight="bold"
-            color="primary"
-            colorVariant="text"
+            colorScheme="primary"
+            colorShade="text"
             style={{
               fontWeight: hasTokens && avatarTokens
                 ? avatarTokens.avatar.fontWeight
@@ -226,7 +226,7 @@ export function UserAvatar() {
             }}
           >
             {getInitial()}
-          </Text>
+          </StandardText>
         )}
       </motion.button>
 
@@ -266,12 +266,12 @@ export function UserAvatar() {
                   : "rgba(150, 150, 150, 0.3)",
               }}
             >
-              <Text
+              <StandardText
                 variant="title"
                 size="base"
                 weight="medium"
-                color="primary"
-                colorVariant="text"
+                colorScheme="primary"
+                colorShade="text"
                 style={{
                   color: hasTokens && avatarTokens
                     ? avatarTokens.menuHeader.titleColor
@@ -279,11 +279,11 @@ export function UserAvatar() {
                 }}
               >
                 {userDisplayName}
-              </Text>
-              <Text
+              </StandardText>
+              <StandardText
                 size="xs"
-                color="neutral"
-                colorVariant="textShade"
+                colorScheme="neutral"
+                colorShade="textShade"
                 className="opacity-70"
                 style={{
                   color: hasTokens && avatarTokens
@@ -292,21 +292,21 @@ export function UserAvatar() {
                 }}
               >
                 {user?.email}
-              </Text>
+              </StandardText>
             </div>
 
             {/* Proyecto actual */}
             {shouldShowProjectSelector ? (
                <div className="mb-3">
-               <Text
+               <StandardText
                  size="xs"
                  weight="medium"
-                 color="neutral"
-                 colorVariant="textShade"
+                 colorScheme="neutral"
+                 colorShade="textShade"
                  className="mb-1 px-2"
                >
                  Proyecto actual
-               </Text>
+               </StandardText>
                <div className="px-2 mb-2">
                  <SelectCustom
                    size="sm"
@@ -318,9 +318,9 @@ export function UserAvatar() {
                  />
                  {proyectoActual && proyectoActual.permissions?.role_name && (
                    <div className="mt-2 flex items-center">
-                     <Text size="xs" weight="medium" color="neutral" className="mr-2">
+                     <StandardText size="xs" weight="medium" colorScheme="neutral" className="mr-2">
                        Rol:
-                     </Text>
+                     </StandardText>
                      <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
                        {proyectoActual.permissions.role_name}
                      </span>
@@ -331,18 +331,18 @@ export function UserAvatar() {
             ) : (
               proyectoActual && ( // Mostrar solo si hay un proyecto actual y no hay selector
                 <div className="mb-3">
-                  <Text size="xs" weight="medium" color="neutral" colorVariant="textShade" className="mb-1 px-2">
+                  <StandardText size="xs" weight="medium" colorScheme="neutral" colorShade="textShade" className="mb-1 px-2">
                     Proyecto actual
-                  </Text>
+                  </StandardText>
                   <div className="px-2 py-1 mb-2 bg-gray-50 dark:bg-gray-800 rounded-md">
-                    <Text size="sm" weight="medium" color="primary">
+                    <StandardText size="sm" weight="medium" colorScheme="primary">
                       {proyectoActual.name}
-                    </Text>
+                    </StandardText>
                     {proyectoActual.permissions?.role_name && (
                       <div className="mt-1 flex items-center">
-                          <Text size="xs" weight="medium" color="neutral" className="mr-2">
+                          <StandardText size="xs" weight="medium" colorScheme="neutral" className="mr-2">
                             Rol:
-                          </Text>
+                          </StandardText>
                         <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
                           {proyectoActual.permissions.role_name}
                         </span>
@@ -357,27 +357,27 @@ export function UserAvatar() {
             {/* Permisos activos */}
             {activePermissions.length > 0 && (
               <div className="mb-3">
-                <Text
+                <StandardText
                   size="xs"
                   weight="medium"
-                  color="neutral"
-                  colorVariant="textShade"
+                  colorScheme="neutral"
+                  colorShade="textShade"
                   className="mb-1 px-2"
                 >
                   Tus permisos
-                </Text>
+                </StandardText>
                 <div className="px-2 space-y-1">
                   {activePermissions.map((permission) => (
                     <div
                       key={permission}
                       className="flex items-center gap-2 py-0.5"
                     >
-                      <Icon size="xs" color="success">
+                      <StandardIcon>
                         <Check className="h-3.5 w-3.5" />
-                      </Icon>
-                      <Text size="xs" color="neutral">
+                      </StandardIcon>
+                      <StandardText size="xs" colorScheme="neutral">
                         {permissionTranslations[permission] || permission}
-                      </Text>
+                      </StandardText>
                     </div>
                   ))}
                 </div>
@@ -406,12 +406,12 @@ export function UserAvatar() {
                 onClick={handleLogout}
               >
                 <div className="flex items-center gap-2">
-                  <Icon size="sm" color="secondary" colorVariant="text">
+                  <StandardIcon colorScheme="secondary" colorShade="pure">
                     <LogOut className="h-4 w-4" />
-                  </Icon>
-                  <Text color="secondary" colorVariant="text" size="sm">
+                  </StandardIcon>
+                  <StandardText colorScheme="secondary" colorShade="pure" size="sm">
                     Cerrar sesión
-                  </Text>
+                  </StandardText>
                 </div>
               </motion.button>
             </div>

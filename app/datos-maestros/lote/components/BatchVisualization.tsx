@@ -8,7 +8,9 @@ import { useTheme } from "@/app/theme-provider";
 import { generateBatchTokens, type BatchTokens, type BatchAuxColor } from "./batch-tokens"; 
 import { CustomSlider } from "@/components/ui/custom-slider";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { BatchItem } from "./BatchItem";
 import tinycolor from "tinycolor2";
 
@@ -24,7 +26,6 @@ import {
 } from "@/lib/actions/member-actions"; // Ajusta la ruta si es necesario
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo"; 
 import { AlertTriangle, CheckCircle, Settings, Eye, BarChartBig } from "lucide-react"; // Iconos
-import { CustomButton } from "@/components/ui/custom-button";
 import { PageTitle } from "@/components/ui/page-title"; // Para el título principal
 import { PageBackground } from "@/components/ui/page-background"; // Para el fondo
 //#endregion ![head]
@@ -197,11 +198,11 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
             >
             <StandardCard.Header className="items-center flex flex-col">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100 mb-4">
-                    <AlertTriangle className="h-6 w-6 text-warning-600" />
+                    <StandardIcon><AlertTriangle className="h-6 w-6 text-warning-600" /></StandardIcon>
                 </div>
-                <Text variant="subheading" weight="bold" color="warning">Proyecto No Seleccionado</Text>
+                <StandardText variant="subheading" weight="bold" colorScheme="warning">Proyecto No Seleccionado</StandardText>
             </StandardCard.Header>
-            <StandardCard.Content><Text>Por favor, selecciona un proyecto activo para poder configurar y simular la creación de lotes.</Text></StandardCard.Content>
+            <StandardCard.Content><StandardText>Por favor, selecciona un proyecto activo para poder configurar y simular la creación de lotes.</StandardText></StandardCard.Content>
             </StandardCard>
         </div>
       </PageBackground>
@@ -222,11 +223,11 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
             >
             <StandardCard.Header className="items-center flex flex-col">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-info-100 mb-4">
-                    <AlertTriangle className="h-6 w-6 text-info-600" />
+                    <StandardIcon><AlertTriangle className="h-6 w-6 text-info-600" /></StandardIcon>
                 </div>
-                <Text variant="subheading" weight="bold" color="neutral">Sin Miembros en el Proyecto</Text>
+                <StandardText variant="subheading" weight="bold" colorScheme="neutral">Sin Miembros en el Proyecto</StandardText>
             </StandardCard.Header>
-            <StandardCard.Content><Text>Este proyecto no tiene miembros asignados. Dirígete a la sección de gestión de miembros para agregar participantes antes de crear lotes.</Text></StandardCard.Content>
+            <StandardCard.Content><StandardText>Este proyecto no tiene miembros asignados. Dirígete a la sección de gestión de miembros para agregar participantes antes de crear lotes.</StandardText></StandardCard.Content>
             {/* Podrías añadir un botón para ir a la página de miembros */}
             </StandardCard>
         </div>
@@ -255,7 +256,7 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                 hasOutline={false} // border="top" implies no full outline
             >
                 <StandardCard.Header>
-                    <Text variant="subheading" weight="medium" color="primary">Configuración de Lotes</Text>
+                    <StandardText variant="subheading" weight="medium" colorScheme="primary">Configuración de Lotes</StandardText>
                 </StandardCard.Header>
                 <StandardCard.Content className={`grid md:grid-cols-2 gap-6 ${isSimulating ? 'opacity-70 pointer-events-none' : ''}`}>
                     {/* Columna Izquierda: Tamaño de Lote */}
@@ -268,16 +269,16 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                         styleType="subtle"
                         accentPlacement="none" // border="normal" implies no accent
                     >
-                    <Text variant="label" weight="semibold" className="mb-1 block">1. Definir Tamaño por Lote</Text>
+                    <StandardText variant="label" weight="semibold" className="mb-1 block">1. Definir Tamaño por Lote</StandardText>
                     <div className="flex justify-between items-baseline my-3">
-                        <Text size="sm">Artículos/Lote:{" "}
+                        <StandardText size="sm">Artículos/Lote:{" "}
                         <span className="text-2xl font-bold text-primary-text">{batchSize}</span>
-                        </Text>
-                        <Text size="sm">Lotes a generar:{" "}
+                        </StandardText>
+                        <StandardText size="sm">Lotes a generar:{" "}
                         <span className="text-2xl font-bold text-primary-text">
                             {isSimulating && !simulationData ? "..." : totalBatchesCalculated}
                         </span>
-                        </Text>
+                        </StandardText>
                     </div>
                     <CustomSlider
                         value={[batchSize]}
@@ -291,9 +292,9 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                         <span>Lotes pequeños (muchos)</span>
                         <span>Lotes grandes (pocos)</span>
                     </div>
-                    <Text size="xs" className="text-muted-foreground mt-3">
+                    <StandardText size="xs" className="text-muted-foreground mt-3">
                         Artículos elegibles en proyecto: {isSimulating && !simulationData ? "Calculando..." : totalEligibleArticles}
-                    </Text>
+                    </StandardText>
                     </StandardCard>
 
                     {/* Columna Derecha: Selección de Miembros */}
@@ -306,7 +307,7 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                         styleType="subtle"
                         accentPlacement="none" // border="normal" implies no accent
                     >
-                    <Text variant="label" weight="semibold" className="mb-3 block">2. Asignar a Miembros</Text>
+                    <StandardText variant="label" weight="semibold" className="mb-3 block">2. Asignar a Miembros</StandardText>
                     <div className="flex gap-2 flex-wrap min-h-[40px]">
                         {projectMembers.map((member) => {
                         const memberColor = memberColorMap[member.user_id] || batchTokens.auxiliaries[0];
@@ -337,7 +338,7 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                         })}
                     </div>
                     {selectedMemberIds.length === 0 && !isSimulating && (
-                        <Text color="warning" size="xs" className="mt-2">Por favor, selecciona al menos un miembro.</Text>
+                        <StandardText colorScheme="warning" size="xs" className="mt-2">Por favor, selecciona al menos un miembro.</StandardText>
                     )}
                     </StandardCard>
                 </StandardCard.Content>
@@ -355,18 +356,18 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                     hasOutline={false} // border="left" implies no full outline
                 >
                     <div className="flex items-start gap-3">
-                        <AlertTriangle className="h-5 w-5 mt-0.5 text-danger-fg" />
+                        <StandardIcon><AlertTriangle className="h-5 w-5 text-destructive-foreground" /></StandardIcon>
                         <div>
-                            <Text variant="label" weight="bold" color="danger">Problema en la Simulación</Text>
-                            <Text size="sm" className="text-danger-fg/90">{uiError}</Text>
-                            <CustomButton 
-                                variant="outline" size="xs" 
+                            <StandardText weight="bold" colorScheme="danger">Problema en la Simulación</StandardText>
+                            <StandardText size="sm" className="text-destructive-foreground/90">{uiError}</StandardText>
+                            <StandardButton 
+                                styleType="outline" size="xs" 
                                 onClick={runSimulation} className="mt-3"
                                 disabled={isSimulating || selectedMemberIds.length === 0}
-                                leftIcon={<Settings className="h-3 w-3"/>} // Reintentar
+                                leftIcon={Settings} // Reintentar
                             >
                                 Reintentar Simulación
-                            </CustomButton>
+                            </StandardButton>
                         </div>
                     </div>
                 </StandardCard>
@@ -385,17 +386,17 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                 hasOutline={false} // border="top" implies no full outline
             >
                 <StandardCard.Header>
-                    <Text variant="subheading" weight="medium" color="secondary">Previsualización de la Distribución</Text>
+                    <StandardText size="lg" weight="medium" colorScheme="secondary">Previsualización de la Distribución</StandardText>
                 </StandardCard.Header>
                 <StandardCard.Content className="grid md:grid-cols-3 gap-6 items-start">
                     {/* Columna Izquierda: Visualización de Lotes (Grilla) */}
                     <div className="md:col-span-2 relative min-h-[300px]"> {/* Contenedor relativo para el loader */}
-                        <Text variant="label" weight="semibold" className="mb-1 block">Lotes Generados</Text>
-                        <Text size="sm" className="text-muted-foreground mb-3">
+                        <StandardText size="sm" weight="semibold" className="mb-1 block">Lotes Generados</StandardText>
+                        <StandardText size="sm" className="text-muted-foreground mb-3">
                         {isSimulating && !simulationData ? "Calculando distribución..." : 
                             `${totalBatchesCalculated} lotes de ~${batchSize} artículos (Total elegibles: ${totalEligibleArticles})`
                         }
-                        </Text>
+                        </StandardText>
                         
                         {isSimulating && ( 
                             <div className="absolute inset-0 flex items-center justify-center bg-card/70 z-10 rounded-md">
@@ -426,13 +427,13 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                             </div>
                         )}
                         {totalBatchesCalculated === 0 && !isSimulating && simulationData && (
-                            <Text className="text-center text-muted-foreground py-8">No se generarán lotes con los parámetros actuales.</Text>
+                            <StandardText className="text-center text-muted-foreground py-8">No se generarán lotes con los parámetros actuales.</StandardText>
                         )}
                     </div>
 
                     {/* Columna Derecha: Peso del Lote */}
                     <div className="min-h-[300px]">
-                        <Text variant="label" weight="semibold" className="mb-3 block text-center md:text-left">Peso Visual del Lote</Text>
+                        <StandardText size="sm" weight="semibold" className="mb-3 block text-center md:text-left">Peso Visual del Lote</StandardText>
                         <div className="flex flex-col h-full justify-center items-center gap-4 pt-4 md:pt-0">
                             <div
                             style={{
@@ -454,12 +455,12 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                             ))}
                             </div>
                             <div className="text-center">
-                            <Text variant="heading" weight="bold" style={{ color: appColorTokens.primary.pure }}>
+                            <StandardText size="4xl" weight="bold" style={{ color: appColorTokens.primary.pure }}>
                                 {batchSize}
-                            </Text>
-                            <Text size="sm" className="text-muted-foreground">
+                            </StandardText>
+                            <StandardText size="xs" className="text-muted-foreground">
                                 elementos por lote
-                            </Text>
+                            </StandardText>
                             </div>
                         </div>
                     </div>
@@ -479,29 +480,29 @@ export default function BatchSimulatorPage() { // Renombrado el componente para 
                     hasOutline={false} // border="top" implies no full outline
                 >
                     <StandardCard.Header className="flex items-center gap-2">
-                        <CheckCircle className="h-6 w-6 text-success-fg"/>
-                        <Text variant="subheading" weight="medium" color="success">Confirmar y Crear Lotes</Text>
+                        <StandardIcon><CheckCircle className="h-6 w-6 text-success-fg"/></StandardIcon>
+                        <StandardText size="lg" weight="medium" colorScheme="success">Confirmar y Crear Lotes</StandardText>
                     </StandardCard.Header>
                     <StandardCard.Content className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="flex-grow">
-                            <Text size="sm" className="text-muted-foreground">
+                            <StandardText size="sm" className="text-muted-foreground">
                                 Se generarán <strong className="text-foreground">{totalBatchesCalculated}</strong> lotes
                                 con un tamaño aproximado de <strong className="text-foreground">{batchSize}</strong> artículos cada uno,
                                 distribuidos entre <strong className="text-foreground">{selectedMemberIds.length}</strong> miembro(s) seleccionado(s).
-                            </Text>
+                            </StandardText>
                             {/* El desglose de articlesPerMember ya no está aquí para la prueba */}
                         </div>
-                        <CustomButton
-                            color="success"
-                            variant="outline"
+                        <StandardButton
+                            colorScheme="success"
+                            styleType="outline"
                             size="lg"
                             // onClick={handleCrearLotes} // Implementar esta función
                             disabled={isSimulating} // Añadir otros disabled si es necesario
-                            leftIcon={<CheckCircle />}
+                            leftIcon={CheckCircle}
                             className="w-full md:w-auto"
                         >
                             Crear {totalBatchesCalculated} Lotes
-                        </CustomButton>
+                        </StandardButton>
                     </StandardCard.Content>
                 </StandardCard>
             )}

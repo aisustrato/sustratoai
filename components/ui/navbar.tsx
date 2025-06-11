@@ -27,16 +27,16 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { FontThemeSwitcher } from "@/components/ui/font-theme-switcher";
 import { AnimatePresence } from "framer-motion";
 import { SustratoLogo } from "@/components/ui/sustrato-logo";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import { useColorTokens } from "@/hooks/use-color-tokens";
-import { Text, type TextProps } from "@/components/ui/text"; // Importando TextProps
+import { StandardText, type StandardTextProps } from "@/components/ui/StandardText";
 import { useTheme } from "@/app/theme-provider";
-import { Icon } from "@/components/ui/icon";
+import { StandardIcon } from "@/components/ui/StandardIcon"; // Replaced Icon with StandardIcon
 import { useAuth } from "@/app/auth-provider"; // Added import
 
 // --- START: Variables de Configuración del Navbar ---
@@ -47,16 +47,16 @@ import { useAuth } from "@/app/auth-provider"; // Added import
 // const SHOW_DATOS_MAESTROS_MENU = true; // Will be replaced by proyectoActual presence or a specific flag
 
 // Estilos de texto para encabezados de menú principal
-const MENU_HEADER_TEXT_COLOR_ACTIVE: TextProps["color"] = "primary";
-const MENU_HEADER_TEXT_VARIANT_ACTIVE: TextProps["colorVariant"] = "pure";
-const MENU_HEADER_TEXT_COLOR_INACTIVE: TextProps["color"] = "secondary";
-const MENU_HEADER_TEXT_VARIANT_INACTIVE: TextProps["colorVariant"] = "text";
+const MENU_HEADER_TEXT_COLOR_ACTIVE: StandardTextProps["colorScheme"] = "primary";
+const MENU_HEADER_TEXT_VARIANT_ACTIVE: StandardTextProps["colorShade"] = "pure";
+const MENU_HEADER_TEXT_COLOR_INACTIVE: StandardTextProps["colorScheme"] = "secondary";
+const MENU_HEADER_TEXT_VARIANT_INACTIVE: StandardTextProps["colorShade"] = "text";
 
 // Estilos de texto para submenús
-const SUBMENU_TEXT_COLOR_ACTIVE: TextProps["color"] = "primary";
-const SUBMENU_TEXT_VARIANT_ACTIVE: TextProps["colorVariant"] = "pure";
-const SUBMENU_TEXT_COLOR_INACTIVE: TextProps["color"] = "secondary";
-const SUBMENU_TEXT_VARIANT_INACTIVE: TextProps["colorVariant"] = "text";
+const SUBMENU_TEXT_COLOR_ACTIVE: StandardTextProps["colorScheme"] = "primary";
+const SUBMENU_TEXT_VARIANT_ACTIVE: StandardTextProps["colorShade"] = "pure";
+const SUBMENU_TEXT_COLOR_INACTIVE: StandardTextProps["colorScheme"] = "secondary";
+const SUBMENU_TEXT_VARIANT_INACTIVE: StandardTextProps["colorShade"] = "text";
 
 // --- END: Variables de Configuración del Navbar ---
 
@@ -134,18 +134,9 @@ export function Navbar() {
         label: "Inicio",
         href: "/",
         icon: (isActive: boolean) => (
-          <Icon
-            size="sm"
-            gradient={true}
-            strokeOnly={!isActive}
-            color="tertiary"
-            colorVariant="bg"
-            gradientWith="accent"
-            gradientColorVariant="text"
-            className="mr-2"
-          >
-            <Home />
-          </Icon>
+          <StandardIcon className="mr-2">
+            <Home className="h-4 w-4" />
+          </StandardIcon>
         ),
       },
       ...(proyectoActual?.module_interviews
@@ -155,72 +146,36 @@ export function Navbar() {
               label: "Entrevistas",
               href: "/entrevistas",
               icon: (isActive: boolean) => (
-                <Icon
-                  size="sm"
-                  gradient={true}
-                  strokeOnly={!isActive}
-                  color="tertiary"
-                  colorVariant="bg"
-                  gradientWith="accent"
-                  gradientColorVariant="text"
-                  className="mr-2"
-                >
-                  <FileText />
-                </Icon>
+                <StandardIcon className="mr-2">
+                  <FileText className="h-4 w-4" />
+                </StandardIcon>
               ),
               submenu: [
                 {
                   label: "Entrevistas",
                   href: "/entrevistas",
                   icon: (isActive: boolean) => (
-                    <Icon
-                      size="sm"
-                      gradient={true}
-                      strokeOnly={!isActive}
-                      color="tertiary"
-                      colorVariant="bg"
-                      gradientWith="accent"
-                      gradientColorVariant="text"
-                      className="mr-2"
-                    >
-                      <MessageSquare />
-                    </Icon>
+                    <StandardIcon className="mr-2">
+                      <MessageSquare className="h-4 w-4" />
+                    </StandardIcon>
                   ),
                 },
                 {
                   label: "Listado de Transcripciones",
                   href: "/transcripciones",
                   icon: (isActive: boolean) => (
-                    <Icon
-                      size="sm"
-                      gradient={true}
-                      strokeOnly={!isActive}
-                      color="tertiary"
-                      colorVariant="bg"
-                      gradientWith="accent"
-                      gradientColorVariant="text"
-                      className="mr-2"
-                    >
-                      <FileSpreadsheet />
-                    </Icon>
+                    <StandardIcon className="mr-2">
+                      <FileSpreadsheet className="h-4 w-4" />
+                    </StandardIcon>
                   ),
                 },
                 {
                   label: "Matriz de Vaciado",
                   href: "/entrevistas/matriz",
                   icon: (isActive: boolean) => (
-                    <Icon
-                      size="sm"
-                      gradient={true}
-                      strokeOnly={!isActive}
-                      color="tertiary"
-                      colorVariant="bg"
-                      gradientWith="accent"
-                      gradientColorVariant="text"
-                      className="mr-2"
-                    >
-                      <Layers />
-                    </Icon>
+                    <StandardIcon className="mr-2">
+                      <Layers className="h-4 w-4" />
+                    </StandardIcon>
                   ),
                 },
               ],
@@ -234,36 +189,18 @@ export function Navbar() {
               label: "Artículos",
               href: "/articulos",
               icon: (isActive: boolean) => (
-                <Icon
-                  size="sm"
-                  gradient={true}
-                  strokeOnly={!isActive}
-                  color="tertiary"
-                  colorVariant="bg"
-                  gradientWith="accent"
-                  gradientColorVariant="text"
-                  className="mr-2"
-                >
-                  <BookOpen />
-                </Icon>
+                <StandardIcon className="mr-2">
+                  <BookOpen className="h-4 w-4" />
+                </StandardIcon>
               ),
               submenu: [
                 {
                   label: "Preclasificación",
                   href: "/articulos/preclasificacion",
                   icon: (isActive: boolean) => (
-                    <Icon
-                      size="sm"
-                      gradient={true}
-                      strokeOnly={!isActive}
-                      color="tertiary"
-                      colorVariant="bg"
-                      gradientWith="accent"
-                      gradientColorVariant="text"
-                      className="mr-2"
-                    >
-                      <LayoutDashboard />
-                    </Icon>
+                    <StandardIcon className="mr-2">
+                      <LayoutDashboard className="h-4 w-4" />
+                    </StandardIcon>
                   ),
                 },
               ],
@@ -278,93 +215,48 @@ export function Navbar() {
               label: "Datos Maestros",
               href: "/datos-maestros",
               icon: (isActive: boolean) => (
-                <Icon
-                  size="sm"
-                  gradient={true}
-                  strokeOnly={!isActive}
-                  color="tertiary"
-                  colorVariant="bg"
-                  gradientWith="accent"
-                  gradientColorVariant="text"
-                  className="mr-2"
-                >
-                  <Settings />
-                </Icon>
+                <StandardIcon className="mr-2">
+                  <Settings className="h-4 w-4" />
+                </StandardIcon>
               ),
               submenu: [
-  {
-    label: "Miembros Proyecto",
-    href: "/datos-maestros/miembros",
-    icon: (isActive: boolean) => (
-      <Icon
-        size="sm"
-        gradient={true}
-        strokeOnly={!isActive}
-        color="tertiary"
-        colorVariant="bg"
-        gradientWith="accent"
-        gradientColorVariant="text"
-        className="mr-2"
-      >
-        <UserPlus />
-      </Icon>
-    ),
-  },
-  {
-    label: "Roles Proyecto",
-    href: "/datos-maestros/roles",
-    icon: (isActive: boolean) => (
-      <Icon
-        size="sm"
-        gradient={true}
-        strokeOnly={!isActive}
-        color="tertiary"
-        colorVariant="bg"
-        gradientWith="accent"
-        gradientColorVariant="text"
-        className="mr-2"
-      >
-        <ShieldCheck />
-      </Icon>
-    ),
-  },
-  {
-    label: "lotes",
-    href: "/datos-maestros/lote",
-    icon: (isActive: boolean) => (
-      <Icon
-        size="sm"
-        gradient={true}
-        strokeOnly={!isActive}
-        color="tertiary"
-        colorVariant="bg"
-        gradientWith="accent"
-        gradientColorVariant="text"
-        className="mr-2"
-      >
-        <Layers />
-      </Icon>
-    ),
-  },
-  {
-    label: "Dimensiones",
-    href: "/datos-maestros/dimensiones",
-    icon: (isActive: boolean) => (
-      <Icon
-        size="sm"
-        gradient={true}
-        strokeOnly={!isActive}
-        color="tertiary"
-        colorVariant="bg"
-        gradientWith="accent"
-        gradientColorVariant="text"
-        className="mr-2"
-      >
-        <LayoutGrid />
-      </Icon>
-    ),
-  },
-],
+                {
+                  label: "Miembros Proyecto",
+                  href: "/datos-maestros/miembros",
+                  icon: (isActive: boolean) => (
+                    <StandardIcon className="mr-2">
+                      <UserPlus className="h-4 w-4" />
+                    </StandardIcon>
+                  ),
+                },
+                {
+                  label: "Roles Proyecto",
+                  href: "/datos-maestros/roles",
+                  icon: (isActive: boolean) => (
+                    <StandardIcon className="mr-2">
+                      <ShieldCheck className="h-4 w-4" />
+                    </StandardIcon>
+                  ),
+                },
+                {
+                  label: "lotes",
+                  href: "/datos-maestros/lote",
+                  icon: (isActive: boolean) => (
+                    <StandardIcon className="mr-2">
+                      <Layers className="h-4 w-4" />
+                    </StandardIcon>
+                  ),
+                },
+                {
+                  label: "Dimensiones",
+                  href: "/datos-maestros/dimensiones",
+                  icon: (isActive: boolean) => (
+                    <StandardIcon className="mr-2">
+                      <LayoutGrid className="h-4 w-4" />
+                    </StandardIcon>
+                  ),
+                },
+              ],
             },
           ]
         : []),
@@ -463,14 +355,14 @@ export function Navbar() {
                       Sustrato.ai
                     </span>
                   </div>
-                  <Text
+                  <StandardText
                     size="xs"
-                    color="neutral"
-                    colorVariant="pure"
+                    colorScheme="neutral"
+                    colorShade="pure"
                     className="mt-0.5"
                   >
                     cultivando sinergias humano·AI
-                  </Text>
+                  </StandardText>
                 </div>
               </Link>
             </motion.div>
@@ -521,23 +413,23 @@ export function Navbar() {
                         {item.icon(
                           pathname === item.href || isSubmenuActive(item)
                         )}
-                        <Text
-                          color={
+                        <StandardText
+                          colorScheme={
                             pathname === item.href || isSubmenuActive(item)
                               ? MENU_HEADER_TEXT_COLOR_ACTIVE
                               : MENU_HEADER_TEXT_COLOR_INACTIVE
                           }
-                          colorVariant={
+                          colorShade={
                             pathname === item.href || isSubmenuActive(item)
                               ? MENU_HEADER_TEXT_VARIANT_ACTIVE
                               : MENU_HEADER_TEXT_VARIANT_INACTIVE
                           }
                           weight="medium"
                           size="sm"
-                          fontType="heading"
+                          variant="heading"
                         >
                           {item.label}
-                        </Text>
+                        </StandardText>
                         <motion.div
                           variants={arrowVariants}
                           initial="closed"
@@ -546,18 +438,11 @@ export function Navbar() {
                           }
                           transition={{ duration: 0.2 }}
                         >
-                          <Icon
-                            size="xs"
-                            gradient={true}
-                            strokeOnly={true}
-                            color="tertiary"
-                            colorVariant="bg"
-                            gradientWith="accent"
-                            gradientColorVariant="text"
-                            className="ml-1"
+                          <StandardIcon
+                            className="ml-1 transition-transform duration-200 ease-in-out group-hover:text-gray-700 dark:group-hover:text-gray-200"
                           >
-                            <ChevronDown />
-                          </Icon>
+                            <ChevronDown className="h-3 w-3" />
+                          </StandardIcon>
                         </motion.div>
                       </motion.button>
                       <AnimatePresence>
@@ -615,13 +500,13 @@ export function Navbar() {
                                     }
                                   >
                                     {subitem.icon(pathname === subitem.href)}
-                                    <Text
-                                      color={
+                                    <StandardText
+                                      colorScheme={
                                         pathname === subitem.href
                                           ? SUBMENU_TEXT_COLOR_ACTIVE
                                           : SUBMENU_TEXT_COLOR_INACTIVE
                                       }
-                                      colorVariant={
+                                      colorShade={
                                         pathname === subitem.href
                                           ? SUBMENU_TEXT_VARIANT_ACTIVE
                                           : SUBMENU_TEXT_VARIANT_INACTIVE
@@ -632,10 +517,10 @@ export function Navbar() {
                                           : "normal"
                                       }
                                       size="sm"
-                                      fontType="body"
+                                      variant="default"
                                     >
                                       {subitem.label}
-                                    </Text>
+                                    </StandardText>
                                   </Link>
                                 </motion.div>
                               ))}
@@ -680,23 +565,23 @@ export function Navbar() {
                         }
                       >
                         {item.icon(pathname === item.href)}
-                        <Text
-                          color={
+                        <StandardText
+                          colorScheme={
                             pathname === item.href
                               ? MENU_HEADER_TEXT_COLOR_ACTIVE
                               : MENU_HEADER_TEXT_COLOR_INACTIVE
                           }
-                          colorVariant={
+                          colorShade={
                             pathname === item.href
                               ? MENU_HEADER_TEXT_VARIANT_ACTIVE
                               : MENU_HEADER_TEXT_VARIANT_INACTIVE
                           }
                           weight="medium"
                           size="sm"
-                          fontType="heading"
+                          variant="heading"
                         >
                           {item.label}
-                        </Text>
+                        </StandardText>
                         {item.disabled && (
                           <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">
                             Próximamente
@@ -718,9 +603,10 @@ export function Navbar() {
 
               <div className="md:hidden ml-2">
                 <motion.div whileTap={{ scale: 0.9 }}>
-                  <CustomButton
-                    variant="ghost"
-                    size="icon"
+                  <StandardButton
+                    styleType="ghost"
+                    iconOnly={true}
+                    size="md" 
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                     onMouseDown={(e) =>
                       ripple(
@@ -730,19 +616,18 @@ export function Navbar() {
                       )
                     }
                     aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+                    tooltip={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"} 
                   >
-                    <Icon
-                      size="md"
-                      gradient={true}
-                      strokeOnly={true}
-                      color="tertiary"
-                      colorVariant="bg"
-                      gradientWith="accent"
-                      gradientColorVariant="text"
-                    >
-                      {mobileMenuOpen ? <X /> : <Menu />}
-                    </Icon>
-                  </CustomButton>
+                    {mobileMenuOpen ? (
+                      <StandardIcon className="h-6 w-6">
+                        <X className="h-full w-full" />
+                      </StandardIcon>
+                    ) : (
+                      <StandardIcon className="h-6 w-6">
+                        <Menu className="h-full w-full" />
+                      </StandardIcon>
+                    )}
+                  </StandardButton>
                 </motion.div>
               </div>
             </div>
@@ -771,10 +656,8 @@ export function Navbar() {
                   className="flex justify-around items-center py-2 border-b mb-2"
                   style={{
                     borderColor: navTokens.submenu.border,
-                    borderBottomWidth: navTokens.submenu.border ? "1px" : "0",
-                    borderBottomStyle: navTokens.submenu.border
-                      ? "solid"
-                      : "none",
+                    borderTopWidth: navTokens.submenu.border ? "1px" : "0",
+                    borderTopStyle: navTokens.submenu.border ? "solid" : "none",
                   }}
                 >
                   <FontThemeSwitcher />
@@ -819,23 +702,23 @@ export function Navbar() {
                             {item.icon(
                               pathname === item.href || isSubmenuActive(item)
                             )}
-                            <Text
-                              color={
+                            <StandardText
+                              colorScheme={
                                 pathname === item.href || isSubmenuActive(item)
                                   ? MENU_HEADER_TEXT_COLOR_ACTIVE
                                   : MENU_HEADER_TEXT_COLOR_INACTIVE
                               }
-                              colorVariant={
+                              colorShade={
                                 pathname === item.href || isSubmenuActive(item)
                                   ? MENU_HEADER_TEXT_VARIANT_ACTIVE
                                   : MENU_HEADER_TEXT_VARIANT_INACTIVE
                               }
                               weight="medium"
                               size="base"
-                              fontType="heading"
+                              variant="heading"
                             >
                               {item.label}
-                            </Text>
+                            </StandardText>
                           </span>
                           <motion.div
                             variants={arrowVariants}
@@ -845,17 +728,11 @@ export function Navbar() {
                             }
                             transition={{ duration: 0.2 }}
                           >
-                            <Icon
-                              size="xs"
-                              gradient={true}
-                              strokeOnly={true}
-                              color="tertiary"
-                              colorVariant="bg"
-                              gradientWith="accent"
-                              gradientColorVariant="text"
+                            <StandardIcon
+                              className="ml-1 transition-transform duration-200 ease-in-out group-hover:text-gray-700 dark:group-hover:text-gray-200"
                             >
-                              <ChevronDown />
-                            </Icon>
+                              <ChevronDown className="h-3 w-3" />
+                            </StandardIcon>
                           </motion.div>
                         </motion.button>
                         <AnimatePresence>
@@ -904,13 +781,13 @@ export function Navbar() {
                                     }
                                   >
                                     {subitem.icon(pathname === subitem.href)}
-                                    <Text
-                                      color={
+                                    <StandardText
+                                      colorScheme={
                                         pathname === subitem.href
                                           ? SUBMENU_TEXT_COLOR_ACTIVE
                                           : SUBMENU_TEXT_COLOR_INACTIVE
                                       }
-                                      colorVariant={
+                                      colorShade={
                                         pathname === subitem.href
                                           ? SUBMENU_TEXT_VARIANT_ACTIVE
                                           : SUBMENU_TEXT_VARIANT_INACTIVE
@@ -921,10 +798,10 @@ export function Navbar() {
                                           : "normal"
                                       }
                                       size="sm"
-                                      fontType="body"
+                                      variant="default"
                                     >
                                       {subitem.label}
-                                    </Text>
+                                    </StandardText>
                                   </Link>
                                 </motion.div>
                               ))}
@@ -971,23 +848,23 @@ export function Navbar() {
                           }
                         >
                           {item.icon(pathname === item.href)}
-                          <Text
-                            color={
+                          <StandardText
+                            colorScheme={
                               pathname === item.href
                                 ? MENU_HEADER_TEXT_COLOR_ACTIVE
                                 : MENU_HEADER_TEXT_COLOR_INACTIVE
                             }
-                            colorVariant={
+                            colorShade={
                               pathname === item.href
                                 ? MENU_HEADER_TEXT_VARIANT_ACTIVE
                                 : MENU_HEADER_TEXT_VARIANT_INACTIVE
                             }
                             weight="medium"
                             size="base"
-                            fontType="heading"
+                            variant="heading"
                           >
                             {item.label}
-                          </Text>
+                          </StandardText>
                           {item.disabled && (
                             <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">
                               Próximamente

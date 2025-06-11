@@ -1,7 +1,7 @@
 // app/page.tsx
 "use client"; // Necesario para usar hooks como useAuth
 
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 import { PageBackground } from "@/components/ui/page-background";
 import { Divider } from "@/components/ui/divider";
 import { HomeCards } from "@/components/HomeCards";
@@ -47,49 +47,49 @@ export default function Home() {
       {/* Hero Section */}
       <section className="text-center pt-20 pb-8 md:pt-24 md:pb-10">
         <div className="flex flex-col items-center mb-4">
-          <Text
+          <StandardText
             variant="label"
-            color="primary"
-            colorVariant="pure"
+            colorScheme="primary"
+            colorShade="pure"
             className="uppercase tracking-wider mb-3 font-bold"
             fontType="heading"
           >
             {clientName}
-          </Text>
+          </StandardText>
           <Divider variant="gradient" size="md" className="mb-8" />
         </div>
 
-        <Text
-          as="h1"
+        <StandardText
+          asElement="h1"
           variant="heading"
           size="5xl"
-          gradient="primary"
+          applyGradient="primary"
           className="mb-2"
           fontType="heading"
         >
           {projectName}
-        </Text>
+        </StandardText>
 
-        <Text
-          as="h2"
+        <StandardText
+          asElement="h2"
           variant="subheading"
           size="3xl"
-          gradient="secondary"
+          applyGradient="secondary"
           className="mb-6"
           fontType="heading"
         >
           {departmentName}
-        </Text>
+        </StandardText>
 
-        <Text
+        <StandardText
           variant="subtitle"
           size="xl"
-          color="neutral"
+          colorScheme="neutral"
           className="max-w-2xl mx-auto"
           fontType="body"
         >
           {projectDescription}
-        </Text>
+        </StandardText>
       </section>
 
       {/* Cards Section */}
@@ -97,10 +97,10 @@ export default function Home() {
 
       {/* Footer Section */}
       <div className="text-center mt-8">
-        <Text variant="muted" className="mb-1" fontType="body">
+        <StandardText variant="muted" className="mb-1" fontType="body">
           {/* Asumiendo que este texto también puede ser dinámico o al menos referenciar los nombres dinámicos */}
           {footerProjectText}
-        </Text>
+        </StandardText>
       </div>
     </PageBackground>
   );

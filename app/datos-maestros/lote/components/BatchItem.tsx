@@ -3,6 +3,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React from "react";
 import { motion } from "framer-motion";
+import { StandardText } from "@/components/ui/StandardText";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -17,14 +18,14 @@ interface BatchItemProps {
 //#endregion ![def]
 
 //#region [main] - 🔧 COMPONENT 🔧
-export const BatchItem: React.FC<BatchItemProps> = ({
+export const BatchItem = ({
 	color,
 	border,
 	textColor,
 	number,
 	size = 48,
 	animate = false,
-}) => {
+}: BatchItemProps): JSX.Element => {
 	//#region [render] - 🎨 RENDER SECTION 🎨
 	return (
 		<motion.div
@@ -47,15 +48,15 @@ export const BatchItem: React.FC<BatchItemProps> = ({
 				border: `2.5px solid ${border}`,
 				boxShadow: `0 2px 8px 0 rgba(0,0,0,0.07)`,
 			}}>
-			<span
+			<StandardText
+				weight="bold"
 				style={{
 					color: textColor,
-					fontWeight: 700,
 					fontSize: typeof size === "number" ? size * 0.45 : "1.2em",
 					userSelect: "none",
 				}}>
-				{number}
-			</span>
+				{number.toString()}
+			</StandardText>
 		</motion.div>
 	);
 	//#endregion ![render]

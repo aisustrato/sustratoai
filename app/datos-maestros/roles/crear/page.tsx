@@ -11,8 +11,9 @@ import { StandardCard, type StandardCardColorScheme } from "@/components/ui/Stan
 import { PageTitle } from "@/components/ui/page-title";
 import { ShieldPlus, AlertTriangle, ArrowLeft, User } from "lucide-react"; // Añadido ArrowLeft
 import { toast as sonnerToast } from "sonner";
-import { Text } from "@/components/ui/text";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardText } from "@/components/ui/StandardText";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import Link from "next/link";
 import { PageBackground } from "@/components/ui/page-background";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo"; // Para estado de carga opcional
@@ -114,16 +115,18 @@ export default function CrearRolPage() {
         >
           <StandardCard.Header>
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100">
-              <AlertTriangle className="h-6 w-6 text-warning-600" aria-hidden="true" />
+              <StandardIcon colorScheme="warning" size="md">
+                <AlertTriangle aria-hidden="true" />
+              </StandardIcon>
             </div>
             <PageTitle title="Proyecto Requerido" className="mt-4" />
           </StandardCard.Header>
           <StandardCard.Content>
-            <Text>{pageError}</Text>
+            <StandardText>{pageError}</StandardText>
           </StandardCard.Content>
           <StandardCard.Footer>
-            <Link href="/" passHref> {/* O a la página de selección de proyectos */}
-              <CustomButton variant="outline">Ir a Inicio</CustomButton>
+            <Link href="/" passHref>
+              <StandardButton styleType="outline" leftIcon={ArrowLeft}>Ir a Inicio</StandardButton>
             </Link>
           </StandardCard.Footer>
         </StandardCard>
@@ -147,18 +150,20 @@ export default function CrearRolPage() {
         >
           <StandardCard.Header>
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100">
-              <AlertTriangle className="h-6 w-6 text-warning-600" aria-hidden="true" />
+              <StandardIcon colorScheme="warning" size="md">
+                <AlertTriangle aria-hidden="true" />
+              </StandardIcon>
             </div>
             <PageTitle title="Acceso Denegado" className="mt-4" />
           </StandardCard.Header>
           <StandardCard.Content>
-            <Text>
+            <StandardText>
               No tienes los permisos necesarios para crear nuevos roles en este proyecto.
-            </Text>
+            </StandardText>
           </StandardCard.Content>
           <StandardCard.Footer>
             <Link href="/datos-maestros/roles" passHref>
-              <CustomButton variant="outline">Volver al Listado de Roles</CustomButton>
+              <StandardButton styleType="outline" leftIcon={ArrowLeft}>Volver al Listado de Roles</StandardButton>
             </Link>
           </StandardCard.Footer>
         </StandardCard>
@@ -197,7 +202,9 @@ export default function CrearRolPage() {
             {pageError && proyectoActual?.id && ( // Mostrar error de envío si hay proyecto
               <div className="mb-4 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive-foreground">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5"/>
+                  <StandardIcon size="sm" colorScheme="inherit">
+                    <AlertTriangle/>
+                  </StandardIcon>
                   <span>{pageError}</span>
                 </div>
               </div>

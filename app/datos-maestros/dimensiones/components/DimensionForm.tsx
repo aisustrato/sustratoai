@@ -11,10 +11,11 @@ import { Input } from "@/components/ui/input";
 import { TextArea } from "@/components/ui/textarea";
 import { SelectCustom, type SelectOption } from "@/components/ui/select-custom";
 import { FormField } from "@/components/ui/form-field";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
-import { AlertCircle, HelpCircle, Lightbulb, ListChecks, PlusCircle, Trash2, CheckCircle } from "lucide-react";
+import { StandardIcon } from "@/components/ui/StandardIcon";
+import { StandardText } from "@/components/ui/StandardText";
+import { AlertCircle, HelpCircle, Lightbulb, PlusCircle, Trash2, CheckCircle } from "lucide-react";
 import { BadgeCustom } from "@/components/ui/badge-custom";
 //#endregion ![head]
 
@@ -174,9 +175,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
             className="p-0"
           >
             <StandardCard.Header className="pb-3">
-              <Text variant="subheading" weight="medium" color="primary">
+              <StandardText size="lg" weight="medium" colorScheme="primary">
                 Definición de la Dimensión
-              </Text>
+              </StandardText>
             </StandardCard.Header>
             <StandardCard.Content className="space-y-5">
               <FormField
@@ -224,9 +225,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                   )}
                 />
                  {modo === "editar" && !!valoresIniciales?.type && (
-                    <Text variant="caption" color="muted" className="mt-1">
-                        El tipo de dimensión no se puede cambiar una vez creado.
-                    </Text>
+                    <StandardText size="xs" colorScheme="neutral" className="mt-1">
+                        Indica si la dimensión tendrá opciones predefinidas o será de respuesta abierta.
+                    </StandardText>
                 )}
               </FormField>
 
@@ -273,31 +274,32 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
             >
               <StandardCard.Header className="pb-3 flex justify-between items-start"> {/* items-start para alinear mejor si los textos tienen alturas diferentes */}
                 <div className="flex-grow"> {/* Div para que el título y contador estén juntos y a la izquierda */}
-                    <Text as="div" variant="subheading" weight="medium" color="primary"> {/* Usar 'as="div"' para evitar anidación p > p */}
+                    <StandardText asElement="div" size="lg" weight="medium" colorScheme="primary"> {/* Usar 'as="div"' para evitar anidación p > p */}
                         Opciones de Clasificación
-                    </Text>
+                    </StandardText>
                     {optionsArray && optionsArray.length > 0 && (
-                        <Text variant="caption" color="muted" className="mt-0.5 block"> {/* block para que ocupe su línea */}
-                            {optionsArray.length} {optionsArray.length === 1 ? "opción definida" : "opciones definidas"}
-                        </Text>
+                        <StandardText size="xs" colorScheme="neutral" className="mt-0.5 block">
+                          Define los valores posibles si es de selección múltiple.
+                        </StandardText>
                     )}
                 </div>
                 {!isReadOnlyEffective && (
-                  <CustomButton type="button" variant="outline" size="sm" onClick={addNewOption} leftIcon={<PlusCircle className="h-4 w-4" />}>
+                  <StandardButton type="button" styleType="outline" size="sm" onClick={addNewOption}>
+                    <StandardIcon><PlusCircle /></StandardIcon>
                     {optionFields.length === 0 ? "Añadir Opción" : "Añadir Otra Opción"}
-                  </CustomButton>
+                  </StandardButton>
                 )}
               </StandardCard.Header>
               <StandardCard.Content className="space-y-3">
                 {errors.options && !Array.isArray(errors.options) && errors.options.message && optionFields.length === 0 && (
-                     <Text color="danger" className="text-sm flex items-center gap-2 -mt-2 mb-2">
-                        <AlertCircle className="h-4 w-4"/> {errors.options.message}
-                    </Text>
+                     <StandardText colorScheme="danger" className="text-sm flex items-center gap-2 -mt-2 mb-2">
+                        <StandardIcon><AlertCircle className="h-4 w-4"/></StandardIcon> {errors.options.message}
+                    </StandardText>
                 )}
                 {optionFields.length === 0 && !isReadOnlyEffective && !errors.options?.message && (
-                  <Text color="muted" className="text-sm italic">
-                    Añade al menos una opción para este tipo de dimensión.
-                  </Text>
+                  <StandardText colorScheme="neutral" className="text-sm italic">
+                    No se han definido opciones aún. Agrega la primera.
+                  </StandardText>
                 )}
                 {optionFields.map((item, index) => ( // 'item' en lugar de 'field' para evitar confusión con field de Controller
                   <div key={item.id} className="flex items-center gap-2">
@@ -317,13 +319,13 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                         />
                         {/* Mostrar el mensaje de error del campo específico directamente */}
                         {errors.options?.[index]?.value?.message && (
-                            <Text variant="caption" color="danger" className="mt-1 ml-1 block">
+                            <StandardText size="xs" colorScheme="danger" className="mt-1 ml-1 block">
                                 {errors.options?.[index]?.value?.message}
-                            </Text>
+                            </StandardText>
                         )}
                     </div>
-                    {!isReadOnlyEffective && ( <CustomButton type="button" variant="ghost" color="danger" size="sm" onClick={() => removeOption(index)}> <Trash2 className="h-4 w-4" /> </CustomButton> )}
-                    {getFieldSuccessState("options", index, "value") && !isReadOnlyEffective && ( <CheckCircle className="h-5 w-5 text-success" /> )}
+                    {!isReadOnlyEffective && ( <StandardButton type="button" styleType="ghost" colorScheme="danger" size="sm" onClick={() => removeOption(index)}><StandardIcon><Trash2 /></StandardIcon></StandardButton> )}
+                    {getFieldSuccessState("options", index, "value") && !isReadOnlyEffective && ( <StandardIcon><CheckCircle className="h-5 w-5 text-success" /></StandardIcon> )}
                   </div>
                 ))}
               </StandardCard.Content>
@@ -341,24 +343,27 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
           >
             <StandardCard.Header className="pb-3 flex justify-between items-start">
               <div className="flex-grow">
-                <Text as="div" variant="subheading" weight="medium" color="primary" className="flex items-center gap-2">
+                <StandardText asElement="div" size="lg" weight="medium" colorScheme="primary" className="flex items-center gap-2">
                   Preguntas Guía <BadgeCustom variant="neutral"  subtle>Opcional</BadgeCustom>
-                </Text>
+                </StandardText>
                  {questionsArray && questionsArray.length > 0 && (
-                    <Text variant="caption" color="muted" className="mt-0.5 block">
+                    <StandardText size="xs" colorScheme="neutral" className="mt-0.5 block">
                         {questionsArray.length} {questionsArray.length === 1 ? "pregunta definida" : "preguntas definidas"}
-                    </Text>
+                    </StandardText>
                 )}
               </div>
               {!isReadOnlyEffective && (
-                  <CustomButton type="button" variant="outline" size="sm" onClick={addNewQuestion} leftIcon={<HelpCircle className="h-4 w-4" />}>
+                  <StandardButton type="button" styleType="outline" size="sm" onClick={addNewQuestion}>
+                    <StandardIcon><HelpCircle /></StandardIcon>
                     {questionFields.length === 0 ? "Añadir Pregunta" : "Añadir Otra Pregunta"}
-                  </CustomButton>
+                  </StandardButton>
                 )}
             </StandardCard.Header>
             <StandardCard.Content className="space-y-3">
             {questionFields.length === 0 && isReadOnlyEffective && (
-                <Text color="muted" className="text-sm italic">No se definieron preguntas guía.</Text>
+                <StandardText colorScheme="neutral" className="text-sm italic">
+                  No se han definido preguntas guía.
+                </StandardText>
             )}
             {questionFields.map((item, index) => (
                  <div key={item.id} className="flex items-start gap-2">
@@ -379,13 +384,13 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                         )}
                         />
                         {errors.questions?.[index]?.question?.message && (
-                            <Text variant="caption" color="danger" className="mt-1 ml-1 block">
+                            <StandardText size="xs" colorScheme="danger" className="mt-0.5 block">
                                 {errors.questions?.[index]?.question?.message}
-                            </Text>
+                            </StandardText>
                         )}
                     </div>
-                    {!isReadOnlyEffective && ( <CustomButton type="button" variant="ghost" color="danger"  onClick={() => removeQuestion(index)}  className="mt-1"> <Trash2 className="h-4 w-4" /> </CustomButton> )}
-                    {getFieldSuccessState("questions", index, "question") && !isReadOnlyEffective && ( <CheckCircle className="h-5 w-5 text-success mt-1" /> )}
+                    {!isReadOnlyEffective && ( <StandardButton type="button" styleType="ghost" colorScheme="danger" onClick={() => removeQuestion(index)} className="mt-1"><StandardIcon><Trash2 /></StandardIcon></StandardButton> )}
+                    {getFieldSuccessState("questions", index, "question") && !isReadOnlyEffective && ( <StandardIcon><CheckCircle className="h-5 w-5 text-success mt-1" /></StandardIcon> )}
                   </div>
             ))}
             </StandardCard.Content>
@@ -404,24 +409,27 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
           >
             <StandardCard.Header className="pb-3 flex justify-between items-start">
               <div className="flex-grow">
-                <Text as="div" variant="subheading" weight="medium" color="primary" className="flex items-center gap-2">
+                <StandardText asElement="div" size="lg" weight="medium" colorScheme="primary" className="flex items-center gap-2">
                   Ejemplos Ilustrativos <BadgeCustom variant="neutral" subtle>Opcional</BadgeCustom>
-                </Text>
+                </StandardText>
                 {examplesArray && examplesArray.length > 0 && (
-                    <Text variant="caption" color="muted" className="mt-0.5 block">
+                    <StandardText size="xs" colorScheme="neutral" className="mt-0.5 block">
                         {examplesArray.length} {examplesArray.length === 1 ? "ejemplo definido" : "ejemplos definidos"}
-                    </Text>
+                    </StandardText>
                 )}
               </div>
               {!isReadOnlyEffective && (
-                  <CustomButton type="button" variant="outline" size="sm" onClick={addNewExample} leftIcon={<Lightbulb className="h-4 w-4" />}>
+                  <StandardButton type="button" styleType="outline" size="sm" onClick={addNewExample}>
+                    <StandardIcon><Lightbulb /></StandardIcon>
                      {exampleFields.length === 0 ? "Añadir Ejemplo" : "Añadir Otro Ejemplo"}
-                  </CustomButton>
+                  </StandardButton>
                 )}
             </StandardCard.Header>
             <StandardCard.Content className="space-y-3">
             {exampleFields.length === 0 && isReadOnlyEffective && (
-                <Text color="muted" className="text-sm italic">No se definieron ejemplos.</Text>
+                <StandardText colorScheme="neutral" className="text-sm italic">
+                  No se definieron ejemplos.
+                </StandardText>
             )}
             {exampleFields.map((item, index) => (
                  <div key={item.id} className="flex items-start gap-2">
@@ -442,13 +450,13 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
                         )}
                         />
                         {errors.examples?.[index]?.example?.message && (
-                            <Text variant="caption" color="danger" className="mt-1 ml-1 block">
+                            <StandardText size="xs" colorScheme="danger" className="mt-1 ml-1 block">
                                 {errors.examples?.[index]?.example?.message}
-                            </Text>
+                            </StandardText>
                         )}
                     </div>
-                    {!isReadOnlyEffective && ( <CustomButton type="button" variant="ghost" color="danger" size="sm" onClick={() => removeExample(index)}  className="mt-1"> <Trash2 className="h-4 w-4" /> </CustomButton> )}
-                     {getFieldSuccessState("examples", index, "example") && !isReadOnlyEffective && ( <CheckCircle className="h-5 w-5 text-success mt-1" /> )}
+                    {!isReadOnlyEffective && ( <StandardButton type="button" styleType="ghost" colorScheme="danger" size="sm" onClick={() => removeExample(index)} className="mt-1"><StandardIcon><Trash2 /></StandardIcon></StandardButton> )}
+                     {getFieldSuccessState("examples", index, "example") && !isReadOnlyEffective && ( <StandardIcon><CheckCircle className="h-5 w-5 text-success mt-1" /></StandardIcon> )}
                   </div>
             ))}
             </StandardCard.Content>
@@ -458,15 +466,15 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
           {/* //#region [render_sub] - 🧱 BOTÓN SUBMIT 🧱 */}
           {modo !== "ver" && (
             <div className="flex justify-end pt-6">
-              <CustomButton
+              <StandardButton
                 type="submit"
-                color="primary"
+                colorScheme="primary"
                 size="lg"
                 loading={loading}
                 disabled={loading || (modo === "editar" && !dirtyFields) || (!isValid && isSubmitted) }
               >
                 {modo === "crear" ? "Crear Dimensión" : "Guardar Cambios"}
-              </CustomButton>
+              </StandardButton>
             </div>
           )}
           {/* //#endregion [render_sub] */}

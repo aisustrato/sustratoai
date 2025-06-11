@@ -4,8 +4,8 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useMemo } from "react";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardText } from "@/components/ui/StandardText";
+import { StandardButton } from "@/components/ui/StandardButton";
 import {
 	AlertTriangle,
 	Trash2,
@@ -16,6 +16,7 @@ import {
 	HelpCircle,
 	Layers,
 } from "lucide-react";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import type { BatchStatusEnum } from "@/lib/database.types";
 import { toast as sonnerToast } from "sonner";
 import { CustomDialog } from "@/components/ui/custom-dialog";
@@ -62,19 +63,19 @@ const statusIcons: Record<
 	Extract<BatchStatusEnum, string> | "default",
 	React.ReactNode
 > = {
-	pending: <Clock className="h-3 w-3" />,
-	in_progress: <Zap className="h-3 w-3" />,
+	pending: <StandardIcon><Clock className="h-3 w-3" /></StandardIcon>,
+	in_progress: <StandardIcon><Zap className="h-3 w-3" /></StandardIcon>,
 	ai_prefilled: (
-		<CheckCircle className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+		<StandardIcon><CheckCircle className="h-3 w-3 text-purple-600 dark:text-purple-400" /></StandardIcon>
 	),
 	discrepancies: (
-		<AlertOctagon className="h-3 w-3 text-orange-600 dark:text-orange-400" />
+		<StandardIcon><AlertOctagon className="h-3 w-3 text-orange-600 dark:text-orange-400" /></StandardIcon>
 	),
 	completed: (
-		<CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+		<StandardIcon><CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" /></StandardIcon>
 	),
-	error: <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />,
-	default: <HelpCircle className="h-3 w-3" />,
+	error: <StandardIcon><AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" /></StandardIcon>,
+	default: <StandardIcon><HelpCircle className="h-3 w-3" /></StandardIcon>,
 };
 
 // Clases de Tailwind para el Badge de estado (más simple)
@@ -137,9 +138,9 @@ export default function ProjectBatchesDisplay({
 		return (
 			<StandardCard styleType="subtle" disableShadowHover={true} hasOutline={false} accentPlacement="none">
 				<StandardCard.Content>
-					<Text className="text-muted-foreground text-center p-4">
-						Cargando estilos...
-					</Text>
+					<StandardText size="sm" className="mt-1 text-muted-foreground">
+						Cuando se generen lotes para este proyecto, aparecerán aquí.
+					</StandardText>
 				</StandardCard.Content>
 			</StandardCard>
 		);
@@ -151,15 +152,12 @@ export default function ProjectBatchesDisplay({
 		return (
 			<StandardCard styleType="subtle" disableShadowHover={true} hasOutline={false} accentPlacement="none">
 				<StandardCard.Content className="text-center py-10">
-					<Text
-						variant="subheading"
-						weight="medium"
-						className="text-muted-foreground">
-						No hay lotes creados para este proyecto.
-					</Text>
-					<Text size="sm" className="text-muted-foreground mt-2">
-						El simulador debería estar visible para crear nuevos lotes.
-					</Text>
+					<StandardText size="lg" weight="medium" className="mt-4 text-muted-foreground">
+						No hay lotes para mostrar en este proyecto.
+					</StandardText>
+					<StandardText size="sm" className="mt-1 text-muted-foreground">
+						Cuando se generen lotes para este proyecto, aparecerán aquí.
+					</StandardText>
 				</StandardCard.Content>
 			</StandardCard>
 		);
@@ -201,23 +199,23 @@ export default function ProjectBatchesDisplay({
 				>
 					<StandardCard.Header className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
 						<div>
-							<Text variant="heading" size="xl" weight="semibold" color="tertiary">
+							<StandardText size="xl" weight="semibold" colorScheme="tertiary">
 								Total: {lotes.length} lotes.
-							</Text>
+							</StandardText>
 						</div>
 						{mostrarBotonReset && (
 							<>
-								<CustomButton
+								<StandardButton
 									type="button"
-									color="danger"
-									variant="solid"
-									leftIcon={<Trash2 className="w-4 h-4" />}
-									className="ml-auto"
+									colorScheme="danger"
+									styleType="solid"
+									leftIcon={Trash2}
+									className="ml-auto w-4 h-4"
 									onClick={() => setDialogResetOpen(true)}
 									loading={isResetting}
 								>
 									Eliminar todos los lotes
-								</CustomButton>
+								</StandardButton>
 								<CustomDialog
 									open={dialogResetOpen}
 									onOpenChange={(open: boolean) => setDialogResetOpen(open)}
@@ -237,11 +235,9 @@ export default function ProjectBatchesDisplay({
 						{/* //#region [render_sub_legend] - MEMBER LEGEND 🎨 */}
 						{Object.keys(memberColorMap).length > 0 && (
 							<div className="mb-6 p-3 border dark:border-neutral-700 rounded-md bg-background/30">
-								<Text
-									weight="medium"
-									className="mb-2 text-sm text-muted-foreground">
-									Leyenda de Miembros:
-								</Text>
+								<StandardText weight="medium" className="mb-2 text-sm text-muted-foreground">
+								Leyenda de Miembros:
+							</StandardText>
 								<div className="flex flex-wrap gap-x-4 gap-y-2">
 									{Object.entries(memberColorMap)
 										.filter(([userId, _]) =>
@@ -265,7 +261,7 @@ export default function ProjectBatchesDisplay({
 															backgroundColor: colorInfo.solid,
 															border: `1px solid ${colorInfo.border}`,
 														}}></div>
-													<Text size="xs">{memberName}</Text>
+													<StandardText size="xs">{memberName}</StandardText>
 												</div>
 											);
 										})}
@@ -339,17 +335,17 @@ export default function ProjectBatchesDisplay({
 												className="text-xs"
 												side="top"
 												align="center">
-												<Text weight="bold" className="block mb-0.5">
+												<StandardText weight="bold" className="block mb-0.5">
 													Lote #{lote.batch_number}
 													{lote.name ? `: ${lote.name}` : ""}
-												</Text>
-												<Text className="block">
+												</StandardText>
+												<StandardText className="block">
 													Asignado a: {lote.assigned_to_member_name || "N/A"}
-												</Text>
-												<Text className="block">
+												</StandardText>
+												<StandardText className="block">
 													Artículos: {lote.article_count ?? "N/A"}
-												</Text>
-												<Text className="block">Estado: {lote.status}</Text>
+												</StandardText>
+												<StandardText className="block">Estado: {lote.status}</StandardText>
 											</TooltipContent>
 										</Tooltip>
 									</TooltipProvider>
@@ -363,23 +359,23 @@ export default function ProjectBatchesDisplay({
 							<div className="mt-6 p-3 bg-warning-50 dark:bg-warning-900/30 border-l-4 border-warning-500 dark:border-warning-400 rounded">
 								<div className="flex">
 									<div className="flex-shrink-0 pt-0.5">
-										<AlertTriangle
+										<StandardIcon><AlertTriangle
 											className="h-5 w-5 text-warning-600 dark:text-warning-400"
 											aria-hidden="true"
-										/>
+										/></StandardIcon>
 									</div>
 									<div className="ml-3">
-										<Text
+										<StandardText
 											weight="medium"
 											className="text-warning-800 dark:text-warning-200">
 											No se pueden eliminar los lotes masivamente
-										</Text>
-										<Text
+										</StandardText>
+										<StandardText
 											size="sm"
 											className="text-warning-700 dark:text-warning-300">
 											Uno o más lotes ya han sido iniciados (no están en estado
 											'pending').
-										</Text>
+										</StandardText>
 									</div>
 								</div>
 							</div>

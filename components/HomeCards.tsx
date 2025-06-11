@@ -1,207 +1,182 @@
 "use client";
 
-import { ProCard } from "@/components/ui/pro-card";
-import { Text } from "@/components/ui/text";
+import { StandardCard } from "@/components/ui/StandardCard";
+import { StandardText } from "@/components/ui/StandardText";
 import Link from "next/link";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
 import {
   FileText,
   BookOpen,
-  ExternalLink,
   ArrowRight,
   Sparkles,
-} from "@/components/ui/lucide-icons";
+} from "lucide-react";
 import { BadgeCustom } from "@/components/ui/badge-custom";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 
 export function HomeCards() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
       {/* Módulo de Transcripciones - Completamente implementado */}
-      <ProCard
-        variant="primary"
-        border="top"
+      <StandardCard
+        colorScheme="primary"
+        accentPlacement="top"
         animateEntrance
         className="overflow-hidden hover:shadow-md transition-shadow duration-300"
       >
-        <ProCard.Header>
+        <StandardCard.Header>
           <div className="flex items-center justify-between">
-            <ProCard.Title
+            <StandardCard.Title
               className="flex items-center gap-2"
-              fontType="heading"
             >
-              <FileText
-                color="primary"
-                size="md"
-                gradient={true}
-                gradientWith="accent"
-              />
+              <StandardIcon colorScheme="primary" size="md">
+                 <FileText />
+              </StandardIcon>
               Transcripciones
-            </ProCard.Title>
+            </StandardCard.Title>
             <BadgeCustom variant="success" subtle bordered>
               Activo
             </BadgeCustom>
           </div>
-          <ProCard.Subtitle
-            color="secondary"
-            colorVariant="text"
-            fontType="body"
-          >
-            Gestión y análisis de transcripciones de entrevistas
-          </ProCard.Subtitle>
-        </ProCard.Header>
+          <StandardCard.Subtitle>
+            <StandardText size="sm" colorScheme="secondary">
+              Gestión y análisis de transcripciones de entrevistas
+            </StandardText>
+          </StandardCard.Subtitle>
+        </StandardCard.Header>
 
-        <ProCard.Content>
-          <Text
-            variant="default"
-            size="sm"
-            className="mb-6 text-muted-foreground"
-            fontType="body"
-          >
-            Herramienta para la gestión, análisis y visualización de
-            transcripciones de entrevistas. Permite cargar transcripciones,
-            normalizarlas y organizarlas en una matriz de vaciado.
-          </Text>
+        <StandardCard.Content>
+          <div className="mb-6 text-muted-foreground">
+            <StandardText size="sm">
+              Herramienta para la gestión, análisis y visualización de
+              transcripciones de entrevistas. Permite cargar transcripciones,
+              normalizarlas y organizarlas en una matriz de vaciado.
+            </StandardText>
+          </div>
 
-          <ProCard variant="tertiary" border="none" className="mb-6">
-            <ProCard.Content>
-              <Text
-                variant="label"
+          <StandardCard colorScheme="tertiary" className="mb-6">
+            <StandardCard.Content>
+              <StandardText
                 className="mb-2"
-                fontType="heading"
                 weight="semibold"
               >
                 Funcionalidades principales:
-              </Text>
+              </StandardText>
 
               <ul className="space-y-1 list-disc list-inside">
-                <Text as="li" size="sm" fontType="body">
-                  Gestión de fundaciones y entrevistados
-                </Text>
-                <Text as="li" size="sm" fontType="body">
-                  Carga y validación de transcripciones
-                </Text>
-                <Text as="li" size="sm" fontType="body">
-                  Normalización de textos
-                </Text>
-                <Text as="li" size="sm" fontType="body">
-                  Matriz de vaciado para análisis
-                </Text>
+                <li>
+                  <StandardText asElement="span" size="sm">
+                    Gestión de fundaciones y entrevistados
+                  </StandardText>
+                </li>
+                <li>
+                  <StandardText asElement="span" size="sm">
+                    Carga y validación de transcripciones
+                  </StandardText>
+                </li>
+                <li>
+                  <StandardText asElement="span" size="sm">
+                    Normalización de textos
+                  </StandardText>
+                </li>
+                <li>
+                  <StandardText asElement="span" size="sm">
+                    Matriz de vaciado para análisis
+                  </StandardText>
+                </li>
               </ul>
-            </ProCard.Content>
-          </ProCard>
-        </ProCard.Content>
+            </StandardCard.Content>
+          </StandardCard>
+        </StandardCard.Content>
 
-        <ProCard.Actions>
+        <StandardCard.Actions>
           <Link href="/entrevistas" className="w-full">
-            <CustomButton className="w-full group" variant="solid">
-              <Text fontType="heading" size="sm">
+            <StandardButton className="w-full group" styleType="solid" rightIcon={ArrowRight}>
                 Acceder al módulo
-              </Text>
-              <ArrowRight
-                color="default"
-                colorVariant="pure"
-                size="sm"
-                className="ml-2 transition-transform group-hover:translate-x-1"
-              />
-            </CustomButton>
+            </StandardButton>
           </Link>
-        </ProCard.Actions>
-      </ProCard>
+        </StandardCard.Actions>
+      </StandardCard>
 
       {/* Módulo de Artículos Académicos - Implementando los componentes */}
-      <ProCard
-        variant="secondary"
-        border="top"
+      <StandardCard
+        colorScheme="secondary"
+        accentPlacement="top"
         animateEntrance
         selected={true}
       >
-        <ProCard.Header>
+        <StandardCard.Header>
           <div className="flex items-center justify-between">
-            <ProCard.Title
+            <StandardCard.Title
               className="flex items-center gap-2"
-              fontType="heading"
             >
-              <BookOpen
-                color="secondary"
-                size="md"
-                gradient={true}
-                gradientWith="accent"
-              />
+              <StandardIcon colorScheme="secondary" size="md">
+                <BookOpen />
+              </StandardIcon>
               Artículos Académicos
-            </ProCard.Title>
+            </StandardCard.Title>
             <BadgeCustom variant="warning" bordered subtle>
               En construcción
             </BadgeCustom>
           </div>
-          <ProCard.Subtitle
-            color="tertiary"
-            colorVariant="text"
-            fontType="body"
-          >
-            Preclasificación de artículos académicos
-          </ProCard.Subtitle>
-        </ProCard.Header>
+          <StandardCard.Subtitle>
+            <StandardText size="sm" colorScheme="tertiary">
+              Preclasificación de artículos académicos
+            </StandardText>
+          </StandardCard.Subtitle>
+        </StandardCard.Header>
 
-        <ProCard.Content>
-          <Text
-            variant="default"
-            size="sm"
-            className="mb-6 text-muted-foreground"
-            fontType="body"
-          >
-            Sistema para la preclasificación, categorización y análisis de
-            artículos académicos. Facilita la organización y revisión
-            sistemática de literatura científica.
-          </Text>
+        <StandardCard.Content>
+          <div className="mb-6 text-muted-foreground">
+            <StandardText size="sm">
+              Sistema para la preclasificación, categorización y análisis de
+              artículos académicos. Facilita la organización y revisión
+              sistemática de literatura científica.
+            </StandardText>
+          </div>
 
-          <ProCard variant="tertiary" border="none"
-          shadow="none"
-          disableShadowHover
-          className="mb-6">
-            <ProCard.Content>
-              <Text
-                variant="label"
+          <StandardCard colorScheme="tertiary"
+            shadow="none"
+            className="mb-6">
+            <StandardCard.Content>
+              <StandardText
                 className="mb-2"
-                fontType="heading"
                 weight="semibold"
-                
               >
                 Funcionalidades previstas:
-              </Text>
+              </StandardText>
 
               <ul className="space-y-1 list-disc list-inside">
-                <Text as="li" size="sm" fontType="body">
-                  Importación de metadatos de artículos
-                </Text>
-                <Text as="li" size="sm" fontType="body">
-                  Categorización por temas y relevancia
-                </Text>
-                <Text as="li" size="sm" fontType="body">
-                  Extracción automática de conceptos clave
-                </Text>
-                <Text as="li" size="sm" fontType="body">
-                  Generación de reportes de revisión
-                </Text>
+                <li>
+                  <StandardText asElement="span" size="sm">
+                    Importación de metadatos de artículos
+                  </StandardText>
+                </li>
+                <li>
+                  <StandardText asElement="span" size="sm">
+                    Categorización por temas y relevancia
+                  </StandardText>
+                </li>
+                <li>
+                  <StandardText asElement="span" size="sm">
+                    Extracción automática de conceptos clave
+                  </StandardText>
+                </li>
+                <li>
+                  <StandardText asElement="span" size="sm">
+                    Generación de reportes de revisión
+                  </StandardText>
+                </li>
               </ul>
-            </ProCard.Content>
-          </ProCard>
-        </ProCard.Content>
+            </StandardCard.Content>
+          </StandardCard>
+        </StandardCard.Content>
 
-        <ProCard.Actions>
-          <CustomButton className="w-full" variant="outline" disabled>
-            <Text fontType="heading" size="sm">
+        <StandardCard.Actions>
+          <StandardButton className="w-full" styleType="outline" disabled rightIcon={Sparkles}>
               Próximamente
-            </Text>
-            <Sparkles
-              color="accent"
-              size="sm"
-              className="ml-2"
-              gradient={true}
-              gradientWith="secondary"
-            />
-          </CustomButton>
-        </ProCard.Actions>
-      </ProCard>
+          </StandardButton>
+        </StandardCard.Actions>
+      </StandardCard>
     </div>
   );
 }

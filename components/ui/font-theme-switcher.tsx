@@ -10,7 +10,7 @@ import { useTheme } from "@/app/theme-provider";
 import { useColorTokens } from "@/hooks/use-color-tokens";
 import { fontThemeConfig } from "@/lib/fonts";
 import { generateFontSelectorTokens } from "@/lib/theme/components/font-selector-tokens";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 
 import { useAuth } from "@/app/auth-provider";
 import { actualizarPreferenciasUI } from "@/app/actions/proyecto-actions";
@@ -129,9 +129,9 @@ export function FontThemeSwitcher() {
 
   return (
     <div className="relative flex items-center gap-2">
-      <Text variant="caption" color="neutral" colorVariant="textShade" className="text-xs opacity-50 whitespace-nowrap">
+      <StandardText variant="caption" colorScheme="neutral" colorShade="textShade" className="text-xs opacity-50 whitespace-nowrap">
         Fuente:
-      </Text>
+      </StandardText>
       <motion.button
         ref={buttonRef}
         whileHover={{ scale: 1.02 }} // El estado de carga ya no afecta el hover/tap del botón principal

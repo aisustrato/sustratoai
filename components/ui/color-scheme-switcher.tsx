@@ -6,7 +6,7 @@ import { useTheme } from "@/app/theme-provider";
 import { Check, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRef, useState, useEffect, useMemo } from "react";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 import { Icon } from "@/components/ui/icon";
 import { generateFontSelectorTokens } from "@/lib/theme/components/font-selector-tokens"; // Asumo que estos tokens también son útiles aquí o se pueden adaptar
 
@@ -146,9 +146,9 @@ export function ColorSchemeSwitcher() {
 
   return (
     <div className="relative flex items-center gap-1">
-      <Text variant="caption" color="neutral" colorVariant="textShade" className="text-xs opacity-50 whitespace-nowrap">
+      <StandardText variant="caption" colorScheme="neutral" colorShade="textShade" className="text-xs opacity-50 whitespace-nowrap">
         Tema:
-      </Text>
+      </StandardText>
       
       <motion.button
         ref={buttonRef}
@@ -225,9 +225,9 @@ export function ColorSchemeSwitcher() {
                 >
                   <div className="flex items-center gap-2">
                     <div className={`h-3 w-3 rounded-full ${schemeItem.bgColorClass}`} />
-                    <Text color="secondary" colorVariant="text" size="xs">
+                    <StandardText colorScheme="secondary" colorShade="text" size="xs">
                       {schemeItem.name}
-                    </Text>
+                    </StandardText>
                   </div>
                   {colorScheme === schemeItem.id && (
                     <Icon size="xs" color="primary" colorVariant="pure">

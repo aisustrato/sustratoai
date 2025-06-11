@@ -9,7 +9,7 @@ export type { ColorShade };
 
 export type ColorScheme = "blue" | "green" | "orange";
 export type Mode = "light" | "dark";
-
+export type ColorSchemeVariant = 'primary' | 'secondary' | 'tertiary' | 'accent' | 'neutral' | 'white' | 'success' | 'warning' | 'danger';
 // Definición de variantes válidas para ProCard y como claves en AppColorTokens
 export type ProCardVariant =
   | "primary"

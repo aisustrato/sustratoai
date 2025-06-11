@@ -3,6 +3,8 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { SidebarNav } from "@/components/ui/sidebar-nav";
+import { StandardText } from "@/components/ui/StandardText";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { Database, Users, Building2, Briefcase, UserPlus, ShieldCheck, Layers, LayoutGrid } from "lucide-react";
 //#endregion ![head]
 
@@ -59,8 +61,8 @@ export default function DatosMaestrosLayout({
         <aside className="fixed top-14 z-30 -ml-2 hidden h-[calc(100vh-3.5rem)] w-full shrink-0 md:sticky md:block">
           <div className="h-full py-6 pl-8 pr-6 lg:py-8">
             <div className="flex items-center gap-2 mb-8">
-              <Database className="h-5 w-5" />
-              <h2 className="text-lg font-semibold">Datos Maestros</h2>
+              <StandardIcon><Database className="h-5 w-5" /></StandardIcon>
+              <StandardText asElement="h2" size="lg" weight="semibold">Datos Maestros</StandardText>
             </div>
             <SidebarNav items={sidebarNavItems} />
           </div>

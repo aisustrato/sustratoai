@@ -11,10 +11,11 @@ import {
 } from "@/lib/actions/dimension-actions";
 import { PageBackground } from "@/components/ui/page-background";
 import { PageTitle } from "@/components/ui/page-title";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 import { AlertTriangle, ArrowLeft, Edit, Eye } from "lucide-react"; // Eye para ver
 import {
   DimensionForm,
@@ -131,16 +132,17 @@ export default function VerDimensionPage() {
                 accentPlacement="none" // No border prop originally
             >
                 <StandardCard.Header className="items-center flex flex-col text-center">
-                    <AlertTriangle className="h-12 w-12 text-danger-fg mb-4" />
-                    <Text variant="subheading" weight="bold" color="danger">
-                        Error al Cargar Dimensión
-                    </Text>
+                    <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
+                    <StandardText size="lg" weight="bold" colorScheme="danger">
+                      Error al Cargar Dimensión
+                    </StandardText>
                 </StandardCard.Header>
-                <StandardCard.Content className="text-center"><Text>{errorPage}</Text></StandardCard.Content>
+                <StandardCard.Content className="text-center"><StandardText>{errorPage}</StandardText></StandardCard.Content>
                 <StandardCard.Footer className="flex justify-center">
-                     <CustomButton onClick={handleVolver} leftIcon={<ArrowLeft />} variant="outline" color="danger">
+                     <StandardButton onClick={handleVolver} styleType="outline" colorScheme="danger">
+                     <StandardIcon><ArrowLeft /></StandardIcon>
                         Volver a Dimensiones
-                    </CustomButton>
+                    </StandardButton>
                 </StandardCard.Footer>
             </StandardCard>
         </div>
@@ -160,11 +162,12 @@ export default function VerDimensionPage() {
                     hasOutline={false} // No border prop originally
                     accentPlacement="none" // No border prop originally
                 >
-                    <Text variant="subheading">Dimensión no disponible</Text>
-                    <Text color="muted" className="mt-2">No se pudo cargar la información de la dimensión. Intenta volver a la lista.</Text>
-                     <CustomButton onClick={handleVolver} leftIcon={<ArrowLeft />} variant="outline" className="mt-4">
-                        Volver a Dimensiones
-                    </CustomButton>
+                    <StandardText size="lg" weight="semibold">Dimensión no disponible</StandardText>
+                    <StandardText colorScheme="neutral" className="mt-2">No se pudo cargar la información de la dimensión. Intenta volver a la lista.</StandardText>
+                     <StandardButton onClick={handleVolver} styleType="outline" className="mt-4">
+                         <StandardIcon><ArrowLeft /></StandardIcon>
+                         Volver a Dimensiones
+                    </StandardButton>
                 </StandardCard>
             </div>
         </PageBackground>
@@ -187,15 +190,15 @@ export default function VerDimensionPage() {
             showBackButton={{ href: "/datos-maestros/dimensiones" }}
             actions={ // Botón de editar como una acción del PageTitle
               puedeGestionarDimensiones ? (
-                <CustomButton
+                <StandardButton
                   onClick={handleEditar}
-                  leftIcon={<Edit className="h-4 w-4" />}
-                  color="secondary" // o 'primary' si prefieres
-                  variant="outline"
+                  colorScheme="secondary" // o 'primary' si prefieres
+                  styleType="outline"
                   size="sm"
                 >
+                  <StandardIcon><Edit /></StandardIcon>
                   Editar Dimensión
-                </CustomButton>
+                </StandardButton>
               ) : undefined
             }
           />

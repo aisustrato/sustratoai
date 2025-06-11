@@ -8,7 +8,8 @@ import BatchSimulatorPage from './components/BatchSimulatorPage';
 import ProjectBatchesDisplay, { type DisplayableBatch } from './components/ProjectBatchesDisplay'; 
 import { PageBackground } from '@/components/ui/page-background';
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
-import { Text } from '@/components/ui/text';
+import { StandardText } from '@/components/ui/StandardText';
+import { StandardIcon } from '@/components/ui/StandardIcon';
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { PageTitle } from '@/components/ui/page-title';
 import { Boxes, AlertTriangle } from 'lucide-react';
@@ -164,11 +165,11 @@ export default function LotesOrquestadorPage() {
             >
                 <StandardCard.Header className="items-center flex flex-col">
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100 mb-4">
-                        <AlertTriangle className="h-6 w-6 text-warning-600" />
+                        <StandardIcon><AlertTriangle className="h-6 w-6 text-warning-600" /></StandardIcon>
                     </div>
-                    <Text variant="subheading" weight="bold" color="warning">Proyecto No Seleccionado</Text>
+                    <StandardText size="lg" weight="bold" colorScheme="warning">Proyecto No Seleccionado</StandardText>
                 </StandardCard.Header>
-                <StandardCard.Content><Text>Por favor, selecciona un proyecto activo para gestionar los lotes.</Text></StandardCard.Content>
+                <StandardCard.Content><StandardText>Por favor, selecciona un proyecto activo para gestionar los lotes.</StandardText></StandardCard.Content>
             </StandardCard>
         </PageBackground>
     );

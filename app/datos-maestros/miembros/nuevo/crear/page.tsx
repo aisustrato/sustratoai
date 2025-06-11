@@ -12,10 +12,11 @@ import {
   type ProjectRoleInfo,
   type ResultadoOperacion, // Para tipar el resultado de la acción
 } from "@/lib/actions/member-actions";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
 import { PageHeader } from "@/components/common/page-header";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import { ArrowLeft, ShieldPlus, UserPlus } from "lucide-react"; // Icono para agregar
+import { ArrowLeft, UserPlus } from "lucide-react"; // Icono para agregar
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import {
   MiembroForm,
   type MiembroFormValues,
@@ -182,13 +183,14 @@ export default function CrearMiembroPage() {
               title="Error de Configuración"
               description={errorPage}
               actions={
-                <CustomButton
+                <StandardButton
                   onClick={handleVolver}
-                  leftIcon={<ArrowLeft className="h-4 w-4"/>}
-                  variant="outline"
+                  
+                  styleType="outline"
                 >
+                  <StandardIcon><ArrowLeft /></StandardIcon>
                   Volver a Miembros
-                </CustomButton>
+                </StandardButton>
               }
             />
           </div>

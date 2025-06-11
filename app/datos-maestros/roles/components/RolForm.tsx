@@ -14,10 +14,11 @@ import { z } from "zod";
 
 import { Input } from "@/components/ui/input";
 import { TextArea } from "@/components/ui/textarea";
-import { CustomCheck } from "@/components/ui/custom-check";
+import { StandardCheckbox } from "@/components/ui/StandardCheckbox";
 import { FormField } from "@/components/ui/form-field";
-import { CustomButton } from "@/components/ui/custom-button";
-import { Text } from "@/components/ui/text";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
+import { StandardText } from "@/components/ui/StandardText";
 import {
 	Shield,
 	ListChecks, // FileText no se usaba
@@ -70,14 +71,14 @@ const permissionFields: {
 //#endregion ![def]
 
 //#region [main] - 🔧 COMPONENT 🔧
-export const RolForm: React.FC<RolFormProps> = ({
+export const RolForm = ({
 	modo,
 	valoresIniciales,
 	onSubmit,
 	disabled = false,
 	loading = false,
   isEditingForm = false, // Valor por defecto para la nueva prop
-}) => {
+}: RolFormProps) => {
 	//#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
 	// permissionFields constant has been moved outside the component.
 
@@ -202,9 +203,9 @@ export const RolForm: React.FC<RolFormProps> = ({
 
 			{/* //#region [render_sub] - PERMISOS ESPECÍFICOS 🛡️ */}
 			<div>
-				<Text variant="label" weight="medium" className="mb-3 block">
+				<StandardText variant="label" weight="medium" className="mb-3 block">
 					Permisos Específicos del Rol
-				</Text>
+				</StandardText>
 				<div className="space-y-4 rounded-md border p-4 shadow-sm bg-card">
 					{permissionFields.map((perm) => (
 						<FormField
@@ -216,23 +217,24 @@ export const RolForm: React.FC<RolFormProps> = ({
 							<Controller
 								name={perm.name} 
 								control={form.control}
-								render={({ field, fieldState }) => ( // fieldState añadido para el error
-									<CustomCheck
+								render={({ field, fieldState }) => (
+									<StandardCheckbox
 										id={`rf-${perm.name}`}
-										checked={field.value} 
-										onChange={(e) => field.onChange(e.target.checked)}
-                    onBlur={field.onBlur}
-                    ref={field.ref}       
+										checked={field.value}
+										onChange={field.onChange}
+										onBlur={field.onBlur}
 										disabled={isReadOnlyEffective}
-                    label={
-                        <span className="flex items-center gap-2">
-                            <perm.icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            {perm.label}
-                        </span>
-                    }
-                    description={isReadOnlyEffective ? undefined : perm.hint}
-                    error={!isReadOnlyEffective && !!fieldState.error} // Pasar error al CustomCheck
-                    className="w-full"
+										label={
+											<span className="flex items-center gap-2">
+												<StandardIcon>
+													<perm.icon className="h-4 w-4" />
+												</StandardIcon>
+												{perm.label}
+											</span>
+										}
+										description={isReadOnlyEffective ? undefined : perm.hint}
+										error={!isReadOnlyEffective && !!fieldState.error}
+										className="w-full"
 									/>
 								)}
 							/>
@@ -245,20 +247,20 @@ export const RolForm: React.FC<RolFormProps> = ({
 			{/* //#region [render_sub] - ACTION BUTTONS 💾 */}
 			{modo !== "ver" && (
 				<div className="flex justify-end pt-4">
-					<CustomButton
+					<StandardButton
 						type="submit"
-						color="primary"
+						colorScheme="primary"
 						loading={loading || form.formState.isSubmitting}
 						disabled={
 							isReadOnlyEffective ||
 							loading ||
 							form.formState.isSubmitting ||
 							(modo === "editar" && !form.formState.isDirty)
-						}>
-						{modo === "crear"
-							? loading || form.formState.isSubmitting ? "Creando Rol..." : "Crear Rol"
-							: loading || form.formState.isSubmitting ? "Guardando Cambios..." : "Guardar Cambios"}
-					</CustomButton>
+						}
+						loadingText={modo === "crear" ? "Creando Rol..." : "Guardando Cambios..."}
+					>
+						{modo === "crear" ? "Crear Rol" : "Guardar Cambios"}
+					</StandardButton>
 				</div>
 			)}
 			{/* //#endregion [render_sub] */}

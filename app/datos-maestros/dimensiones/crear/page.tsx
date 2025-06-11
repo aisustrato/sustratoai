@@ -13,11 +13,12 @@ import {
 } from "@/lib/actions/dimension-actions";
 import { PageBackground } from "@/components/ui/page-background";
 import { PageTitle } from "@/components/ui/page-title";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Text } from "@/components/ui/text";
-import { AlertTriangle, ArrowLeft, LayoutGrid, PlusCircle } from "lucide-react"; // LayoutGrid para dimensiones
+import { StandardText } from "@/components/ui/StandardText";
+import { AlertTriangle, ArrowLeft, PlusCircle } from "lucide-react"; // LayoutGrid para dimensiones
 import {
   DimensionForm,
   type DimensionFormValues,
@@ -171,23 +172,23 @@ export default function CrearDimensionPage() {
                 // styleType removed
             >
                 <StandardCard.Header className="items-center flex flex-col text-center">
-                    <AlertTriangle className="h-12 w-12 text-danger-fg mb-4" />
-                    <Text variant="subheading" weight="bold" color="danger">
+                    <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
+                    <StandardText variant="subheading" weight="bold" colorScheme="danger">
                         {puedeGestionarDimensiones ? "Error de Configuración" : "Acceso Denegado"}
-                    </Text>
+                    </StandardText>
                 </StandardCard.Header>
                 <StandardCard.Content className="text-center">
-                    <Text>{errorPage}</Text>
+                    <StandardText>{errorPage}</StandardText>
                 </StandardCard.Content>
                 <StandardCard.Footer className="flex justify-center">
-                     <CustomButton
+                     <StandardButton
                         onClick={handleVolver}
-                        leftIcon={<ArrowLeft className="h-4 w-4" />}
-                        variant="outline"
-                        color="danger"
+                        styleType="outline"
+                        colorScheme="danger"
                     >
+                        <StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
                         Volver a Dimensiones
-                    </CustomButton>
+                    </StandardButton>
                 </StandardCard.Footer>
             </StandardCard>
         </div>
@@ -200,7 +201,7 @@ export default function CrearDimensionPage() {
     return (
          <PageBackground>
             <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Text>Cargando o acceso no permitido...</Text>
+                <StandardText>Cargando o acceso no permitido...</StandardText>
             </div>
         </PageBackground>
     );
