@@ -18,8 +18,7 @@ type ProjectMemberUpdate =
 
 type GetUserByEmailRpcArgs =
 	Database["public"]["Functions"]["get_user_by_email"]["Args"];
-type GetUserByEmailRpcReturn =
-	Database["public"]["Functions"]["get_user_by_email"]["Returns"];
+
 type HasPermissionRpcArgs =
 	Database["public"]["Functions"]["has_permission_in_project"]["Args"];
 type HasPermissionRpcReturn =

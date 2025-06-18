@@ -373,7 +373,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 				>
 					{(hasActualLeadingIcon || hasSelectedOptionIcon) && (
 						<div className={`absolute top-0 h-full flex items-center pointer-events-none ${ size === "sm" ? "left-2" : size === "lg" ? "left-3.5" : "left-2.5"}`}>
-							<StandardIcon size={iconInternalSize} colorScheme="inherit">
+							<StandardIcon styleType="outline" size={iconInternalSize} colorScheme="primary" colorShade="text">
 								{React.createElement( hasSelectedOptionIcon && selectedOptions[0].icon ? selectedOptions[0].icon : leadingIcon! )}
 							</StandardIcon>
 						</div>
@@ -385,13 +385,13 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 									<div key={option.value} className={cn( "rounded px-1.5 py-0.5 flex items-center gap-1 max-w-[calc(100%-4px)]", "bg-[var(--select-option-selected-bg)] text-[var(--select-option-selected-text)]" )}>
 										{option.icon && (
 											<span className="flex-shrink-0 mr-1">
-												<StandardIcon size="xs" colorScheme="inherit">{React.createElement(option.icon)}</StandardIcon>
+												<StandardIcon styleType="outline" size="xs" colorScheme="primary">{React.createElement(option.icon)}</StandardIcon>
 											</span>
 										)}
                                         <StandardText size="xs" weight="medium" truncate>{option.label}</StandardText>
 										{clearable && !disabled && !readOnly && (
 											<button type="button" onClick={(e) => handleClear(e, option.value)} className={cn("cursor-pointer flex-shrink-0 ml-1 p-0.5 rounded-full", "hover:bg-[rgba(255,255,255,0.2)]")} aria-label={`Quitar ${option.label}`}>
-												<StandardIcon size="xs" colorScheme="inherit"><X /></StandardIcon>
+												<StandardIcon styleType="outline" size="xs" colorScheme="primary"><X /></StandardIcon>
 											</button>
 										)}
 									</div>
@@ -407,7 +407,9 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 					<div className="absolute right-1.5 top-0 h-full flex items-center gap-0.5">
 						{clearable && (
 							<button type="button" onClick={handleClear} className="rounded-full p-0.5 hover:bg-[rgba(0,0,0,0.05)] transition-colors flex items-center justify-center mr-0.5" aria-label="Limpiar selección">
-								<StandardIcon size={iconInternalSize} colorScheme="inherit"><X /></StandardIcon>
+								<StandardIcon styleType="outline" size={iconInternalSize} colorScheme="primary">
+									<X />
+								</StandardIcon>
 							</button>
 						)}
 						<div className="flex items-center justify-center p-0.5 rounded cursor-pointer" style={{ backgroundColor: "var(--select-chevron-button-bg)" }} onClick={(e) => { e.stopPropagation(); if (!disabled && !readOnly) { setIsOpen(!isOpen); if (!isOpen) selectClickableRef.current?.focus(); } }}>
@@ -418,7 +420,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
                                     exit={{ opacity: 0, rotate: isOpen ? 180 : -180, scale: 0.8 }}
                                     transition={{ duration: 0.2 }}
                                 >
-									<StandardIcon size={iconInternalSize} colorScheme="inherit">
+									<StandardIcon styleType="outline" size={iconInternalSize} colorScheme={colorScheme}>
 										{isOpen ? <ChevronUp /> : <ChevronDown />}
 									</StandardIcon>
 								</motion.div>
@@ -453,7 +455,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 											<div className="flex items-center flex-1 overflow-hidden gap-2">
 												{option.icon && (
 													<span className="flex-shrink-0 flex items-center">
-														<StandardIcon size={iconInternalSize} colorScheme="inherit">
+														<StandardIcon styleType="outline" size={iconInternalSize} colorScheme="primary" colorShade="text">
 															{React.createElement(option.icon)}
 														</StandardIcon>
 													</span>
@@ -470,7 +472,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 												</div>
 											</div>
 											{isSelected && !option.disabled && (
-												<StandardIcon size={iconInternalSize} colorScheme="inherit"><Check /></StandardIcon>
+												<StandardIcon 	styleType="outline" size={iconInternalSize} colorScheme={colorScheme}><Check /></StandardIcon>
 											)}
 										</motion.div>
 									);

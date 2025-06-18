@@ -1,5 +1,5 @@
 import React from "react";
-import { Text } from "@/components/ui/text";
+import { StandardText } from "@/components/ui/StandardText";
 
 interface PageHeaderProps {
   title: string;
@@ -19,7 +19,7 @@ export function PageHeader({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         {description && (
-          <Text className="text-muted-foreground mt-1">{description}</Text>
+          <StandardText colorShade="subtle" className="mt-1">{description}</StandardText>
         )}
       </div>
       {actions && <div className="flex-shrink-0">{actions}</div>}

@@ -10,7 +10,8 @@ import { obtenerRolesDelProyecto } from "@/lib/actions/proyect-role-actions";
 import type { ProjectRoleRow } from "@/lib/actions/proyect-role-actions"; // Corregido el nombre del archivo
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { ProTable } from "@/components/ui/pro-table";
+import { StandardTable } from "@/components/ui/StandardTable";
+import { StandardBadge } from "@/components/ui/StandardBadge";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import {
@@ -25,14 +26,9 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { EmptyState } from "@/components/common/empty-state";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import { PageBackground } from "@/components/ui/page-background";
-import { PageTitle } from "@/components/ui/page-title";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
+import { StandardTooltip } from "@/components/ui/StandardTooltip";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 //#endregion ![head]
@@ -129,35 +125,37 @@ export default function RolesPage() {
 		value: boolean;
 		tooltipText: string;
 	}) => (
-		<TooltipProvider delayDuration={100}>
-			<Tooltip>
-				<TooltipTrigger asChild>
-					<span className="flex justify-center items-center w-full">
-						{value ? (
-							<StandardIcon colorScheme="success" size="sm">
-								<CheckSquare />
-							</StandardIcon>
-						) : (
-							<StandardIcon colorScheme="neutral" size="sm">
-								<XSquare />
-							</StandardIcon>
-						)}
-					</span>
-				</TooltipTrigger>
-				<TooltipContent side="top" className="text-xs max-w-xs">
-					<p>{tooltipText}</p>
-				</TooltipContent>
-			</Tooltip>
-		</TooltipProvider>
+		<StandardTooltip
+			delayDuration={100}
+			side="top"
+			className="text-xs max-w-xs"
+			trigger={
+				<span className="flex justify-center items-center w-full">
+					{value ? (
+						<StandardIcon colorScheme="success" size="sm">
+							<CheckSquare />
+						</StandardIcon>
+					) : (
+						<StandardIcon colorScheme="danger" size="sm">
+							<XSquare />
+						</StandardIcon>
+					)}
+				</span>
+			}
+		>
+			<StandardText preset="caption">
+				{tooltipText}
+			</StandardText>
+		</StandardTooltip>
 	);
 
 	const columnas: ColumnDef<ProjectRoleRow>[] = [
 		{
 			accessorKey: "role_name",
 			header: () => <StandardText weight="semibold">Nombre del Rol</StandardText>,
-			cell: (info) => <StandardText>{String(info.getValue())}</StandardText>,
+			cell: (info) => <StandardBadge size="md" colorScheme="primary">{String(info.getValue())}</StandardBadge>,
 			meta: {
-				className: "min-w-[150px] w-1/5", // Ajustar ancho
+				size: 200, // Ajustar ancho
 			},
 		},
 
@@ -171,7 +169,9 @@ export default function RolesPage() {
 					tooltipText="Permite gestionar datos maestros (miembros, roles, etc.)"
 				/>
 			),
-			meta: { className: "text-center w-[100px]" },
+			meta: {
+				align: "center",
+			},
 		},
 		{
 			accessorKey: "can_create_batches",
@@ -182,7 +182,9 @@ export default function RolesPage() {
 					tooltipText="Permite crear nuevos lotes de trabajo o análisis"
 				/>
 			),
-			meta: { className: "text-center w-[100px]" },
+			meta: {
+				align: "center",
+			},
 		},
 		{
 			accessorKey: "can_upload_files",
@@ -193,7 +195,9 @@ export default function RolesPage() {
 					tooltipText="Permite subir archivos al proyecto"
 				/>
 			),
-			meta: { className: "text-center w-[100px]" },
+			meta: {
+				align: "center",
+			},
 		},
 		{
 			accessorKey: "can_bulk_edit_master_data",
@@ -204,7 +208,9 @@ export default function RolesPage() {
 					tooltipText="Permite editar datos maestros de forma masiva"
 				/>
 			),
-			meta: { className: "text-center w-[100px]" },
+			meta: {
+				align: "center",
+			},
 		},
 		{
 			id: "actions",
@@ -221,7 +227,9 @@ export default function RolesPage() {
 							tooltip="Ver detalles"
 							leftIcon={Eye}
 							iconOnly={true}
-						/>
+						>
+							Ver
+						</StandardButton>
 						{puedeGestionarRoles && (
 							<>
 								<StandardButton
@@ -232,7 +240,9 @@ export default function RolesPage() {
 									tooltip="Editar rol"
 									leftIcon={PenLine}
 									iconOnly={true}
-								/>
+									>
+									Editar	
+								</StandardButton>
 								<StandardButton
 									styleType="ghost"
 									colorScheme="danger"
@@ -241,15 +251,17 @@ export default function RolesPage() {
 									tooltip="Eliminar rol"
 									leftIcon={Trash2}
 									iconOnly={true}
-								/>
+								>
+									Eliminar
+								</StandardButton>
 							</>
 						)}
 					</div>
 				);
 			},
 			meta: {
-				className: "text-right sticky right-0 bg-background z-10 shadow-sm", // Para fijar y asegurar visibilidad
-				isFixed: true, // Asumiendo que ProTable lo soporta
+				align: "right",
+				isSticky: "right",
 			},
 		},
 	];
@@ -257,10 +269,10 @@ export default function RolesPage() {
 
 	//#region [render] - 🎨 RENDER SECTION 🎨
 	return (
-		<PageBackground>
+		<StandardPageBackground>
 			<div className="container mx-auto py-6">
 				<div className="space-y-6">
-					<PageTitle
+					<StandardPageTitle
 						title="Roles del Proyecto"
 						subtitle={`Gestión de roles y permisos para el proyecto ${
 							proyectoActual?.name || "actual"
@@ -297,9 +309,9 @@ export default function RolesPage() {
 						<StandardCard
 							disableShadowHover={true}
 							styleType="subtle"
-							colorScheme="secondary"
+							colorScheme="primary"
 							accentPlacement="top"
-							accentColorScheme="neutral"
+							accentColorScheme="primary"
 							shadow="md"
 							className="overflow-hidden hover:shadow-md transition-shadow duration-300"
 						>
@@ -313,7 +325,7 @@ export default function RolesPage() {
 							>
 								<StandardCard.Header>
 									<StandardText
-										variant="subheading"
+										preset="subheading"
 										colorScheme="danger"
 										className="flex items-center gap-2">
 										<StandardIcon colorScheme="danger"><AlertCircle className="h-5 w-5" /></StandardIcon> Error al Cargar Roles
@@ -353,9 +365,9 @@ export default function RolesPage() {
 						<StandardCard
 							disableShadowHover={true}
 							styleType="subtle"
-							colorScheme="secondary"
+							colorScheme="primary"
 							accentPlacement="top"
-							accentColorScheme="neutral"
+							accentColorScheme="primary"
 							shadow="md"
 							className="overflow-hidden hover:shadow-md transition-shadow duration-300"
 						>
@@ -368,19 +380,20 @@ export default function RolesPage() {
 								shadow="none"
 								disableShadowHover={true}
 							>
-								<ProTable<ProjectRoleRow>
+								<StandardTable<ProjectRoleRow>
 									data={roles}
 									columns={columnas}
-									showColumnSelector={true} // Mostrar selector de columnas
-									stickyHeader={true}
-								/>
+									filterPlaceholder="Buscar por nombre de rol..."
+								>
+									<StandardTable.Table />
+								</StandardTable>
 							</StandardCard>
 						</StandardCard>
 					)}
 					{/* //#endregion [render_sub] */}
 				</div>
 			</div>
-		</PageBackground>
+		</StandardPageBackground>
 	);
 	//#endregion ![render]
 }

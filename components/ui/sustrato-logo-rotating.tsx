@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState, useRef } from "react";
+import { motion } from "framer-motion";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useTheme } from "next-themes";
 
 // Definición de colores por tema
@@ -89,8 +89,6 @@ export function SustratoLogoRotating({
   // Cuando se establece el siguiente tema, iniciamos la transición gradual
   useEffect(() => {
     if (!nextTheme) return;
-
-    const themes: ("blue" | "green" | "orange")[] = ["blue", "green", "orange"];
 
     // Comenzamos la transición de color
     const startTime = performance.now();
@@ -317,7 +315,7 @@ export function SustratoLogoWithTextRotating({
   });
 
   // Definición de colores por tema
-  const themeColors = {
+  const themeColors = useMemo(() => ({
     blue: {
       primary: "#3D7DF6",
       secondary: "#3B82F6",
@@ -330,7 +328,7 @@ export function SustratoLogoWithTextRotating({
       primary: "#F59E0B",
       secondary: "#F59E0B",
     },
-  };
+  }), []);
 
   // Actualizar los colores cuando cambie el tema global
   useEffect(() => {
@@ -340,7 +338,7 @@ export function SustratoLogoWithTextRotating({
       primary: themeColors[currentTheme].primary,
       accent: "#8A4EF6", // Mantener el acento púrpura
     });
-  }, [theme]);
+  }, [theme, themeColors]);
 
   // Tamaño del texto según el tamaño del logo
   const getTextSize = () => {

@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     // Continuar con el procesamiento de la solicitud
     const body = (await request.json()) as RequestBody;
     const articles = body.articles;
-    const modelName = body.model || "gemini-pro"; // Default to gemini-pro if not specified
+    const modelName = body.model || "gemini-1.5-pro"; // Default to gemini-1.5-pro if not specified
 
     console.log(`📝 Modelo solicitado: ${modelName}`);
     console.log(`📝 Artículos a procesar: ${articles?.length || 0}`);
@@ -90,14 +90,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar/normalizar el modelo (usar gemini-pro si el modelo solicitado no es compatible)
-    const supportedModels = ["gemini-pro", "gemini-1.0-pro"];
+    const supportedModels = ["gemini-1.5-pro", "gemini-1.5-flash"];
     const normalizedModel = supportedModels.includes(modelName)
       ? modelName
-      : "gemini-pro";
+      : "gemini-1.5-pro";
 
     if (normalizedModel !== modelName) {
       console.log(
-        `⚠️ Modelo solicitado "${modelName}" no soportado, usando "gemini-pro" como alternativa`
+        `⚠️ Modelo solicitado "${modelName}" no soportado, usando "gemini-1.5-pro" como alternativa`
       );
     }
 

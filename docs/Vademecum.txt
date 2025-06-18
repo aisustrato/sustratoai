@@ -1,0 +1,44 @@
+
+
+### 🌱 Vademécum Anti-Bucles: Principios para la Depuración Fractal (v1.0)
+
+**Propósito:** Este documento captura las lecciones aprendidas durante la "Odisea del Slider", una intensa sesión de depuración que nos forzó a refinar nuestra filosofía de trabajo. Su objetivo es servir como una guía para futuros colaboradores (humanos e IA) para diagnosticar problemas complejos, evitar bucles de frustración y transformar cada "desafinación" en sabiduría para el ecosistema.
+
+---
+
+#### **I. Principio de la Duda Metódica: ¿La Desafinación está en la Nota o en el Instrumento?**
+
+Cuando un componente se comporta de forma visualmente impredecible, a pesar de que la lógica de su código parece correcta, la primera hipótesis debe ser una "guerra civil de estilos".
+
+* **El Síntoma:** Estilos que aparecen y desaparecen, propiedades que no se aplican (como `box-shadow` o `border`), comportamientos que ocurren solo una vez.
+* **La Causa Probable:** Un conflicto de especificidad entre los estilos base de una librería "headless" (como Radix UI), las clases de un framework de utilidades (como Tailwind CSS) y los estilos en línea aplicados desde JavaScript.
+* **La Estrategia Anti-Loop:**
+    1.  **Cuestionar el Enfoque:** No dar por sentado que un método de estilización (ej. clases de Tailwind) es el correcto para todas las partes de un componente complejo.
+    2.  **Aislar para Vencer:** Si se sospecha de un conflicto, adoptar una estrategia de "aislamiento total" para el elemento problemático. Esto implica mover **toda** su definición visual a una única fuente de verdad (como un objeto de estilo en JS), eliminando por completo la otra (ej. la prop `className`).
+    3.  **Usar Caminos Alternativos:** Si una propiedad CSS (`box-shadow`) demuestra ser conflictiva, no insistir. Buscar una propiedad alternativa que logre el mismo efecto visual (`outline`). La predictibilidad siempre triunfa sobre la convención.
+
+#### **II. Principio de la Verdad del DOM: El Inspector como Oráculo**
+
+Lo que vemos en la pantalla puede mentir. Un elemento puede existir pero ser invisible (`z-index`, `overflow`), o puede que simplemente no exista en absoluto.
+
+* **El Síntoma:** Un elemento (como un `tooltip`) que "debería estar ahí" pero no es visible.
+* **La Causa Probable:** O bien el elemento está siendo ocultado por una regla de CSS, o la lógica condicional que lo renderiza está evaluando a `false`.
+* **La Estrategia Anti-Loop:**
+    1.  **No Confiar en la Vista:** Antes de depurar el CSS de un elemento "invisible", hay que confirmar su existencia.
+    2.  **Acudir al Oráculo:** La primera acción debe ser siempre abrir el Inspector de Elementos del navegador.
+    3.  **Hacer la Pregunta Correcta:** Buscar el `div` o elemento en el árbol del DOM.
+        * **Si el elemento no está en el DOM:** El problema es 100% lógico. La condición de renderizado (`&&`) es falsa. Hay que depurar los estados o props de esa condición.
+        * **Si el elemento sí está en el DOM:** El problema es 100% de estilo. Hay que depurar su CSS computado: `z-index`, `overflow` en sus padres, `opacity`, `position`, etc.
+
+#### **III. Principio del Cambio de Escala: ¿Y si el Problema no soy Yo?**
+
+Cuando un componente aislado parece perfecto, su lógica es sólida, y aun así falla en la práctica, es momento de dejar de mirar la "nota" y empezar a analizar la "acústica de la sala".
+
+* **El Síntoma:** Un bucle de depuración donde todas las teorías a nivel de componente fallan. El componente "debería funcionar".
+* **La Causa Probable:** El entorno de pruebas (nuestro `showroom`) tiene un defecto o una configuración que está causando el problema.
+* **La Estrategia Anti-Loop:**
+    1.  **Tomar Perspectiva:** Dejar de editar el código del componente. Asumir por un momento que es perfecto.
+    2.  **Crear un "Laboratorio Limpio":** Construir el escenario de pruebas más simple posible para el componente (como hicimos con el `simple-slider-showroom`). Una página en blanco con una única instancia del componente y las props mínimas para probar el comportamiento fallido.
+    3.  **Validar el Entorno:** Si el componente funciona en el entorno limpio, hemos probado que el error reside en la complejidad del `showroom` original (ej. una prop que no se pasaba, un estado de una pestaña que interfería, etc.).
+
+El objetivo de este vademécum no es evitar los errores, sino aprender a navegar por ellos con una estrategia fractal que nos permita encontrar la verdadera raíz del problema, sin importar en qué escala de la realidad se encuentre.

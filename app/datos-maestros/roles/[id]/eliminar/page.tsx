@@ -12,26 +12,15 @@ import {
     type ResultadoOperacion 
 } from "@/lib/actions/proyect-role-actions";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { AlertTriangle, Trash2, ShieldAlert } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import Link from "next/link";
-import { PageBackground } from "@/components/ui/page-background";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  // AlertDialogTrigger, // No lo usaremos directamente, el botón de la página lo manejará
-} from "@/components/ui/alert-dialog";
+import { StandardDialog } from "@/components/ui/StandardDialog";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -121,62 +110,167 @@ export default function EliminarRolPage() {
 //#region [render] - 🎨 RENDER SECTION 🎨
   // ------ RENDERIZADO CONDICIONAL ------
   if (isPageLoading) {
-    return ( <PageBackground > <SustratoLoadingLogo size={50} showText text="Cargando..." /> </PageBackground> );
+    return (
+      <div>
+        <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <SustratoLoadingLogo showText text="Cargando datos del rol..." />
+        </div>
+      </div>
+    );
   }
 
   if (!proyectoActual?.id) {
-    return ( <PageBackground > <StandardCard 
-          styleType="subtle"
-          className="max-w-md text-center" 
-          colorScheme="primary" // Rule: Inner card
-          accentPlacement="none" // Rule: Inner card
-          hasOutline={false} // Rule: Inner card
-          shadow="none" // Rule: Inner card
-          disableShadowHover={true} // Rule: Inner card
-        > <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <StandardIcon colorScheme="warning" size="md"><AlertTriangle /></StandardIcon> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>{pageError || "No hay un proyecto activo."}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><StandardButton styleType="outline">Ir a Inicio</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return (
+      <div>
+        <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
+          <StandardCard 
+            colorScheme="primary" 
+            accentPlacement="none" 
+            hasOutline={false} 
+            shadow="none" 
+            disableShadowHover={true}
+            styleType="subtle"
+            className="max-w-lg w-full"
+          >
+            <StandardCard.Header className="items-center flex flex-col text-center">
+              <StandardIcon><ShieldAlert className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
+              <StandardText preset="subheading" weight="bold" colorScheme="danger">
+                Acceso Denegado
+              </StandardText>
+            </StandardCard.Header>
+            <StandardCard.Content className="text-center">
+              <StandardText>
+                No tienes permisos para eliminar roles en este proyecto.
+              </StandardText>
+            </StandardCard.Content>
+            <StandardCard.Footer className="flex justify-center">
+              <Link href="/datos-maestros/roles" passHref>
+                <StandardButton styleType="outline">
+                  Volver al Listado de Roles
+                </StandardButton>
+              </Link>
+            </StandardCard.Footer>
+          </StandardCard>
+        </div>
+      </div>
+    );
   }
   
   if (!puedeGestionarRoles) { 
-    return ( <PageBackground > <StandardCard 
-          styleType="subtle"
-          className="max-w-md text-center" 
-          colorScheme="primary" // Rule: Inner card
-          accentPlacement="none" // Rule: Inner card
-          hasOutline={false} // Rule: Inner card
-          shadow="none" // Rule: Inner card
-          disableShadowHover={true} // Rule: Inner card
-        > <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <StandardIcon colorScheme="warning" size="md"><AlertTriangle /></StandardIcon> </div> <PageTitle title="Acceso Denegado" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>No tienes permisos para eliminar roles en este proyecto.</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return (
+      <div>
+        <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
+          <StandardCard 
+            colorScheme="primary" 
+            accentPlacement="none" 
+            hasOutline={false} 
+            shadow="none" 
+            disableShadowHover={true}
+            styleType="subtle"
+            className="max-w-lg w-full"
+          >
+            <StandardCard.Header className="items-center flex flex-col text-center">
+              <StandardIcon><ShieldAlert className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
+              <StandardText preset="subheading" weight="bold" colorScheme="danger">
+                Acceso Denegado
+              </StandardText>
+            </StandardCard.Header>
+            <StandardCard.Content className="text-center">
+              <StandardText>
+                No tienes permisos para eliminar roles en este proyecto.
+              </StandardText>
+            </StandardCard.Content>
+            <StandardCard.Footer className="flex justify-center">
+              <Link href="/datos-maestros/roles" passHref>
+                <StandardButton styleType="outline">
+                  Volver al Listado de Roles
+                </StandardButton>
+              </Link>
+            </StandardCard.Footer>
+          </StandardCard>
+        </div>
+      </div>
+    );
   }
   
   if (pageError && !rolParaEliminar) { // Error durante la carga del rol
-    return ( <PageBackground > <StandardCard 
-          styleType="subtle"
-          className="max-w-md text-center" 
-          colorScheme="primary" // Rule: Inner card
-          accentPlacement="none" // Rule: Inner card
-          hasOutline={false} // Rule: Inner card
-          shadow="none" // Rule: Inner card
-          disableShadowHover={true} // Rule: Inner card
-        > <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <StandardIcon colorScheme="danger" size="md"><AlertTriangle /></StandardIcon> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>{pageError}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return (
+      <div>
+        <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
+          <StandardCard 
+            colorScheme="primary" 
+            accentPlacement="none" 
+            hasOutline={false} 
+            shadow="none" 
+            disableShadowHover={true}
+            styleType="subtle"
+            className="max-w-lg w-full"
+          >
+            <StandardCard.Header className="items-center flex flex-col text-center">
+              <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
+              <StandardText preset="subheading" weight="bold" colorScheme="danger">
+                Error al Cargar Rol
+              </StandardText>
+            </StandardCard.Header>
+            <StandardCard.Content className="text-center">
+              <StandardText>
+                {pageError}
+              </StandardText>
+            </StandardCard.Content>
+            <StandardCard.Footer className="flex justify-center">
+              <Link href="/datos-maestros/roles" passHref>
+                <StandardButton styleType="outline">
+                  Volver al Listado de Roles
+                </StandardButton>
+              </Link>
+            </StandardCard.Footer>
+          </StandardCard>
+        </div>
+      </div>
+    );
   }
 
   if (!rolParaEliminar) { // Rol no encontrado
-    return ( <PageBackground > <StandardCard 
-          styleType="subtle"
-          className="max-w-md text-center" 
-          colorScheme="primary" // Rule: Inner card
-          accentPlacement="none" // Rule: Inner card
-          hasOutline={false} // Rule: Inner card
-          shadow="none" // Rule: Inner card
-          disableShadowHover={true} // Rule: Inner card
-        > <StandardCard.Header><PageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><StandardText>{pageError || "No se encontraron datos para el rol especificado."}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return (
+      <div>
+        <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
+          <StandardCard 
+            colorScheme="primary" 
+            accentPlacement="none" 
+            hasOutline={false} 
+            shadow="none" 
+            disableShadowHover={true}
+            styleType="subtle"
+            className="max-w-lg w-full"
+          >
+            <StandardCard.Header className="items-center flex flex-col text-center">
+              <StandardText preset="subheading" weight="bold" colorScheme="danger">
+                Rol no Encontrado
+              </StandardText>
+            </StandardCard.Header>
+            <StandardCard.Content className="text-center">
+              <StandardText>
+                {pageError || "No se encontraron datos para el rol especificado."}
+              </StandardText>
+            </StandardCard.Content>
+            <StandardCard.Footer className="flex justify-center">
+              <Link href="/datos-maestros/roles" passHref>
+                <StandardButton styleType="outline">
+                  Volver al Listado de Roles
+                </StandardButton>
+              </Link>
+            </StandardCard.Footer>
+          </StandardCard>
+        </div>
+      </div>
+    );
   }
 
 
   return (
-    <PageBackground>
-      <div className="container mx-auto py-6">
-        <PageTitle
+    <div>
+      <div className="container mx-auto py-8">
+        <StandardPageTitle
           title={`Eliminar Rol: ${rolParaEliminar.role_name}`}
           subtitle={`Confirmación para eliminar el rol del proyecto "${proyectoActual.name}"`}
           mainIcon={ShieldAlert}
@@ -199,7 +293,7 @@ export default function EliminarRolPage() {
           // styleType and hasOutline removed
         >
           <StandardCard.Header>
-            <StandardText variant="heading" size="lg" colorScheme="danger">
+            <StandardText preset="heading" size="lg" colorScheme="danger">
               Confirmar Eliminación
             </StandardText>
           </StandardCard.Header>
@@ -209,12 +303,12 @@ export default function EliminarRolPage() {
               Esta acción no se puede deshacer.
             </StandardText>
             <StandardText colorScheme="warning" colorShade="text" className="flex items-start gap-2">
-              <StandardIcon size="sm" colorScheme="inherit"><AlertTriangle className="mt-0.5 flex-shrink-0" /></StandardIcon>
+              <StandardIcon size="sm" colorScheme="warning"><AlertTriangle className="mt-0.5 flex-shrink-0" /></StandardIcon>
               <span>Asegúrate de que ningún miembro esté actualmente asignado a este rol. Si el rol está en uso, la eliminación fallará.</span>
             </StandardText>
             {pageError && ( // Mostrar errores de la action de eliminar aquí
               <div className="p-3 text-sm text-destructive-foreground border border-destructive bg-destructive/10 rounded-md">
-                <div className="flex items-center gap-2"><StandardIcon size="sm" colorScheme="inherit"><AlertTriangle /></StandardIcon><span>{pageError}</span></div>
+                <div className="flex items-center gap-2"><StandardIcon size="sm" colorScheme="danger"><AlertTriangle /></StandardIcon><span>{pageError}</span></div>
               </div>
             )}
           </StandardCard.Content>
@@ -237,31 +331,33 @@ export default function EliminarRolPage() {
           </StandardCard.Footer>
         </StandardCard>
 
-        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción eliminará permanentemente el rol <StandardText asElement="span" weight="bold">{rolParaEliminar.role_name}</StandardText>. 
+        <StandardDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <StandardDialog.Content>
+            <StandardDialog.Header>
+              <StandardDialog.Title>¿Estás absolutamente seguro?</StandardDialog.Title>
+              <StandardDialog.Description>
+                Esta acción eliminará permanentemente el rol <StandardText asElement="span" weight="bold">{rolParaEliminar?.role_name}</StandardText>. 
                 Si hay miembros asignados a este rol, la operación fallará y deberás reasignarlos primero.
                 No podrás deshacer esta acción.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isSubmitting}>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
+              </StandardDialog.Description>
+            </StandardDialog.Header>
+            <StandardDialog.Footer>
+              <StandardButton styleType="outline" onClick={() => setShowConfirmDialog(false)} disabled={isSubmitting}>
+                Cancelar
+              </StandardButton>
+              <StandardButton
+                colorScheme="danger"
                 onClick={handleConfirmarEliminacion}
-                disabled={isSubmitting}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90" // Estilo del botón de confirmación destructivo
+                loading={isSubmitting} 
               >
                 {isSubmitting ? "Eliminando..." : "Sí, eliminar rol"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </StandardButton>
+            </StandardDialog.Footer>
+          </StandardDialog.Content>
+        </StandardDialog>
 
       </div>
-    </PageBackground>
+    </div>
   );
 //#endregion ![render]
 }

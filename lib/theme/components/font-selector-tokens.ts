@@ -81,8 +81,6 @@ export function generateFontSelectorTokens(
 ): FontSelectorTokens {
   const {
     primary,
-    secondary,
-    tertiary,
     neutral,
     white
   } = appColorTokens;

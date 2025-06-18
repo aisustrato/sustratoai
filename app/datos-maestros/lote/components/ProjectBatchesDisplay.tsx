@@ -19,19 +19,14 @@ import {
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import type { BatchStatusEnum } from "@/lib/database.types";
 import { toast as sonnerToast } from "sonner";
-import { CustomDialog } from "@/components/ui/custom-dialog";
+import { StandardDialog } from "@/components/ui/StandardDialog";
 import { BatchItem } from "./BatchItem";
 import type { BatchAuxColor, BatchTokens } from "./batch-tokens";
 import tinycolor from "tinycolor2";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import { PageBackground } from "@/components/ui/page-background";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardTooltip } from "@/components/ui/StandardTooltip";
+import { StandardBadge } from "@/components/ui/StandardBadge";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES, INTERFACES & CONSTANTS 📦
@@ -177,9 +172,9 @@ export default function ProjectBatchesDisplay({
 
 	//#region [render_sub] - MAIN BATCH DISPLAY 🎨
 	return (
-		<PageBackground>
+		<StandardPageBackground>
 			<div className="container mx-auto py-8">
-				<PageTitle
+				<StandardPageTitle
 					title="Lotes Creados en el Proyecto"
 					subtitle={`Muestra los lotes creados en el proyecto.`}
 					mainIcon={Layers}
@@ -216,18 +211,26 @@ export default function ProjectBatchesDisplay({
 								>
 									Eliminar todos los lotes
 								</StandardButton>
-								<CustomDialog
-									open={dialogResetOpen}
-									onOpenChange={(open: boolean) => setDialogResetOpen(open)}
-									variant="destructive"
-									title="Eliminar todos los lotes"
-									description={`¿Estás SEGURO de que quieres eliminar TODOS los ${lotes.length} lotes de este proyecto? Esta acción solo procederá si NINGÚN lote ha sido iniciado. No se puede deshacer.`}
-									confirmText="Eliminar todos"
-									cancelText="Cancelar"
-									onConfirm={handleConfirmReset}
-									onCancel={() => setDialogResetOpen(false)}
-									isLoading={isResetting}
-								/>
+								<StandardDialog open={dialogResetOpen} onOpenChange={setDialogResetOpen}>
+									<StandardDialog.Content colorScheme="danger" size="md">
+										<StandardDialog.Header>
+											<StandardDialog.Title>Eliminar todos los lotes</StandardDialog.Title>
+										</StandardDialog.Header>
+										<StandardDialog.Body>
+											<StandardDialog.Description>
+												¿Estás SEGURO de que quieres eliminar TODOS los {lotes.length} lotes de este proyecto? Esta acción solo procederá si NINGÚN lote ha sido iniciado. No se puede deshacer.
+											</StandardDialog.Description>
+										</StandardDialog.Body>
+										<StandardDialog.Footer>
+											<StandardDialog.Close asChild>
+												<StandardButton styleType="outline">Cancelar</StandardButton>
+											</StandardDialog.Close>
+											<StandardButton colorScheme="danger" onClick={handleConfirmReset} loading={isResetting}>
+												Eliminar todos
+											</StandardButton>
+										</StandardDialog.Footer>
+									</StandardDialog.Content>
+								</StandardDialog>
 							</>
 						)}
 					</StandardCard.Header>
@@ -307,48 +310,49 @@ export default function ProjectBatchesDisplay({
 								);
 
 								return (
-									<TooltipProvider key={lote.id} delayDuration={200}>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<div className="flex flex-col items-center gap-1.5 cursor-pointer group">
-													<div
-														className={`p-0.5 rounded-full border-2 border-transparent group-hover:border-primary/30 dark:group-hover:border-primary-dark/30 shadow-md transition-all group-hover:scale-105`}>
-														<BatchItem
-															color={batchItemBgColor}
-															border={batchItemInnerBorder}
-															textColor={batchItemTextColor}
-															number={lote.batch_number}
-															size={itemSize}
-														/>
-													</div>
-													<Badge
-														variant="default"
-														className={`px-1.5 py-0.5 whitespace-nowrap text-center flex items-center justify-center gap-1 rounded-full ${badgeStyleClass}`}>
-														{statusIconToDisplay}
-														<span className="truncate max-w-[50px] sm:max-w-[60px] inline-block align-middle">
-															{lote.status}
-														</span>
-													</Badge>
+									<StandardTooltip
+										key={lote.id} 
+										delayDuration={200}
+										side="top"
+										align="center"
+										className="text-xs"
+										trigger={
+											<div className="flex flex-col items-center gap-1.5 cursor-pointer group">
+												<div
+													className={`p-0.5 rounded-full border-2 border-transparent group-hover:border-primary/30 dark:group-hover:border-primary-dark/30 shadow-md transition-all group-hover:scale-105`}>
+													<BatchItem
+														color={batchItemBgColor}
+														border={batchItemInnerBorder}
+														textColor={batchItemTextColor}
+														number={lote.batch_number}
+														size={itemSize}
+													/>
 												</div>
-											</TooltipTrigger>
-											<TooltipContent
-												className="text-xs"
-												side="top"
-												align="center">
-												<StandardText weight="bold" className="block mb-0.5">
-													Lote #{lote.batch_number}
-													{lote.name ? `: ${lote.name}` : ""}
-												</StandardText>
-												<StandardText className="block">
-													Asignado a: {lote.assigned_to_member_name || "N/A"}
-												</StandardText>
-												<StandardText className="block">
-													Artículos: {lote.article_count ?? "N/A"}
-												</StandardText>
-												<StandardText className="block">Estado: {lote.status}</StandardText>
-											</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
+												<StandardBadge
+													colorScheme="secondary"
+													styleType="solid"
+													size="xs"
+													className={`px-1.5 py-0.5 whitespace-nowrap text-center flex items-center justify-center gap-1 rounded-full ${badgeStyleClass}`}>
+													{statusIconToDisplay}
+													<span className="truncate max-w-[50px] sm:max-w-[60px] inline-block align-middle">
+														{lote.status}
+													</span>
+												</StandardBadge>
+											</div>
+										}
+									>
+										<StandardText weight="bold" className="block mb-0.5">
+											Lote #{lote.batch_number}
+											{lote.name ? `: ${lote.name}` : ""}
+										</StandardText>
+										<StandardText className="block">
+											Asignado a: {lote.assigned_to_member_name || "N/A"}
+										</StandardText>
+										<StandardText className="block">
+											Artículos: {lote.article_count ?? "N/A"}
+										</StandardText>
+										<StandardText className="block">Estado: {lote.status}</StandardText>
+									</StandardTooltip>
 								);
 							})}
 						</div>
@@ -384,7 +388,7 @@ export default function ProjectBatchesDisplay({
 					</StandardCard.Content>
 				</StandardCard>
 			</div>
-		</PageBackground>
+		</StandardPageBackground>
 	);
 	//#endregion [render_sub]
 }

@@ -2,13 +2,11 @@ export function SustratoLogo({
   className = "",
   size = 28,
   primaryColor,
-  secondaryColor,
   accentColor,
 }: {
   className?: string
   size?: number
   primaryColor?: string
-  secondaryColor?: string
   accentColor?: string
 }) {
   return (

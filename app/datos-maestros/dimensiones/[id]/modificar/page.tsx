@@ -13,8 +13,7 @@ import {
   type ResultadoOperacion,
   type PreclassDimensionRow
 } from "@/lib/actions/dimension-actions"; // Asegúrate que estas exportaciones sean correctas
-import { PageBackground } from "@/components/ui/page-background";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
@@ -215,32 +214,30 @@ export default function ModificarDimensionPage() {
 
   if (isPageLoading || (loadingProyectos && !dimensionActual && !errorPage)) {
     return (
-      <PageBackground>
+      <div>
         <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <SustratoLoadingLogo showText text="Cargando datos de la dimensión..." />
         </div>
-      </PageBackground>
+      </div>
     );
   }
 
   if (errorPage) {
      return (
-      <PageBackground>
+      <div>
         <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
             <StandardCard
-                // Informational error card
-                colorScheme="primary" // Rule: Inner card
-                accentPlacement="none" // Rule: Inner card
-                hasOutline={false} // Rule: Inner card
-                shadow="none" // Rule: Inner card
-                disableShadowHover={true} // Rule: Inner card
-                styleType="subtle"
+                colorScheme="danger" // Rule: Error card colorScheme is danger
+                accentPlacement="none" // Rule: Error card accent is none
+                hasOutline={false} // Rule: Error card has no outline
+                shadow="none" // Rule: Error card has no shadow
+                disableShadowHover={true} // Rule: Error card shadow hover is disabled
                 className="max-w-lg w-full"
                 // styleType removed
             >
                 <StandardCard.Header className="items-center flex flex-col text-center">
                     <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
-                    <StandardText variant="subheading" weight="bold" colorScheme="danger">
+                    <StandardText preset="subheading" weight="bold" colorScheme="danger">
                       Error
                     </StandardText>
                 </StandardCard.Header>
@@ -253,7 +250,7 @@ export default function ModificarDimensionPage() {
                 </StandardCard.Footer>
             </StandardCard>
         </div>
-      </PageBackground>
+      </div>
     );
   }
   
@@ -261,7 +258,7 @@ export default function ModificarDimensionPage() {
     // Si llegamos aquí y no hay errorPage, pero tampoco dimensión, es un estado inesperado.
     // Esto podría pasar si cargarDimension() termina sin setear errorPage pero tampoco dimensionActual.
     return (
-      <PageBackground>
+      <div>
         <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <StandardCard
             colorScheme="primary"
@@ -272,7 +269,7 @@ export default function ModificarDimensionPage() {
             styleType="subtle"
             className="text-center p-6"
           >
-            <StandardText variant="subheading">Dimensión no disponible</StandardText>
+            <StandardText preset="subheading">Dimensión no disponible</StandardText>
             <StandardText colorScheme="neutral" className="mt-2">No se pudo cargar la información de la dimensión. Intenta volver a la lista.</StandardText>
             <StandardButton onClick={handleVolver} styleType="outline" className="mt-4">
               <StandardIcon><ArrowLeft /></StandardIcon>
@@ -280,15 +277,15 @@ export default function ModificarDimensionPage() {
             </StandardButton>
           </StandardCard>
         </div>
-      </PageBackground>
+      </div>
     );
   }
 
   return (
-    <PageBackground>
+    <div>
       <div className="container mx-auto py-8">
         <div className="max-w-3xl mx-auto">
-          <PageTitle
+          <StandardPageTitle
             title={`Modificar Dimensión: ${dimensionActual.name}`}
             subtitle="Actualiza los detalles de esta dimensión de clasificación."
             mainIcon={Edit}
@@ -303,7 +300,7 @@ export default function ModificarDimensionPage() {
           <StandardCard
             className="mt-6"
             accentPlacement="top"
-            colorScheme="secondary" // Rule: Main form card colorScheme is secondary
+            colorScheme="primary" // Rule: Main form card colorScheme is secondary
             accentColorScheme="primary" // Rule: Main form card accent for create/edit is primary
             shadow="md" // Rule: Main form card shadow is md by default
             disableShadowHover={true}
@@ -319,7 +316,7 @@ export default function ModificarDimensionPage() {
           </StandardCard>
         </div>
       </div>
-    </PageBackground>
+    </div>
   );
 	//#endregion ![render]
 }

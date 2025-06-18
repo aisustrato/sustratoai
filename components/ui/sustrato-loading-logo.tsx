@@ -357,7 +357,7 @@ export function SustratoLoadingLogo({
       {showText && (
         <div className="mt-3">
           <StandardText
-            variant="default"
+            preset="body"
             size="sm"
             weight="medium"
             colorScheme={actualPrimaryTextColor?.startsWith('#') ? undefined : (actualPrimaryTextColor as any)}

@@ -10,7 +10,7 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
-import { BadgeCustom } from "@/components/ui/badge-custom";
+import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 
 export function HomeCards() {
@@ -21,6 +21,7 @@ export function HomeCards() {
         colorScheme="primary"
         accentPlacement="top"
         animateEntrance
+        disableShadowHover={false}
         className="overflow-hidden hover:shadow-md transition-shadow duration-300"
       >
         <StandardCard.Header>
@@ -33,9 +34,9 @@ export function HomeCards() {
               </StandardIcon>
               Transcripciones
             </StandardCard.Title>
-            <BadgeCustom variant="success" subtle bordered>
+            <StandardBadge colorScheme="success" styleType="subtle" size="md">
               Activo
-            </BadgeCustom>
+            </StandardBadge>
           </div>
           <StandardCard.Subtitle>
             <StandardText size="sm" colorScheme="secondary">
@@ -102,7 +103,7 @@ export function HomeCards() {
         colorScheme="secondary"
         accentPlacement="top"
         animateEntrance
-        selected={true}
+        disableShadowHover={false}
       >
         <StandardCard.Header>
           <div className="flex items-center justify-between">
@@ -114,9 +115,9 @@ export function HomeCards() {
               </StandardIcon>
               Artículos Académicos
             </StandardCard.Title>
-            <BadgeCustom variant="warning" bordered subtle>
+            <StandardBadge colorScheme="warning" styleType="outline">
               En construcción
-            </BadgeCustom>
+            </StandardBadge>
           </div>
           <StandardCard.Subtitle>
             <StandardText size="sm" colorScheme="tertiary">

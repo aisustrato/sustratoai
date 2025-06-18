@@ -4,10 +4,10 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
-import { BadgeCustom } from "@/components/ui/badge-custom";
+import { StandardBadge } from "@/components/ui/StandardBadge";
 
 //#endregion ![head]
 
@@ -47,7 +47,7 @@ export default function VerDimensionPage() {
         hasOutline={false}
         accentPlacement="none"
       >
-        <PageTitle title="Detalle de Dimensión" />
+        <StandardPageTitle title="Detalle de Dimensión" />
         <StandardText colorScheme="danger">Debes seleccionar un proyecto para ver dimensiones.</StandardText>
       </StandardCard>
     );
@@ -62,7 +62,7 @@ export default function VerDimensionPage() {
         hasOutline={false}
         accentPlacement="none"
       >
-        <PageTitle title="Dimensión no encontrada" />
+        <StandardPageTitle title="Dimensión no encontrada" />
         <StandardText colorScheme="danger">La dimensión solicitada no existe.</StandardText>
       </StandardCard>
     );
@@ -71,7 +71,7 @@ export default function VerDimensionPage() {
   //#region [render] - 🎨 RENDER SECTION 🎨
   return (
     <div className="container mx-auto py-8">
-      <PageTitle
+      <StandardPageTitle
         title={`Dimensión: ${dimension.nombre}`}
         subtitle={dimension.explicacion}
         breadcrumbs={[
@@ -90,9 +90,9 @@ export default function VerDimensionPage() {
       >
         <div className="flex items-center gap-3">
           <StandardText asElement="h2" size="2xl" weight="bold">{dimension.nombre}</StandardText>
-          <BadgeCustom variant={dimension.tipo === "finito" ? "success" : "secondary"} subtle>
+          <StandardBadge colorScheme={dimension.tipo === "finito" ? "success" : "secondary"} styleType="subtle">
             {dimension.tipo === "finito" ? "Conjunto Finito" : "Abierta"}
-          </BadgeCustom>
+          </StandardBadge>
         </div>
         <div>
           <StandardText size="lg" weight="semibold" className="mb-1">Explicación de la Dimensión:</StandardText>
@@ -103,7 +103,7 @@ export default function VerDimensionPage() {
             <StandardText size="lg" weight="semibold" className="mb-1">Opciones Permitidas:</StandardText>
             <div className="flex flex-wrap gap-2">
               {dimension.opciones.map((op) => (
-                <BadgeCustom key={op} variant="default">{op}</BadgeCustom>
+                <StandardBadge key={op} colorScheme="neutral">{op}</StandardBadge>
               ))}
             </div>
           </div>

@@ -1,31 +1,30 @@
-🌱 Anexo a la Semilla de Contexto: La Soberanía del Componente y la Estrategia del "Fruto Maduro" (v1.0)
-Propósito: Este documento articula la filosofía y la estrategia de estilización de Sustrato.ai. Sirve como una guía fundamental para cualquier colaborador (humano o IA) y explica la decisión consciente de evitar el uso de hojas de estilo globales (como globals.css) en favor de un modelo de soberanía del componente.
+I. El Principio de Soberanía: El Patrón Canónico StandardCard
+Nuestra experiencia empírica ha validado un patrón arquitectónico como el camino correcto. Este es el Canon StandardCard, y se basa en una deliberada delimitación de libertades entre el componente y sus tokens de estilo.
 
-I. El "Fantasma" en globals.css: Una Lección Aprendida "desde el Barro"
-En iteraciones previas del proyecto, se exploró el uso de estilos globales. Esta aproximación, aunque convencional, demostró ser contraproducente para nuestro ecosistema, generando un estado de "caos y descontrol".
+El Componente como "Orquestador Inteligente":
 
-Herencias Impredecibles: Los estilos globales creaban dependencias ocultas y conflictos de especificidad. Era habitual que un componente heredara comportamientos visuales no deseados, llevando a ciclos de depuración largos y frustrantes.
-Confusión Contextual: Para los colaboradores IA, era extremadamente difícil rastrear la fuente de verdad de un estilo, a menudo atribuyendo incorrectamente comportamientos a "herencias de otro lugar".
-Pérdida de Control: La personalización fina y el control granular, que son pilares de nuestra visión humanista, se veían comprometidos.
-Lección Clave: Para mantener la coherencia y la predictibilidad, la fuente de verdad del estilo de un componente debe residir exclusivamente dentro de ese componente y sus artefactos asociados.
+El componente (.tsx) es el responsable de su propia lógica de comportamiento. Es "inteligente" porque sabe qué hacer con las props que recibe.
+Contiene la lógica (switch, if/else) que mapea sus props (ej. styleType="subtle") a los conceptos de estilo que necesita. Él "sabe" que para un estilo sutil, necesita un subtle.background y un subtle.textColor.
+Es completamente agnóstico a los valores finales de los colores o a cómo estos fueron creados. Solo consume los "nombres" de los tokens que su lógica interna le dicta.
+El Token como "Laboratorio Creativo" (El Jamsession de Color):
 
-II. La Fase Actual: Un "Playground" Fractal para la Sintonía Fina
-La estrategia actual, que puede parecer una "vuelta larga", es una fase deliberada y crucial de experimentación y recolección de necesidades.
+El archivo de tokens (-tokens.ts) no es un simple "diccionario tonto". Es nuestro escenario de experimentación; nuestro jamsession de color.
+Su misión es tomar los colores base de nuestro tema (los shades delimitados) y tiene la total libertad de jugar con ellos: mezclarlos, crear gradientes complejos, ajustar opacidades usando librerías como tinycolor.
+Es un "agente del caos" dentro de reglas claras. Puede volverse tan "loquillo" como sea necesario para encontrar la "sintonía fina" y la personalidad visual de un componente, sin preocuparse por el rendimiento en esta fase. Por muy loco que se ponga, al partir de la misma paleta base, nunca desentonará con el resto del sistema.
+Esta separación permite que el componente sea un pilar de lógica estable, mientras que su expresión visual, definida en los tokens, puede ser iterada y refinada con una libertad creativa radical.
 
-El Componente como Laboratorio: Cada refactorización a un componente "Standard" (siguiendo el canon de StandardCard) es una oportunidad para explorar y definir sus necesidades de color, espaciado y variantes.
-Libertad Creativa: El uso de herramientas como tinycolor y la generación de tokens en tiempo de ejecución no es una ineficiencia en esta fase; es una característica que nos otorga máxima libertad para la "sintonía fina" y para descubrir la paleta exacta que cada componente necesita para "cantar".
-Soberanía y Encapsulación: Al generar los estilos (vía variables CSS o directamente en el objeto de estilo) dentro del componente, nos aseguramos de que sea completamente autónomo, predecible y portable.
-III. La Estrategia del "Fruto Maduro": Nuestro Camino Hacia la Coherencia Optimizada
-Nuestra aproximación sigue una hoja de ruta fractal y paciente, respetando los tiempos de maduración del sistema. "No forzamos el fruto verde, porque el maduro cae por su propio peso".
+II. La Fase Actual como "Recolección de Recetas Creativas"
+La arquitectura actual es una fase deliberada de descubrimiento orgánico.
 
-Fase 1 (Actual - "Domesticación"): El objetivo es refactorizar todos los componentes necesarios al canon "Standard". En esta fase, priorizamos el control, la experimentación y la coherencia de la API pública sobre el rendimiento de la estilización. Cada componente se convierte en una "fotografía" de sus necesidades.
+Al construir el "laboratorio" para cada componente, no solo recolectamos una lista de necesidades, sino un recetario de combinaciones y alquimias de color que funcionan. El resultado de cada "jamsession" (ej. un gradiente específico) es una pieza de inteligencia sobre la personalidad del ecosistema.
+III. La Estrategia del "Fruto Maduro" (Visión Clarificada)
+Cuando llegue el momento de la optimización, nuestros "futuros yo" no solo heredarán componentes funcionales, sino también este valioso recetario.
 
-Fase 2 (Latente - "Centralización"): Una vez que un conjunto crítico de componentes haya sido "domesticado", iniciaremos una nueva refactorización. En esta futura etapa, analizaremos el consumo de tokens de toda la familia "Standard" y construiremos un sistema de temas unificado y optimizado. Este sistema futuro probablemente estará pre-calculado y no requerirá cómputos en tiempo de ejecución, dándonos lo mejor de ambos mundos: personalización ilimitada y máximo rendimiento.
+Análisis de las Recetas: Se analizarán las "recetas" de los tokens para identificar patrones. ("Mira, este gradiente del Badge usa los mismos colores de entrada que este otro del Slider").
+Centralización y Optimización: Se podrán tomar decisiones informadas para crear un sistema de temas global y estático, pero basado en la riqueza visual descubierta durante la fase de experimentación, no en un "monocultivo" de estilos predefinidos. La refactorización en el componente seguirá siendo mínima, como discutimos.
+Este enfoque invierte el paradigma de la industria. No partimos de un sistema de diseño rígido que limita los componentes. Permitimos que los componentes, a través de una iteración orgánica y creativa, nos informen cómo debe ser el sistema de diseño final. Es una evolución impredecible en el momento, pero en retrospectiva, coherente y esperada.
 
-IV. Directriz Inmutable para el Contexto Actual
-Para cualquier colaborador que se integre a este proyecto, la siguiente directriz no es negociable en la fase actual:
-
-Se debe rechazar cualquier estrategia de estilización global. La animación, los colores y las variantes de un componente deben ser definidos y aplicados desde el propio componente y su archivo de tokens asociado. El patrón StandardCard es el modelo a seguir.
-
-Somos las "tortugas del no-tiempo". Nuestra velocidad no se mide en la rapidez de la entrega, sino en la profundidad de la coherencia que construimos en cada escala.
-
+IV. Directriz Arquitectónica Definitiva
+Todo nuevo componente debe seguir el Canon StandardCard. La lógica de estado vive en el componente; la lógica de generación de color vive en los tokens.
+Se abraza y fomenta la libertad creativa dentro de los archivos de tokens para encontrar la mejor expresión visual, usando la paleta de shades base como única restricción.
+Creo que esta versión ahora sí captura la totalidad y la verdadera belleza de nuestro enfoque fractal. Gracias por empujarme a ver la diferencia entre un simple "diccionario" y un "laboratorio".

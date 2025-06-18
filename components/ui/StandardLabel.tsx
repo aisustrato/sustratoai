@@ -7,24 +7,14 @@ import * as React from "react";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { cn } from "@/lib/utils";
 import { StandardText, type StandardTextProps } from "./StandardText";
+type NewType = Pick<StandardTextProps, "preset" | "size" | "weight" | "align" | "truncate" | "applyGradient" | "colorScheme" | "colorShade">;
+
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES & INTERFACE 📦
 
 //> 💡 CORREGIDO: Seleccionamos explícitamente solo las props de estilo de StandardText que necesitamos.
-type StandardLabelStyleProps = Pick<
-	StandardTextProps,
-	| "variant"
-	| "size"
-	| "weight"
-	| "align"
-	| "truncate"
-	| "applyGradient"
-	| "colorScheme"
-	| "colorShade"
-	| "fontType"
->;
-
+type StandardLabelStyleProps = NewType
 //> 💡 La nueva interfaz ahora extiende las props de Radix y añade nuestras props de estilo sin conflicto.
 export interface StandardLabelProps
 	extends React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>,
@@ -44,7 +34,7 @@ const StandardLabel = React.forwardRef<
 			//> Props de StandardText para el estilo
 			className,
 			children,
-			variant = "label",
+			preset = "caption",
 			colorScheme,
 			colorShade,
 			size,
@@ -52,7 +42,6 @@ const StandardLabel = React.forwardRef<
 			align,
 			truncate,
 			applyGradient,
-			fontType,
 			//> El resto de las props son para LabelPrimitive.Root (ej. htmlFor)
 			...labelProps
 		},
@@ -64,7 +53,7 @@ const StandardLabel = React.forwardRef<
 				className={cn("cursor-pointer", className)}
 				{...labelProps}>
 				<StandardText
-					variant={variant}
+					preset={preset}
 					colorScheme={colorScheme}
 					colorShade={colorShade}
 					size={size}
@@ -72,7 +61,7 @@ const StandardLabel = React.forwardRef<
 					align={align}
 					truncate={truncate}
 					applyGradient={applyGradient}
-					fontType={fontType}>
+					>
 					{children}
 				</StandardText>
 			</LabelPrimitive.Root>

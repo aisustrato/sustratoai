@@ -16,20 +16,19 @@ import { useAuth } from "@/app/auth-provider";
 import { obtenerMiembrosConPerfilesYRolesDelProyecto } from "@/lib/actions/member-actions";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { ProTable } from "@/components/ui/pro-table";
+import { StandardTable } from "@/components/ui/StandardTable";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { UserPlus, AlertCircle, Trash2, PenLine, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { EmptyState } from "@/components/common/empty-state";
 import type { ProjectMemberDetails } from "@/lib/actions/member-actions";
+import type { ColumnDef } from "@tanstack/react-table";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import { PageBackground } from "@/components/ui/page-background";
-import { Divider } from "@/components/ui/divider";
-import { CellVariant } from "@/lib/theme/components/table-tokens";
-import { BadgeCustom } from "@/components/ui/badge-custom"; //
-import type { BadgeVariant } from "@/lib/theme/components/badge-tokens";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { CellVariant } from "@/lib/theme/components/standard-table-tokens";
+import { StandardBadge } from "@/components/ui/StandardBadge";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import Link from "next/link";
 //#endregion ![head]
 
@@ -116,7 +115,7 @@ export default function MiembrosPage() {
 	//#endregion ![sub]
 
 	//#region [sub_render_logic] - 📊 Pro-Table Column Definitions 📊
-	const columnas = [
+	const columnas: ColumnDef<ProjectMemberDetails>[] = [
 		{
 			header: "Nombre",
 			accessorFn: (row: ProjectMemberDetails) => {
@@ -131,10 +130,9 @@ export default function MiembrosPage() {
 				}
 				return "Sin nombre registrado";
 			},
-			cell: ({ getValue }: any) => getValue(),
+			cell: ({ getValue }: any) => <StandardText weight="semibold">{getValue() as string}</StandardText>,
 			meta: {
-				textColorVariant: "secondary" as CellVariant,
-				isTextBold: true,
+				size: 250,
 			},
 		},
 		{
@@ -142,63 +140,69 @@ export default function MiembrosPage() {
 			accessorFn: (row: ProjectMemberDetails) =>
 				row.profile?.primary_institution || "No especificada",
 			cell: ({ getValue }: any) => getValue(),
+			meta: {
+				size: 200,
+			},
 		},
 		{
-			header: "Correo",
+			header: "Perfil de Usuario",
 			accessorFn: (row: ProjectMemberDetails) =>
 				row.profile?.public_contact_email || "No especificado",
 			cell: ({ getValue }: any) => getValue(),
+			meta: { size: 200 },
 		},
 		{
-			header: "Rol",
+			header: "Rol en el Proyecto",
 			accessorFn: (row: ProjectMemberDetails) =>
 				row.role_name || "Sin rol asignado",
 			cell: ({ getValue }: any) => (
-				<BadgeCustom
-					variant={"default" as BadgeVariant}
-					subtle={true}
-					className="text-xs">
-					{getValue()}
-				</BadgeCustom>
+				<StandardBadge size="md" colorScheme="primary" styleType="subtle">
+					{String(getValue())}
+				</StandardBadge>
 			),
+			meta: { size: 200 },
 		},
 		{
-			header: "Acciones",
+			id: 'actions',
+			header: () => <div className="text-right pr-2">Acciones</div>,
+			meta: { align: 'right', isSticky: 'right' },
 			cell: ({ row }: any) => {
 				const miembro = row.original as ProjectMemberDetails;
 				return (
 					<div className="flex gap-2 justify-end">
 						<StandardButton
 							styleType="ghost"
-							size="icon"
+							colorScheme="primary"
+							size="sm"
+							iconOnly={true}
 							onClick={() => handleVerMiembro(miembro)}
 							tooltip="Ver detalles"
-							
 						>
-							<StandardIcon><Eye /></StandardIcon>
+							<StandardIcon colorScheme="primary"><Eye /></StandardIcon>
 							<span className="sr-only">Ver detalles</span>
 						</StandardButton>
 						{puedeGestionarMiembros && (
 							<>
 								<StandardButton
 									styleType="ghost"
-									size="icon"
+									colorScheme="primary"
+									size="sm"
+									iconOnly={true}
 									onClick={() => handleEditarMiembro(miembro)}
 									tooltip="Editar miembro"
-									
 								>
-									<StandardIcon><PenLine /></StandardIcon>
+									<StandardIcon colorScheme="primary"><PenLine /></StandardIcon>
 									<span className="sr-only">Editar</span>
 								</StandardButton>
 								<StandardButton
 									styleType="ghost"
-									size="icon"
+									size="sm"
+									iconOnly={true}
 									onClick={() => handleEliminarMiembro(miembro)}
 									colorScheme="danger"
 									tooltip="Eliminar miembro"
-									
 								>
-									<StandardIcon><Trash2 /></StandardIcon>
+									<StandardIcon colorScheme="danger"><Trash2 /></StandardIcon>
 									<span className="sr-only">Eliminar</span>
 								</StandardButton>
 							</>
@@ -208,25 +212,14 @@ export default function MiembrosPage() {
 			},
 		},
 	];
-	/*
-const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | undefined => {
-    if (row.profile?.public_display_name === "eRRRe") return "accent"; // Fila de Luis tendrá texto accent como base
-    return undefined;
-  };
-  
-  const isRowTextBoldForRow = (row: ProjectMemberDetails): boolean | undefined => {
-    if (row.profile?.public_display_name === "eRRRe") return true; // Filas "complicated" serán 
-    return undefined;
-  };
-*/
 	//#endregion ![sub_render_logic]
 
 	//#region [render] - 🎨 RENDER SECTION 🎨
 	return (
-		<PageBackground>
+		<StandardPageBackground variant="gradient">
 			<div className="container mx-auto py-6">
 				<div className="space-y-6">
-					<PageTitle
+					<StandardPageTitle
 						title="Miembros del Proyecto"
 						subtitle={`Creación, visualización, modificación de miembros del proyecto ${
 							proyectoActual?.name || "actual"
@@ -285,9 +278,9 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 						<StandardCard
 							disableShadowHover={true}
 							styleType="subtle"
-							colorScheme="secondary"
+							colorScheme="primary"
 							accentPlacement="top"
-							accentColorScheme="neutral"
+							accentColorScheme="primary"
 							shadow="md"
 							className="overflow-hidden hover:shadow-md transition-shadow duration-300"
 						>
@@ -295,10 +288,8 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 								<div className="flex justify-end mb-4 pt-4">
 									<StandardButton
 										onClick={handleAgregarMiembro}
-										colorScheme="primary"
-										styleType="solid"
-									>
-										<StandardIcon><UserPlus /></StandardIcon>
+										leftIcon={UserPlus}
+										colorScheme="primary">
 										Agregar Miembro
 									</StandardButton>
 								</div>
@@ -311,18 +302,20 @@ const getRowTextColorVariantForRow = (row: ProjectMemberDetails): CellVariant | 
 								disableShadowHover={true}
 								accentPlacement="none"
 							>
-								<ProTable
+								<StandardTable<ProjectMemberDetails>
 									data={miembros}
 									columns={columnas}
-									showColumnSelector={false}
-								/>
+									filterPlaceholder="Buscar por nombre, rol o perfil..."
+								>
+									<StandardTable.Table />
+								</StandardTable>
 							</StandardCard>
 						</StandardCard>
 					)}
 					{/* //#endregion [render_sub] */}
 				</div>
 			</div>
-		</PageBackground>
+		</StandardPageBackground>
 	);
 	//#endregion ![render]
 }

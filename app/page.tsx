@@ -2,8 +2,8 @@
 "use client"; // Necesario para usar hooks como useAuth
 
 import { StandardText } from "@/components/ui/StandardText";
-import { PageBackground } from "@/components/ui/page-background";
-import { Divider } from "@/components/ui/divider";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { StandardDivider } from "@/components/ui/StandardDivider";
 import { HomeCards } from "@/components/HomeCards";
 import { useAuth } from "@/app/auth-provider"; // Importar useAuth
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo"; // Para un posible estado de carga
@@ -22,11 +22,11 @@ export default function Home() {
     // Podrías mostrar un loader más completo o un esqueleto de la página.
     // El AuthProvider ya tiene un loader global, pero este es específico para el contenido de la home.
     return (
-      <PageBackground variant="gradient">
+      <StandardPageBackground variant="gradient">
         <div className="flex flex-col items-center justify-center min-h-screen">
           <SustratoLoadingLogo size={60} text="Cargando información del proyecto..." />
         </div>
-      </PageBackground>
+      </StandardPageBackground>
     );
   }
 
@@ -43,50 +43,50 @@ export default function Home() {
 
 
   return (
-    <PageBackground variant="gradient" >
+    <StandardPageBackground variant="gradient" >
       {/* Hero Section */}
       <section className="text-center pt-20 pb-8 md:pt-24 md:pb-10">
         <div className="flex flex-col items-center mb-4">
           <StandardText
-            variant="label"
+           
             colorScheme="primary"
             colorShade="pure"
             className="uppercase tracking-wider mb-3 font-bold"
-            fontType="heading"
+            preset="heading"
           >
             {clientName}
           </StandardText>
-          <Divider variant="gradient" size="md" className="mb-8" />
+          <StandardDivider variant="gradient" size="md" className="mb-8" />
         </div>
 
         <StandardText
           asElement="h1"
-          variant="heading"
+          preset="heading"
           size="5xl"
           applyGradient="primary"
           className="mb-2"
-          fontType="heading"
+          
         >
           {projectName}
         </StandardText>
 
         <StandardText
           asElement="h2"
-          variant="subheading"
+          preset="subheading"
           size="3xl"
           applyGradient="secondary"
           className="mb-6"
-          fontType="heading"
+          
         >
           {departmentName}
         </StandardText>
 
         <StandardText
-          variant="subtitle"
+          preset="subtitle"
           size="xl"
           colorScheme="neutral"
           className="max-w-2xl mx-auto"
-          fontType="body"
+          
         >
           {projectDescription}
         </StandardText>
@@ -97,11 +97,11 @@ export default function Home() {
 
       {/* Footer Section */}
       <div className="text-center mt-8">
-        <StandardText variant="muted" className="mb-1" fontType="body">
+        <StandardText colorShade="subtle"  className="mb-1" >
           {/* Asumiendo que este texto también puede ser dinámico o al menos referenciar los nombres dinámicos */}
           {footerProjectText}
         </StandardText>
       </div>
-    </PageBackground>
+    </StandardPageBackground>
   );
 }

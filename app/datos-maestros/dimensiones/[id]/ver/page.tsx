@@ -9,8 +9,7 @@ import {
   listDimensions, // Usaremos esta y filtraremos, o podríamos crear getDimensionDetails
   type FullDimension,
 } from "@/lib/actions/dimension-actions";
-import { PageBackground } from "@/components/ui/page-background";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
@@ -111,17 +110,17 @@ export default function VerDimensionPage() {
 
   if (isPageLoading || (loadingProyectos && !dimensionActual && !errorPage)) {
     return (
-      <PageBackground>
+      <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <SustratoLoadingLogo showText text="Cargando detalle de la dimensión..." />
         </div>
-      </PageBackground>
+      </div>
     );
   }
 
   if (errorPage) {
      return (
-      <PageBackground>
+      <div>
         <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
             <StandardCard
                 colorScheme="danger"
@@ -146,14 +145,13 @@ export default function VerDimensionPage() {
                 </StandardCard.Footer>
             </StandardCard>
         </div>
-      </PageBackground>
+      </div>
     );
   }
   
   if (!dimensionActual || !valoresFormIniciales) {
     return (
-        <PageBackground>
-            <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <StandardCard
                     colorScheme="warning"
                     className="text-center p-6"
@@ -170,15 +168,13 @@ export default function VerDimensionPage() {
                     </StandardButton>
                 </StandardCard>
             </div>
-        </PageBackground>
     );
   }
 
   return (
-    <PageBackground>
-      <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8">
         <div className="max-w-3xl mx-auto"> {/* Centrar contenido */}
-          <PageTitle
+          <StandardPageTitle
             title={`Detalle de Dimensión: ${dimensionActual.name}`}
             subtitle="Visualizando la configuración de esta dimensión de clasificación."
             mainIcon={Eye} // Icono para ver
@@ -206,7 +202,7 @@ export default function VerDimensionPage() {
           <StandardCard
             className="mt-6"
             accentPlacement="top"
-            colorScheme="secondary" // Rule: Main form card colorScheme is secondary
+            colorScheme="primary" // Rule: Main form card colorScheme is secondary
             accentColorScheme="neutral" // Rule: Main form card accent for view is neutral
             shadow="md" // Rule: Main form card shadow is md by default
             disableShadowHover={true}
@@ -221,7 +217,6 @@ export default function VerDimensionPage() {
           </StandardCard>
         </div>
       </div>
-    </PageBackground>
   );
 	//#endregion ![render]
 }

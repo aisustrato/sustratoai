@@ -8,14 +8,13 @@ import { useAuth } from "@/app/auth-provider";
 import { RolForm, type RolFormValues } from "../components/RolForm";
 import { agregarRolAProyecto } from "@/lib/actions/proyect-role-actions";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { ShieldPlus, AlertTriangle, ArrowLeft, User } from "lucide-react"; // Añadido ArrowLeft
 import { toast as sonnerToast } from "sonner";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import Link from "next/link";
-import { PageBackground } from "@/components/ui/page-background";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo"; // Para estado de carga opcional
 //#endregion ![head]
 
@@ -93,9 +92,11 @@ export default function CrearRolPage() {
   //#region [render_sub] - LOADING STATE ⏳
   if (isPageLoading) {
     return (
-      <PageBackground >
-        <SustratoLoadingLogo size={50} showText text="Cargando configuración..." />
-      </PageBackground>
+      <div>
+        <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <SustratoLoadingLogo size={50} showText text="Cargando configuración..." />
+        </div>
+      </div>
     );
   }
   //#endregion [render_sub]
@@ -103,34 +104,39 @@ export default function CrearRolPage() {
   //#region [render_sub] - NO PROJECT ERROR STATE 🤚
   if (pageError && !proyectoActual?.id) { // Si el error es por no tener proyecto
     return (
-      <PageBackground >
-        <StandardCard 
-          styleType="subtle"
-          className="max-w-md text-center" 
-          colorScheme="primary" // Rule: Inner card for info/error block
-          accentPlacement="none" // Rule: Inner card
-          hasOutline={false} // Rule: Inner card
-          shadow="none" // Rule: Inner card
-          disableShadowHover={true} // Rule: Inner card
-        >
-          <StandardCard.Header>
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100">
-              <StandardIcon colorScheme="warning" size="md">
-                <AlertTriangle aria-hidden="true" />
-              </StandardIcon>
-            </div>
-            <PageTitle title="Proyecto Requerido" className="mt-4" />
-          </StandardCard.Header>
-          <StandardCard.Content>
-            <StandardText>{pageError}</StandardText>
-          </StandardCard.Content>
-          <StandardCard.Footer>
-            <Link href="/" passHref>
-              <StandardButton styleType="outline" leftIcon={ArrowLeft}>Ir a Inicio</StandardButton>
-            </Link>
-          </StandardCard.Footer>
-        </StandardCard>
-      </PageBackground>
+      <div>
+        <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
+          <StandardCard
+            colorScheme="primary"
+            accentPlacement="none"
+            hasOutline={false}
+            shadow="none"
+            disableShadowHover={true}
+            styleType="subtle"
+            className="max-w-lg w-full"
+          >
+            <StandardCard.Header className="items-center flex flex-col text-center">
+              <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
+              <StandardText preset="subheading" weight="bold" colorScheme="danger">
+                {puedeGestionarRoles ? "Error de Configuración" : "Acceso Denegado"}
+              </StandardText>
+            </StandardCard.Header>
+            <StandardCard.Content className="text-center">
+              <StandardText>{pageError}</StandardText>
+            </StandardCard.Content>
+            <StandardCard.Footer className="flex justify-center">
+              <Link href="/" passHref>
+                <StandardButton
+                  styleType="outline"
+                  leftIcon={ArrowLeft}
+                >
+                  Ir a Inicio
+                </StandardButton>
+              </Link>
+            </StandardCard.Footer>
+          </StandardCard>
+        </div>
+      </div>
     );
   }
   //#endregion [render_sub]
@@ -138,86 +144,92 @@ export default function CrearRolPage() {
   //#region [render_sub] - ACCESS DENIED STATE 🚫
   if (!puedeGestionarRoles && proyectoActual?.id) { // Si hay proyecto pero no permisos
     return (
-      <PageBackground >
-        <StandardCard 
-          styleType="subtle"
-          className="max-w-md text-center" 
-          colorScheme="primary" // Rule: Inner card for info/error block
-          accentPlacement="none" // Rule: Inner card
-          hasOutline={false} // Rule: Inner card
-          shadow="none" // Rule: Inner card
-          disableShadowHover={true} // Rule: Inner card
-        >
-          <StandardCard.Header>
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100">
-              <StandardIcon colorScheme="warning" size="md">
-                <AlertTriangle aria-hidden="true" />
-              </StandardIcon>
-            </div>
-            <PageTitle title="Acceso Denegado" className="mt-4" />
-          </StandardCard.Header>
-          <StandardCard.Content>
-            <StandardText>
-              No tienes los permisos necesarios para crear nuevos roles en este proyecto.
-            </StandardText>
-          </StandardCard.Content>
-          <StandardCard.Footer>
-            <Link href="/datos-maestros/roles" passHref>
-              <StandardButton styleType="outline" leftIcon={ArrowLeft}>Volver al Listado de Roles</StandardButton>
-            </Link>
-          </StandardCard.Footer>
-        </StandardCard>
-      </PageBackground>
+      <div>
+        <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
+          <StandardCard
+            colorScheme="primary"
+            accentPlacement="none"
+            hasOutline={false}
+            shadow="none"
+            disableShadowHover={true}
+            styleType="subtle"
+            className="max-w-lg w-full"
+          >
+            <StandardCard.Header className="items-center flex flex-col text-center">
+              <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
+              <StandardText preset="subheading" weight="bold" colorScheme="danger">
+                Acceso Denegado
+              </StandardText>
+            </StandardCard.Header>
+            <StandardCard.Content className="text-center">
+              <StandardText>
+                No tienes los permisos necesarios para crear nuevos roles en este proyecto.
+              </StandardText>
+            </StandardCard.Content>
+            <StandardCard.Footer className="flex justify-center">
+              <Link href="/datos-maestros/roles" passHref>
+                <StandardButton
+                  styleType="outline"
+                  leftIcon={ArrowLeft}
+                >
+                  Volver al Listado de Roles
+                </StandardButton>
+              </Link>
+            </StandardCard.Footer>
+          </StandardCard>
+        </div>
+      </div>
     );
   }
   //#endregion [render_sub]
 
   //#region [render_sub] - MAIN FORM DISPLAY 📝
   return (
-    <PageBackground>
-      <div className="container mx-auto py-6">
-        
-          <PageTitle
-  title="Agregar Nuevo Rol al Proyecto"
-  subtitle={`Define un nuevo conjunto de permisos para el proyecto "${proyectoActual?.name || "..."}"`}
-  mainIcon={ShieldPlus}
-  breadcrumbs={[
-    { label: "Datos Maestros", href: "/datos-maestros" },
-    { label: "Roles", href: "/datos-maestros/roles" },
-    { label: "Crear Rol" }
-  ]}
-  showBackButton={{ href: "/datos-maestros/roles" }}
-/>
-            <StandardCard
-              colorScheme="secondary" // Rule: Main form card colorScheme is secondary
-              accentPlacement="top" // Rule: Main form card accentPlacement is top
-              accentColorScheme="primary" // Rule: Main form card accent for create/edit is primary
-              shadow="md" // Rule: Main form card shadow is md by default
-              disableShadowHover={true}
-              styleType="subtle"
-              // styleType and hasOutline removed
-            >
+    <div>
+      <div className="container mx-auto py-8">
+        <div className="max-w-3xl mx-auto">
+          <StandardPageTitle
+            title="Agregar Nuevo Rol al Proyecto"
+            subtitle={`Define un nuevo conjunto de permisos para el proyecto "${proyectoActual?.name || "..."}"`}
+            mainIcon={ShieldPlus}
+            breadcrumbs={[
+              { label: "Datos Maestros", href: "/datos-maestros" },
+              { label: "Roles", href: "/datos-maestros/roles" },
+              { label: "Crear Rol" }
+            ]}
+            showBackButton={{ href: "/datos-maestros/roles" }}
+          />
 
-          <StandardCard.Content>
-            {pageError && proyectoActual?.id && ( // Mostrar error de envío si hay proyecto
-              <div className="mb-4 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive-foreground">
-                <div className="flex items-center gap-2">
-                  <StandardIcon size="sm" colorScheme="inherit">
-                    <AlertTriangle/>
-                  </StandardIcon>
-                  <span>{pageError}</span>
+          <StandardCard
+            className="mt-6"
+            accentPlacement="top"
+            colorScheme="secondary"
+            accentColorScheme="primary"
+            shadow="md"
+            disableShadowHover={true}
+            styleType="subtle"
+          >
+            <StandardCard.Content>
+              {pageError && proyectoActual?.id && ( // Mostrar error de envío si hay proyecto
+                <div className="mb-4 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive-foreground">
+                  <div className="flex items-center gap-2">
+                    <StandardIcon size="sm" colorScheme="danger">
+                      <AlertTriangle/>
+                    </StandardIcon>
+                    <span>{pageError}</span>
+                  </div>
                 </div>
-              </div>
-            )}
-            <RolForm
-              modo="crear"
-              onSubmit={handleCrearRol}
-              loading={isSubmitting}
-            />
-          </StandardCard.Content>
-        </StandardCard>
+              )}
+              <RolForm
+                modo="crear"
+                onSubmit={handleCrearRol}
+                loading={isSubmitting}
+              />
+            </StandardCard.Content>
+          </StandardCard>
+        </div>
       </div>
-    </PageBackground>
+    </div>
   );
   //#endregion [render_sub]
 }

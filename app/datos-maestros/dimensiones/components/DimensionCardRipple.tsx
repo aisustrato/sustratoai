@@ -7,13 +7,13 @@ import { useRipple } from "@/components/ripple/RippleProvider";
 import { useTheme } from "@/app/theme-provider";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
-import { BadgeCustom } from "@/components/ui/badge-custom";
+import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { PenLine, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FullDimension } from "@/lib/actions/dimension-actions";
-import type { BadgeVariant } from "@/lib/theme/components/badge-tokens";
+
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -43,7 +43,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
   const tipoLabel =
     dimension.type === "finite" ? "Selección Múltiple" : "Respuesta Abierta";
 
-  let cardColorVariant: BadgeVariant = "neutral";
+    let cardColorVariant: any = "neutral";
   if (dimension.type === "finite") cardColorVariant = "success";
   else if (dimension.type === "open") cardColorVariant = "info";
 
@@ -89,7 +89,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
           <div className="flex flex-col gap-1">
             <div className="flex items-start justify-between">
               <StandardText
-                variant="heading"
+                preset="heading"
                 size="md"
                 weight="semibold"
                 className="flex-grow mr-2"
@@ -97,9 +97,9 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
               >
                 {dimension.name}
               </StandardText>
-              <BadgeCustom variant={cardColorVariant} className="flex-shrink-0">
+              <StandardBadge colorScheme={cardColorVariant} className="flex-shrink-0">
                 {tipoLabel}
-              </BadgeCustom>
+              </StandardBadge>
             </div>
             {canManage && (
               <div className="flex justify-end gap-1 mt-1">

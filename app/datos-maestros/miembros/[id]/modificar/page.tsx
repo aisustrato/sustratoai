@@ -23,8 +23,7 @@ import { MiembroForm, MiembroFormValues } from "@/app/datos-maestros/miembros/co
 import { toast } from "sonner";
 import { ArrowLeft, User } from "lucide-react";
 import { useLoading } from "@/contexts/LoadingContext";
-import { PageBackground } from "@/components/ui/page-background";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 //#endregion ![head]
 
@@ -247,7 +246,7 @@ export default function ModificarMiembroPage() {
 
   if (error && !miembro) {
     return (
-      <PageBackground>
+      <div>
         <div className="container mx-auto py-6">
           <div className="space-y-6">
             <PageHeader
@@ -265,13 +264,13 @@ export default function ModificarMiembroPage() {
             />
           </div>
         </div>
-      </PageBackground>
+      </div>
     );
   }
 
   if (!miembro && !isPageLoading) {
     return (
-      <PageBackground>
+      <div>
         <div className="container mx-auto py-6">
           <div className="space-y-6">
             <PageHeader
@@ -289,15 +288,15 @@ export default function ModificarMiembroPage() {
             />
           </div>
         </div>
-      </PageBackground>
+      </div>
     );
   }
 
   return (
-    <PageBackground>
+    <div>
       <div className="container mx-auto py-6">
         <div className="space-y-6">
-          <PageTitle 
+          <StandardPageTitle 
             title={`Editar Miembro: ${getNombreMiembro()}`}
             subtitle="Actualiza la información del miembro en el proyecto"
             mainIcon={User}
@@ -314,7 +313,7 @@ export default function ModificarMiembroPage() {
             <StandardCard
               disableShadowHover={true}
               styleType="subtle"
-              colorScheme="secondary" // Rule: Main form card colorScheme is secondary
+              colorScheme="primary" // Rule: Main form card colorScheme is secondary
               accentPlacement="top" // Rule: Main form card accentPlacement is top
               accentColorScheme="primary" // Rule: Main form card accent for create/edit is primary
               shadow="md" // Rule: Main form card shadow is md by default
@@ -331,7 +330,7 @@ export default function ModificarMiembroPage() {
           )}
         </div>
       </div>
-    </PageBackground>
+    </div>
   );
 }
 //#endregion ![render]

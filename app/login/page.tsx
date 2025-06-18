@@ -7,8 +7,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/auth-provider";
 import { StandardButton } from "@/components/ui/StandardButton";
-import { Input } from "@/components/ui/input";
-import { FormField } from "@/components/ui/form-field";
+import { StandardInput } from "@/components/ui/StandardInput";
+import { StandardFormField } from "@/components/ui/StandardFormField";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { Mail, Lock, LogIn } from "lucide-react";
@@ -16,7 +16,7 @@ import { Mail, Lock, LogIn } from "lucide-react";
 // Sin embargo, se mantiene por si lo usas para la validación de campos vacíos.
 import { toast } from "sonner"; 
 import { SustratoLogoWithFixedText } from "@/components/ui/sustrato-logo-with-fixed-text";
-import { SustratoPageBackground } from "@/components/ui/sustrato-page-background";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -94,7 +94,7 @@ export default function LoginPage() {
   // redirigir antes de que esto se muestre de forma prolongada.
   if (authInitialized && user) {
     return (
-      <SustratoPageBackground variant="ambient" bubbles={false}>
+      <StandardPageBackground variant="gradient">
         <div className="flex items-center justify-center min-h-screen p-4">
           <div className="text-center">
             <SustratoLogoWithFixedText
@@ -103,20 +103,20 @@ export default function LoginPage() {
               speed="fast"
               initialTheme="blue"
             />
-            <StandardText variant="heading" colorScheme="primary" className="mt-4">
+            <StandardText preset="heading" colorScheme="primary" className="mt-4">
               Ya has iniciado sesión
             </StandardText>
-            <StandardText variant="default" colorScheme="neutral" className="mt-2">
+            <StandardText preset="body" colorScheme="neutral" className="mt-2">
               Redirigiendo a tu página...
             </StandardText>
           </div>
         </div>
-      </SustratoPageBackground>
+      </StandardPageBackground>
     );
   }
 
   return (
-    <SustratoPageBackground variant="ambient" bubbles={true}>
+    <StandardPageBackground variant="gradient">
       <div className="flex items-center justify-center min-h-screen p-4">
         <StandardCard className="max-w-4xl w-full" accentPlacement="top" colorScheme="primary">
           <StandardCard.Content className="p-0">
@@ -196,8 +196,8 @@ export default function LoginPage() {
                 </StandardText>
 
                 <form onSubmit={handleSubmit} className="space-y-4" action="javascript:void(0)"> {/* Manteniendo tu action */}
-                  <FormField label="Correo electrónico" htmlFor="email">
-                    <Input
+                  <StandardFormField label="Correo electrónico" htmlFor="email">
+                    <StandardInput
                       id="email"
                       type="email"
                       leadingIcon={Mail} // Manteniendo tu prop
@@ -207,10 +207,10 @@ export default function LoginPage() {
                       required
                       disabled={loading || authProviderLoading} // Añadido authProviderLoading
                     />
-                  </FormField>
+                  </StandardFormField>
 
-                  <FormField label="Contraseña" htmlFor="password">
-                    <Input
+                  <StandardFormField label="Contraseña" htmlFor="password">
+                    <StandardInput
                       id="password"
                       type="password"
                       leadingIcon={Lock} // Manteniendo tu prop
@@ -220,7 +220,7 @@ export default function LoginPage() {
                       required
                       disabled={loading || authProviderLoading} // Añadido authProviderLoading
                     />
-                  </FormField>
+                  </StandardFormField>
 
                   <div className="flex justify-end">
                     <Link
@@ -267,6 +267,6 @@ export default function LoginPage() {
           </StandardCard.Content>
         </StandardCard>
       </div>
-    </SustratoPageBackground>
+    </StandardPageBackground>
   );
 }

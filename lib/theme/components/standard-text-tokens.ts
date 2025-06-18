@@ -1,182 +1,62 @@
-//. 📍 lib/theme/components/standard-text-tokens.ts
+//. 📍 lib/theme/components/standard-text-tokens.ts (v2.4 - Fuente de Verdad de Tipos)
 
-//#region [head] - 🏷️ IMPORTS 🏷️
-import type {
-	AppColorTokens,
-	ProCardVariant, // Tipo unificado para los esquemas de color
-	Mode,
-	ColorShade,
-} from "../ColorToken";
-//#endregion ![head]
+import type { AppColorTokens, ColorSchemeVariant, Mode } from "../ColorToken";
+import tinycolor from "tinycolor2";
 
 //#region [def] - 📦 TYPES & INTERFACES 📦
-// Tipos renombrados para el nuevo estándar
-export type StandardTextTokenColorSet = {
+
+// ✅ CORRECCIÓN ARQUITECTÓNICA: Los tipos de props se definen y exportan desde aquí.
+export type StandardTextSize = "3xs" | "2xs" | "xs" | "sm" | "base" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
+export type StandardTextWeight = "normal" | "medium" | "semibold" | "bold";
+export type StandardTextAlign = "left" | "center" | "right" | "justify";
+export type StandardTextColorShade = "pure" | "text" | "textShade" | "contrastText" | "subtle";
+export type StandardTextGradient = ColorSchemeVariant | boolean;
+
+export interface StandardTextTokenSet {
 	pure: string;
 	text: string;
-	dark: string; // Mantenido por compatibilidad con la lógica interna original de text.tsx
+	contrastText: string;
 	textShade: string;
-};
-
-// Se usan las claves de ProCardVariant para el objeto `colors`
-type StandardTextColorSchemes = {
-	[key in ProCardVariant]?: StandardTextTokenColorSet;
-};
+	subtle: string;
+}
 
 export type StandardTextTokens = {
-	colors: StandardTextColorSchemes;
-	gradients: {
-		// Estas claves deben ser un subconjunto de ProCardVariant
-		primary: { start: string; middle: string; end: string };
-		secondary: { start: string; middle: string; end: string };
-		tertiary: { start: string; middle: string; end: string };
-		accent: { start: string; middle: string; end: string };
-		success: { start: string; middle: string; end: string };
-		warning: { start: string; middle: string; end: string };
-		danger: { start: string; middle: string; end: string };
-	};
-	variants: {
-		default: {
-			size: string;
-			weight: string;
-			color: keyof StandardTextTokens["colors"];
-		};
-		heading: {
-			size: string;
-			weight: string;
-			color: keyof StandardTextTokens["colors"];
-		};
-		subheading: {
-			size: string;
-			weight: string;
-			color: keyof StandardTextTokens["colors"];
-		};
-		title: {
-			size: string;
-			weight: string;
-			color: keyof StandardTextTokens["colors"];
-		};
-		subtitle: {
-			size: string;
-			weight: string;
-			color: keyof StandardTextTokens["colors"];
-		};
-		label: {
-			size: string;
-			weight: string;
-			color: keyof StandardTextTokens["colors"];
-		};
-		caption: {
-			size: string;
-			weight: string;
-			color: keyof StandardTextTokens["colors"];
-		};
-		muted: {
-			size: string;
-			weight: string;
-			color: keyof StandardTextTokens["colors"];
-		};
-	};
-};
+	colors: Record<ColorSchemeVariant, StandardTextTokenSet>;
+	gradients: Record<ColorSchemeVariant, string>;
+}
 //#endregion ![def]
 
-//#region [main] - 🏭 TOKEN GENERATOR FUNCTION 🏭
-export function generateStandardTextTokens(
-	appTokens: AppColorTokens,
-	mode: Mode
-): StandardTextTokens {
-	const isDark = mode === "dark";
+// ... (la función generateStandardTextTokens no cambia)
+export function generateStandardTextTokens(appColorTokens: AppColorTokens, mode: Mode): StandardTextTokens {
+    // ... lógica existente
+    const isDark = mode === "dark";
+	const textColors = {} as Record<ColorSchemeVariant, StandardTextTokenSet>;
+    const textGradients = {} as Record<ColorSchemeVariant, string>;
 
-	//#region [sub] - 🧰 HELPER FUNCTIONS 🧰
+	for (const colorScheme in appColorTokens) {
+		const key = colorScheme as ColorSchemeVariant;
+		const colorSet = appColorTokens[key];
 
-	const mapColorShadeToTokenSet = (
-		shade: ColorShade
-	): StandardTextTokenColorSet => ({
-		pure: shade.pure,
-		text: shade.text,
-		textShade: shade.textShade,
-		dark: shade.textShade,
-	});
-	//#endregion ![sub]
-
-	const textColors: StandardTextTokens["colors"] = {
-		primary: mapColorShadeToTokenSet(appTokens.primary),
-		secondary: mapColorShadeToTokenSet(appTokens.secondary),
-		tertiary: mapColorShadeToTokenSet(appTokens.tertiary),
-		accent: mapColorShadeToTokenSet(appTokens.accent),
-		success: mapColorShadeToTokenSet(appTokens.success),
-		warning: mapColorShadeToTokenSet(appTokens.warning),
-		danger: mapColorShadeToTokenSet(appTokens.danger),
-		neutral: mapColorShadeToTokenSet(appTokens.neutral), // "default" ahora es "neutral"
-		white: mapColorShadeToTokenSet(appTokens.white), // Añadido para completar ProCardVariant
-	};
-
-	// Para los casos de "muted" y "default" que ya no son keys,
-	// la lógica se manejará en el componente a través de la prop `variant`.
-	// Por ejemplo, `variant="muted"` usará `colorScheme="neutral"` y un `colorShade`.
-
-	const textGradients: StandardTextTokens["gradients"] = {
-		primary: {
-			start: appTokens.primary.pure,
-			middle: appTokens.primary.pureShade,
-			end: appTokens.primary.textShade,
-		},
-		secondary: {
-			start: appTokens.secondary.pure,
-			middle: appTokens.secondary.pureShade,
-			end: appTokens.secondary.textShade,
-		},
-		tertiary: {
-			start: appTokens.tertiary.pure,
-			middle: appTokens.tertiary.pureShade,
-			end: appTokens.tertiary.textShade,
-		},
-		accent: {
-			start: appTokens.accent.pure,
-			middle: appTokens.accent.pureShade,
-			end: appTokens.accent.textShade,
-		},
-		success: {
-			start: appTokens.success.pure,
-			middle: appTokens.success.pureShade,
-			end: appTokens.success.textShade,
-		},
-		warning: {
-			start: appTokens.warning.pure,
-			middle: appTokens.warning.pureShade,
-			end: appTokens.warning.textShade,
-		},
-		danger: {
-			start: appTokens.danger.pure,
-			middle: appTokens.danger.pureShade,
-			end: appTokens.danger.textShade,
-		},
-	};
-
-	const variantDefaults: StandardTextTokens["variants"] = {
-		default: { size: "base", weight: "normal", color: "neutral" }, // "default" ahora usa el colorScheme "neutral"
-		heading: { size: "3xl", weight: "bold", color: "neutral" },
-		subheading: { size: "2xl", weight: "semibold", color: "neutral" },
-		title: { size: "xl", weight: "semibold", color: "primary" },
-		subtitle: { size: "lg", weight: "medium", color: "secondary" },
-		label: { size: "sm", weight: "medium", color: "neutral" },
-		caption: { size: "xs", weight: "normal", color: "neutral" }, // "muted" y "caption" usarán "neutral" como base
-		muted: { size: "sm", weight: "normal", color: "neutral" },
-	};
-
+		if (colorSet) {
+            const subtleColor = tinycolor.mix(colorSet.text, isDark ? '#A0A0A0' : '#888888', 70).toHexString();
+			textColors[key] = {
+				pure: colorSet.pure,
+				text: colorSet.text,
+				contrastText: colorSet.contrastText,
+				textShade: colorSet.textShade,
+                subtle: subtleColor,
+			};
+            
+            const gradientStart = colorSet.pure;
+            const gradientMiddle = tinycolor.mix(colorSet.pure, colorSet.text, 70).toHexString();
+            const gradientEnd = colorSet.textShade;
+            
+            textGradients[key] = `linear-gradient(to right, ${gradientStart} 40%, ${gradientMiddle} 60%, ${gradientEnd} 100%)`;
+		}
+	}
+	
 	return {
-		colors: textColors,
-		gradients: textGradients,
-		variants: variantDefaults,
-	};
+        colors: textColors,
+        gradients: textGradients,
+    };
 }
-//#endregion ![main]
-
-//#region [foo] - 🔚 EXPORTS 🔚
-// Types, Interface, and Generator Function are exported above.
-//#endregion ![foo]
-
-//#region [todo] - 👀 PENDIENTES 👀
-// - Review if 'dark' property in StandardTextTokenColorSet is still necessary or can be refactored.
-// - Ensure all default variant colors align with design system's intent for neutral/primary/secondary usage.
-//#endregion ![todo]

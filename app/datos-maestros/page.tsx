@@ -2,7 +2,7 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
@@ -20,7 +20,7 @@ export default function DatosMaestrosHome() {
   //#region [render] - 🎨 RENDER SECTION 🎨
   return (
     <div className="container mx-auto py-8">
-      <PageTitle
+      <StandardPageTitle
         title="Datos Maestros"
         subtitle="Administra la información estructural clave de tu proyecto: roles, miembros y lotes."
         breadcrumbs={[{ label: "Datos Maestros" }]}

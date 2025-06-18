@@ -10,10 +10,10 @@ import { useTheme } from "@/app/theme-provider";
 import { useAuth } from "@/app/auth-provider";
 import { toast } from "sonner"; // Re-importado para toasts locales
 import { StandardText } from "@/components/ui/StandardText";
-import { SelectCustom, type SelectOption } from "@/components/ui/select-custom";
+import { StandardSelect, type SelectOption } from "@/components/ui/StandardSelect"; // Assuming SelectOption type is compatible or similar
 import React from "react";
 import { generateUserAvatarTokens } from "@/lib/theme/components/user-avatar-tokens";
-import { actualizarProyectoActivo, type UserProjectSetting } from "@/app/actions/proyecto-actions"; // Importar server action y tipo
+import { actualizarProyectoActivo } from "@/app/actions/proyecto-actions"; // Importar server action y tipo
 
 // Traducciones amigables para los nombres de permisos (sin cambios)
 const permissionTranslations = {
@@ -267,7 +267,7 @@ export function UserAvatar() {
               }}
             >
               <StandardText
-                variant="title"
+                preset="title"
                 size="base"
                 weight="medium"
                 colorScheme="primary"
@@ -308,7 +308,7 @@ export function UserAvatar() {
                  Proyecto actual
                </StandardText>
                <div className="px-2 mb-2">
-                 <SelectCustom
+                 <StandardSelect
                    size="sm"
                    options={projectOptions}
                    value={proyectoActual?.id || ""}
@@ -372,7 +372,7 @@ export function UserAvatar() {
                       key={permission}
                       className="flex items-center gap-2 py-0.5"
                     >
-                      <StandardIcon>
+                      <StandardIcon styleType="outline" size="xs" colorScheme="tertiary" colorShade="pure">
                         <Check className="h-3.5 w-3.5" />
                       </StandardIcon>
                       <StandardText size="xs" colorScheme="neutral">
@@ -406,7 +406,7 @@ export function UserAvatar() {
                 onClick={handleLogout}
               >
                 <div className="flex items-center gap-2">
-                  <StandardIcon colorScheme="secondary" colorShade="pure">
+                  <StandardIcon colorScheme="secondary" colorShade="pure" styleType="outline">
                     <LogOut className="h-4 w-4" />
                   </StandardIcon>
                   <StandardText colorScheme="secondary" colorShade="pure" size="sm">

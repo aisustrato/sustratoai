@@ -12,10 +12,10 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
-import { Input } from "@/components/ui/input";
-import { TextArea } from "@/components/ui/textarea";
+import { StandardInput } from "@/components/ui/StandardInput";
+import { StandardTextarea } from "@/components/ui/StandardTextarea";
 import { StandardCheckbox } from "@/components/ui/StandardCheckbox";
-import { FormField } from "@/components/ui/form-field";
+import { StandardFormField } from "@/components/ui/StandardFormField";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { StandardText } from "@/components/ui/StandardText";
@@ -51,22 +51,48 @@ interface RolFormProps {
 	modo: "crear" | "editar" | "ver";
 	valoresIniciales?: Partial<RolFormValues>;
 	onSubmit?: (data: RolFormValues) => void;
-	disabled?: boolean; 
+	disabled?: boolean;
 	loading?: boolean;
-  isEditingForm?: boolean; // NUEVA PROP para el estilo de edición
+	isEditingForm?: boolean; // NUEVA PROP para el estilo de edición
 }
 
 // permissionFields is now a module-level constant.
 const permissionFields: {
-	name: keyof Pick<RolFormValues, "can_manage_master_data" | "can_create_batches" | "can_upload_files" | "can_bulk_edit_master_data">;
+	name: keyof Pick<
+		RolFormValues,
+		| "can_manage_master_data"
+		| "can_create_batches"
+		| "can_upload_files"
+		| "can_bulk_edit_master_data"
+	>;
 	label: string;
 	hint: string;
 	icon: React.ElementType;
 }[] = [
-	{ name: "can_manage_master_data", label: "Gestionar Datos Maestros", hint: "Permite crear, editar y eliminar miembros, roles, y otros datos clave del proyecto.", icon: DatabaseZap },
-	{ name: "can_create_batches", label: "Crear Lotes de Trabajo", hint: "Permite iniciar y configurar nuevos lotes de análisis o procesamiento.", icon: ListChecks },
-	{ name: "can_upload_files", label: "Subir Archivos", hint: "Permite cargar archivos (documentos, imágenes, datos) al proyecto.", icon: UploadCloud },
-	{ name: "can_bulk_edit_master_data", label: "Edición Masiva de Datos Maestros", hint: "Permite realizar cambios en múltiples registros de datos maestros a la vez.", icon: Edit },
+	{
+		name: "can_manage_master_data",
+		label: "Gestionar Datos Maestros",
+		hint: "Permite crear, editar y eliminar miembros, roles, y otros datos clave del proyecto.",
+		icon: DatabaseZap,
+	},
+	{
+		name: "can_create_batches",
+		label: "Crear Lotes de Trabajo",
+		hint: "Permite iniciar y configurar nuevos lotes de análisis o procesamiento.",
+		icon: ListChecks,
+	},
+	{
+		name: "can_upload_files",
+		label: "Subir Archivos",
+		hint: "Permite cargar archivos (documentos, imágenes, datos) al proyecto.",
+		icon: UploadCloud,
+	},
+	{
+		name: "can_bulk_edit_master_data",
+		label: "Edición Masiva de Datos Maestros",
+		hint: "Permite realizar cambios en múltiples registros de datos maestros a la vez.",
+		icon: Edit,
+	},
 ];
 //#endregion ![def]
 
@@ -77,7 +103,7 @@ export const RolForm = ({
 	onSubmit,
 	disabled = false,
 	loading = false,
-  isEditingForm = false, // Valor por defecto para la nueva prop
+	isEditingForm = false, // Valor por defecto para la nueva prop
 }: RolFormProps) => {
 	//#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
 	// permissionFields constant has been moved outside the component.
@@ -97,7 +123,7 @@ export const RolForm = ({
 		};
 	}, [valoresIniciales]);
 
-	const form = useForm<RolFormValues>({ 
+	const form = useForm<RolFormValues>({
 		resolver: zodResolver(rolFormSchema),
 		defaultValues: defaultFormValues,
 		mode: "onBlur",
@@ -131,13 +157,14 @@ export const RolForm = ({
 
 		const fieldValue = form.watch(fieldName);
 		if (typeof fieldValue === "boolean") {
-			return !form.formState.errors[fieldName]; 
+			return !form.formState.errors[fieldName];
 		}
 		return !!fieldValue && !form.formState.errors[fieldName];
 	};
 
-	type PermissionFieldName = keyof Pick< // This type alias is local to the component if its logic might use it.
-		RolFormValues,                   // permissionFields array itself now uses the direct keyof Pick for its type.
+	type PermissionFieldName = keyof Pick<
+		// This type alias is local to the component if its logic might use it.
+		RolFormValues, // permissionFields array itself now uses the direct keyof Pick for its type.
 		| "can_manage_master_data"
 		| "can_create_batches"
 		| "can_upload_files"
@@ -151,71 +178,87 @@ export const RolForm = ({
 		<form
 			onSubmit={form.handleSubmit(handleFormSubmit, onInvalidSubmit)}
 			className="space-y-6">
-			<FormField
+			<StandardFormField
 				label="Nombre del Rol"
 				htmlFor="rf-role_name"
 				isRequired={true}
 				error={form.formState.errors.role_name?.message}
-				hint={isReadOnlyEffective ? undefined : "Nombre único y descriptivo para el rol."}>
+				hint={
+					isReadOnlyEffective
+						? undefined
+						: "Nombre único y descriptivo para el rol."
+				}>
 				<Controller
 					name="role_name"
 					control={form.control}
 					render={({ field, fieldState }) => (
-						<Input
+						<StandardInput
 							id="rf-role_name"
 							placeholder="Ej: Investigador Principal, Transcriptor"
 							leadingIcon={Shield}
-							error={!isReadOnlyEffective ? fieldState.error?.message : undefined}
-							success={!isReadOnlyEffective && getFieldSuccessState("role_name")}
+							error={
+								!isReadOnlyEffective ? fieldState.error?.message : undefined
+							}
+							success={
+								!isReadOnlyEffective && getFieldSuccessState("role_name")
+							}
 							readOnly={isReadOnlyEffective}
-              isEditing={isEditingForm && !isReadOnlyEffective} // <-- AÑADIDO
+							isEditing={isEditingForm && !isReadOnlyEffective} // <-- AÑADIDO
 							{...field}
 						/>
 					)}
 				/>
-			</FormField>
+			</StandardFormField>
 
-			<FormField
+			<StandardFormField
 				label="Descripción del Rol"
 				htmlFor="rf-role_description"
 				error={form.formState.errors.role_description?.message}
-				hint={isReadOnlyEffective ? undefined : "Detalla las responsabilidades y el propósito de este rol (opcional)."}>
+				hint={
+					isReadOnlyEffective
+						? undefined
+						: "Detalla las responsabilidades y el propósito de este rol (opcional)."
+				}>
 				<Controller
-					name="role_description" 
+					name="role_description"
 					control={form.control}
 					render={({ field, fieldState }) => (
-						<TextArea
+						<StandardTextarea
 							id="rf-role_description"
 							placeholder="Describe brevemente qué puede hacer un usuario con este rol..."
 							rows={3}
 							maxLength={500}
 							showCharacterCount={!isReadOnlyEffective}
-							error={!isReadOnlyEffective ? fieldState.error?.message : undefined}
-							success={!isReadOnlyEffective && getFieldSuccessState("role_description")}
+							error={
+								!isReadOnlyEffective ? fieldState.error?.message : undefined
+							}
+							success={
+								!isReadOnlyEffective && getFieldSuccessState("role_description")
+							}
 							readOnly={isReadOnlyEffective}
-              isEditing={isEditingForm && !isReadOnlyEffective} // <-- AÑADIDO
+							isEditing={isEditingForm && !isReadOnlyEffective} // <-- AÑADIDO
 							{...field}
-							value={field.value ?? ""} 
+							value={field.value ?? ""}
 						/>
 					)}
 				/>
-			</FormField>
+			</StandardFormField>
 
 			{/* //#region [render_sub] - PERMISOS ESPECÍFICOS 🛡️ */}
 			<div>
-				<StandardText variant="label" weight="medium" className="mb-3 block">
+				<StandardText preset="body" weight="medium" className="mb-3 block">
 					Permisos Específicos del Rol
 				</StandardText>
 				<div className="space-y-4 rounded-md border p-4 shadow-sm bg-card">
 					{permissionFields.map((perm) => (
-						<FormField
+						<StandardFormField
 							key={perm.name}
 							htmlFor={`rf-${perm.name}`}
-							label="" 
+							label=""
 							error={form.formState.errors[perm.name]?.message}
 							className="!space-y-0">
 							<Controller
-								name={perm.name} 
+								name={perm.name}
 								control={form.control}
 								render={({ field, fieldState }) => (
 									<StandardCheckbox
@@ -238,7 +281,7 @@ export const RolForm = ({
 									/>
 								)}
 							/>
-						</FormField>
+						</StandardFormField>
 					))}
 				</div>
 			</div>
@@ -257,8 +300,9 @@ export const RolForm = ({
 							form.formState.isSubmitting ||
 							(modo === "editar" && !form.formState.isDirty)
 						}
-						loadingText={modo === "crear" ? "Creando Rol..." : "Guardando Cambios..."}
-					>
+						loadingText={
+							modo === "crear" ? "Creando Rol..." : "Guardando Cambios..."
+						}>
 						{modo === "crear" ? "Crear Rol" : "Guardar Cambios"}
 					</StandardButton>
 				</div>

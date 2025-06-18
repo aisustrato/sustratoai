@@ -1,8 +1,6 @@
 "use client";
 
 import { useTheme } from "@/app/theme-provider";
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
 import { SustratoLogoRotating } from "@/components/ui/sustrato-logo-rotating";
 
 // Componente con SVG rotativo pero texto fijo según el tema actual
@@ -10,48 +8,22 @@ export function SustratoLogoWithFixedText({
   className = "",
   size = 40,
   speed = "normal",
-  initialTheme = "blue",
+  initialTheme = "blue", // initialTheme is for the rotating part, not text
   textClassName = "",
   variant = "horizontal",
 }: {
   className?: string;
   size?: number;
   speed?: "slow" | "normal" | "fast";
-  initialTheme?: "blue" | "green" | "orange";
+  initialTheme?: "blue" | "green" | "orange"; // Keep for SustratoLogoRotating compatibility
   textClassName?: string;
   variant?: "horizontal" | "vertical";
 }) {
-  const { colorScheme, mode } = useTheme();
-  const [textColors, setTextColors] = useState({
-    primary: "#3D7DF6", // Blue theme primary default
-    accent: "#8A4EF6", // Accent color (purple)
-  });
+  const { appColorTokens } = useTheme();
 
-  // Definición de colores por tema
-  const themeColors = {
-    blue: {
-      primary: mode === "dark" ? "#2E5EB9" : "#3D7DF6",
-      secondary: mode === "dark" ? "#1EA4E9" : "#516e99",
-    },
-    green: {
-      primary: mode === "dark" ? "#1c8e63" : "#24BC81",
-      secondary: mode === "dark" ? "#2CA18F" : "#3AD7BF",
-    },
-    orange: {
-      primary: mode === "dark" ? "#B95413" : "#F77019",
-      secondary: mode === "dark" ? "#6D2F0B" : "#913E0F",
-    },
-  };
+  const primaryTextColor = appColorTokens.primary?.pure || "#3D7DF6"; // Fallback if needed
+  const accentTextColor = "#8A4EF6"; // Mantener el acento púrpura
 
-  // Actualizar los colores cuando cambie el tema global
-  useEffect(() => {
-    const currentTheme = (colorScheme as keyof typeof themeColors) || "blue";
-
-    setTextColors({
-      primary: themeColors[currentTheme].primary,
-      accent: "#8A4EF6", // Mantener el acento púrpura
-    });
-  }, [colorScheme, mode]);
 
   // Tamaño del texto según el tamaño del logo
   const getTextSize = () => {
@@ -90,7 +62,7 @@ export function SustratoLogoWithFixedText({
           <span
             className="bg-clip-text text-transparent"
             style={{
-              backgroundImage: `linear-gradient(to right, ${textColors.primary}, ${textColors.accent})`,
+              backgroundImage: `linear-gradient(to right, ${primaryTextColor}, ${accentTextColor})`,
               fontFamily: "'Chau Philomene One', sans-serif",
             }}
           >

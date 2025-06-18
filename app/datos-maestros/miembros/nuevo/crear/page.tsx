@@ -21,15 +21,16 @@ import {
   MiembroForm,
   type MiembroFormValues,
 } from "@/app/datos-maestros/miembros/components/MiembroForm";
-import type { SelectOption } from "@/components/ui/select-custom";
+
 import { toast } from "sonner"; // Para notificaciones
 import { useLoading } from "@/contexts/LoadingContext"; // Opcional, para loading global
-import { PageBackground } from "@/components/ui/page-background";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 //#endregion ![head]
 
 //#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
+export type SelectOption = { value: string; label: string };
 //> 📝 No custom types or schemas defined outside the component for this page.
 //#endregion ![def]
 
@@ -176,7 +177,7 @@ export default function CrearMiembroPage() {
 
   if (errorPage && rolesDisponibles.length === 0) { // Si hay un error que impidió cargar roles
     return (
-      <PageBackground>
+      <StandardPageBackground variant="gradient">
         <div className="container mx-auto py-6">
           <div className="space-y-6">
             <PageHeader
@@ -195,7 +196,7 @@ export default function CrearMiembroPage() {
             />
           </div>
         </div>
-      </PageBackground>
+      </StandardPageBackground>
     );
   }
   
@@ -203,10 +204,10 @@ export default function CrearMiembroPage() {
   // y no hay errorPage bloqueante.
 
   return (
-    <PageBackground>
+    <StandardPageBackground variant="gradient">
       <div className="container mx-auto py-6">
         <div className="space-y-6">
-          <PageTitle 
+          <StandardPageTitle 
             title="Agregar Nuevo Miembro"
             subtitle="Complete la información para invitar y asignar un rol a un nuevo miembro en el proyecto"
             mainIcon={UserPlus}
@@ -221,7 +222,7 @@ export default function CrearMiembroPage() {
          <StandardCard
             disableShadowHover={true}
             styleType="subtle"
-            colorScheme="secondary" // Rule: Main form card colorScheme is secondary
+            colorScheme="primary" // Rule: Main form card colorScheme is secondary
             accentPlacement="top" // Rule: Main form card accentPlacement is top
             accentColorScheme="primary" // Rule: Main form card accent for create/edit is primary
             shadow="md" // Rule: Main form card shadow is md by default
@@ -238,7 +239,7 @@ export default function CrearMiembroPage() {
 
         </div>
       </div>
-    </PageBackground>
+    </StandardPageBackground>
   );
 }
 //#endregion ![render]

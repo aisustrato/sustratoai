@@ -2,12 +2,11 @@ import {
   colors,
   type ColorShade,
   type ThemeColors as RawThemeColors,
-  type AllSemanticColors,
 } from "./colors";
 
 export type { ColorShade };
 
-export type ColorScheme = "blue" | "green" | "orange";
+export type ColorScheme = "blue" | "green" | "orange" | "artisticGreen" | "graphite" | "roseGold" | "midnight" | "burgundy" | "zenith";
 export type Mode = "light" | "dark";
 export type ColorSchemeVariant = 'primary' | 'secondary' | 'tertiary' | 'accent' | 'neutral' | 'white' | 'success' | 'warning' | 'danger';
 // Definición de variantes válidas para ProCard y como claves en AppColorTokens

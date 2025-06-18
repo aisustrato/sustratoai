@@ -23,15 +23,6 @@ const getDomain = () => {
 
 const domain = getDomain();
 
-// Configuración de cookies
-const cookieOptions = {
-  path: '/',
-  sameSite: 'lax' as const,
-  secure: isProduction,
-  httpOnly: false, // Permitir acceso desde JavaScript
-  domain: isVercel ? '.vercel.app' : (domain === 'localhost' ? undefined : `.${domain}`)
-}
-
 // Cliente para el navegador
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -179,7 +170,7 @@ export const mockSupabase = {
   from: (table: string) => {
     if (table === "fundaciones") {
       return {
-        select: (columns = "*") => ({
+        select: (_columns: string) => ({
           order: (column: string, { ascending = true } = {}) => ({
             then: (callback: Function) => {
               callback({ data: mockFundaciones, error: null });

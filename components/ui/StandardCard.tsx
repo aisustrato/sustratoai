@@ -1,4 +1,4 @@
-//. 📍 components/ui/StandardCard.tsx
+//. 📍 components/ui/StandardCard.tsx (v1.3 - Ruta de Importación Corregida)
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 "use client";
@@ -11,20 +11,17 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
 import type { AppColorTokens, ColorSchemeVariant as StandardCardColorScheme, Mode } from "@/lib/theme/ColorToken";
 import { generateStandardCardTokens, type StandardCardStyleType, type StandardCardAccentPlacement, type StandardCardShadow } from "@/lib/theme/components/standard-card-tokens";
-
-//> 💡 CORREGIDO: Importamos StandardText y sus props, eliminando la dependencia de Text legacy.
 import { StandardText, type StandardTextProps } from "@/components/ui/StandardText";
-import { SustratoLoadingLogo, type SustratoLoadingLogoProps } from "@/components/ui/sustrato-loading-logo";
+// ✅ CORRECCIÓN: La ruta de importación ahora es la correcta.
+import { SustratoLoadingLogo, type SustratoLoadingLogoProps } from "@/components/ui/sustrato-loading-logo"; 
 //#endregion ![head]
 
 //#region [def] - 📦 INTERFACES, TYPES & VARIANTS 📦
 
-//> Tipos para las props de Title/Subtitle, ahora basados en StandardTextProps
 type CardTextSize = StandardTextProps['size'];
 type CardTextWeight = StandardTextProps['weight'];
 type CardTextGradient = StandardTextProps['applyGradient'];
 type CardTextColorShade = StandardTextProps['colorShade'];
-type CardFontPairType = StandardTextProps['fontType'];
 
 export interface StandardCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onAnimationStart" | "onDragStart" | "onDragEnd" | "onDrag"> {
 	colorScheme?: StandardCardColorScheme;
@@ -53,8 +50,8 @@ export interface StandardCardProps extends Omit<React.HTMLAttributes<HTMLDivElem
 }
 
 interface StandardCardHeaderProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
-interface StandardCardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> { className?: string; children?: React.ReactNode; size?: CardTextSize; colorScheme?: StandardCardColorScheme; colorShade?: CardTextColorShade; fontType?: CardFontPairType; weight?: CardTextWeight; applyGradient?: CardTextGradient; truncate?: boolean; }
-interface StandardCardSubtitleProps extends React.HTMLAttributes<HTMLParagraphElement> { className?: string; children?: React.ReactNode; size?: CardTextSize; colorScheme?: StandardCardColorScheme; colorShade?: CardTextColorShade; fontType?: CardFontPairType; weight?: CardTextWeight; applyGradient?: CardTextGradient; truncate?: boolean; }
+interface StandardCardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> { className?: string; children?: React.ReactNode; size?: CardTextSize; colorScheme?: StandardCardColorScheme; colorShade?: CardTextColorShade; weight?: CardTextWeight; applyGradient?: CardTextGradient; truncate?: boolean; }
+interface StandardCardSubtitleProps extends React.HTMLAttributes<HTMLParagraphElement> { className?: string; children?: React.ReactNode; size?: CardTextSize; colorScheme?: StandardCardColorScheme; colorShade?: CardTextColorShade; weight?: CardTextWeight; applyGradient?: CardTextGradient; truncate?: boolean; }
 interface StandardCardMediaProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
 interface StandardCardContentProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
 interface StandardCardActionsProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
@@ -80,16 +77,13 @@ const MotionDiv = motion.div;
 const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 	(
 		{
-			//> 💡 CORREGIDO: Se establecen los nuevos valores por defecto para el comportamiento implícito.
 			colorScheme = "primary",
 			styleType = "subtle",
 			shadow = "md",
 			disableShadowHover = true,
 			animateEntrance = true,
-            //> Props que mantienen su valor por defecto original
-			hasOutline = false,
+            hasOutline = false,
 			accentPlacement = "none",
-			//> Props sin valor por defecto explícito
 			outlineColorScheme,
 			accentColorScheme,
 			selected = false, loading = false, inactive = false,
@@ -100,20 +94,17 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 		},
 		ref,
 	) => {
-		// ... (Toda la lógica interna de hooks, memos, efectos y renderizado se mantiene igual)
-        //#region [sub_init] - 🪝 HOOKS, STATE, MEMOS 🪝
 		const { appColorTokens, mode } = useTheme();
-		const cardIdentifier = dataTestId || "";
 
 		const cardTokens = useMemo(() => {
 			if (appColorTokens && mode) return generateStandardCardTokens(appColorTokens, mode);
 			return null;
 		}, [appColorTokens, mode]);
 
-		const cssVariables = useMemo<React.CSSProperties & { [key: `--${string}`]: string | number | undefined }>(() => {
+		const cssVariables = useMemo(() => {
 			if (!cardTokens) return {};
 			const currentCardScheme = colorScheme || "neutral";
-			const vars: React.CSSProperties & { [key: `--${string}`]: string | number | undefined } = {};
+			const vars: React.CSSProperties & { [key: string]: any } = {};
 			const styleTypeTokens = cardTokens.styleTypes[styleType]?.[currentCardScheme] || cardTokens.styleTypes[styleType]?.neutral;
 
 			vars["--sc-bg"] = styleTypeTokens?.background || "transparent";
@@ -168,17 +159,11 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 				vars["--sc-checkbox-focus-ring-color"] = checkboxTokens.focusRingColor;
 			}
 			
-			vars["--sc-inactive-overlay-bg"] = cardTokens.inactiveOverlayBackground;
-			vars["--sc-loading-overlay-bg"] = cardTokens.loadingOverlayBackground;
+			vars['--sc-inactive-overlay-bg'] = cardTokens.inactiveOverlayBackground;
+			vars['--sc-loading-overlay-bg'] = cardTokens.loadingOverlayBackground;
 
 			return vars;
-		}, [
-			cardTokens, colorScheme, styleType, hasOutline, outlineColorScheme,
-			accentPlacement, accentColorScheme, selected, inactive
-		]);
-		//#endregion ![sub_init]
-
-		//#region [sub_logic] - 💡 DERIVED LOGIC, CLASSES, TRANSITIONS 💡
+		}, [cardTokens, colorScheme, styleType, hasOutline, outlineColorScheme, accentPlacement, accentColorScheme, selected, inactive]);
 
 		const paddingClass = noPadding ? "" : (cardTokens?.padding || "p-4");
 		const shadowClass = cardTokens?.shadows[shadow] || "shadow-md";
@@ -194,45 +179,21 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 		
 		const motionRootProps: HTMLMotionProps<"div"> & { "data-testid"?: string } = {
 			ref,
-			className: cn(
-				"relative rounded-lg overflow-hidden", "transition-shadow duration-200 ease-out",
-				shadowClass, dynamicHoverShadowClass,
-				{ "cursor-not-allowed": isEffectivelyDisabled && !onCardClick,
-					"cursor-pointer": onCardClick && !isEffectivelyDisabled,
-				},
-				className,
-			),
-			style: {
-				...cssVariables,
-				background: 'var(--sc-bg)',
-				color: 'var(--sc-text-color)',
-				borderColor: hasOutline ? 'var(--sc-outline-border-color)' : undefined,
-				borderWidth: hasOutline ? 'var(--sc-outline-border-width)' : undefined,
-				borderStyle: hasOutline ? 'var(--sc-outline-border-style)' : undefined,
-				...style
-			} as React.CSSProperties,
+			className: cn("relative rounded-lg overflow-hidden", "transition-shadow duration-200 ease-out", shadowClass, dynamicHoverShadowClass, { "cursor-not-allowed": isEffectivelyDisabled && !onCardClick, "cursor-pointer": onCardClick && !isEffectivelyDisabled, }, className),
+			style: { ...cssVariables, background: 'var(--sc-bg)', color: 'var(--sc-text-color)', borderColor: hasOutline ? 'var(--sc-outline-border-color)' : undefined, borderWidth: hasOutline ? 'var(--sc-outline-border-width)' : undefined, borderStyle: hasOutline ? 'var(--sc-outline-border-style)' : undefined, ...style } as React.CSSProperties,
 			initial: animateEntrance && !showLoadingIndicator ? "hidden" : false,
 			animate: animateEntrance && !showLoadingIndicator ? "visible" : false,
 			variants: animateEntrance && !showLoadingIndicator ? cardEntranceVariants : undefined,
 			transition: cardCombinedTransition,
 			whileHover: hoverEffectActive ? { scale: 1.025, transition: { type: "spring", stiffness: 350, damping: 15 } } : {},
 			whileTap: (onCardClick && !isEffectivelyDisabled) ? { scale: 0.985, transition: { type: "spring", stiffness: 400, damping: 15 } } : {},
-			onClick: !isEffectivelyDisabled && onCardClick ? (e) => {
-				const target = e.target as HTMLElement;
-				if (target.closest('[role="checkbox"], button, a')) {
-					return;
-				}
-				onCardClick(e);
-			} : undefined,
+			onClick: !isEffectivelyDisabled && onCardClick ? (e) => { const target = e.target as HTMLElement; if (target.closest('[role="checkbox"], button, a')) { return; } onCardClick(e); } : undefined,
 			tabIndex: onCardClick && !isEffectivelyDisabled ? 0 : undefined,
 			role: onCardClick ? "button" : undefined,
 			...(isEffectivelyDisabled && !onCardClick && { onClickCapture: (e: React.MouseEvent) => e.stopPropagation() }),
 			...htmlProps,
 		};
 		if (dataTestId) motionRootProps["data-testid"] = dataTestId;
-		//#endregion ![sub_logic]
-
-		//#region [sub_render_helpers] - 🎨 HELPER RENDER FUNCTIONS 🎨
 
 		const renderInnerContent = () => (
 			<div className={cn("relative z-[1]", paddingClass)}>
@@ -250,14 +211,12 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 		
 		const renderAccent = () => {
 			const accentBgValue = cssVariables["--sc-accent-bg"];
-			if (accentPlacement === "none" || !cardTokens || !accentBgValue || String(accentBgValue).trim() === "transparent") {
-				return null;
-			}
+			if (accentPlacement === "none" || !cardTokens || !accentBgValue || String(accentBgValue).trim() === "transparent") { return null; }
 			const commonPositionClasses = "absolute z-[2]";
 			const accentStyle: React.CSSProperties = {
 				backgroundImage: String(accentBgValue),
-				height: cssVariables["--sc-accent-dimension-h"] as string | undefined,
-				width: cssVariables["--sc-accent-dimension-w"] as string | undefined,
+				height: cssVariables["--sc-accent-dimension-h"],
+				width: cssVariables["--sc-accent-dimension-w"],
 			};
 			switch (accentPlacement) {
 				case "top": return <div className={cn(commonPositionClasses, "top-0 left-0 right-0")} style={accentStyle} />;
@@ -274,31 +233,16 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 			if (!showLoadingIndicator) return null;
 			return (
 				<>
-					<MotionDiv
-						key="loading-overlay"
-						variants={overlayVariants} initial="hidden" animate="visible" exit="exit"
-						className="absolute inset-0 z-[4] backdrop-blur-sm rounded-lg"
-						style={{ backgroundColor: "var(--sc-loading-overlay-bg)" }}
-					/>
+					<MotionDiv key="loading-overlay" variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-[4] backdrop-blur-sm rounded-lg" style={{ backgroundColor: "var(--sc-loading-overlay-bg)" }} />
 					<div className="absolute inset-0 z-[5] flex flex-col items-center justify-center pointer-events-none">
-						<SustratoLoadingLogo
-							size={loaderSize}
-							variant={loadingVariant}
-							text={loadingText}
-							showText={!!loadingText}
-						/>
+						<SustratoLoadingLogo size={loaderSize} variant={loadingVariant} text={loadingText} showText={!!loadingText} />
 					</div>
 				</>
 			);
 		};
 		
-		const renderInactiveOverlay = () => {
-			if (!inactive || showLoadingIndicator) return null;
-			return <MotionDiv key="inactive-overlay" variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-[5] backdrop-blur-sm rounded-lg pointer-events-auto" style={{ backgroundColor: "var(--sc-inactive-overlay-bg)" }} />
-		};
-		//#endregion ![sub_render_helpers]
+		const renderInactiveOverlay = () => { if (!inactive || showLoadingIndicator) return null; return <MotionDiv key="inactive-overlay" variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-[5] backdrop-blur-sm rounded-lg pointer-events-auto" style={{ backgroundColor: "var(--sc-inactive-overlay-bg)" }} /> };
 
-		//#region [render] - 🖼️ ROOT JSX STRUCTURE 🖼️
 		return (
 			<MotionDiv {...motionRootProps}>
 				{renderAccent()}
@@ -308,25 +252,23 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 				<AnimatePresence>{showLoadingIndicator && renderLoadingState()}</AnimatePresence>
 			</MotionDiv>
 		);
-		//#endregion ![render]
 	},
 );
 StandardCardRoot.displayName = "StandardCard";
 //#endregion ![main_root]
+
 
 //#region [main_subcomponents] -🧩 SUBCOMPONENTS (Header, Title, etc.) 🧩
 
 const Header = ({ className, children, ...props }: StandardCardHeaderProps): JSX.Element => (<div className={cn("mb-3", className)} {...props}>{children}</div>);
 Header.displayName = "StandardCard.Header";
 
-//> 💡 CORREGIDO: Title ahora usa StandardText y su API de props.
-const Title = ({ children, className, size = "lg", colorScheme, colorShade, fontType, weight = "semibold", applyGradient, truncate, ...htmlProps }: StandardCardTitleProps): JSX.Element => (
+const Title = ({ children, className, size = "lg", colorScheme, colorShade, weight = "semibold", applyGradient, truncate, ...htmlProps }: StandardCardTitleProps): JSX.Element => (
     <StandardText 
         asElement="h3" 
         size={size} 
         colorScheme={colorScheme} 
         colorShade={colorShade} 
-        fontType={fontType} 
         weight={weight} 
         applyGradient={applyGradient} 
         truncate={truncate} 
@@ -338,14 +280,12 @@ const Title = ({ children, className, size = "lg", colorScheme, colorShade, font
 );
 Title.displayName = "StandardCard.Title";
 
-//> 💡 CORREGIDO: Subtitle ahora usa StandardText y su API de props.
-const Subtitle = ({ children, className, size = "sm", colorScheme, colorShade, fontType, weight, applyGradient, truncate, ...htmlProps }: StandardCardSubtitleProps): JSX.Element => (
+const Subtitle = ({ children, className, size = "sm", colorScheme, colorShade, weight, applyGradient, truncate, ...htmlProps }: StandardCardSubtitleProps): JSX.Element => (
     <StandardText 
         asElement="p" 
         size={size} 
         colorScheme={colorScheme} 
         colorShade={colorShade} 
-        fontType={fontType} 
         weight={weight} 
         applyGradient={applyGradient} 
         truncate={truncate} 

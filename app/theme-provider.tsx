@@ -3,17 +3,13 @@
 import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import {
-  createColorTokens as createLegacyColorTokens,
-  updateColorTokens as updateLegacyColorTokens,
-  type ColorTokens as LegacyColorTokens,
-  type ColorScheme,
-  type Mode,
-} from "@/lib/theme/color-tokens";
+
 
 import {
   createAppColorTokens,
   updateAppColorTokens,
+  ColorScheme, // Asegúrate que ColorScheme se importa como tipo si es necesario o se actualiza donde se define
+  Mode,
   type AppColorTokens,
 } from "@/lib/theme/ColorToken";
 
@@ -26,7 +22,6 @@ type ThemeContextType = {
   mode: Mode;
   setColorScheme: (colorScheme: ColorScheme) => void;
   setMode: (mode: Mode) => void;
-  legacyColorTokens: LegacyColorTokens;
   appColorTokens: AppColorTokens;
   theme: string;
   setTheme: (theme: string) => void;
@@ -37,27 +32,32 @@ export const ThemeContext = createContext<ThemeContextType | undefined>(
 );
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [colorScheme, setColorSchemeInternal] = useState<ColorScheme>("blue");
+  const [colorScheme, setColorSchemeInternal] = useState<ColorScheme>(() => {
+    // Lógica inicial para determinar el colorScheme, puede ser 'blue' o cargado de localStorage
+    if (typeof window !== 'undefined') {
+      const storedScheme = localStorage.getItem("colorScheme") as ColorScheme;
+      // Ensure 'zenith' is recognized if stored from a previous session or by other means
+      if (storedScheme && ["blue", "green", "orange", "artisticGreen", "graphite", "roseGold", "midnight", "burgundy", "zenith"].includes(storedScheme)) {
+        return storedScheme;
+      }
+    }
+    return "zenith"; // Valor por defecto para nuevos usuarios
+  });
   const [mode, setModeInternal] = useState<Mode>("light");
   const [mounted, setMounted] = useState(false);
 
   const [appTokensState, setAppTokensState] = useState<AppColorTokens>(() => {
-    const initialAppTokens = createAppColorTokens("blue", "light");
+    // Default to 'zenith' for initial tokens as well
+    const initialAppTokens = createAppColorTokens("zenith", "light");
     updateAppColorTokens(initialAppTokens);
     return initialAppTokens;
   });
 
-  const [legacyTokensState, setLegacyTokensState] = useState<LegacyColorTokens>(
-    () => {
-      const tokens = createLegacyColorTokens("blue", "light");
-      updateLegacyColorTokens(tokens);
-      return tokens;
-    }
-  );
+
 
   const theme =
     mode === "dark"
-      ? "dark"
+      ? colorScheme === "burgundy" ? "theme-burgundyDark" : "dark" // Manejo específico para burgundyDark
       : colorScheme === "blue"
       ? "light"
       : `theme-${colorScheme}`;
@@ -72,9 +72,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     setAppTokensState(newAppTokens);
     updateAppColorTokens(newAppTokens);
 
-    const newLegacyTokens = createLegacyColorTokens(newColorScheme, newMode);
-    setLegacyTokensState(newLegacyTokens);
-    updateLegacyColorTokens(newLegacyTokens);
+
   };
 
   const handleSetColorScheme = (newColorScheme: ColorScheme) => {
@@ -122,6 +120,24 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     } else if (newTheme === "theme-orange") {
       newMode = "light";
       newColorScheme = "orange";
+    } else if (newTheme === "theme-artisticGreen") {
+      newMode = "light";
+      newColorScheme = "artisticGreen";
+    } else if (newTheme === "theme-graphite") {
+      newMode = "light";
+      newColorScheme = "graphite";
+    } else if (newTheme === "theme-roseGold") {
+      newMode = "light";
+      newColorScheme = "roseGold";
+    } else if (newTheme === "theme-midnight") { // Midnight es inherentemente oscuro
+      newMode = "dark";
+      newColorScheme = "midnight";
+    } else if (newTheme === "theme-burgundy") {
+      newMode = "light";
+      newColorScheme = "burgundy";
+    } else if (newTheme === "theme-burgundyDark") {
+      newMode = "dark";
+      newColorScheme = "burgundy"; // El colorScheme base es burgundy, el modo lo hace dark
     }
     setModeInternal(newMode);
     setColorSchemeInternal(newColorScheme);
@@ -155,6 +171,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       let newColorScheme: ColorScheme = "blue";
       if (themeNormalized === "green") newColorScheme = "green";
       if (themeNormalized === "orange") newColorScheme = "orange";
+      if (themeNormalized === "artisticGreen") newColorScheme = "artisticGreen";
+      if (themeNormalized === "graphite") newColorScheme = "graphite";
+      if (themeNormalized === "roseGold") newColorScheme = "roseGold";
+      if (themeNormalized === "midnight") newColorScheme = "midnight";
+      if (themeNormalized === "burgundy") newColorScheme = "burgundy";
 
       // Establecer el modo según el valor de isDarkMode
       const newMode: Mode = isDarkMode ? "dark" : "light";
@@ -189,7 +210,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     if (!mounted) return;
 
-    let initialColorScheme = "blue" as ColorScheme;
+    let initialColorScheme = "zenith" as ColorScheme; // Default for new users
     let initialMode = "light" as Mode;
 
     try {
@@ -200,7 +221,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
       if (
         storedColorScheme &&
-        ["blue", "green", "orange"].includes(storedColorScheme)
+        ["blue", "green", "orange", "artisticGreen", "graphite", "roseGold", "midnight", "burgundy", "zenith"].includes(storedColorScheme)
       ) {
         initialColorScheme = storedColorScheme;
       }
@@ -227,15 +248,38 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         "dark",
         "theme-blue",
         "theme-green",
-        "theme-orange"
+        "theme-orange",
+        "theme-artisticGreen",
+        "theme-graphite",
+        "theme-roseGold",
+        "theme-midnight",
+        "theme-burgundy",
+        "theme-burgundyDark",
+        "theme-zenith",
+        "theme-zenithDark"
       );
 
       if (mode === "dark") {
         root.classList.add("dark");
       }
 
-      if (colorScheme !== "blue" || mode === "light") {
-        if (colorScheme !== "blue") root.classList.add(`theme-${colorScheme}`);
+      // Aplicar clase de tema específico si no es el azul por defecto en modo claro
+      // o si es un tema que tiene su propia variante oscura (como midnight o burgundyDark)
+      if (mode === "dark") {
+        if (colorScheme === "midnight") {
+          root.classList.add("theme-midnight");
+        } else if (colorScheme === "burgundy") {
+          root.classList.add("theme-burgundyDark");
+        } else if (colorScheme === "zenith") {
+          root.classList.add("theme-zenithDark");
+        } else {
+          // Para otros esquemas en modo oscuro, solo se aplica la clase 'dark'
+          // y se confía en las variables CSS definidas para el modo oscuro de esos temas.
+        }
+      } else { // Modo Claro
+        if (colorScheme !== "blue") {
+          root.classList.add(`theme-${colorScheme}`);
+        }
       }
 
       localStorage.setItem("colorScheme", colorScheme);
@@ -254,7 +298,6 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     mode,
     setColorScheme: handleSetColorScheme,
     setMode: handleSetMode,
-    legacyColorTokens: legacyTokensState,
     appColorTokens: appTokensState,
     theme,
     setTheme,

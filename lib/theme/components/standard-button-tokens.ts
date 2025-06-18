@@ -1,480 +1,147 @@
-//. 📍 lib/theme/components/standard-button-tokens.ts
+//. 📍 lib/theme/components/standard-button-tokens.ts (v3.1 - Lógica Dimensional Corregida)
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import type { AppColorTokens, Mode, ProCardVariant } from "../ColorToken";
-import { neutral as neutralPalette } from "../colors";
+import type { AppColorTokens, ColorSchemeVariant, ColorShade, Mode } from "../ColorToken";
+import type { StandardIconColorShade, StandardIconSize } from "./standard-icon-tokens";
+import type { StandardTextSize } from "./standard-text-tokens";
 import tinycolor from "tinycolor2";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES & INTERFACES 📦
-// Tipos para las props de StandardButton
-export type StandardButtonStyleType =
-	| "solid"
-	| "outline"
-	| "ghost"
-	| "link"
-	| "subtle";
-export type StandardButtonSize = "xs" | "sm" | "md" | "lg" | "xl" | "icon";
-export type StandardButtonRounded = "none" | "sm" | "md" | "lg" | "full";
-export type StandardButtonColorScheme = ProCardVariant;
+export type StandardButtonStyleType = "solid" | "outline" | "ghost" | "subtle" | "link";
+export type StandardButtonModifier = "gradient" | "elevated";
+// ✅ CORRECCIÓN ARQUITECTÓNICA: Se elimina 'icon' como un tamaño. 'iconOnly' es un modificador de layout, no un tamaño.
+export type StandardButtonSize = Extract<StandardTextSize, 'xs' | 'sm' | 'md' | 'lg' | 'xl'>;
+export type StandardButtonRounded = 'none' | 'sm' | 'md' | 'lg' | 'full';
 
-// Estructura completa de tokens para el botón estándar
-export interface StandardButtonTokens {
-	base: {
-		padding: Record<Exclude<StandardButtonSize, "icon">, string> & {
-			icon: string;
-		}; // Tipado más preciso
-		borderRadius: Record<StandardButtonRounded, string>;
-		fontSize: Record<Exclude<StandardButtonSize, "icon">, string> & {
-			icon: string;
-		};
-		height: Record<Exclude<StandardButtonSize, "icon">, string> & {
-			icon: string;
-		};
-		iconSize: Record<Exclude<StandardButtonSize, "icon">, string> & {
-			icon: string;
-		};
-		transition: string;
-		fontWeight: string;
-		gap: Record<Exclude<StandardButtonSize, "icon">, string> & { icon: string };
-	};
-	variants: {
-		[key in StandardButtonStyleType]: {
-			default: {
-				background: string;
-				color: string;
-				border: string;
-				boxShadow: string;
-			};
-			hover: {
-				background: string;
-				color: string;
-				border: string;
-				boxShadow: string;
-				transform: string;
-			};
-			active: {
-				background: string;
-				color: string;
-				border: string;
-				boxShadow: string;
-				transform: string;
-			};
-			focus: { outline: string; ring: string };
-			disabled: {
-				background: string;
-				color: string;
-				border: string;
-				opacity: string;
-				cursor: string;
-			};
-		};
-	};
-	colors: {
-		[key in StandardButtonColorScheme]?: {
-			background: string;
-			color: string;
-			border: string;
-			gradient: string;
-			hoverBackground: string;
-			hoverColor: string;
-			hoverBorder: string;
-			activeBackground: string;
-			activeColor: string;
-			activeBorder: string;
-			ghostColor: string;
-			ghostBorder: string;
-			outlineColor: string;
-			outlineBorder: string;
-			rippleColor: string;
-			bgShade: string;
-			textShade: string;
-		};
-	};
-	loading: {
-		spinnerColor: string;
-		spinnerSize: Record<Exclude<StandardButtonSize, "icon">, string> & {
-			icon: string;
-		};
-		opacity: string;
-	};
+export interface StandardButtonRecipe {
+	height: string; padding: string; fontSize: string; gap: string; width?: string;
+	background: string; color: string; border: string;
+	boxShadow: string; transform: string; opacity: number;
+	cursor: string; iconColorShade: StandardIconColorShade;
+	iconSize: StandardIconSize; textDecoration?: string;
+    rippleColor: string;
+}
+
+export interface StandardButtonTokenOptions {
+	styleType: StandardButtonStyleType; colorScheme: ColorSchemeVariant;
+	size: StandardButtonSize; rounded: StandardButtonRounded;
+	modifiers: StandardButtonModifier[]; isHovered: boolean;
+	isPressed: boolean; isDisabled: boolean; iconOnly: boolean;
 }
 //#endregion ![def]
 
 //#region [main] - 🏭 TOKEN GENERATOR FUNCTION 🏭
-// Función para generar los tokens del botón estándar
 export function generateStandardButtonTokens(
-	appColorTokens: AppColorTokens,
-	mode: Mode
-): StandardButtonTokens {
-	const isDark = mode === "dark";
+	appTokens: AppColorTokens, mode: Mode, options: StandardButtonTokenOptions
+): StandardButtonRecipe {
+	const { styleType, colorScheme, size, modifiers, isHovered, isPressed, isDisabled, iconOnly } = options;
+	const isDark = mode === 'dark';
+	const palette: ColorShade = appTokens[colorScheme] || appTokens.neutral;
 
-	//#region [sub] - 🧰 HELPER FUNCTIONS 🧰
-
-	const adjustColor = (color: string, darken: number, lighten: number) =>
-		isDark
-			? tinycolor(color).lighten(lighten).toString()
-			: tinycolor(color).darken(darken).toString();
-	const createGradient = (color: string) => {
-		const lighter = tinycolor(color).lighten(10).toString();
-		return isDark
-			? `linear-gradient(to bottom right, ${color}, ${lighter})`
-			: `linear-gradient(to bottom right, ${lighter}, ${color})`;
+    // ✅ La lógica ahora es más simple y correcta. Ya no hay un 'resolvedSize'.
+    const heightMap: Record<StandardButtonSize, string> = { xs: "1.75rem", sm: "2rem", md: "2.25rem", lg: "2.75rem", xl: "3rem" };
+    const paddingMap: Record<StandardButtonSize, string> = { xs: "0.5rem", sm: "0.75rem", md: "1rem", lg: "1.25rem", xl: "1.5rem" };
+    const fontMap: Record<StandardButtonSize, string> = { xs: "0.75rem", sm: "0.875rem", md: "0.875rem", lg: "1rem", xl: "1rem" };
+    const gapMap: Record<StandardButtonSize, string> = { xs: "0.25rem", sm: "0.375rem", md: "0.5rem", lg: "0.5rem", xl: "0.75rem" };
+    const iconSizeMap: Record<StandardButtonSize, StandardIconSize> = { xs: 'xs', sm: 'sm', md: 'md', lg: 'lg', xl: 'lg' };
+    
+	const recipe: StandardButtonRecipe = {
+        height: heightMap[size],
+        padding: `0 ${paddingMap[size]}`,
+        fontSize: fontMap[size],
+        gap: iconOnly ? '0' : gapMap[size],
+		background: 'transparent', color: palette.pure, border: '1px solid transparent',
+		boxShadow: 'none', transform: 'translateY(0)', opacity: 1, cursor: 'pointer',
+		iconColorShade: 'pure', iconSize: iconSizeMap[size], textDecoration: 'none',
+        rippleColor: tinycolor(palette.pure).setAlpha(0.3).toRgbString()
 	};
-	//#endregion ![sub]
+    
+    // ✅ La lógica de 'iconOnly' ahora simplemente ajusta el padding y el ancho.
+    if(iconOnly) {
+        recipe.padding = '0';
+        recipe.width = recipe.height;
+    }
 
-	// CORREGIDO: Incluido el contenido completo de baseTokens
-	const baseTokens: StandardButtonTokens["base"] = {
-		padding: {
-			xs: "0.25rem 0.5rem",
-			sm: "0.375rem 0.75rem",
-			md: "0.5rem 1rem",
-			lg: "0.75rem 1.25rem",
-			xl: "1rem 1.5rem",
-			icon: "0",
-		},
-		borderRadius: {
-			none: "0",
-			sm: "0.25rem",
-			md: "0.375rem",
-			lg: "0.5rem",
-			full: "9999px",
-		},
-		fontSize: {
-			xs: "0.75rem",
-			sm: "0.875rem",
-			md: "1rem",
-			lg: "1.125rem",
-			xl: "1.25rem",
-			icon: "1.25rem",
-		},
-		height: {
-			xs: "1.5rem",
-			sm: "2rem",
-			md: "2.5rem",
-			lg: "3rem",
-			xl: "3.5rem",
-			icon: "2.5rem",
-		},
-		iconSize: {
-			xs: "0.75rem",
-			sm: "0.875rem",
-			md: "1rem",
-			lg: "1.25rem",
-			xl: "1.5rem",
-			icon: "1.25rem",
-		},
-		gap: {
-			xs: "0.25rem",
-			sm: "0.375rem",
-			md: "0.5rem",
-			lg: "0.75rem",
-			xl: "1rem",
-			icon: "0.25rem",
-		},
-		transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-		fontWeight: "500",
-	};
+	// --- Lógica de Estilos de Color y Estado (sin cambios sustanciales respecto a la v3.0 original, solo adaptaciones menores si fueran necesarias) ---
+	switch (styleType) {
+		case 'solid':
+			recipe.background = palette.pure; recipe.color = palette.contrastText;
+			recipe.border = `1px solid ${palette.pure}`; recipe.iconColorShade = 'contrastText'; break;
+		case 'outline':
+			recipe.background = 'transparent'; recipe.color = palette.pure;
+			recipe.border = `1px solid ${palette.pure}`; break;
+		case 'ghost':
+			recipe.background = 'transparent'; recipe.color = palette.pure; break;
+		case 'subtle':
+			recipe.background = palette.bg; recipe.color = palette.pure;
+			recipe.border = `1px solid ${palette.bg}`; break;
+		case 'link':
+			recipe.background = 'transparent'; recipe.color = palette.pure;
+			recipe.textDecoration = 'none'; break;
+	}
+    if (modifiers.includes('gradient') && styleType === 'solid') {
+        const start = tinycolor(palette.pure).lighten(10).toHexString();
+        const end = tinycolor(palette.pure).darken(10).toHexString();
+		recipe.background = `linear-gradient(to bottom right, ${start}, ${end})`;
+	}
+    if (modifiers.includes('elevated')) {
+        recipe.boxShadow = isDark ? '0 4px 15px -3px rgba(0,0,0, 0.4)' : '0 4px 6px -1px rgba(0,0,0, 0.1), 0 2px 4px -2px rgba(0,0,0, 0.1)';
+    }
+    if (isHovered && !isPressed && !isDisabled) {
+        recipe.transform = 'translateY(-1px)';
+        if (styleType === 'link') { recipe.textDecoration = 'underline'; }
+        else {
+            switch (styleType) {
+                case 'solid':
+                    if (modifiers.includes('gradient')) {
+                        const start = tinycolor(palette.pure).darken(10).toHexString();
+                        const end = tinycolor(palette.pure).lighten(10).toHexString();
+                        recipe.background = `linear-gradient(to bottom right, ${start}, ${end})`;
+                    } else { recipe.background = tinycolor(palette.pure).darken(8).toHexString(); }
+                    recipe.border = `1px solid ${tinycolor(palette.pure).darken(8).toHexString()}`; break;
+                case 'outline': case 'ghost': case 'subtle':
+                    recipe.background = palette.bgShade; break;
+            }
+        }
+        if (modifiers.includes('elevated')) {
+            recipe.transform = 'translateY(-3px)';
+            recipe.boxShadow = isDark ? '0 10px 25px -3px rgba(0,0,0, 0.3)' : '0 10px 15px -3px rgba(0,0,0, 0.1), 0 4px 6px -4px rgba(0,0,0, 0.1)';
+        }
+    }
+    if (isPressed && !isDisabled) {
+        recipe.transform = 'translateY(0.5px)';
+        recipe.boxShadow = isDark ? 'inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.06)';
+        if (styleType === 'solid') {
+            if (modifiers.includes('gradient')) {
+                const start = tinycolor(palette.pure).lighten(10).darken(12).toHexString();
+                const end = tinycolor(palette.pure).darken(10).darken(12).toHexString();
+                recipe.background = `linear-gradient(to bottom right, ${start}, ${end})`;
+            } else { recipe.background = tinycolor(palette.pure).darken(12).toHexString(); }
+        }
+    }
+    if (isDisabled) {
+        recipe.opacity = 0.6; recipe.cursor = 'not-allowed';
+        recipe.boxShadow = 'none'; recipe.transform = 'none';
+        recipe.iconColorShade = 'text'; recipe.textDecoration = 'none';
+        recipe.rippleColor = 'transparent';
+        switch (styleType) {
+            case 'solid':
+                recipe.background = isDark ? appTokens.neutral.bgShade : appTokens.neutral.bg;
+                recipe.color = tinycolor(appTokens.neutral.text).setAlpha(0.6).toRgbString();
+                recipe.border = `1px solid ${isDark ? appTokens.neutral.bgShade : appTokens.neutral.bg}`; break;
+            case 'outline': case 'ghost': case 'subtle': case 'link':
+                recipe.background = 'transparent';
+                recipe.color = tinycolor(appTokens.neutral.text).setAlpha(0.6).toRgbString();
+                recipe.border = styleType === 'outline' ? `1px solid ${tinycolor(appTokens.neutral.text).setAlpha(0.2).toRgbString()}` : '1px solid transparent'; break;
+        }
+    }
+    if (styleType === 'solid' && !isDisabled) {
+        recipe.rippleColor = palette.bgShade;
+    } else if (!isDisabled) {
+        recipe.rippleColor = tinycolor(palette.pure).setAlpha(0.3).toRgbString();
+    }
 
-	// CORREGIDO: Incluido el contenido completo de variantTokens
-	const variantTokens: StandardButtonTokens["variants"] = {
-		solid: {
-			default: {
-				background: "currentBackground",
-				color: "currentColor",
-				border: "none",
-				boxShadow: isDark
-					? "0 1px 3px 0 rgba(0, 0, 0, 0.3)"
-					: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-			},
-			hover: {
-				background: "currentHoverBackground",
-				color: "currentHoverColor",
-				border: "none",
-				boxShadow: isDark
-					? "0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2)"
-					: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-				transform: "translateY(-1px)",
-			},
-			active: {
-				background: "currentActiveBackground",
-				color: "currentActiveColor",
-				border: "none",
-				boxShadow: isDark
-					? "0 1px 2px 0 rgba(0, 0, 0, 0.3)"
-					: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-				transform: "translateY(1px)",
-			},
-			focus: {
-				outline: "none",
-				ring: isDark
-					? `0 0 0 2px ${tinycolor(appColorTokens.primary.pure)
-							.setAlpha(0.5)
-							.toString()}`
-					: `0 0 0 2px ${tinycolor(appColorTokens.primary.pure)
-							.setAlpha(0.4)
-							.toString()}`,
-			},
-			disabled: {
-				background: isDark
-					? neutralPalette.gray[700]
-					: neutralPalette.gray[200],
-				color: isDark ? neutralPalette.gray[500] : neutralPalette.gray[400],
-				border: "none",
-				opacity: "0.6",
-				cursor: "not-allowed",
-			},
-		},
-		outline: {
-			default: {
-				background: "transparent",
-				color: "currentOutlineColor",
-				border: "1px solid currentOutlineBorder",
-				boxShadow: "none",
-			},
-			hover: {
-				background: "currentBgShade",
-				color: "currentTextShade",
-				border: "1px solid currentHoverBorder",
-				boxShadow: isDark
-					? "0 2px 4px -1px rgba(0, 0, 0, 0.3)"
-					: "0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-				transform: "translateY(-1px)",
-			},
-			active: {
-				background: "rgba(currentRgb, 0.4)",
-				color: "currentActiveColor",
-				border: "1px solid currentActiveBorder",
-				boxShadow: "none",
-				transform: "translateY(1px)",
-			},
-			focus: {
-				outline: "none",
-				ring: isDark
-					? `0 0 0 2px ${tinycolor(appColorTokens.primary.pure)
-							.setAlpha(0.5)
-							.toString()}`
-					: `0 0 0 2px ${tinycolor(appColorTokens.primary.pure)
-							.setAlpha(0.4)
-							.toString()}`,
-			},
-			disabled: {
-				background: "transparent",
-				color: isDark ? neutralPalette.gray[500] : neutralPalette.gray[400],
-				border: `1px solid ${
-					isDark ? neutralPalette.gray[600] : neutralPalette.gray[300]
-				}`,
-				opacity: "0.6",
-				cursor: "not-allowed",
-			},
-		},
-		ghost: {
-			default: {
-				background: "transparent",
-				color: "currentGhostColor",
-				border: "none",
-				boxShadow: "none",
-			},
-			hover: {
-				background: "currentBgShade",
-				color: "currentTextShade",
-				border: "none",
-				boxShadow: "none",
-				transform: "translateY(-1px)",
-			},
-			active: {
-				background: "rgba(currentRgb, 0.4)",
-				color: "currentActiveColor",
-				border: "none",
-				boxShadow: "none",
-				transform: "translateY(1px)",
-			},
-			focus: {
-				outline: "none",
-				ring: isDark
-					? `0 0 0 2px ${tinycolor(appColorTokens.primary.pure)
-							.setAlpha(0.4)
-							.toString()}`
-					: `0 0 0 2px ${tinycolor(appColorTokens.primary.pure)
-							.setAlpha(0.3)
-							.toString()}`,
-			},
-			disabled: {
-				background: "transparent",
-				color: isDark ? neutralPalette.gray[500] : neutralPalette.gray[400],
-				border: "none",
-				opacity: "0.6",
-				cursor: "not-allowed",
-			},
-		},
-		link: {
-			default: {
-				background: "transparent",
-				color: "currentColor",
-				border: "none",
-				boxShadow: "none",
-			},
-			hover: {
-				background: "currentBgShade",
-				color: "currentTextShade",
-				border: "none",
-				boxShadow: "none",
-				transform: "none",
-			},
-			active: {
-				background: "transparent",
-				color: "currentActiveColor",
-				border: "none",
-				boxShadow: "none",
-				transform: "none",
-			},
-			focus: { outline: "none", ring: "none" },
-			disabled: {
-				background: "transparent",
-				color: isDark ? neutralPalette.gray[500] : neutralPalette.gray[400],
-				border: "none",
-				opacity: "0.6",
-				cursor: "not-allowed",
-			},
-		},
-		subtle: {
-			default: {
-				background: "rgba(currentRgb, 0.25)",
-				color: "currentColor",
-				border: "none",
-				boxShadow: "none",
-			},
-			hover: {
-				background: "currentBackground",
-				color: "currentColor",
-				border: "none",
-				boxShadow: isDark
-					? "0 2px 4px -1px rgba(0, 0, 0, 0.2)"
-					: "0 2px 4px -1px rgba(0, 0, 0, 0.05)",
-				transform: "translateY(-1px)",
-			},
-			active: {
-				background: "currentActiveBackground",
-				color: "currentActiveColor",
-				border: "none",
-				boxShadow: "none",
-				transform: "translateY(1px)",
-			},
-			focus: {
-				outline: "none",
-				ring: isDark
-					? `0 0 0 2px ${tinycolor(appColorTokens.primary.pure)
-							.setAlpha(0.4)
-							.toString()}`
-					: `0 0 0 2px ${tinycolor(appColorTokens.primary.pure)
-							.setAlpha(0.3)
-							.toString()}`,
-			},
-			disabled: {
-				background: isDark
-					? neutralPalette.gray[800]
-					: neutralPalette.gray[100],
-				color: isDark ? neutralPalette.gray[500] : neutralPalette.gray[400],
-				border: "none",
-				opacity: "0.6",
-				cursor: "not-allowed",
-			},
-		},
-	};
-
-	// CORREGIDO: Incluido el contenido completo de loadingTokens
-	const loadingTokens: StandardButtonTokens["loading"] = {
-		spinnerColor: "currentColor",
-		spinnerSize: {
-			xs: "0.75rem",
-			sm: "1rem",
-			md: "1.25rem",
-			lg: "1.5rem",
-			xl: "1.75rem",
-			icon: "1.25rem",
-		},
-		opacity: "0.7",
-	};
-
-	const colorTokens: StandardButtonTokens["colors"] = {};
-
-	const schemesToGenerate: StandardButtonColorScheme[] = [
-		"primary",
-		"secondary",
-		"tertiary",
-		"accent",
-		"success",
-		"warning",
-		"danger",
-		"neutral",
-		"white",
-	];
-
-	schemesToGenerate.forEach((scheme) => {
-		const tokenShade = appColorTokens[scheme as keyof AppColorTokens];
-		if (tokenShade) {
-			colorTokens[scheme] = {
-				background: tokenShade.pure,
-				color: tokenShade.contrastText,
-				border: tokenShade.pure,
-				gradient: createGradient(tokenShade.pure),
-				hoverBackground: adjustColor(tokenShade.pure, 10, 10),
-				hoverColor: tokenShade.contrastText,
-				hoverBorder: adjustColor(tokenShade.pure, 10, 10),
-				activeBackground: adjustColor(tokenShade.pure, 15, 15),
-				activeColor: tokenShade.contrastText,
-				activeBorder: adjustColor(tokenShade.pure, 15, 15),
-				ghostColor: tokenShade.pure,
-				ghostBorder: tokenShade.pure,
-				outlineColor: tokenShade.pure,
-				outlineBorder: tokenShade.pure,
-				rippleColor: tokenShade.bg,
-				bgShade: tokenShade.bgShade,
-				textShade: tokenShade.textShade,
-			};
-		}
-	});
-
-	colorTokens.neutral = {
-		background: isDark ? neutralPalette.gray[600] : neutralPalette.gray[200],
-		color: isDark ? neutralPalette.gray[200] : neutralPalette.gray[800],
-		border: isDark ? neutralPalette.gray[400] : neutralPalette.gray[400],
-		gradient: createGradient(
-			isDark ? neutralPalette.gray[600] : neutralPalette.gray[200]
-		),
-		hoverBackground: isDark
-			? neutralPalette.gray[500]
-			: neutralPalette.gray[300],
-		hoverColor: isDark ? neutralPalette.gray[200] : neutralPalette.gray[800],
-		hoverBorder: isDark ? neutralPalette.gray[300] : neutralPalette.gray[500],
-		activeBackground: isDark
-			? neutralPalette.gray[400]
-			: neutralPalette.gray[400],
-		activeColor: isDark ? neutralPalette.gray[200] : neutralPalette.gray[800],
-		activeBorder: isDark ? neutralPalette.gray[200] : neutralPalette.gray[600],
-		ghostColor: isDark ? neutralPalette.white : neutralPalette.gray[900],
-		ghostBorder: isDark ? neutralPalette.gray[300] : neutralPalette.gray[500],
-		outlineColor: isDark ? neutralPalette.white : neutralPalette.gray[900],
-		outlineBorder: isDark ? neutralPalette.gray[300] : neutralPalette.gray[500],
-		rippleColor: neutralPalette.gray[300],
-		bgShade: appColorTokens.neutral.bgShade,
-		textShade: appColorTokens.neutral.textShade,
-	};
-
-	return {
-		base: baseTokens,
-		variants: variantTokens,
-		colors: colorTokens,
-		loading: loadingTokens,
-	};
+	return recipe;
 }
 //#endregion ![main]
-
-//#region [foo] - 🔚 EXPORTS 🔚
-// Types, Interface, and Generator Function are exported above.
-//#endregion ![foo]
-
-//#region [todo] - 👀 PENDIENTES 👀
-// - Review token values for accessibility (e.g., contrast ratios).
-// - Consider adding more variants or color schemes if needed in the future.
-//#endregion ![todo]

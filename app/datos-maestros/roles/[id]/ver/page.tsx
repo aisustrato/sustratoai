@@ -13,16 +13,15 @@ import {
     type ResultadoOperacion 
 } from "@/lib/actions/proyect-role-actions";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { ShieldCheck, AlertTriangle, PenLine, Trash2 } from "lucide-react";
 import { toast as sonnerToast } from "sonner"; //> 📝 sonnerToast no se usa aquí, pero lo dejo por si acaso
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import Link from "next/link";
-import { PageBackground } from "@/components/ui/page-background";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-//> 📝 import { Divider } from "@/components/ui/divider"; // No se usó, se puede quitar
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -106,11 +105,11 @@ export default function VerRolPage() {
   //#region [render] - 🎨 RENDER SECTION 🎨
   //> 📝 ------ RENDERIZADO CONDICIONAL ------
   if (isPageLoading) { 
-    return ( <PageBackground > <SustratoLoadingLogo size={50} showText text="Cargando detalles del rol..." /> </PageBackground> );
+    return ( <StandardPageBackground variant="default"> <SustratoLoadingLogo size={50} showText text="Cargando detalles del rol..." /> </StandardPageBackground> );
   }
 
   if (!proyectoActual?.id) {
-    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none" disableShadowHover={true}> <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <StandardIcon colorScheme="warning" size="md"><AlertTriangle /></StandardIcon> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>{pageError || "No hay un proyecto activo."}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><StandardButton styleType="outline">Ir a Inicio</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return ( <StandardPageBackground variant="default"> <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none" disableShadowHover={true}> <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <StandardIcon colorScheme="warning" size="md"><AlertTriangle /></StandardIcon> </div> <StandardPageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>{pageError || "No hay un proyecto activo."}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><StandardButton styleType="outline">Ir a Inicio</StandardButton></Link> </StandardCard.Footer> </StandardCard> </StandardPageBackground> );
   }
   
   //> 📝 Para "ver", el permiso de gestión no es estrictamente necesario para ver el formulario en modo readOnly.
@@ -118,7 +117,7 @@ export default function VerRolPage() {
   //> 📝 `puedeGestionarRoles` se usa solo para los botones de acción (Editar/Eliminar).
 
   if (pageError && !rolVisualizado) { 
-    return ( <PageBackground > <StandardCard 
+    return ( <StandardPageBackground variant="default"> <StandardCard 
           styleType="subtle"
           className="max-w-md text-center" 
           colorScheme="primary" // Rule: Inner card for info/error block
@@ -126,11 +125,11 @@ export default function VerRolPage() {
           hasOutline={false} // Rule: Inner card
           shadow="none" // Rule: Inner card
           disableShadowHover={true} // Rule: Inner card
-        > <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <StandardIcon colorScheme="danger" size="md"><AlertTriangle /></StandardIcon> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>{pageError}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+        > <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <StandardIcon colorScheme="danger" size="md"><AlertTriangle /></StandardIcon> </div> <StandardPageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>{pageError}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </StandardPageBackground> );
   }
 
   if (!rolVisualizado) { 
-    return ( <PageBackground > <StandardCard 
+    return ( <StandardPageBackground variant="default"> <StandardCard 
           styleType="subtle"
           className="max-w-md text-center" 
           colorScheme="primary" // Rule: Inner card for info/error block
@@ -138,13 +137,13 @@ export default function VerRolPage() {
           hasOutline={false} // Rule: Inner card
           shadow="none" // Rule: Inner card
           disableShadowHover={true} // Rule: Inner card
-        > <StandardCard.Header><PageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><StandardText>{pageError || "No se encontraron datos para el rol especificado."}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+        > <StandardCard.Header><StandardPageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><StandardText>{pageError || "No se encontraron datos para el rol especificado."}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </StandardPageBackground> );
   }
 
   return (
-    <PageBackground>
+    <StandardPageBackground variant="default">
       <div className="container mx-auto py-6">
-      <PageTitle
+      <StandardPageTitle
               title={`Detalle del Rol: ${rolVisualizado.role_name}`}
               subtitle={`Visualizando los permisos asignados a este rol en el proyecto "${proyectoActual.name}"`}
               mainIcon={ShieldCheck}
@@ -195,7 +194,7 @@ export default function VerRolPage() {
           </StandardCard.Footer>
         </StandardCard>
       </div>
-    </PageBackground>
+    </StandardPageBackground>
   );
   //#endregion ![render]
 

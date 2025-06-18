@@ -7,7 +7,7 @@ import { Check, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRef, useState, useEffect, useMemo } from "react";
 import { StandardText } from "@/components/ui/StandardText";
-import { Icon } from "@/components/ui/icon";
+import { StandardIcon } from "@/components/ui/StandardIcon";
 import { generateFontSelectorTokens } from "@/lib/theme/components/font-selector-tokens"; // Asumo que estos tokens también son útiles aquí o se pueden adaptar
 
 // --- NUEVAS IMPORTACIONES ---
@@ -16,7 +16,7 @@ import { actualizarPreferenciasUI } from "@/app/actions/proyecto-actions";
 import { toast } from "sonner";
 
 // Tipos para los esquemas de color disponibles
-type ColorSchemeId = "blue" | "green" | "orange";
+type ColorSchemeId = "blue" | "green" | "orange" | "artisticGreen" | "graphite" | "roseGold" | "midnight" | "burgundy" | "zenith";
 
 export function ColorSchemeSwitcher() {
   const { colorScheme, mode, setColorScheme, appColorTokens } = useTheme();
@@ -122,10 +122,16 @@ export function ColorSchemeSwitcher() {
     }),
   };
 
-  const colorSchemes: { id: ColorSchemeId, name: string, bgColorClass: string }[] = [
+  const colorSchemes: Array<{ id: ColorSchemeId; name: string; bgColorClass: string }> = [
     { id: "blue", name: "Azul", bgColorClass: "bg-blue-600" },
     { id: "green", name: "Verde", bgColorClass: "bg-green-600" },
     { id: "orange", name: "Naranja", bgColorClass: "bg-orange-500" },
+    { id: "artisticGreen", name: "Verde Artístico", bgColorClass: "bg-emerald-600" },
+    { id: "graphite", name: "Grafito", bgColorClass: "bg-gray-500" },
+    { id: "roseGold", name: "Oro Rosado", bgColorClass: "bg-rose-300" },
+    { id: "midnight", name: "Medianoche", bgColorClass: "bg-[#0A0F2C]" }, // Azul muy oscuro
+    { id: "burgundy", name: "Burdeos", bgColorClass: "bg-[#8D0027]" },
+    { id: "zenith", name: "Zenith", bgColorClass: "bg-[#A0D2DB]" },
   ];
 
   const getCurrentColorSchemeName = () => {
@@ -134,10 +140,7 @@ export function ColorSchemeSwitcher() {
     return current ? current.name : "Azul"; // Fallback a Azul si no se encuentra
   };
 
-  const getColorCircleClass = () => {
-    const current = colorSchemes.find(s => s.id === colorScheme);
-    return current ? current.bgColorClass : "bg-blue-600"; // Fallback
-  };
+
   
   const defaultBackgroundColor = "rgba(200, 200, 200, 0.5)";
   const defaultBorderColor = "rgba(150, 150, 150, 0.3)";
@@ -146,7 +149,7 @@ export function ColorSchemeSwitcher() {
 
   return (
     <div className="relative flex items-center gap-1">
-      <StandardText variant="caption" colorScheme="neutral" colorShade="textShade" className="text-xs opacity-50 whitespace-nowrap">
+      <StandardText preset="caption" colorScheme="neutral" colorShade="textShade" className="text-xs opacity-50 whitespace-nowrap">
         Tema:
       </StandardText>
       
@@ -173,7 +176,14 @@ export function ColorSchemeSwitcher() {
         aria-haspopup="true"
       >
         <div className="flex items-center gap-1.5">
-          <div className={`h-2.5 w-2.5 rounded-full ${getColorCircleClass()}`} />
+                    <div
+            className="h-2.5 w-2.5 rounded-full"
+            style={{
+              backgroundColor: appColorTokens
+                ? appColorTokens.primary.pure
+                : "#3D7DF6", // Fallback al azul por defecto si los tokens no están listos
+            }}
+          />
           <span style={{ fontSize: "0.75rem", opacity: 0.7, }}>
             {getCurrentColorSchemeName()}
           </span>
@@ -225,14 +235,12 @@ export function ColorSchemeSwitcher() {
                 >
                   <div className="flex items-center gap-2">
                     <div className={`h-3 w-3 rounded-full ${schemeItem.bgColorClass}`} />
-                    <StandardText colorScheme="secondary" colorShade="text" size="xs">
+                    <StandardText colorScheme="secondary" colorShade="text" preset="body" className="text-xs">
                       {schemeItem.name}
                     </StandardText>
                   </div>
                   {colorScheme === schemeItem.id && (
-                    <Icon size="xs" color="primary" colorVariant="pure">
-                      <Check className="h-3 w-3" />
-                    </Icon>
+                    <StandardIcon styleType="outline" size="md" colorScheme="primary" colorShade="pure"><Check className="h-3 w-3" /></StandardIcon>
                   )}
                 </motion.button>
               ))}

@@ -1,78 +1,78 @@
-//. 📍 lib/theme/components/standard-icon-tokens.ts
+//. 📍 lib/theme/components/standard-icon-tokens.ts (v2.9 - Fuente de Verdad de Tipos)
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import type { AppColorTokens, ColorShade, Mode } from "../ColorToken";
+import type { AppColorTokens, ColorSchemeVariant, ColorShade, Mode } from "../ColorToken";
+// ✅ Se importa el tipo de tamaño base para mantener una escala consistente.
+import type { StandardTextSize } from "./standard-text-tokens";
+import tinycolor from "tinycolor2";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
-export type StandardIconSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 
-//> 📝 Este es el tipo de color INTERNO que el componente usará. No se expone en la API pública.
-export type StandardIconColor =
-	| "default"
-	| "primary"
-	| "secondary"
-	| "tertiary"
-	| "accent"
-	| "success"
-	| "warning"
-	| "danger"
-	| "neutral"
-	| "white";
+// ✅ CORRECCIÓN ARQUITECTÓNICA: El tipo de tamaño del icono se define y exporta desde aquí.
+export type StandardIconSize = Extract<StandardTextSize, "xs" | "sm" | "base" | "md" | "lg" | "xl" | "2xl">;
 
-export type StandardIconColorToken = {
-	pure: string;
-	text: string;
-	shade: string;
-	bg: string;
-};
+export type StandardIconStyleType = "solid" | "outline" | "outlineGradient" | "inverseStroke";
+export type StandardIconColorShade = "pure" | "text" | "textShade" | "bg" | "contrastText" | "subtle";
 
-export type StandardIconTokens = {
-	colors: Record<StandardIconColor, StandardIconColorToken>;
+export type StandardIconRecipe = {
+	fill: string;
+	stroke: string;
+	defs: string;
 };
 //#endregion ![def]
 
-//#region [main] - 🔧 LOGIC 🔧
+// ... (la función generateStandardIconTokens no cambia)
 export function generateStandardIconTokens(
 	appTokens: AppColorTokens,
-	mode: Mode
-): StandardIconTokens {
-	//#region [sub] - 🧰 HELPER FUNCTIONS 🧰
-	const generateColorTokenFromPalette = (
-		colorPalette: ColorShade
-	): StandardIconColorToken => {
-		return {
-			pure: colorPalette.pure,
-			text: colorPalette.text,
-			shade: colorPalette.textShade,
-			bg: colorPalette.bg,
-		};
-	};
-	//#endregion ![sub]
+	mode: Mode,
+	colorScheme: ColorSchemeVariant = "neutral",
+	styleType: StandardIconStyleType = "solid",
+	colorShade: StandardIconColorShade = "pure"
+): StandardIconRecipe {
+    // ... lógica existente
+	const palette: ColorShade = appTokens[colorScheme] || appTokens.neutral;
+	const isDark = mode === "dark";
 
-	const defaultToken: StandardIconColorToken = generateColorTokenFromPalette(
-		appTokens.neutral
-	);
-	const neutralToken: StandardIconColorToken = generateColorTokenFromPalette(
-		appTokens.neutral
-	);
-	const whiteToken: StandardIconColorToken = generateColorTokenFromPalette(
-		appTokens.white
-	);
+	let effectiveColor: string;
+	if (colorShade === 'subtle') {
+		effectiveColor = tinycolor.mix(palette.text, isDark ? '#A0A0A0' : '#888888', 70).toHexString();
+	} else {
+		effectiveColor = palette[colorShade] || palette.pure;
+	}
 
-	return {
-		colors: {
-			default: defaultToken,
-			primary: generateColorTokenFromPalette(appTokens.primary),
-			secondary: generateColorTokenFromPalette(appTokens.secondary),
-			tertiary: generateColorTokenFromPalette(appTokens.tertiary),
-			accent: generateColorTokenFromPalette(appTokens.accent),
-			success: generateColorTokenFromPalette(appTokens.success),
-			warning: generateColorTokenFromPalette(appTokens.warning),
-			danger: generateColorTokenFromPalette(appTokens.danger),
-			neutral: neutralToken,
-			white: whiteToken,
-		},
-	};
+	switch (styleType) {
+		case "solid":
+		case "outline": {
+			return {
+				fill: styleType === 'solid' ? effectiveColor : 'none',
+				stroke: styleType === 'outline' ? effectiveColor : 'none',
+				defs: "",
+			};
+		}
+		case "outlineGradient": {
+			const gradientId = `sig-og-${colorScheme}`;
+			const startColor = palette.bgShade;
+			const endColor = palette.pure;
+			const defs = `<defs><linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${startColor}" /><stop offset="100%" stop-color="${endColor}" /></linearGradient></defs>`;
+			return { fill: "none", stroke: `url(#${gradientId})`, defs: defs };
+		}
+		case "inverseStroke": {
+			const fillId = `sig-is-inverse-fill-${colorScheme}`;
+			const strokeId = `sig-is-inverse-stroke-${colorScheme}`;
+			const strokeStart = palette.bgShade;
+			const strokeEnd = palette.pure;
+			const fillStart = strokeEnd;
+			const fillEnd = strokeStart;
+			const defs = `<defs><linearGradient id="${fillId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${fillStart}" /><stop offset="100%" stop-color="${fillEnd}" /></linearGradient><linearGradient id="${strokeId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${strokeStart}" /><stop offset="100%" stop-color="${strokeEnd}" /></linearGradient></defs>`;
+			return { fill: `url(#${fillId})`, stroke: `url(#${strokeId})`, defs: defs };
+		}
+		default: {
+			return {
+				fill: palette.pure,
+				stroke: "none",
+				defs: "",
+			};
+		}
+	}
 }
-//#endregion ![main]

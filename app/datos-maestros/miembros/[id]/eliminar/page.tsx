@@ -17,13 +17,14 @@ import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { PageHeader } from "@/components/common/page-header";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import { ArrowLeft, Trash2, User } from "lucide-react";
+import { ArrowLeft, Trash2, User, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { PageBackground } from "@/components/ui/page-background";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CustomDialog } from "@/components/ui/custom-dialog";
+import { StandardText } from "@/components/ui/StandardText";
+
+import { StandardDialog } from "@/components/ui/StandardDialog";
 //#endregion ![head]
 
 //#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
@@ -112,49 +113,67 @@ export default function EliminarMiembroPage() {
 
   if (error) {
     return (
-      <PageBackground>
+      <StandardPageBackground variant="gradient">
         <div className="max-w-4xl mx-auto p-6">
           <div className="mb-6">
             <StandardButton
               styleType="outline"
               onClick={() => router.back()}
-              className="mb-6"
+              leftIcon={ArrowLeft}
             >
-              <StandardIcon><ArrowLeft className="h-4 w-4 mr-2" /></StandardIcon>
               Volver
             </StandardButton>
           </div>
-          
-          <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <StandardCard
+            disableShadowHover={true}
+            className="border-destructive bg-destructive/5"
+            colorScheme="danger" // Assuming intent from className
+            styleType="subtle"
+            hasOutline={false} // Defaulting as no border prop was specified
+            accentPlacement="none" // Defaulting
+          >
+            <div className="flex items-center gap-3">
+              <StandardIcon><AlertTriangle className="h-6 w-6 text-destructive" /></StandardIcon>
+              <StandardText>Error: {error}</StandardText>
+            </div>
+          </StandardCard>
         </div>
-      </PageBackground>
+      </StandardPageBackground>
     );
   }
 
   if (!miembro) {
     return (
-      <PageBackground>
+      <StandardPageBackground variant="gradient">
         <div className="max-w-4xl mx-auto p-6">
-          <Alert>
-            <AlertTitle>No se encontró el miembro</AlertTitle>
-            <AlertDescription>
-              El miembro solicitado no existe o no tienes permisos para verlo.
-            </AlertDescription>
-          </Alert>
+          <StandardCard
+            disableShadowHover={true}
+            className="border-info bg-info/5"
+            colorScheme="neutral"
+            styleType="subtle"
+            hasOutline={false}
+            accentPlacement="none"
+          >
+            <div className="flex items-center gap-3">
+              <StandardIcon><AlertTriangle className="h-6 w-6 text-info" /></StandardIcon>
+              <StandardText>No se encontró información para este miembro.</StandardText>
+              <div>
+                <StandardText weight="bold" size="lg" colorScheme="warning">No se encontró el miembro</StandardText>
+                <StandardText colorScheme="warning">El miembro solicitado no existe o no tienes permisos para verlo.</StandardText>
+              </div>
+            </div>
+          </StandardCard>
         </div>
-      </PageBackground>
+      </StandardPageBackground>
     );
   }
 
   return (
-    <PageBackground>
+    <StandardPageBackground variant="gradient">
       <div className="max-w-4xl mx-auto p-6">
        
 
-        <PageTitle 
+        <StandardPageTitle 
           title={`Eliminar Miembro: ${miembro?.profile?.public_display_name || miembro?.profile?.first_name || 'Sin nombre'}`}
           subtitle="Confirme la eliminación de este miembro del proyecto."
           mainIcon={User}
@@ -217,24 +236,35 @@ export default function EliminarMiembroPage() {
       </div>
 
       {/* Dialogo de confirmación */}
-      <CustomDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        title={`¿Está seguro que desea eliminar a ${miembro?.profile?.first_name || 'este miembro'}?`}
-        description="Esta acción no se puede deshacer. El miembro perderá el acceso al proyecto."
-        variant="destructive"
-        confirmText={isDeleting ? 'Eliminando...' : 'Sí, eliminar'}
-        cancelText="Cancelar"
-        onConfirm={() => {
-          // Deshabilitado temporalmente
-          console.log('Acción de eliminación temporalmente deshabilitada');
-          // handleEliminarMiembro(); // Comentado temporalmente
-        }}
-        onCancel={() => setShowDeleteDialog(false)}
-        isLoading={isDeleting}
-        className="max-w-md"
-      />
-    </PageBackground>
+      <StandardDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <StandardDialog.Content colorScheme="danger" size="md">
+          <StandardDialog.Header>
+            <StandardDialog.Title>{`¿Está seguro que desea eliminar a ${miembro?.profile?.first_name || 'este miembro'}?`}</StandardDialog.Title>
+          </StandardDialog.Header>
+          <StandardDialog.Body>
+            <StandardDialog.Description>
+              Esta acción no se puede deshacer. El miembro perderá el acceso al proyecto.
+            </StandardDialog.Description>
+          </StandardDialog.Body>
+          <StandardDialog.Footer>
+            <StandardDialog.Close asChild>
+              <StandardButton styleType="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</StandardButton>
+            </StandardDialog.Close>
+            <StandardButton 
+              colorScheme="danger" 
+              onClick={() => {
+                // Deshabilitado temporalmente
+                console.log('Acción de eliminación temporalmente deshabilitada');
+                // handleEliminarMiembro(); // Comentado temporalmente
+              }}
+              loading={isDeleting}
+            >
+              {isDeleting ? 'Eliminando...' : 'Sí, eliminar'}
+            </StandardButton>
+          </StandardDialog.Footer>
+        </StandardDialog.Content>
+      </StandardDialog>
+    </StandardPageBackground>
   );
 }
 //#endregion ![render]

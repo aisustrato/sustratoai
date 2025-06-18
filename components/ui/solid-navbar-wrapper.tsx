@@ -1,26 +1,32 @@
 "use client"
 
 import type React from "react"
-import { useColorTokens } from "@/hooks/use-color-tokens"
 import { useTheme } from "@/app/theme-provider"
+import { generateStandardNavbarTokens, type StandardNavbarTokens } from "@/lib/theme/components/standard-nav-tokens"
+import { useMemo } from "react"
 
 interface SolidNavbarWrapperProps {
   children: React.ReactNode
 }
 
 export function SolidNavbarWrapper({ children }: SolidNavbarWrapperProps) {
-  const { component } = useColorTokens()
-  const { mode } = useTheme()
+  const { appColorTokens, mode } = useTheme()
 
-  // Usar los mismos tokens del navbar
-  const navTokens = component.navbar
+  const currentNavTokens: StandardNavbarTokens | null = useMemo(() => {
+    if (!appColorTokens || !mode) return null
+    return generateStandardNavbarTokens(appColorTokens, mode)
+  }, [appColorTokens, mode])
+
+  if (!currentNavTokens) {
+    return null // o un loader/fallback si se prefiere
+  }
 
   // Estilo para el fondo del navbar wrapper
   const wrapperStyle = {
-    backgroundColor: navTokens.background.scrolled,
-    backdropFilter: "blur(8px)",
-    borderBottom: `1px solid ${mode === "dark" ? "rgba(75, 85, 99, 0.3)" : "rgba(229, 231, 235, 0.8)"}`,
-    boxShadow: navTokens.shadow,
+    backgroundColor: currentNavTokens.background.scrolled,
+    backdropFilter: "blur(8px)", // This matches navbar.tsx
+    borderBottom: `0px solid ${currentNavTokens.submenu.border}`,
+    boxShadow: currentNavTokens.shadow,
   }
 
   return (

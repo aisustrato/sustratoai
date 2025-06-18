@@ -2,7 +2,7 @@
 
 import { useTheme } from "@/app/theme-provider";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 export function SustratoLogoReactive({
   className = "",
@@ -22,7 +22,7 @@ export function SustratoLogoReactive({
   });
 
   // Definición de colores por tema
-  const themeColors = {
+  const themeColors = useMemo(() => ({
     blue: {
       primary: mode === "dark" ? "#2E5EB9" : "#3D7DF6",
       secondary: mode === "dark" ? "#1EA4E9" : "#516e99",
@@ -35,7 +35,7 @@ export function SustratoLogoReactive({
       primary: mode === "dark" ? "#B95413" : "#F77019",
       secondary: mode === "dark" ? "#6D2F0B" : "#913E0F",
     },
-  };
+  }), [mode]);
 
   // Establecer la duración de la transición según la velocidad
   const getTransitionDuration = () => {
@@ -57,7 +57,7 @@ export function SustratoLogoReactive({
       primary: themeColors[currentTheme].primary,
       accent: "#8A4EF6", // Siempre mantener el centro púrpura
     });
-  }, [colorScheme, mode]);
+  }, [colorScheme, mode, themeColors]);
 
   // Configuraciones para la animación
   const transitionDuration = getTransitionDuration();
@@ -240,7 +240,7 @@ export function SustratoLogoWithText({
   });
 
   // Definición de colores por tema
-  const themeColors = {
+  const themeColors = useMemo(() => ({
     blue: {
       primary: mode === "dark" ? "#2E5EB9" : "#3D7DF6",
       secondary: mode === "dark" ? "#1EA4E9" : "#516e99",
@@ -253,7 +253,7 @@ export function SustratoLogoWithText({
       primary: mode === "dark" ? "#B95413" : "#F77019",
       secondary: mode === "dark" ? "#6D2F0B" : "#913E0F",
     },
-  };
+  }), [mode]);
 
   // Actualizar los colores cuando cambie el tema
   useEffect(() => {
@@ -263,7 +263,7 @@ export function SustratoLogoWithText({
       primary: themeColors[currentTheme].primary,
       accent: "#8A4EF6", // Mantener el acento púrpura
     });
-  }, [colorScheme, mode]);
+  }, [colorScheme, mode, themeColors]);
 
   // Tamaño del texto según el tamaño del logo
   const getTextSize = () => {

@@ -7,7 +7,6 @@ import { ChevronDown } from "lucide-react"; // Loader2 ya no es necesario para l
 import { motion, AnimatePresence } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { useTheme } from "@/app/theme-provider";
-import { useColorTokens } from "@/hooks/use-color-tokens";
 import { fontThemeConfig } from "@/lib/fonts";
 import { generateFontSelectorTokens } from "@/lib/theme/components/font-selector-tokens";
 import { StandardText } from "@/components/ui/StandardText";
@@ -129,7 +128,7 @@ export function FontThemeSwitcher() {
 
   return (
     <div className="relative flex items-center gap-2">
-      <StandardText variant="caption" colorScheme="neutral" colorShade="textShade" className="text-xs opacity-50 whitespace-nowrap">
+      <StandardText preset="caption" colorScheme="neutral" colorShade="textShade" className="text-xs opacity-50 whitespace-nowrap">
         Fuente:
       </StandardText>
       <motion.button

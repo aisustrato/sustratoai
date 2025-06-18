@@ -6,12 +6,11 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import BatchSimulatorPage from './components/BatchSimulatorPage'; 
 import ProjectBatchesDisplay, { type DisplayableBatch } from './components/ProjectBatchesDisplay'; 
-import { PageBackground } from '@/components/ui/page-background';
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
 import { StandardText } from '@/components/ui/StandardText';
 import { StandardIcon } from '@/components/ui/StandardIcon';
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { PageTitle } from '@/components/ui/page-title';
+import { StandardPageTitle } from '@/components/ui/StandardPageTitle';
 import { Boxes, AlertTriangle } from 'lucide-react';
 
 import { 
@@ -141,11 +140,11 @@ export default function LotesOrquestadorPage() {
   //#region [render_sub] - LOADING STATE 🎨
   if (isLoadingPageData || (!batchTokens && viewMode === 'displayBatches')) { // Loader si carga datos o si batchTokens no está listo para displayBatches
     return (
-      <PageBackground>
+      <div>
         <div className="flex items-center justify-center min-h-[70vh]">
           <SustratoLoadingLogo text={!batchTokens ? "Cargando configuración de tema..." : "Cargando datos de gestión de lotes..."} />
         </div>
-      </PageBackground>
+      </div>
     );
   }
   //#endregion [render_sub]
@@ -153,8 +152,8 @@ export default function LotesOrquestadorPage() {
   //#region [render_sub] - NO PROJECT STATE 🎨
   if (!proyectoActual) { // Chequeo más robusto
     return (
-         <PageBackground>
-            <PageTitle title="Gestión de Lotes" mainIcon={Boxes} />
+         <div>
+            <StandardPageTitle title="Gestión de Lotes" mainIcon={Boxes} />
             <StandardCard
                 disableShadowHover={true}
                 colorScheme="primary"
@@ -171,7 +170,7 @@ export default function LotesOrquestadorPage() {
                 </StandardCard.Header>
                 <StandardCard.Content><StandardText>Por favor, selecciona un proyecto activo para gestionar los lotes.</StandardText></StandardCard.Content>
             </StandardCard>
-        </PageBackground>
+        </div>
     );
   }
   //#endregion [render_sub]
@@ -181,7 +180,7 @@ export default function LotesOrquestadorPage() {
 
   //#region [render_sub] - MAIN CONTENT (SIMULATOR OR DISPLAY) 🎨
   return (
-    <PageBackground>
+    <div>
       {viewMode === 'simulator' ? (
         <BatchSimulatorPage 
             onBatchesCreatedSuccessfully={handleBatchesCreated} 
@@ -197,7 +196,7 @@ export default function LotesOrquestadorPage() {
           permisoParaResetearGeneral={permisoGestionGeneral}
         />
       )}
-    </PageBackground>
+    </div>
   );
   //#endregion [render_sub]
 }

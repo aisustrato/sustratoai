@@ -11,8 +11,7 @@ import {
   type ResultadoOperacion,
   type PreclassDimensionRow // Para el tipo de retorno de la action
 } from "@/lib/actions/dimension-actions";
-import { PageBackground } from "@/components/ui/page-background";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
@@ -148,20 +147,19 @@ export default function CrearDimensionPage() {
   //#region [render] - 🎨 RENDER SECTION 🎨
   if (loadingProyectos && !proyectoActual?.id) {
     return (
-      <PageBackground>
+      <div>
         <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <SustratoLoadingLogo showText text="Cargando proyecto..." />
+          <SustratoLoadingLogo showText text="Verificando proyecto y permisos..." />
         </div>
-      </PageBackground>
+      </div>
     );
   }
 
   if (errorPage) {
     return (
-      <PageBackground>
+      <div>
         <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
             <StandardCard
-                // This is an informational/error card, should follow inner card styling.
                 colorScheme="primary" // Rule: Inner card
                 accentPlacement="none" // Rule: Inner card
                 hasOutline={false} // Rule: Inner card
@@ -173,7 +171,7 @@ export default function CrearDimensionPage() {
             >
                 <StandardCard.Header className="items-center flex flex-col text-center">
                     <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
-                    <StandardText variant="subheading" weight="bold" colorScheme="danger">
+                    <StandardText preset="subheading" weight="bold" colorScheme="danger">
                         {puedeGestionarDimensiones ? "Error de Configuración" : "Acceso Denegado"}
                     </StandardText>
                 </StandardCard.Header>
@@ -192,27 +190,27 @@ export default function CrearDimensionPage() {
                 </StandardCard.Footer>
             </StandardCard>
         </div>
-      </PageBackground>
+      </div>
     );
   }
   
   if (!proyectoActual?.id || !puedeGestionarDimensiones) {
     // Este caso debería ser cubierto por errorPage, pero como fallback:
     return (
-         <PageBackground>
+         <div>
             <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <StandardText>Cargando o acceso no permitido...</StandardText>
             </div>
-        </PageBackground>
+        </div>
     );
   }
 
 
   return (
-    <PageBackground>
+    <div>
       <div className="container mx-auto py-8">
         <div className="max-w-3xl mx-auto"> {/* Centrar y limitar ancho del contenido del formulario */}
-          <PageTitle
+          <StandardPageTitle
             title="Crear Nueva Dimensión"
             subtitle="Define una nueva dimensión para la pre-clasificación de artículos en tu proyecto."
             mainIcon={PlusCircle} // Icono para creación
@@ -243,7 +241,7 @@ export default function CrearDimensionPage() {
           </StandardCard>
         </div>
       </div>
-    </PageBackground>
+    </div>
   );
   //#endregion ![render]
 }

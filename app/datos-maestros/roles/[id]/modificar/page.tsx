@@ -14,14 +14,14 @@ import {
     type ResultadoOperacion 
 } from "@/lib/actions/proyect-role-actions";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { ShieldCheck, AlertTriangle } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import Link from "next/link";
-import { PageBackground } from "@/components/ui/page-background";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 //#endregion ![head]
 
@@ -142,20 +142,20 @@ export default function ModificarRolPage() {
   //#region [render] - 🎨 RENDER SECTION 🎨
   //> 📝 ------ RENDERIZADO CONDICIONAL ------
   if (isPageLoading) { //> 📝 Solo este estado de carga para la página
-    return ( <PageBackground> <SustratoLoadingLogo size={50} showText text="Cargando..." /> </PageBackground> );
+    return ( <StandardPageBackground variant="gradient"> <SustratoLoadingLogo size={50} showText text="Cargando..." /> </StandardPageBackground> );
   }
 
   //> 📝 Los siguientes checks se hacen DESPUÉS de que isPageLoading es false.
   if (!proyectoActual?.id) {
-    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none" disableShadowHover={true}>  <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <StandardIcon colorScheme="warning" size="md"><AlertTriangle /></StandardIcon> </div> <PageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>{pageError || "No hay un proyecto activo."}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><StandardButton styleType="outline">Ir a Inicio</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return ( <StandardPageBackground variant="default"> <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none" disableShadowHover={true}>  <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <StandardIcon colorScheme="warning" size="md"><AlertTriangle /></StandardIcon> </div> <StandardPageTitle title="Proyecto Requerido" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>{pageError || "No hay un proyecto activo."}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/" passHref><StandardButton styleType="outline">Ir a Inicio</StandardButton></Link> </StandardCard.Footer> </StandardCard> </StandardPageBackground> );
   }
   
   if (!puedeGestionarRoles) { 
-    return ( <PageBackground > <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none" disableShadowHover={true}>   <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <StandardIcon colorScheme="warning" size="md"><AlertTriangle /></StandardIcon> </div> <PageTitle title="Acceso Denegado" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>No tienes permisos para modificar roles en este proyecto.</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+    return ( <StandardPageBackground variant="gradient"> <StandardCard className="max-w-md text-center" styleType="subtle" hasOutline={false} accentPlacement="none" disableShadowHover={true}>   <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100"> <StandardIcon colorScheme="warning" size="md"><AlertTriangle /></StandardIcon> </div> <StandardPageTitle title="Acceso Denegado" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>No tienes permisos para modificar roles en este proyecto.</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </StandardPageBackground> );
   }
   
   if (pageError && !rolParaEditar) { 
-    return ( <PageBackground > <StandardCard 
+    return ( <StandardPageBackground variant="gradient"> <StandardCard 
           styleType="subtle"
           className="max-w-md text-center" 
           colorScheme="primary" // Rule: Inner card for info/error block
@@ -163,11 +163,11 @@ export default function ModificarRolPage() {
           hasOutline={false} // Rule: Inner card
           shadow="none" // Rule: Inner card
           disableShadowHover={true} // Rule: Inner card
-        >  <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <StandardIcon colorScheme="danger" size="md"><AlertTriangle /></StandardIcon> </div> <PageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>{pageError}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+        >  <StandardCard.Header> <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-danger-100"> <StandardIcon colorScheme="danger" size="md"><AlertTriangle /></StandardIcon> </div> <StandardPageTitle title="Error al Cargar Rol" className="mt-4" /> </StandardCard.Header> <StandardCard.Content><StandardText>{pageError}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </StandardPageBackground> );
   }
 
   if (!rolParaEditar) { 
-    return ( <PageBackground > <StandardCard 
+    return ( <StandardPageBackground variant="gradient"> <StandardCard 
           styleType="subtle"
           className="max-w-md text-center" 
           colorScheme="primary" // Rule: Inner card for info/error block
@@ -175,7 +175,7 @@ export default function ModificarRolPage() {
           hasOutline={false} // Rule: Inner card
           shadow="none" // Rule: Inner card
           disableShadowHover={true} // Rule: Inner card
-        >  <StandardCard.Header><PageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><StandardText>{pageError || "No se encontraron datos para el rol especificado."}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </PageBackground> );
+        >  <StandardCard.Header><StandardPageTitle title="Rol no Encontrado" /></StandardCard.Header> <StandardCard.Content><StandardText>{pageError || "No se encontraron datos para el rol especificado."}</StandardText></StandardCard.Content> <StandardCard.Footer> <Link href="/datos-maestros/roles" passHref><StandardButton styleType="outline">Volver al Listado</StandardButton></Link> </StandardCard.Footer> </StandardCard> </StandardPageBackground> );
   }
 
   const valoresInicialesParaForm: RolFormValues = {
@@ -188,9 +188,9 @@ export default function ModificarRolPage() {
   };
 
   return (
-    <PageBackground>
+    <StandardPageBackground variant="gradient">
       <div className="container mx-auto py-6">
-      <PageTitle
+      <StandardPageTitle
               title={`Modificar Rol: ${rolParaEditar.role_name}`}
               subtitle={`Actualiza los permisos para este rol en el proyecto "${proyectoActual.name}"`}
               mainIcon={ShieldCheck}
@@ -215,7 +215,7 @@ export default function ModificarRolPage() {
           <StandardCard.Content>
             {pageError && rolParaEditar && ( 
               <div className="mb-4 p-3 text-sm text-destructive-foreground border border-destructive bg-destructive/10 rounded-md">
-                <div className="flex items-center gap-2"> <StandardIcon size="sm" colorScheme="inherit"><AlertTriangle /></StandardIcon> <span>{pageError}</span> </div>
+                <div className="flex items-center gap-2"> <StandardIcon size="sm" colorScheme="danger"><AlertTriangle /></StandardIcon> <span>{pageError}</span> </div>
               </div>
             )}
             <RolForm
@@ -228,7 +228,7 @@ export default function ModificarRolPage() {
           </StandardCard.Content>
         </StandardCard>
       </div>
-    </PageBackground>
+    </StandardPageBackground>
   );
   //#endregion ![render]
 

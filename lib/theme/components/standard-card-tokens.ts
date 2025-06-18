@@ -178,19 +178,34 @@ export function generateStandardCardTokens(
 			};
 		} else {
 			// Dark Mode for 'subtle'
-			// Objetivo: Oscuro, distinguible de 'filled' dark, buen contraste.
-			// Podría ser un color sólido muy oscuro del esquema, o un gradiente aún más sutil que 'filled' dark.
-			// Usemos el tokenShade.bgDark (que es tokenShade.bgShade) como base sólida o ligeramente aclarada.
-			let subtleDarkBg = tokenShade.bgShade; // El más oscuro del ColorShade del tema dark
+			// Objetivo: Degradado inverso al modo light, con predominancia oscura/neutral
+			// pero manteniendo la personalidad etérea del color del esquema.
+			// Creamos un degradado de 3 tonos que va desde más oscuro/neutral hacia tonos
+			// ligeramente influenciados por el color del esquema.
+			let subtleDarkBase: string;
+			let subtleDarkMid: string;
+			let subtleDarkEnd: string;
+			
 			if (scheme === "neutral" || scheme === "white") {
-				subtleDarkBg = neutral.gray[800];
+				// Para esquemas neutrales, usamos gradaciones de gris
+				subtleDarkBase = neutral.gray[900]; // Más oscuro (base)
+				subtleDarkMid = tinycolor(neutral.gray[900]).lighten(3).toHexString(); // Tono intermedio
+				subtleDarkEnd = neutral.gray[800]; // Menos oscuro (final)
 			} else {
-				// Para darle un poco de "personalidad" y diferenciarlo de un negro puro,
-				// podemos aclarar muy sutilmente el bgShade o usar el bg.
-				subtleDarkBg = tinycolor(tokenShade.bgShade).lighten(3).toHexString();
+				// Para esquemas de color, partimos de un neutral oscuro
+				// y vamos añadiendo sutilmente el tinte del color del esquema
+				subtleDarkBase = neutral.gray[900]; // Base muy oscura
+				subtleDarkMid = tinycolor.mix(neutral.gray[900], tokenShade.bgShade, 20).toHexString(); 
+				// Final con algo más de presencia del color del esquema, pero aún oscuro
+				subtleDarkEnd = tinycolor.mix(tinycolor(neutral.gray[900]).lighten(5).toHexString(), tokenShade.bg, 30).toHexString();
 			}
+			
 			styleTypes.subtle[scheme] = {
-				background: subtleDarkBg,
+				background: createThreeToneDiagonalGradient(
+					subtleDarkBase,
+					subtleDarkMid,
+					subtleDarkEnd
+				),
 				color: tokenShade.text, // Ya es un color de texto claro para fondos oscuros
 			};
 		}
@@ -226,8 +241,16 @@ export function generateStandardCardTokens(
 	allCardSchemes.forEach((outerScheme) => {
 		const outerTokenShade = appColorTokens[outerScheme];
 		if (!outerTokenShade) return;
+				const colorInstance = tinycolor(outerTokenShade.pure);
+		let startColor = outerTokenShade.pure;
+
+		// If the 'pure' color is dark, lighten it to ensure the gradient is visible.
+		if (colorInstance.isDark()) {
+			startColor = colorInstance.lighten(20).toHexString();
+		}
+
 		const standardBg = createAccentBarGradient(
-			outerTokenShade.pure,
+			startColor, // Use the potentially lightened color
 			outerTokenShade.text
 		);
 		let duotoneMagicBg: string;
@@ -296,14 +319,14 @@ export function generateStandardCardTokens(
 
 	const inactiveOverlayBgValue =
 		mode === "dark"
-			? tinycolor(appColorTokens.neutral.bgDark || neutral.gray[900])
+			? tinycolor(appColorTokens.neutral.bg || neutral.gray[900])
 					.setAlpha(0.7)
 					.toRgbString()
 			: tinycolor(neutral.gray[50]).setAlpha(0.6).toRgbString();
 
 	const loadingOverlayBgValue =
 		mode === "dark"
-			? tinycolor(appColorTokens.neutral.bgDark || neutral.gray[800])
+			? tinycolor(appColorTokens.neutral.bg || neutral.gray[800])
 					.setAlpha(0.75)
 					.toRgbString()
 			: tinycolor(neutral.gray[100]).setAlpha(0.65).toRgbString();

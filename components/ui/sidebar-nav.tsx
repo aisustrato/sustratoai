@@ -1,13 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
-import { Text } from "@/components/ui/text";
 import { useTheme } from "@/app/theme-provider";
 import { useMemo } from "react";
-import styles from "./sidebar-nav.module.css";
 
 interface SidebarNavItem {
 	title: string;
@@ -23,14 +19,11 @@ interface SidebarNavProps {
 
 import { SidebarNavAnimations } from "./sidebar-nav-animations";
 
-export function SidebarNav({ items, className }: SidebarNavProps) {
+export function SidebarNav({ items }: SidebarNavProps) {
 	const pathname = usePathname() || "";
 	const { appColorTokens, mode } = useTheme();
 
 	const isDark = mode === "dark";
-	const accentBg = isDark
-		? appColorTokens.accent.bgShade
-		: appColorTokens.accent.bg;
 	const accentBgHover = isDark
 		? appColorTokens.accent.bg
 		: appColorTokens.accent.bgShade;

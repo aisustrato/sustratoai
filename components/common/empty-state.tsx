@@ -1,6 +1,5 @@
 import React from "react";
-import { Text } from "@/components/ui/text";
-import { CustomButton } from "@/components/ui/custom-button";
+import { StandardText } from "@/components/ui/StandardText";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 
@@ -31,11 +30,11 @@ export function EmptyState({
           <Icon className="h-10 w-10 text-muted-foreground" />
         </div>
       )}
-      <Text className="mt-6 text-xl font-semibold">{title}</Text>
+      <StandardText size="xl" weight="semibold" className="mt-6">{title}</StandardText>
       {description && (
-        <Text className="mt-2 text-center text-sm text-muted-foreground max-w-md">
+        <StandardText size="sm" align="center" colorShade="subtle" className="mt-2 max-w-md">
           {description}
-        </Text>
+        </StandardText>
       )}
       {action && <div className="mt-6">{action}</div>}
     </div>

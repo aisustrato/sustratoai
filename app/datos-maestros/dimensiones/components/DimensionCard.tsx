@@ -6,13 +6,16 @@ import React from "react";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import { useTheme } from "@/app/theme-provider";
 import { type FullDimension } from "@/lib/actions/dimension-actions";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import {
+	StandardCard,
+	type StandardCardColorScheme,
+} from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
-import { BadgeCustom } from "@/components/ui/badge-custom";
+import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { PenLine, Trash2 } from "lucide-react"; // GripVertical para drag handle, Eye para ver detalles (comentado)
-import { BadgeVariant } from "@/lib/theme/components/badge-tokens";
+
 import { cn } from "@/lib/utils";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 // import { useSortable } from '@dnd-kit/sortable'; // Descomentar para dnd-kit
@@ -49,16 +52,19 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 
 	// Determinar variante de color para el borde y badge de tipo
 	// Puedes ajustar esto según tu paleta de colores
-	let cardColorVariant: BadgeVariant = "neutral";
-	if (dimension.type === "finite")
-		cardColorVariant = "success"; // ej. verde para finitas
-	else if (dimension.type === "open") cardColorVariant = "info"; // ej. azul para abiertas
+	let dynamicColorScheme: StandardCardColorScheme = "primary"; // Fallback
+	if (dimension.type === "finite") {
+		dynamicColorScheme = "secondary";
+	} else if (dimension.type === "open") {
+		dynamicColorScheme = "tertiary";
+	}
 
 	const { appColorTokens, mode } = useTheme();
 	const triggerRipple = useRipple();
 
 	// Color para el ripple (accent background)
-	const accentBg = appColorTokens?.accent?.bg || appColorTokens?.primary?.bg || "#4f46e5";
+	const accentBg =
+		appColorTokens?.accent?.bg || appColorTokens?.primary?.bg || "#4f46e5";
 
 	const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
 		triggerRipple(e, accentBg, 10);
@@ -76,13 +82,12 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 			)}
 			accentPlacement="top"
 			colorScheme="primary"
-			accentColorScheme="neutral"
-			disableShadowHover={true}
+			accentColorScheme={dynamicColorScheme}
+			disableShadowHover={false}
 			styleType="subtle"
 			shadow="md"
 			animateEntrance
-			onCardClick={handleCardClick}
-		>
+			onCardClick={handleCardClick}>
 			{isBeingDeleted && (
 				<div className="absolute inset-0 flex items-center justify-center bg-card/50 z-10">
 					<SustratoLoadingLogo size={30} />
@@ -98,19 +103,19 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 			>
 				<StandardCard.Header className="p-0 mb-2">
 					<div className="flex flex-col gap-1">
-						<div className="flex items-start justify-between">
-							<StandardText
+						<StandardText
+								preset="title"
 								size="md"
-								weight="semibold"
-								className="flex-grow mr-2"
-								truncate
-							>
+								weight="semibold" // Se puede revisar si preset="title" ya lo incluye
+								truncate>
 								{dimension.name}
 							</StandardText>
-							<BadgeCustom variant={cardColorVariant} className="flex-shrink-0">
+							<StandardBadge
+								size="md"
+								colorScheme={dynamicColorScheme}
+								className="mt-1 self-start"> {/* Añadido margen superior */}
 								{tipoLabel}
-							</BadgeCustom>
-						</div>
+							</StandardBadge>
 						{canManage && (
 							<div className="flex justify-end gap-1 mt-1">
 								<StandardButton
@@ -118,20 +123,22 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 									styleType="ghost"
 									onClick={onEdit}
 									disabled={isBeingDeleted}
-									tooltip="Editar dimensión"
-								>
-                  <StandardIcon><PenLine /></StandardIcon>
-                </StandardButton>
+									tooltip="Editar dimensión">
+									<StandardIcon>
+										<PenLine />
+									</StandardIcon>
+								</StandardButton>
 								<StandardButton
 									size="sm"
 									styleType="ghost"
 									colorScheme="danger"
 									onClick={onDelete}
 									disabled={isBeingDeleted}
-									tooltip="Eliminar dimensión"
-								>
-                  <StandardIcon><Trash2 /></StandardIcon>
-                </StandardButton>
+									tooltip="Eliminar dimensión">
+									<StandardIcon>
+										<Trash2 />
+									</StandardIcon>
+								</StandardButton>
 							</div>
 						)}
 					</div>
@@ -153,7 +160,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 					{dimension.type === "finite" && dimension.options.length > 0 && (
 						<div className="mb-3">
 							<StandardText
-								size="xs"
+								size="md"
 								weight="medium"
 								colorScheme="secondary"
 								className="mb-1 block">
@@ -164,15 +171,19 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 									(
 										opt // Mostrar solo las primeras N opciones
 									) => (
-										<BadgeCustom key={opt.id} variant="neutral" subtle>
+										<StandardBadge
+											key={opt.id}
+											size="md"
+											colorScheme="primary"
+											styleType="subtle">
 											{opt.value}
-										</BadgeCustom>
+										</StandardBadge>
 									)
 								)}
 								{dimension.options.length > 4 && (
-									<BadgeCustom variant="neutral" subtle>
+									<StandardBadge size="md" colorScheme="primary" styleType="subtle">
 										+{dimension.options.length - 4} más
-									</BadgeCustom>
+									</StandardBadge>
 								)}
 							</div>
 						</div>
@@ -202,7 +213,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 						)}
 					{dimension.type === "finite" && dimension.options.length === 0 && (
 						<StandardText
-							variant="caption"
+							preset="caption"
 							colorScheme="warning"
 							className="italic mt-auto pt-2">
 							Esta dimensión de selección múltiple no tiene opciones definidas.
@@ -210,11 +221,6 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 					)}
 				</StandardCard.Content>
 			</div>
-			{/* <StandardCard.Footer className="p-2">
-            <CustomButton variant="outline" size="sm" onClick={onViewDetails} leftIcon={<Eye className="h-4 w-4"/>}>
-                Ver Detalles
-            </CustomButton>
-        </StandardCard.Footer> */}
 		</StandardCard>
 		// </div> // Cierre del div para dnd-kit
 	);

@@ -5,7 +5,7 @@
 import React from "react"; 
 import { usePathname } from "next/navigation";
 import { useAuth } from "./auth-provider"; 
-import { Navbar } from "@/components/ui/navbar";
+import { StandardNavbar } from "@/components/ui/StandardNavbar";
 import { SolidNavbarWrapper } from "@/components/ui/solid-navbar-wrapper";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 
@@ -87,7 +87,7 @@ export function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex flex-col min-h-screen">
         <SolidNavbarWrapper>
-          <Navbar />
+          <StandardNavbar />
         </SolidNavbarWrapper>
         <main className="flex-grow w-full">
           {children}

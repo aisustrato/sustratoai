@@ -331,7 +331,7 @@ export async function createBatches(
       console.error(`❌ [${opId}] Error obteniendo max batch_number:`, maxBatchNumError);
       return { success: false, error: `Error determinando número de lote: ${maxBatchNumError.message}`, errorCode: "DB_MAX_BATCH_NUM_ERROR"};
     }
-    let nextBatchNumber = (maxBatchNumData?.batch_number || 0) + 1;
+    const nextBatchNumber = (maxBatchNumData?.batch_number || 0) + 1;
 
     const numSelectedMembers = selectedMemberIds.length;
     const baseBatchesPerMember = Math.floor(numBatches / numSelectedMembers);

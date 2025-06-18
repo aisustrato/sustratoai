@@ -237,7 +237,7 @@ const StandardInput = React.forwardRef<HTMLInputElement, StandardInputProps>(
 					/>
 					{leadingIcon && (
 						<div className={`absolute ${getIconLeftPosition()} top-0 h-full flex items-center pointer-events-none`}>
-							<StandardIcon colorScheme="neutral" colorShade="shade" size={iconInternalSize}>
+							<StandardIcon  styleType="outline" colorScheme="primary" colorShade="text" size={iconInternalSize}>
 								{React.createElement(leadingIcon)}
 							</StandardIcon>
 						</div>
@@ -245,26 +245,26 @@ const StandardInput = React.forwardRef<HTMLInputElement, StandardInputProps>(
 					<div className={`absolute right-3 top-0 h-full flex items-center gap-2`}>
 						{type === "password" && !readOnly && !disabled && (
 							<button type="button" className="outline-none focus:outline-none" onClick={togglePasswordVisibility} tabIndex={-1} aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>
-								<StandardIcon colorScheme="neutral" colorShade="shade" size={iconInternalSize}>
+								<StandardIcon styleType="outline" colorScheme="primary" colorShade="text" size={iconInternalSize}>
 									{React.createElement(showPassword ? EyeOff : Eye)}
 								</StandardIcon>
 							</button>
 						)}
 						{value && onClear && !disabled && !readOnly && (
 							<button type="button" className="outline-none focus:outline-none" onClick={onClear} tabIndex={-1} aria-label="Limpiar campo">
-								<StandardIcon colorScheme="neutral" colorShade="shade" size={iconInternalSize}>
+								<StandardIcon colorScheme="primary" colorShade="text" size={iconInternalSize}>
 									<X />
 								</StandardIcon>
 							</button>
 						)}
 						{(error || (success && !error)) && !disabled && !readOnly && (
-							<StandardIcon colorScheme={error ? "danger" : "success"} colorShade="pure" size={iconInternalSize}>
+							<StandardIcon styleType="outline" colorScheme={error ? "danger" : "success"} colorShade="pure" size={iconInternalSize}>
 								{error ? <AlertCircle className="pointer-events-none" /> : <CheckCircle className="pointer-events-none" />}
 							</StandardIcon>
 						)}
 						{trailingIcon && !error && !(success && !error) && !(value && onClear && !disabled && !readOnly) && type !== "password" && !disabled && !readOnly && (
 							<div className="pointer-events-none">
-								<StandardIcon colorScheme="neutral" colorShade="shade" size={iconInternalSize}>
+								<StandardIcon styleType="outline" colorScheme="primary" colorShade="text" size={iconInternalSize}>
 									{React.createElement(trailingIcon)}
 								</StandardIcon>
 							</div>

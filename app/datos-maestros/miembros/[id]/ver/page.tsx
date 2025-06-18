@@ -20,14 +20,15 @@ import {
 	MiembroForm,
 	type MiembroFormValues,
 } from "@/app/datos-maestros/miembros/components/MiembroForm";
-import type { SelectOption } from "@/components/ui/select-custom";
+
 import { StandardText } from "@/components/ui/StandardText";
-import { PageBackground } from "@/components/ui/page-background";
-import { PageTitle } from "@/components/ui/page-title";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 //#endregion ![head]
 
 //#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
+export type SelectOption = { value: string; label: string };
 //> 📝 No custom types or schemas defined outside the component for this page.
 //#endregion ![def]
 
@@ -199,7 +200,7 @@ export default function VerMiembroPage() {
 
 	if (error && !miembro) {
 		return (
-			<PageBackground>
+			<StandardPageBackground variant="gradient">
 				<div className="container mx-auto py-6">
 					<div className="space-y-6">
 						<PageHeader
@@ -216,13 +217,13 @@ export default function VerMiembroPage() {
 						/>
 					</div>
 				</div>
-			</PageBackground>
+			</StandardPageBackground>
 		);
 	}
 
 	if (!miembro || !valoresFormulario) {
 		return (
-			<PageBackground>
+			<StandardPageBackground variant="gradient">
 				<div className="container mx-auto py-6">
 					<div className="space-y-6">
 						<PageHeader
@@ -242,15 +243,15 @@ export default function VerMiembroPage() {
 						/>
 					</div>
 				</div>
-			</PageBackground>
+			</StandardPageBackground>
 		);
 	}
 
 	return (
-		<PageBackground>
+		<StandardPageBackground variant="gradient">
 			<div className="container mx-auto py-6">
 				<div className="space-y-6">
-					<PageTitle
+					<StandardPageTitle
 						title={`Detalle de ${getNombreMiembro()}`}
 						subtitle="Información del miembro en el proyecto (solo lectura)"
 						mainIcon={User}
@@ -265,9 +266,9 @@ export default function VerMiembroPage() {
 					<StandardCard
             disableShadowHover={true}
             styleType="subtle"
-            colorScheme="secondary"
+            colorScheme="primary"
             accentPlacement="top"
-            accentColorScheme="neutral"
+            accentColorScheme="primary"
             shadow="md"
           >
 						{puedeGestionarMiembros && (
@@ -291,13 +292,13 @@ export default function VerMiembroPage() {
 	</StandardCard>
 					{error && miembro && (
 						<div className="mt-4 p-4 bg-warning-muted text-warning-foreground rounded-md text-center ">
-							<StandardText variant="caption">
+							<StandardText preset="caption">
 								Advertencia:
 							</StandardText>
-							<StandardText variant="caption" className="mt-1">
+							<StandardText preset="caption" className="mt-1">
 								{error}
 							</StandardText>
-							<StandardText variant="caption" size="xs" className="mt-1 opacity-80">
+							<StandardText preset="caption" size="xs" className="mt-1 opacity-80">
 								(Se muestran los datos de miembro disponibles. Alguna
 								información adicional, como la lista completa de roles, podría
 								no haberse cargado correctamente).
@@ -306,7 +307,7 @@ export default function VerMiembroPage() {
 					)}
 				</div>
 			</div>
-		</PageBackground>
+		</StandardPageBackground>
 	);
 }
 //#endregion ![render]

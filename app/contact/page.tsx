@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CustomButton } from "@/components/ui/custom-button";
-import { Input } from "@/components/ui/input";
-import { TextArea } from "@/components/ui/textarea";
-import { FormField } from "@/components/ui/form-field";
-import { Text } from "@/components/ui/text";
-import { ProCard } from "@/components/ui/pro-card";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardInput } from "@/components/ui/StandardInput";
+import { StandardTextarea } from "@/components/ui/StandardTextarea";
+import { StandardFormField } from "@/components/ui/StandardFormField";
+import { StandardText } from "@/components/ui/StandardText";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { Mail, ArrowLeft, Send } from "lucide-react";
 import { toast } from "sonner";
 
@@ -50,42 +50,42 @@ export default function ContactPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-background to-muted p-4">
-      <ProCard className="max-w-xl w-full" border="top" variant="primary">
-        <ProCard.Header className="space-y-2 text-center">
+      <StandardCard className="max-w-xl w-full" accentPlacement="top" accentColorScheme="primary">
+        <StandardCard.Header className="space-y-2 text-center">
           <div className="flex justify-center mb-2">
             <img src="/logo.svg" alt="Logo" width={120} height={40} />
           </div>
-          <Text
-            variant="heading"
-            size="2xl"
-            color="primary"
-            className="text-center"
+          <StandardText
+            preset="subheading"
+            colorScheme="primary"
+            align="center"
           >
             Contáctanos
-          </Text>
-          <Text
-            variant="default"
-            color="neutral"
-            className="text-center text-muted-foreground"
+          </StandardText>
+          <StandardText
+            preset="body"
+            colorScheme="neutral"
+            colorShade="subtle"
+            align="center"
           >
             ¿Tienes preguntas o comentarios? ¡Nos encantaría escucharte!
-          </Text>
-        </ProCard.Header>
+          </StandardText>
+        </StandardCard.Header>
 
-        <ProCard.Content>
+        <StandardCard.Content>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <FormField label="Nombre" htmlFor="name">
-              <Input
+            <StandardFormField label="Nombre" htmlFor="name">
+              <StandardInput
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Tu nombre completo"
                 required
               />
-            </FormField>
+            </StandardFormField>
 
-            <FormField label="Correo electrónico" htmlFor="email">
-              <Input
+            <StandardFormField label="Correo electrónico" htmlFor="email">
+              <StandardInput
                 id="email"
                 type="email"
                 leadingIcon={Mail}
@@ -94,10 +94,10 @@ export default function ContactPage() {
                 placeholder="tucorreo@ejemplo.com"
                 required
               />
-            </FormField>
+            </StandardFormField>
 
-            <FormField label="Mensaje" htmlFor="message">
-              <TextArea
+            <StandardFormField label="Mensaje" htmlFor="message">
+              <StandardTextarea
                 id="message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -105,35 +105,34 @@ export default function ContactPage() {
                 required
                 rows={4}
               />
-            </FormField>
+            </StandardFormField>
 
-            <CustomButton
+            <StandardButton
               type="submit"
-              fullWidth
               loading={loading}
               loadingText="Enviando mensaje..."
-              color="primary"
-              leftIcon={<Send size={16} />}
-              className="mt-6"
+              colorScheme="primary"
+              leftIcon={Send}
+              className="mt-6 w-full"
             >
               Enviar mensaje
-            </CustomButton>
+            </StandardButton>
           </form>
-        </ProCard.Content>
+        </StandardCard.Content>
 
-        <ProCard.Footer className="text-center">
+        <StandardCard.Footer className="text-center">
           <Link href="/login">
-            <CustomButton
-              variant="ghost"
-              color="default"
-              leftIcon={<ArrowLeft size={16} />}
+            <StandardButton
+              styleType="ghost"
+              colorScheme="neutral"
+              leftIcon={ArrowLeft}
               size="sm"
             >
               Volver a inicio de sesión
-            </CustomButton>
+            </StandardButton>
           </Link>
-        </ProCard.Footer>
-      </ProCard>
+        </StandardCard.Footer>
+      </StandardCard>
     </div>
   );
 }

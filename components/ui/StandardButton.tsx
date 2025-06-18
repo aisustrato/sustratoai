@@ -1,298 +1,219 @@
-//. 📍 components/ui/StandardButton.tsx
+//. 📍 components/ui/StandardButton.tsx (v3.2 - Tipo de size Corregido)
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 "use client";
 
 import * as React from "react";
+import { useMemo, useState, useRef, useCallback } from "react";
 import { Slot } from "@radix-ui/react-slot";
-import { cva, type VariantProps } from "class-variance-authority";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
-import { useRipple } from "@/components/ripple/RippleProvider";
+import { useRipple } from "@/components/ripple/RippleProvider"; 
+import { StandardIcon } from "./StandardIcon"; // StandardIconSize se importa indirectamente via standard-button-tokens
+import { StandardTooltip } from "./StandardTooltip";
 import {
 	generateStandardButtonTokens,
-	type StandardButtonColorScheme,
-	type StandardButtonRounded,
-	type StandardButtonSize,
+	type StandardButtonTokenOptions,
+	type StandardButtonRecipe,
 	type StandardButtonStyleType,
+	type StandardButtonModifier,
+	type StandardButtonSize, // Este tipo ahora es el correcto, sin 'icon'.
+	type StandardButtonRounded,
 } from "@/lib/theme/components/standard-button-tokens";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { StandardIcon } from "./StandardIcon";
+import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
 //#endregion ![head]
 
-//#region [def] - 📦 INTERFACE & VARIANTS 📦
-export interface StandardButtonProps
-	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+//#region [def] - 📦 INTERFACE 📦
+export interface StandardButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 	asChild?: boolean;
+	children: React.ReactNode;
+	styleType?: StandardButtonStyleType;
+	modifiers?: StandardButtonModifier[];
+	colorScheme?: ColorSchemeVariant;
 	leftIcon?: React.ComponentType<any>;
 	rightIcon?: React.ComponentType<any>;
-	iconOnly?: boolean;
 	loading?: boolean;
 	loadingText?: string;
-	fullWidth?: boolean;
-	colorScheme?: StandardButtonColorScheme;
+	size?: StandardButtonSize; // Ahora usa el tipo corregido.
 	rounded?: StandardButtonRounded;
-	bordered?: boolean;
-	gradient?: boolean;
-	elevated?: boolean;
-	styleType?: StandardButtonStyleType;
-	size?: StandardButtonSize;
-	disableRipple?: boolean;
+	fullWidth?: boolean;
+	iconOnly?: boolean;
 	tooltip?: string | React.ReactNode;
+    disableRipple?: boolean;
 }
-
-//> 💡 CORREGIDO: La definición de variants estaba vacía. Ahora está completa.
-const buttonVariants = cva(
-	"inline-flex items-center justify-center whitespace-nowrap font-medium transition-all focus-visible:outline-none disabled:pointer-events-none relative overflow-hidden",
-	{
-		variants: {
-			variant: {
-				solid: "",
-				outline: "",
-				ghost: "",
-				link: "underline-offset-4 hover:underline",
-				subtle: "",
-			},
-			size: { xs: "", sm: "", md: "", lg: "", xl: "", icon: "" },
-			rounded: { none: "", sm: "", md: "", lg: "", full: "" },
-			fullWidth: { true: "w-full" },
-			bordered: { true: "" },
-			gradient: { true: "" },
-			elevated: { true: "" },
-			iconOnly: { true: "" },
-		},
-		defaultVariants: { variant: "solid", size: "md", rounded: "md" },
-	}
-);
 //#endregion ![def]
 
 //#region [main] - 🔧 COMPONENT 🔧
 const StandardButton = React.forwardRef<HTMLButtonElement, StandardButtonProps>(
 	(
 		{
-			className, styleType = "solid", size: initialSize = "md", rounded = "md",
-			colorScheme = "primary", asChild = false, leftIcon, rightIcon,
-			iconOnly = false, loading = false, loadingText, fullWidth = false,
-			bordered = false, gradient = false, elevated = false, children,
-			disabled, disableRipple = false, tooltip, onClick, ...props
+			className,
+			styleType = "solid",
+			modifiers = [],
+			size = "md",
+			rounded = "md",
+			colorScheme = "primary",
+			asChild = false,
+			leftIcon,
+			rightIcon,
+			iconOnly = false,
+			loading = false,
+			loadingText,
+			fullWidth = false,
+			children,
+			disabled,
+			tooltip,
+            disableRipple = false, 
+            onClick, 
+			...props
 		},
 		ref
 	) => {
-		//#region [sub_init] - 🪝 HOOKS, STATE, REFS, MEMOS 🪝
-		const variant = styleType; 
-
 		const { appColorTokens, mode } = useTheme();
-		const buttonTokens = React.useMemo(() => {
-			if (!appColorTokens) return null;
-			return generateStandardButtonTokens(appColorTokens, mode);
-		}, [appColorTokens, mode]);
-
-		const triggerRipple = useRipple();
-		const [isPressed, setIsPressed] = React.useState(false);
-		const [isHovered, setIsHovered] = React.useState(false);
-		const buttonRef = React.useRef<HTMLButtonElement | null>(null);
-		const leftIconRef = React.useRef<HTMLSpanElement | null>(null);
-		const rightIconRef = React.useRef<HTMLSpanElement | null>(null);
-		const textRef = React.useRef<HTMLSpanElement | null>(null);
-
+		const [isPressed, setIsPressed] = useState(false);
+		const [isHovered, setIsHovered] = useState(false);
 		const isEffectivelyDisabled = disabled || loading;
-		//#endregion ![sub_init]
+        const buttonRef = useRef<HTMLButtonElement | null>(null);
+        const triggerRipple = useRipple();
 
-		//#region [sub_handlers] - 📞 EVENT HANDLERS & HELPERS 📞
-		const combinedRef = React.useCallback(
-			(node: HTMLButtonElement | null) => {
-				buttonRef.current = node;
-				if (typeof ref === "function") ref(node);
-				else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node;
-			},
-			[ref]
+		const actualModifiers =
+			styleType === "solid" && (!modifiers || modifiers.length === 0)
+				? ['gradient', 'elevated'] as StandardButtonModifier[]
+				: modifiers;
+
+		const recipe: StandardButtonRecipe | null = useMemo(() => {
+			if (!appColorTokens) return null;
+			const options: StandardButtonTokenOptions = {
+				styleType,
+				colorScheme,
+				size, // Este 'size' ya no será 'icon', sino un tamaño real (xs, sm, etc.)
+				rounded,
+				modifiers: actualModifiers,
+				isHovered,
+				isPressed,
+				isDisabled: !!isEffectivelyDisabled,
+                iconOnly 
+			};
+			return generateStandardButtonTokens(appColorTokens, mode, options);
+		}, [appColorTokens, mode, styleType, colorScheme, size, rounded, actualModifiers, isHovered, isPressed, isEffectivelyDisabled, iconOnly]);
+
+		const componentStyles = useMemo(() => {
+			if (!recipe) return {};
+			const isGradient = recipe.background.includes('gradient');
+			return {
+                height: recipe.height,
+                padding: recipe.padding,
+                fontSize: recipe.fontSize,
+                gap: recipe.gap,
+                width: recipe.width, // Esto será clave para iconOnly
+				backgroundColor: isGradient ? 'transparent' : recipe.background,
+				backgroundImage: isGradient ? recipe.background : 'none',
+				color: recipe.color,
+				border: recipe.border,
+				boxShadow: recipe.boxShadow,
+				transform: recipe.transform,
+				opacity: recipe.opacity,
+                cursor: recipe.cursor,
+                textDecoration: recipe.textDecoration,
+			} as React.CSSProperties;
+		}, [recipe]);
+        
+        const combinedRef = useCallback((node: HTMLButtonElement | null) => {
+            buttonRef.current = node;
+            if (typeof ref === 'function') ref(node);
+            else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node;
+        }, [ref]);
+
+        const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+            if (!isEffectivelyDisabled && !disableRipple && recipe) {
+                const buttonRect = buttonRef.current?.getBoundingClientRect();
+                const dimension = buttonRect ? buttonRect.height : 50; 
+                const scale = (dimension / 8) * 0.875;
+                triggerRipple(e, recipe.rippleColor, scale);
+            }
+            if (onClick) onClick(e);
+        }, [isEffectivelyDisabled, disableRipple, recipe, triggerRipple, onClick]);
+        
+        const handleMouseDown = useCallback(() => { if (!isEffectivelyDisabled) setIsPressed(true); }, [isEffectivelyDisabled]);
+		const handleMouseUp = useCallback(() => setIsPressed(false), []);
+		const handleMouseEnter = useCallback(() => setIsHovered(true), []);
+		const handleMouseLeave = useCallback(() => { setIsPressed(false); setIsHovered(false); }, []);
+
+		if (!recipe) {
+			return <button ref={ref} disabled className="opacity-50">{children}</button>;
+		}
+
+		const Comp = asChild ? Slot : "button";
+
+		const renderIcon = (IconComponent: React.ComponentType<any>) => (
+			<StandardIcon
+				size={recipe.iconSize}
+				colorScheme={colorScheme}
+				colorShade={recipe.iconColorShade}
+			>
+				<IconComponent />
+			</StandardIcon>
 		);
-		const handleMouseDown = React.useCallback(() => { if (!isEffectivelyDisabled) setIsPressed(true); }, [isEffectivelyDisabled]);
-		const handleMouseUp = React.useCallback(() => setIsPressed(false), []);
-		const handleMouseEnter = React.useCallback(() => setIsHovered(true), []);
-		const handleMouseLeave = React.useCallback(() => { setIsPressed(false); setIsHovered(false); }, []);
 
-		const handleClick = React.useCallback(
-			(e: React.MouseEvent<HTMLButtonElement>) => {
-				if (isEffectivelyDisabled || disableRipple || !buttonTokens) return;
-				const colorTokenSet = buttonTokens.colors[colorScheme];
-				if (!colorTokenSet) return;
-				const finalRippleColor = colorTokenSet.rippleColor;
-				const buttonRect = buttonRef.current?.getBoundingClientRect();
-				const maxDimension = buttonRect ? Math.max(buttonRect.width, buttonRect.height) : 100;
-				const scale = (maxDimension / 8) * 0.6;
-				triggerRipple(e, finalRippleColor, scale);
-				if (onClick) onClick(e);
-			},
-			[isEffectivelyDisabled, disableRipple, buttonTokens, colorScheme, triggerRipple, onClick]
-		);
-
-		const hexToRgb = React.useCallback((hex: string): string => {
-			const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
-			return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : "0, 0, 0";
-		}, []);
-
-		const getTextColor = React.useCallback((): string => {
-			if (!buttonTokens) return "#000000";
-			const colorTokenSet = buttonTokens.colors[colorScheme];
-			if (!colorTokenSet) return "#000000";
-			if (isHovered && !disabled) {
-				if (variant === "ghost" || variant === "outline" || variant === "link") return colorTokenSet.textShade;
-				if (variant === "solid") return colorTokenSet.color;
-				return colorTokenSet.hoverColor;
-			}
-			if (variant === "ghost" || variant === "outline" || variant === "link" || variant === "subtle") return colorTokenSet.ghostColor;
-			if (variant === "solid") return colorTokenSet.color;
-			return colorTokenSet.color;
-		}, [buttonTokens, isHovered, disabled, variant, colorScheme]);
-		//#endregion ![sub_handlers]
-
-		//#region [sub_logic_effects] - 💡 LOGIC, STYLES & EFFECTS 💡
 		const buttonContent = loading ? (
 			<>
-				<StandardIcon colorScheme="inherit">
-					<Loader2 className={cn("animate-spin", buttonTokens?.loading.spinnerSize[initialSize])}/>
+				<StandardIcon 
+                    size={recipe.iconSize} 
+                    colorShade={recipe.iconColorShade} 
+                    colorScheme={colorScheme}
+                    styleType="outline"
+                    isSpinning={true}
+                >
+					<Loader2 />
 				</StandardIcon>
-				<span className="inline-block">{loadingText || children}</span>
+				{/* Para iconOnly, el loadingText se muestra si iconOnly es false. Si es true, solo el spinner. */}
+                {!iconOnly && <span>{loadingText === undefined ? 'Cargando...' : loadingText}</span>}
 			</>
 		) : (
 			<>
-				{leftIcon && (
-					<span ref={leftIconRef} className={cn("inline-flex items-center justify-center transition-transform duration-300 ease-in-out", { "mr-2": !iconOnly })}>
-						<StandardIcon colorScheme="inherit">{React.createElement(leftIcon)}</StandardIcon>
-					</span>
-				)}
-				<span ref={textRef} className="inline-block transition-transform duration-300 ease-in-out">
-					{children}
-				</span>
-				{rightIcon && (
-					<span ref={rightIconRef} className={cn("inline-flex items-center justify-center transition-transform duration-300 ease-in-out", { "ml-2": !iconOnly })}>
-						<StandardIcon colorScheme="inherit">{React.createElement(rightIcon)}</StandardIcon>
-					</span>
-				)}
+				{leftIcon && renderIcon(leftIcon)}
+				{/* Para iconOnly, los children se ignoran en favor del icono que se pasa como hijo. */}
+                {!iconOnly && <span>{children}</span>}
+				{rightIcon && renderIcon(rightIcon)}
 			</>
 		);
 
-		const resolvedSize = initialSize === "icon" ? "md" : initialSize;
-		const isIconButton = iconOnly || initialSize === "icon";
-
-		const customStyles = React.useMemo(() => {
-			if (!buttonTokens) return {};
-			const styles: React.CSSProperties = {
-				padding: isIconButton ? "0" : buttonTokens.base.padding[resolvedSize],
-				height: buttonTokens.base.height[resolvedSize],
-				width: isIconButton ? buttonTokens.base.height[resolvedSize] : "auto",
-				minHeight: buttonTokens.base.height[resolvedSize],
-				borderRadius: buttonTokens.base.borderRadius[rounded],
-				fontSize: buttonTokens.base.fontSize[resolvedSize],
-				fontWeight: buttonTokens.base.fontWeight,
-				gap: buttonTokens.base.gap[resolvedSize],
-				transition: buttonTokens.base.transition,
-				overflow: "hidden",
-				position: "relative",
-				display: "inline-flex",
-				alignItems: "center",
-				justifyContent: "center",
-			};
-			const colorTokenSet = buttonTokens.colors[colorScheme];
-			if (!colorTokenSet) return styles;
-			const textColor = getTextColor();
-			const rgbColor = hexToRgb(colorTokenSet.background);
-			if (variant === "solid") {
-				styles.backgroundColor = isPressed ? colorTokenSet.activeBackground : isHovered ? colorTokenSet.hoverBackground : colorTokenSet.background;
-				styles.color = textColor;
-				styles.border = "none";
-			} else if (variant === "outline") {
-				const bgOpacity = isPressed ? 0.15 : isHovered ? 0.08 : 0;
-				styles.backgroundColor = `rgba(${rgbColor}, ${bgOpacity})`;
-				styles.color = textColor;
-				styles.border = `1px solid ${isPressed ? colorTokenSet.activeBorder : isHovered ? colorTokenSet.hoverBorder : colorTokenSet.outlineBorder}`;
-			} else if (variant === "ghost") {
-				const bgOpacity = isPressed ? 0.25 : isHovered ? 0.12 : 0;
-				styles.backgroundColor = `rgba(${rgbColor}, ${bgOpacity})`;
-				styles.color = textColor;
-				styles.border = "none";
-			} else if (variant === "subtle") {
-				if (isPressed) styles.backgroundColor = colorTokenSet.activeBackground;
-				else if (isHovered) styles.backgroundColor = colorTokenSet.background;
-				else styles.backgroundColor = `rgba(${rgbColor}, 0.25)`;
-				styles.color = textColor;
-				styles.border = "none";
-			} else if (variant === "link") {
-				styles.backgroundColor = "transparent";
-				styles.color = textColor;
-				styles.border = "none";
-				if (isHovered) styles.textDecoration = "underline";
-			}
-			if (elevated && !disabled) styles.boxShadow = isPressed ? "0 1px 2px rgba(0,0,0,0.2)" : isHovered ? "0 8px 16px rgba(0,0,0,0.2)" : "0 4px 8px rgba(0,0,0,0.15)";
-			if (!disabled) {
-				if (isPressed) styles.transform = "translateY(1px)";
-				else if (isHovered && elevated) styles.transform = "translateY(-2px)";
-			}
-			const disabledTokens = buttonTokens.variants[variant]?.disabled;
-			if (disabled && disabledTokens) {
-				styles.backgroundColor = disabledTokens.background;
-				styles.color = disabledTokens.color;
-				styles.border = disabledTokens.border;
-				styles.opacity = disabledTokens.opacity;
-				styles.cursor = disabledTokens.cursor;
-			}
-			return styles;
-		}, [ buttonTokens, resolvedSize, rounded, isIconButton, elevated, gradient, isPressed, isHovered, disabled, variant, colorScheme, getTextColor, hexToRgb ]);
-
-		React.useEffect(() => {
-			if (isEffectivelyDisabled) return;
-			if (leftIconRef.current) leftIconRef.current.style.transform = isHovered ? "scale(1.15)" : "scale(1)";
-			if (rightIconRef.current) rightIconRef.current.style.transform = isHovered ? "scale(1.15)" : "scale(1)";
-			if (textRef.current) textRef.current.style.transform = isHovered ? "scale(1.03)" : "scale(1)";
-		}, [isHovered, isEffectivelyDisabled]);
-		//#endregion ![sub_logic_effects]
-
-		//#region [render] - 🎨 RENDER 🎨
-		if (!buttonTokens) {
-			return (
-				<button ref={ref} className={cn("inline-flex items-center justify-center whitespace-nowrap font-medium", "px-3 py-2 text-sm rounded-md", "bg-gray-200 text-gray-500 cursor-not-allowed opacity-50", fullWidth ? "w-full" : "", className)} disabled {...props}>
-					{children}
-				</button>
-			);
-		}
-		const Comp = asChild ? Slot : "button";
 		const buttonElement = (
 			<Comp
-				className={cn(buttonVariants({ variant, size: initialSize, rounded, fullWidth, bordered, gradient, elevated, iconOnly: isIconButton, className }))}
-				ref={combinedRef} disabled={isEffectivelyDisabled} style={customStyles}
-				onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseEnter={handleMouseEnter}
-				onMouseLeave={handleMouseLeave} onClick={handleClick} {...props}
+				className={cn(
+                    "inline-flex items-center justify-center whitespace-nowrap font-medium transition-all duration-200",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-pure",
+                    { "w-full": fullWidth },
+                    rounded === 'sm' && 'rounded-sm',
+                    rounded === 'md' && 'rounded-md',
+                    rounded === 'lg' && 'rounded-lg',
+                    rounded === 'full' && 'rounded-full',
+                    className
+                )}
+				ref={combinedRef}
+				disabled={isEffectivelyDisabled}
+                style={componentStyles}
+                onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} 
+                onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}
+                onClick={handleClick} 
+				{...props}
 			>
-				{buttonContent}
+                {/* Si es iconOnly, los children que se pasan son el propio icono (o el leftIcon si está presente). */}
+				{iconOnly ? (leftIcon ? renderIcon(leftIcon) : (children ? <StandardIcon size={recipe.iconSize} colorScheme={colorScheme} colorShade={recipe.iconColorShade}>{children}</StandardIcon> : null)) : buttonContent}
 			</Comp>
 		);
-		if (tooltip) {
+        
+        if (tooltip) {
 			return (
-				<TooltipProvider>
-					<Tooltip>
-						<TooltipTrigger asChild>{buttonElement}</TooltipTrigger>
-						<TooltipContent>{tooltip}</TooltipContent>
-					</Tooltip>
-				</TooltipProvider>
+				<StandardTooltip trigger={buttonElement} styleType="solid" colorScheme="neutral">
+					{tooltip}
+				</StandardTooltip>
 			);
 		}
 		return buttonElement;
-		//#endregion ![render]
 	}
 );
-//#endregion ![main]
-
-//#region [foo] - 🔚 EXPORTS 🔚
 StandardButton.displayName = "StandardButton";
-export {
-	StandardButton,
-	buttonVariants,
-};
-//#endregion ![foo]
+export { StandardButton };
+//#endregion ![main]
