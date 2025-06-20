@@ -2,12 +2,11 @@
 
 import { useTheme } from "@/app/theme-provider";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   generateStandardPageBackgroundTokens,
   type StandardPageBackgroundVariant,
 } from "@/lib/theme/components/standard-page-background-tokens";
-import React from "react";
 
 interface StandardPageBackgroundProps {
   children: React.ReactNode;

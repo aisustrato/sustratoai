@@ -13,7 +13,7 @@ const StandardTabsTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
 >(({ className, children, ...props }, ref) => {
   const context = useStandardTabs();
-  const [isHovered, setIsHovered] = React.useState(false);
+
 
   // 1. Generamos las "recetas" para cada estado posible.
   const recipes = React.useMemo(() => {
@@ -56,8 +56,7 @@ const StandardTabsTrigger = React.forwardRef<
   return (
     <TabsPrimitive.Trigger
       ref={ref}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+
       style={triggerVars} // 3. Aplicamos las variables al elemento.
       className={cn(
         // 4. Aplicamos los estilos base y luego usamos los selectores de data-state.
@@ -68,7 +67,8 @@ const StandardTabsTrigger = React.forwardRef<
         // Lógica de estado a través de clases y selectores, la forma robusta.
         "bg-[var(--bg-inactive)] text-[var(--text-inactive)] font-[var(--font-weight-inactive)] border-b-2 border-[var(--border-inactive)]",
         "hover:bg-[var(--bg-hover)] hover:text-[var(--text-hover)]",
-        "data-[state=active]:bg-[var(--bg-active)] data-[state=active]:text-[var(--text-active)] data-[state=active]:font-[var(--font-weight-active)] data-[state=active]:border-[var(--border-active)]"
+        "data-[state=active]:bg-[var(--bg-active)] data-[state=active]:text-[var(--text-active)] data-[state=active]:font-[var(--font-weight-active)] data-[state=active]:border-[var(--border-active)]",
+        className
       )}
       {...props}
     >

@@ -117,9 +117,9 @@ export function generateStandardCardTokens(
 		// --- FILLED ---
 		if (mode === "light") {
 			// Tu lógica para filled light mode (manito de gato)
-			let filledBase = tokenShade.bg;
-			let filledMid = tokenShade.bgShade; // es bgDark
-			let filledEnd = tinycolor
+			const filledBase = tokenShade.bg;
+			const filledMid = tokenShade.bgShade; // es bgDark
+			const filledEnd = tinycolor
 				.mix(tokenShade.bgShade, tokenShade.pure, 20)
 				.toHexString();
 			styleTypes.filled[scheme] = {

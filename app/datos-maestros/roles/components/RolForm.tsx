@@ -2,7 +2,7 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import React from "react";
+import { useMemo, useEffect } from "react";
 import {
 	useForm,
 	Controller,
@@ -108,7 +108,7 @@ export const RolForm = ({
 	//#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
 	// permissionFields constant has been moved outside the component.
 
-	const defaultFormValues: RolFormValues = React.useMemo(() => {
+	const defaultFormValues: RolFormValues = useMemo(() => {
 		return {
 			role_name: valoresIniciales?.role_name || "",
 			role_description:
@@ -130,7 +130,7 @@ export const RolForm = ({
 		reValidateMode: "onBlur",
 	});
 
-	React.useEffect(() => {
+	useEffect(() => {
 		form.reset(defaultFormValues);
 	}, [defaultFormValues, form]);
 
@@ -162,14 +162,7 @@ export const RolForm = ({
 		return !!fieldValue && !form.formState.errors[fieldName];
 	};
 
-	type PermissionFieldName = keyof Pick<
-		// This type alias is local to the component if its logic might use it.
-		RolFormValues, // permissionFields array itself now uses the direct keyof Pick for its type.
-		| "can_manage_master_data"
-		| "can_create_batches"
-		| "can_upload_files"
-		| "can_bulk_edit_master_data"
-	>;
+	// Se eliminó el tipo PermissionFieldName ya que no se utilizaba
 	// The permissionFields constant definition has been removed from here.
 	//#endregion ![sub]
 

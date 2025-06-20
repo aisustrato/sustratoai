@@ -7,9 +7,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import { RolForm, type RolFormValues } from "../components/RolForm";
 import { agregarRolAProyecto } from "@/lib/actions/proyect-role-actions";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
-import { ShieldPlus, AlertTriangle, ArrowLeft, User } from "lucide-react"; // Añadido ArrowLeft
+import { ShieldPlus, AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";

@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
 	StandardIcon,
 	type StandardIconSize,
-	type StandardIconProps,
 } from "@/components/ui/StandardIcon";
 import {
 	type StandardIconStyleType,
@@ -209,7 +208,7 @@ export default function StandardIconShowroomPage() {
 											<StandardSelect
 												id="shade-select"
 												value={demoColorShade}
-												onChange={(v) => setDemoColorShade(v as any)}
+												onChange={(v) => setDemoColorShade(v as StandardIconColorShade)}
 												options={shadesForDemo.map((s) => ({
 													value: s,
 													label: s,

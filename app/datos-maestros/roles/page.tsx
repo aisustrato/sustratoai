@@ -2,14 +2,14 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/auth-provider";
 import { obtenerRolesDelProyecto } from "@/lib/actions/proyect-role-actions";
 import type { ProjectRoleRow } from "@/lib/actions/proyect-role-actions"; // Corregido el nombre del archivo
 import { StandardText } from "@/components/ui/StandardText";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardTable } from "@/components/ui/StandardTable";
 import { StandardBadge } from "@/components/ui/StandardBadge";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -51,7 +51,7 @@ export default function RolesPage() {
 	const puedeGestionarRoles =
 		proyectoActual?.permissions?.can_manage_master_data || false;
 
-	const cargarRoles = async () => {
+	const cargarRoles = useCallback(async () => {
 		setIsLoading(true);
 		setError(null);
 
@@ -89,7 +89,7 @@ export default function RolesPage() {
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, [proyectoActual?.id, toast]);
 
 	useEffect(() => {
 		if (proyectoActual?.id) {
@@ -97,7 +97,7 @@ export default function RolesPage() {
 		} else {
 			setIsLoading(false);
 		}
-	}, [proyectoActual?.id]);
+	}, [proyectoActual?.id, cargarRoles]);
 
 	const handleAgregarRol = () => {
 		router.push(`/datos-maestros/roles/crear`);

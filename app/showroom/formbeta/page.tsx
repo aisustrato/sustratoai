@@ -3,7 +3,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 "use client";
 
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, SubmitHandler, Controller, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { standardFormSchema, type StandardFormValues } from "./schema";
@@ -16,7 +16,7 @@ import { StandardTextarea } from "@/components/ui/StandardTextarea";
 import { StandardCheckbox } from "@/components/ui/StandardCheckbox";
 import { StandardSelect, type SelectOption } from "@/components/ui/StandardSelect";
 import { toast } from "sonner";
-import { Mail, User, UserCog, Edit3, Eye, Save, Users, Shield, BookUser } from "lucide-react";
+import { Mail, UserCog, Edit3, Eye, Save, Users, Shield, BookUser } from "lucide-react";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES & CONSTANTS 📦
@@ -64,7 +64,7 @@ export default function StandardFormShowroomPage() {
 		defaultValues: currentMode === "create" ? { acceptTerms: false, userRole: "" } : { ...formDataForView },
 	});
 
-	React.useEffect(() => {
+	useEffect(() => {
 		if (currentMode === "create") {
 			reset({ acceptTerms: false, userRole: "" });
 		} else {
@@ -121,7 +121,7 @@ export default function StandardFormShowroomPage() {
 			<StandardCard shadow="lg" className="max-w-3xl mx-auto">
 				<StandardCard.Header className="space-y-4">
 					<StandardText asElement="h1" size="2xl" weight="bold" colorScheme="primary">
-						Showroom: Formulario Integrado "Standard"
+						Showroom: Formulario Integrado &quot;Standard&quot;
 					</StandardText>
 					<StandardText>
 						Prueba de todos nuestros componentes Standard trabajando en conjunto con React Hook Form y Zod.

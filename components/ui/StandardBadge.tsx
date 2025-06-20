@@ -56,7 +56,6 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
       leftIcon: LeftIcon,
       rightIcon: RightIcon,
       children,
-      style,
       ...props
     },
     ref

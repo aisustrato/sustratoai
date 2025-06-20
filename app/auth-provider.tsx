@@ -12,7 +12,7 @@ import {
   signUp as clientSignUp,
   signOut as clientSignOut,
 } from "@/app/auth/client";
-import { User, Session, SupabaseClient } from "@supabase/supabase-js";
+import { type Session, type User, type SupabaseClient } from "@supabase/supabase-js";
 
 import {
   obtenerProyectosConSettingsUsuario,
@@ -251,7 +251,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Array de dependencias ESTRICTO: solo se re-ejecuta si authInitialized cambia
     // o si la IDENTIDAD del proyecto (su ID) cambia.
     // No se re-ejecutará si solo cambia ui_theme dentro del mismo proyectoActual.
-  }, [authInitialized, proyectoActual?.id]);
+    }, [authInitialized, proyectoActual]);
 
 
   useEffect(() => { // RedirectEffect
@@ -279,7 +279,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user, authInitialized, authLoading, proyectoActual, pathname, router]);
 
-  const handleSignIn = async (email: string, password: string): Promise<{ error: any | null; success: boolean; }> => { /* ... sin cambios ... */
+      const handleSignIn = async (email: string, password: string): Promise<{ error: any | null; success: boolean; }> => { /* ... sin cambios ... */
     console.log(`${LOG_PREFIX} handleSignIn: Iniciado. Contador actual: ${authLoadingGlobalActivationAttemptRef.current}`);
     if (authLoadingGlobalActivationAttemptRef.current === 0) {
       setAuthLoading(true);
@@ -303,7 +303,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log(`${LOG_PREFIX} handleSignIn: Autenticación Supabase OK. Esperando evento SIGNED_IN para completar.`);
     return { error: null, success: true };
   };
-  const handleSignUp = async (email: string, password: string): Promise<{ error: any | null; success: boolean; }> => { /* ... sin cambios ... */
+      const handleSignUp = async (email: string, password: string): Promise<{ error: any | null; success: boolean; }> => { /* ... sin cambios ... */
     console.log(`${LOG_PREFIX} signUp iniciado`);
     setAuthLoading(true);
     const { error } = await clientSignUp(email, password);
@@ -339,8 +339,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await cargarProyectosUsuario(userRef.current.id, true); 
         toast.success("Proyecto cambiado exitosamente.");
       }
-    } catch (e: any) {
-      toast.error(e.message || "Excepción al cambiar de proyecto.");
+        } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Excepción al cambiar de proyecto.";
+      toast.error(errorMessage);
     } finally {
       setLoadingCambioProyecto(false);
     }

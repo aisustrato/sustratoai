@@ -98,7 +98,7 @@ export function generateStandardSelectTokens(
 
 	const commonReadOnlyBackground =
 		mode === "dark"
-			? tinycolor(neutral.bgDark).lighten(5).setAlpha(0.8).toString()
+			? tinycolor(neutral.bgShade).lighten(5).setAlpha(0.8).toString()
 			: tinycolor(neutral.contrastText).darken(0).setAlpha(0.8).toString();
 	const commonReadOnlyBorder =
 		mode === "dark"
@@ -120,7 +120,7 @@ export function generateStandardSelectTokens(
 		successText: success.text,
 	};
 
-	const selectBaseBackground = mode === "dark" ? neutral.bgDark : neutral.bg;
+	const selectBaseBackground = mode === "dark" ? neutral.bgShade : neutral.bg;
 	const dropdownBaseBackground = mode === "dark" ? neutral.bg : white.bg;
 
 	const defaultEditingBackground = tinycolor(tertiary.bg)

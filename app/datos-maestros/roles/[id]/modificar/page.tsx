@@ -13,7 +13,7 @@ import {
     type ProjectRoleRow,
     type ResultadoOperacion 
 } from "@/lib/actions/proyect-role-actions";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { ShieldCheck, AlertTriangle } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
@@ -77,10 +77,9 @@ export default function ModificarRolPage() {
         sonnerToast.error("Error al Cargar Rol", { description: resultado.error });
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Error desconocido.";
-      setPageError(`Error inesperado: ${errorMessage}`);
-      sonnerToast.error("Error Inesperado", { description: errorMessage });
-      console.error("Error cargando detalles del rol:", err);
+      console.error("Error al cargar el rol:", err);
+      setPageError("Error al cargar los detalles del rol. Por favor, inténtalo de nuevo más tarde.");
+      sonnerToast.error("Error al cargar el rol", { description: "No se pudieron cargar los detalles del rol. Por favor, inténtalo de nuevo." });
     } finally {
       setIsPageLoading(false);
     }

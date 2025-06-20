@@ -3,10 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import {
-	StandardButton,
-	type StandardButtonProps,
-} from "@/components/ui/StandardButton";
+import { StandardButton } from "@/components/ui/StandardButton";
 import {
 	type StandardButtonStyleType,
 	type StandardButtonModifier,

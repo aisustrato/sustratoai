@@ -61,7 +61,7 @@ export default function StandardDialogShowroomPage() {
             </StandardDialog.Header>
             <StandardDialog.Body>
               <StandardText>
-                ¿Realmente deseas eliminar al usuario 'Rodolfo Leiva'? Esta acción es irreversible.
+                ¿Realmente deseas eliminar al usuario &apos;Rodolfo Leiva&apos;? Esta acción es irreversible.
               </StandardText>
             </StandardDialog.Body>
             <StandardDialog.Footer>

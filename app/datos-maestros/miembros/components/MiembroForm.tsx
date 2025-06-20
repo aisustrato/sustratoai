@@ -2,7 +2,7 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import React from "react";
+import { useMemo, useEffect } from "react";
 import { useForm, Controller, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,10 +15,7 @@ import {
 } from "@/components/ui/StandardSelect"; // Assuming SelectOption type is compatible or similar
 import { StandardFormField } from "@/components/ui/StandardFormField"; // Asegúrate de que StandardFormField pueda recibir y mostrar 'hint' y 'successMessage'
 import { StandardButton } from "@/components/ui/StandardButton";
-import {
-	StandardCard,
-	type StandardCardColorScheme,
-} from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import {
 	Mail,
@@ -125,7 +122,7 @@ export const MiembroForm = ({
 	loading = false,
 }: MiembroFormProps) => {
 	//#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
-	const initialFormValues = React.useMemo(() => {
+	const initialFormValues = useMemo(() => {
 		if (modo === "crear") {
 			return valoresIniciales && Object.keys(valoresIniciales).length > 0
 				? valoresIniciales
@@ -141,7 +138,7 @@ export const MiembroForm = ({
 		reValidateMode: "onBlur",
 	});
 
-	React.useEffect(() => {
+	useEffect(() => {
 		form.reset(initialFormValues);
 	}, [initialFormValues, form]);
 
@@ -149,9 +146,8 @@ export const MiembroForm = ({
 
 	const isFieldRequired = (fieldName: keyof MiembroFormValues): boolean => {
 		if (isReadOnlyEffective) return false;
-		const fieldSchema = formSchema.shape[fieldName];
-		// @ts-ignore // ZodObject.isOptional() no está directamente en el tipo, pero existe en la instancia.
-		return !fieldSchema.isOptional();
+		// Los campos requeridos son emailUsuario y rolId
+		return fieldName === 'emailUsuario' || fieldName === 'rolId';
 	};
 
 	const getSuccessState = (fieldName: keyof MiembroFormValues) => {

@@ -43,8 +43,10 @@ const StandardSlider = React.forwardRef<
     const { appColorTokens, mode } = useTheme();
     
     const orientation = props.orientation || 'horizontal';
-    const sliderValues = props.value ?? props.defaultValue ?? [0];
-    const valueArray = Array.isArray(sliderValues) ? sliderValues : [sliderValues];
+    const valueArray = React.useMemo(() => {
+      const values = props.value ?? props.defaultValue ?? [0];
+      return Array.isArray(values) ? values : [values];
+    }, [props.value, props.defaultValue]);
 
     const [activeThumbIndex, setActiveThumbIndex] = React.useState<number | null>(null);
     const [hoveredThumbIndex, setHoveredThumbIndex] = React.useState<number | null>(null);
@@ -78,7 +80,7 @@ const StandardSlider = React.forwardRef<
       } else {
         setTooltipPosition(pos => ({ ...pos, opacity: 0 }));
       }
-    }, [sliderValues, activeThumbIndex, hoveredThumbIndex, showTooltip]);
+    }, [valueArray, activeThumbIndex, hoveredThumbIndex, showTooltip]);
 
     return (
       <>
@@ -97,26 +99,24 @@ const StandardSlider = React.forwardRef<
           </SliderPrimitive.Track>
           
           {valueArray.map((value, index) => {
-            const thumbStyle = React.useMemo<React.CSSProperties>(() => {
-              const isHovered = hoveredThumbIndex === index;
-              const isActive = activeThumbIndex === index;
-              
-              const restingOutline = '0 0 0 1px var(--sl-thumb-outline-color)';
-              const aestheticShadow = 'var(--sl-thumb-shadow)';
-              const focusHalo = '0 0 10px 3px var(--sl-thumb-halo-color)';
+            const isHovered = hoveredThumbIndex === index;
+            const isActive = activeThumbIndex === index;
+            
+            const restingOutline = '0 0 0 1px var(--sl-thumb-outline-color)';
+            const aestheticShadow = 'var(--sl-thumb-shadow)';
+            const focusHalo = '0 0 10px 3px var(--sl-thumb-halo-color)';
 
-              let finalBoxShadow = `${restingOutline}, ${aestheticShadow}`;
-              if (isActive && !props.disabled) {
-                finalBoxShadow = `${focusHalo}, ${finalBoxShadow}`;
-              }
-              let finalTransform = 'scale(1)';
-              if (isActive && !props.disabled) {
-                finalTransform = 'scale(1.05)';
-              } else if (isHovered && !props.disabled) {
-                finalTransform = 'scale(1.1)';
-              }
-              return { display: 'block', width: '100%', height: '100%', borderRadius: '9999px', backgroundColor: 'var(--sl-thumb-bg)', boxShadow: finalBoxShadow, transform: finalTransform, transition: 'transform 150ms ease, box-shadow 150ms ease' };
-            }, [hoveredThumbIndex, activeThumbIndex, props.disabled]);
+            let finalBoxShadow = `${restingOutline}, ${aestheticShadow}`;
+            if (isActive && !props.disabled) {
+              finalBoxShadow = `${focusHalo}, ${finalBoxShadow}`;
+            }
+            let finalTransform = 'scale(1)';
+            if (isActive && !props.disabled) {
+              finalTransform = 'scale(1.05)';
+            } else if (isHovered && !props.disabled) {
+              finalTransform = 'scale(1.1)';
+            }
+            const thumbStyle: React.CSSProperties = { display: 'block', width: '100%', height: '100%', borderRadius: '9999px', backgroundColor: 'var(--sl-thumb-bg)', boxShadow: finalBoxShadow, transform: finalTransform, transition: 'transform 150ms ease, box-shadow 150ms ease' };
 
             return (
               <SliderPrimitive.Thumb

@@ -24,7 +24,7 @@ import {
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 //#endregion ![head]
 
 //#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
@@ -123,7 +123,7 @@ export default function VerMiembroPage() {
 	}, [proyectoActual?.id, memberId]);
 
 	useEffect(() => {
-		let active = true; // Para evitar setear estado si el componente se desmonta
+		// Usamos isMounted en cargarDatosCompletos para evitar actualizaciones después de desmontar
 
 		if (proyectoActual?.id && memberId) {
 			setIsLoading(true); // Poner isLoading en true ANTES de llamar a cargar
@@ -139,9 +139,7 @@ export default function VerMiembroPage() {
 			setIsLoading(false); // Importante: poner a false si no se cumplen las condiciones de carga
 		}
 
-		return () => {
-			active = false;
-		};
+		// No es necesaria la limpieza ya que usamos isMounted en cargarDatosCompletos
 	}, [proyectoActual?.id, memberId, cargarDatosCompletos]);
 
 	const handleVolver = () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
 	StandardCard,
@@ -19,17 +20,9 @@ import {
 } from "@/components/ui/StandardTabs";
 import { TabsContent as StandardTabsContent } from "@radix-ui/react-tabs";
 import {
-	ImageIcon,
-	Package,
-	AlertTriangle,
-	User,
-	Settings,
 	Edit3,
 	Trash2,
 	Bell,
-	Info,
-	Zap,
-	Palette,
 	Loader,
 	MousePointerClick,
 } from "lucide-react";
@@ -97,7 +90,7 @@ export default function StandardCardShowroomPage() {
 	const [demoShadow, setDemoShadow] =
 		useState<NonNullable<StandardCardProps["shadow"]>>("md");
 	const [demoAccent, setDemoAccent] =
-		useState<NonNullable<StandardCardProps["accentPlacement"]>>("none");
+		useState<NonNullable<StandardCardProps["accentPlacement"]>>("left");
 	const [demoAccentScheme, setDemoAccentScheme] =
 		useState<StandardCardColorScheme>("accent");
 	const [hasOutlineDemo, setHasOutlineDemo] = useState(false);
@@ -236,7 +229,7 @@ export default function StandardCardShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoStyleType}
-											onChange={(val) => setDemoStyleType(val as any)}
+											onChange={(val) => setDemoStyleType(val as NonNullable<StandardCardProps["styleType"]>)}
 											options={styleTypes.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>
@@ -246,7 +239,7 @@ export default function StandardCardShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoShadow}
-											onChange={(val) => setDemoShadow(val as any)}
+											onChange={(val) => setDemoShadow(val as NonNullable<StandardCardProps["shadow"]>)}
 											options={shadows.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>
@@ -256,7 +249,7 @@ export default function StandardCardShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoAccent}
-											onChange={(val) => setDemoAccent(val as any)}
+											onChange={(val) => setDemoAccent(val as NonNullable<StandardCardProps["accentPlacement"]>)}
 											options={accentPlacements.map((s) => ({
 												value: s,
 												label: s,
@@ -316,7 +309,7 @@ export default function StandardCardShowroomPage() {
 												</StandardText>
 												<StandardSelect
 													value={demoLoadingVariant}
-													onChange={(val) => setDemoLoadingVariant(val as any)}
+													onChange={(val) => setDemoLoadingVariant(val as NonNullable<StandardCardProps["loadingVariant"]>)}
 													options={loadingVariants.map((s) => ({
 														value: s,
 														label: s,
@@ -461,7 +454,7 @@ export default function StandardCardShowroomPage() {
 								animate="visible"
 								exit="exit">
 								<StandardText preset="heading" className="mb-6">
-									Variaciones de `styleType` (Esquema: Primary)
+									Variaciones de &apos;styleType&apos; (Esquema: Primary)
 								</StandardText>
 								<motion.div
 									className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -483,8 +476,8 @@ export default function StandardCardShowroomPage() {
 												</StandardCard.Header>
 												<StandardCard.Content>
 													<StandardText>
-														Demostración del estilo '{st}' con esquema
-														'primary'.
+														Demostración del estilo &apos;{st}&apos; con esquema
+														&apos;primary&apos;.
 													</StandardText>
 												</StandardCard.Content>
 												<StandardCard.Actions>
@@ -511,7 +504,7 @@ export default function StandardCardShowroomPage() {
 								animate="visible"
 								exit="exit">
 								<StandardText preset="heading" className="mb-6">
-									Variaciones de `colorScheme` (Estilo: Filled)
+									Variaciones de &apos;colorScheme&apos; (Estilo: Filled)
 								</StandardText>
 								<motion.div
 									className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
@@ -532,9 +525,9 @@ export default function StandardCardShowroomPage() {
 												</StandardCard.Header>
 												<StandardCard.Content>
 													<StandardText>
-														Estilo 'filled' con esquema '{cs}'.
+														Estilo &apos;filled&apos; con esquema &apos;{cs}&apos;.
 													</StandardText>
-													<ImageIcon
+													<Bell
 														size={32}
 														className="my-3 opacity-70 block mx-auto"
 													/>
@@ -586,7 +579,7 @@ export default function StandardCardShowroomPage() {
 												</StandardCard.Title>
 												<StandardCard.Content>
 													<StandardText>
-														Acento de color 'accent' en tarjeta 'secondary'.
+														Acento de color &apos;accent&apos; en tarjeta &apos;secondary&apos;.
 													</StandardText>
 												</StandardCard.Content>
 											</StandardCard>
@@ -601,12 +594,11 @@ export default function StandardCardShowroomPage() {
 											shadow="md"
 											className="min-h-[150px]">
 											<StandardCard.Title>
-												Accent "Accent" en Card "Danger"
+												Accent &apos;Accent&apos; en Card &apos;Danger&apos;
 											</StandardCard.Title>
 											<StandardCard.Content>
 												<StandardText>
-													La "jugada mágica": acento de `danger.pure` a
-													`accent.pure`.
+													La &apos;jugada mágica&apos;: acento de &apos;danger.pure&apos; a &apos;accent.pure&apos;.
 												</StandardText>
 											</StandardCard.Content>
 										</StandardCard>
@@ -618,14 +610,14 @@ export default function StandardCardShowroomPage() {
 											accentPlacement="top"
 											accentColorScheme="accent"
 											shadow="md"
-											className="min-h-[150px]">
+											className="min-h-[150px]"
+										>
 											<StandardCard.Title>
-												Accent "Accent" en Card "Accent"
+												Accent &apos;Accent&apos; en Card &apos;Accent&apos;
 											</StandardCard.Title>
 											<StandardCard.Content>
 												<StandardText>
-													La "jugada mágica": acento de `accent.pure` a
-													`primary.pure`.
+													La &apos;jugada mágica&apos;: acento de &apos;accent.pure&apos; a &apos;primary.pure&apos;.
 												</StandardText>
 											</StandardCard.Content>
 										</StandardCard>
@@ -641,7 +633,7 @@ export default function StandardCardShowroomPage() {
 											<StandardCard.Title>Outline (Danger)</StandardCard.Title>
 											<StandardCard.Content>
 												<StandardText>
-													Borde completo color 'danger'.
+													Borde completo color &#39;danger&#39;.
 												</StandardText>
 											</StandardCard.Content>
 										</StandardCard>
@@ -658,7 +650,7 @@ export default function StandardCardShowroomPage() {
 											</StandardCard.Title>
 											<StandardCard.Content>
 												<StandardText>
-													Borde completo usando 'secondary'.
+													Borde completo usando &#39;secondary&#39;.
 												</StandardText>
 											</StandardCard.Content>
 										</StandardCard>
@@ -769,7 +761,7 @@ export default function StandardCardShowroomPage() {
 											styleType="filled"
 											shadow="xl"
 											onCardClick={() =>
-												alert("Card 'Layout Completo' clickeada!")
+												alert("Card &apos;Layout Completo&apos; clickeada!")
 											}>
 											<StandardCard.Header>
 												<StandardCard.Title size="2xl">
@@ -783,7 +775,7 @@ export default function StandardCardShowroomPage() {
 											</StandardCard.Header>
 											<StandardCard.Media>
 												<div className="aspect-video bg-tertiary/20 rounded flex items-center justify-center">
-													<ImageIcon
+													<Bell
 														size={48}
 														className="text-tertiary opacity-50"
 													/>
@@ -830,20 +822,24 @@ export default function StandardCardShowroomPage() {
 											preset="subheading"
 											size="lg"
 											className="mb-3">
-											Layout `noPadding`
+											Layout &apos;noPadding&apos;
 										</StandardText>
 										<StandardCard
 											colorScheme="accent"
 											styleType="subtle"
 											shadow="lg"
 											noPadding
-											onCardClick={() => alert("Card 'noPadding' clickeada!")}>
+											onCardClick={() => alert("Card &apos;noPadding&apos; clickeada!")}>
 											<StandardCard.Media>
-												<img
-													src="https://picsum.photos/seed/standardcardE2E/600/320"
-													alt="Placeholder"
-													className="w-full h-auto object-cover"
-												/>
+												<div className="relative w-full" style={{ aspectRatio: '600/320' }}>
+													<Image
+														src="https://picsum.photos/seed/standardcardE2E/600/320"
+														alt="Placeholder"
+														fill
+														className="object-cover"
+														unoptimized
+													/>
+												</div>
 											</StandardCard.Media>
 											<div className="p-4">
 												<StandardCard.Header>
@@ -853,7 +849,7 @@ export default function StandardCardShowroomPage() {
 												</StandardCard.Header>
 												<StandardCard.Content>
 													<StandardText size="sm" className="my-3">
-														Cuando `noPadding` es true, Media puede ocupar todo
+														Cuando &#39;noPadding&#39; es true, Media puede ocupar todo
 														el ancho. Se requiere padding manual.
 													</StandardText>
 												</StandardCard.Content>

@@ -83,7 +83,7 @@ export function StandardFormField({
 	//> Lógica para pasar props de accesibilidad a los hijos
 	const childrenWithProps = React.Children.map(children, (child) => {
 		if (React.isValidElement(child)) {
-			return React.cloneElement(child as React.ReactElement<any>, {
+			return React.cloneElement(child as React.ReactElement<React.ComponentPropsWithoutRef<'input'>>, {
 				"aria-describedby": [hintId, errorId].filter(Boolean).join(" ") || undefined,
 			});
 		}

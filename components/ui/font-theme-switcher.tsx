@@ -7,7 +7,7 @@ import { ChevronDown } from "lucide-react"; // Loader2 ya no es necesario para l
 import { motion, AnimatePresence } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { useTheme } from "@/app/theme-provider";
-import { fontThemeConfig } from "@/lib/fonts";
+import { fontThemeConfig, type FontTheme } from "@/lib/fonts";
 import { generateFontSelectorTokens } from "@/lib/theme/components/font-selector-tokens";
 import { StandardText } from "@/components/ui/StandardText";
 
@@ -88,7 +88,7 @@ export function FontThemeSwitcher() {
 
     // 1. Aplicar el cambio visual inmediato si es diferente al visual actual
     if (visualFontChanged) {
-      setFontTheme(newFontPairId as any);
+      setFontTheme(newFontPairId as FontTheme);
       console.log(`[FontThemeSwitcher v1.3] Cambio visual inmediato a: ${newFontPairId}`);
     }
 
@@ -120,9 +120,10 @@ export function FontThemeSwitcher() {
         toast.error(result.error || "Ups! Tuvimos un problema al guardar tu preferencia de fuente. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.");
         console.error("[FontThemeSwitcher v1.3] Error en persistencia desde actualizarPreferenciasUI:", result.error);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[FontThemeSwitcher v1.3] Excepción durante la persistencia:", error);
-      toast.error("Ups! Hubo una excepción al guardar tu preferencia de fuente. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.");
+      const errorMessage = error instanceof Error ? error.message : "Ups! Hubo una excepción al guardar tu preferencia de fuente. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.";
+      toast.error(errorMessage);
     }
   };
 
@@ -165,7 +166,7 @@ export function FontThemeSwitcher() {
               boxShadow: fontTokens.dropdown.boxShadow,
               padding: "0.5rem",
               maxHeight: "300px",
-              overflowY: "auto" as any,
+              overflowY: "auto",
             }}
             variants={menuVariants} initial="hidden" animate="visible" exit="exit"
           >

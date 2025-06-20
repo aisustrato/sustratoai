@@ -33,7 +33,6 @@ import {
 	Info,
 	AlertTriangle,
 	Tag,
-	Image as ImageIcon,
 	Sparkles,
 	Wand2,
 } from "lucide-react";
@@ -72,10 +71,7 @@ const tabContentVariants = {
 	},
 	exit: { opacity: 0, x: 10, transition: { duration: 0.2, ease: "easeInOut" } },
 };
-const gridContainerVariants = {
-	hidden: { opacity: 0 },
-	visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
-};
+// Eliminada variable no utilizada
 const itemVariants = {
 	hidden: { opacity: 0, y: 15 },
 	visible: { opacity: 1, y: 0 },
@@ -168,7 +164,7 @@ export default function StandardBadgeShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoColorScheme}
-											onChange={(val) => setDemoColorScheme(val as any)}
+											onChange={(val) => setDemoColorScheme(val as ProCardVariant)}
 											options={badgeColorSchemes.map((s) => ({
 												value: s,
 												label: s,
@@ -185,7 +181,7 @@ export default function StandardBadgeShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoStyleType}
-											onChange={(val) => setDemoStyleType(val as any)}
+											onChange={(val) => setDemoStyleType(val as NonNullable<StandardBadgeProps["styleType"]>)}
 											options={styleTypes.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>
@@ -199,7 +195,7 @@ export default function StandardBadgeShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoSize}
-											onChange={(val) => setDemoSize(val as any)}
+											onChange={(val) => setDemoSize(val as NonNullable<StandardBadgeProps["size"]>)}
 											options={sizes.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>

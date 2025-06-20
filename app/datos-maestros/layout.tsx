@@ -8,9 +8,6 @@ import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import {
 	Database,
-	Users,
-	Building2,
-	Briefcase,
 	UserPlus,
 	ShieldCheck,
 	Layers,

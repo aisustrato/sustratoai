@@ -6,8 +6,6 @@ import React from "react";
 import { StandardTooltip } from "@/components/ui/StandardTooltip";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
-import { Info } from "lucide-react";
-import { StandardIcon } from "@/components/ui/StandardIcon";
 
 const SAMPLE_ABSTRACT_FULL = `En este estudio exhaustivo, exploramos la convergencia de la inteligencia artificial y la filosofía posestructuralista, un campo emergente que desafía las nociones tradicionales de subjetividad y conocimiento en la era digital. Analizamos cómo estas tecnologías no solo procesan información, sino que reconfiguran activamente los paisajes semióticos. La investigación se centra en la "agencia difusa" de las IA, argumentando que su capacidad para crear narrativas las posiciona como actores semi-autónomos. Examinamos críticamente el concepto de "verdad" en un mundo saturado de información generada algorítmicamente, proponiendo marcos para una deconstrucción rigurosa de los sesgos inherentes a los grandes modelos de lenguaje.`;
 

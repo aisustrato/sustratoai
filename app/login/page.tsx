@@ -2,8 +2,7 @@
 // Versión: 17.2 (Mínimamente Invasiva - Lógica de AuthProvider centralizada - Base corregida)
 "use client";
 
-import { useState, useEffect, FormEvent } from "react"; // Asegurado FormEvent
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/app/auth-provider";
 import { StandardButton } from "@/components/ui/StandardButton";
@@ -19,26 +18,14 @@ import { SustratoLogoWithFixedText } from "@/components/ui/sustrato-logo-with-fi
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  // router y searchParams eliminados ya que no se utilizan
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   // MODIFICACIÓN: Se obtiene authLoading del provider para deshabilitar el botón si es necesario.
   const { signIn, user, authInitialized, authLoading: authProviderLoading } = useAuth(); 
   
-  // MODIFICACIÓN: El useEffect que redirigía si el usuario ya estaba autenticado
-  // ha sido comentado. AuthProvider (v10.8+) ahora maneja esta lógica de forma centralizada.
-  // Si un usuario autenticado llega a /login, AuthProvider lo redirigirá a '/'.
-  /*
-  useEffect(() => {
-    if (authInitialized && user && searchParams) {
-      const redirectTo = searchParams.get('redirectTo') || '/';
-      console.log(`🔄 Usuario ya autenticado, AuthProvider debería redirigir. No se hace push desde aquí. redirectTo evaluado: ${redirectTo}`);
-      // router.push(redirectTo); // Comentado, AuthProvider lo maneja
-    }
-  }, [user, authInitialized, router, searchParams]);
-  */
+  // La lógica de redirección ahora es manejada por AuthProvider
 
   const handleSubmit = async (e: React.FormEvent) => { // Tipo de evento especificado
     e.preventDefault();
@@ -82,8 +69,12 @@ export default function LoginPage() {
       // Dado que handleSignIn en AuthProvider pone authLoading=true, el loading del botón se puede quitar aquí.
       setLoading(false);
 
-    } catch (err: any) {
-      console.error("[LOGIN_PAGE] Excepción no esperada durante signIn:", err);
+    } catch (err) {
+      let errorMessage = 'Ocurrió un error inesperado.';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      console.error('Error en el inicio de sesión:', errorMessage);
       // MODIFICACIÓN: AuthProvider debería capturar y manejar errores de Supabase. Este catch es un fallback.
       // toast.error(err.message || "Error inesperado al iniciar sesión"); // Comentado
       setLoading(false);
@@ -157,9 +148,9 @@ export default function LoginPage() {
                       size="sm"
                       className="italic"
                     >
-                      "No buscamos reemplazar el pensamiento crítico, sino
+                      &quot;No buscamos reemplazar el pensamiento crítico, sino
                       expandir su alcance a través de la co-creación entre la
-                      perspectiva humana y las capacidades de la IA."
+                      perspectiva humana y las capacidades de la IA.&quot;
                     </StandardText>
                   </div>
                 </div>

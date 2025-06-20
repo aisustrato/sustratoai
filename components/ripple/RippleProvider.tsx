@@ -48,7 +48,7 @@ const toValidColor = (color: string = "#4f46e5"): string => {
       const b = parseInt(color.slice(3, 4), 16) * 17;
       return `rgba(${r}, ${g}, ${b}, 1)`;
     }
-  } catch (error) {
+  } catch {
     console.warn("Error al convertir color:", color);
     return "#4f46e5"; // Color por defecto si hay error
   }
@@ -133,8 +133,7 @@ export const RippleProvider: React.FC<{ children: React.ReactNode }> = ({
         setRipples((r) => [...r, { x, y, color: validColor, id, scale }]);
         // limpia el estado después de la animación
         setTimeout(() => setRipples((r) => r.filter((rp) => rp.id !== id)), 800);
-      } catch (error) {
-        console.error("Error en el efecto ripple:", error);
+      } catch {
         // Continuar sin crear el efecto ripple
       }
     },

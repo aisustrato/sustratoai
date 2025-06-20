@@ -378,7 +378,7 @@ export default function ProjectBatchesDisplay({
 											size="sm"
 											className="text-warning-700 dark:text-warning-300">
 											Uno o más lotes ya han sido iniciados (no están en estado
-											'pending').
+											&apos;pending&apos;).
 										</StandardText>
 									</div>
 								</div>

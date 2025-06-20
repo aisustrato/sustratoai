@@ -16,6 +16,38 @@ type ProjectMemberInsert =
 type ProjectMemberUpdate =
 	Database["public"]["Tables"]["project_members"]["Update"];
 
+// Tipos para los datos que vienen de la base de datos
+type MiembroData = {
+  user_id: string;
+  project_member_id: string;
+  project_id: string;
+  project_role_id: string;
+  role_name: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  public_display_name?: string | null;
+  public_contact_email?: string | null;
+  primary_institution?: string | null;
+  contact_phone?: string | null;
+  general_notes?: string | null;
+  preferred_language?: string | null;
+  pronouns?: string | null;
+  joined_at?: string | null;
+  ui_theme?: string | null;
+  ui_font_pair?: string | null;
+  ui_is_dark_mode?: boolean | null;
+};
+
+type RoleDataFromRpc = {
+  id: string;
+  role_name: string;
+  role_description: string | null;
+  can_manage_master_data: boolean;
+  can_create_batches?: boolean;
+  can_upload_files?: boolean;
+  can_bulk_edit_master_data?: boolean;
+};
+
 type GetUserByEmailRpcArgs =
 	Database["public"]["Functions"]["get_user_by_email"]["Args"];
 
@@ -136,7 +168,7 @@ export async function obtenerMiembrosConPerfilesYRolesDelProyecto(
 			return { success: true, data: [] };
 		}
 		const miembrosDetallados: ProjectMemberDetails[] = miembrosData.map(
-			(m: any) => ({
+			(m: MiembroData) => ({
 				project_member_id: m.project_member_id,
 				user_id: m.user_id,
 				project_id: m.project_id,
@@ -144,20 +176,20 @@ export async function obtenerMiembrosConPerfilesYRolesDelProyecto(
 				role_name: m.role_name ?? "Rol no definido",
 				profile: {
 					user_id: m.user_id,
-					first_name: m.first_name,
-					last_name: m.last_name,
-					public_display_name: m.public_display_name,
-					public_contact_email: m.public_contact_email,
-					primary_institution: m.primary_institution,
-					contact_phone: m.contact_phone,
-					general_notes: m.general_notes,
-					preferred_language: m.preferred_language,
-					pronouns: m.pronouns,
+					first_name: m.first_name ?? null,
+					last_name: m.last_name ?? null,
+					public_display_name: m.public_display_name ?? null,
+					public_contact_email: m.public_contact_email ?? null,
+					primary_institution: m.primary_institution ?? null,
+					contact_phone: m.contact_phone ?? null,
+					general_notes: m.general_notes ?? null,
+					preferred_language: m.preferred_language ?? null,
+					pronouns: m.pronouns ?? null,
 				},
-				joined_at: m.joined_at,
-				ui_theme: m.ui_theme,
-				ui_font_pair: m.ui_font_pair,
-				ui_is_dark_mode: m.ui_is_dark_mode,
+				joined_at: m.joined_at ?? null,
+				ui_theme: m.ui_theme ?? null,
+				ui_font_pair: m.ui_font_pair ?? null,
+				ui_is_dark_mode: m.ui_is_dark_mode ?? null,
 			})
 		);
 		console.log(
@@ -296,15 +328,14 @@ export async function obtenerRolesDisponiblesProyecto(
 		if (!rolesData) {
 			return { success: true, data: [] };
 		}
-		const rolesInfo: ProjectRoleInfo[] = rolesData.map((r: any) => ({
-			// any para simplificar, o usar el tipo Row de project_roles
+		const rolesInfo: ProjectRoleInfo[] = rolesData.map((r: RoleDataFromRpc) => ({
 			id: r.id,
 			role_name: r.role_name,
 			role_description: r.role_description,
-			can_manage_master_data: r.can_manage_master_data || false,
-			can_create_batches: r.can_create_batches || false,
-			can_upload_files: r.can_upload_files || false,
-			can_bulk_edit_master_data: r.can_bulk_edit_master_data || false,
+			can_manage_master_data: r.can_manage_master_data,
+			can_create_batches: r.can_create_batches ?? false,
+			can_upload_files: r.can_upload_files ?? false,
+			can_bulk_edit_master_data: r.can_bulk_edit_master_data ?? false,
 		}));
 		console.log(
 			`🎉 [${opId}] ÉXITO: ${rolesInfo.length} roles obtenidos para el proyecto.`
@@ -389,7 +420,10 @@ export async function agregarMiembroAProyecto(
 		);
 
 		if (rpcError) {
-			console.error(`❌ [${opId}] Error en RPC get_user_by_email:`, rpcError);
+			console.error(
+				`❌ [${opId}] Error en RPC get_user_by_email:`,
+				rpcError
+			);
 			return {
 				success: false,
 				error: `Error al buscar usuario: ${rpcError.message}`,
@@ -652,16 +686,13 @@ export async function modificarDetallesMiembroEnProyecto(
 
 		// Actualizar users_profiles si hay datos
 		if (profileUpdates && Object.keys(profileUpdates).length > 0) {
-			// Filtrar cualquier campo que no deba ser undefined explícitamente
-			const cleanProfileUpdates = Object.entries(profileUpdates).reduce(
-				(acc, [key, value]) => {
-					if (value !== undefined) {
-						(acc as any)[key] = value;
-					}
-					return acc;
-				},
-				{} as Partial<UserProfileUpdate>
-			);
+			// Filtrar cualquier campo que no deba ser undefined
+			const cleanProfileUpdates: Partial<UserProfileUpdate> = {};
+			Object.entries(profileUpdates).forEach(([key, value]) => {
+				if (value !== undefined) {
+					(cleanProfileUpdates as any)[key] = value;
+				}
+			});
 
 			if (Object.keys(cleanProfileUpdates).length > 0) {
 				console.log(

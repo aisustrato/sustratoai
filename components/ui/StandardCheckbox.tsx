@@ -3,7 +3,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 "use client";
 
-import React, { forwardRef, useState, useEffect, useRef } from "react";
+import React, { forwardRef, useState, useEffect, useRef, useImperativeHandle, useMemo, useId } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
@@ -58,16 +58,17 @@ const StandardCheckbox = forwardRef<HTMLInputElement, StandardCheckboxProps>(
 		const [isIndeterminate, setIsIndeterminate] = useState<boolean>(indeterminate);
 		
 		const internalInputRef = useRef<HTMLInputElement>(null);
-		React.useImperativeHandle(ref, () => internalInputRef.current as HTMLInputElement);
+		useImperativeHandle(ref, () => internalInputRef.current as HTMLInputElement);
 
-		const tokens: StandardCheckTokens | null = React.useMemo(() => {
+		const tokens: StandardCheckTokens | null = useMemo(() => {
 			if (!appColorTokens) return null;
 			return generateStandardCheckTokens(
 				appColorTokens, size, error ? "danger" : variant, visualVariant
 			);
 		}, [appColorTokens, size, error, variant, visualVariant]);
 		
-		const effectiveId = id || React.useId();
+		const generatedId = useId();
+		const effectiveId = id || generatedId;
 		//#endregion ![sub_init]
 
 		//#region [sub_effects] - 💡 EFFECTS 💡
@@ -177,7 +178,7 @@ const StandardCheckbox = forwardRef<HTMLInputElement, StandardCheckboxProps>(
 					<div className="flex flex-col flex-grow pt-px">
 						{label && (
 							<StandardText
-								size={tokens.size.fontSize as any}
+								size={size}
                                 weight="medium"
 								className={cn("leading-tight", labelClassName)}
 								colorScheme={disabled ? 'neutral' : variant as ColorSchemeVariant}

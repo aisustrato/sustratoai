@@ -5,6 +5,7 @@
 import React from "react";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import { useTheme } from "@/app/theme-provider";
+import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
 import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardBadge } from "@/components/ui/StandardBadge";
@@ -37,15 +38,15 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
   isBeingDeleted = false,
 }) => {
 	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HELPER FUNCTIONS 🧰
-  const { appColorTokens, mode } = useTheme();
+  const { appColorTokens } = useTheme();
   const triggerRipple = useRipple();
 
   const tipoLabel =
     dimension.type === "finite" ? "Selección Múltiple" : "Respuesta Abierta";
 
-    let cardColorVariant: any = "neutral";
+    let cardColorVariant: ColorSchemeVariant = "neutral";
   if (dimension.type === "finite") cardColorVariant = "success";
-  else if (dimension.type === "open") cardColorVariant = "info";
+  else if (dimension.type === "open") cardColorVariant = "accent";
 
   // Color para el ripple (accent background)
   const accentBg = appColorTokens?.accent?.bg || appColorTokens?.primary?.bg || "#4f46e5";

@@ -40,8 +40,8 @@ interface BatchSimulatorPageProps {
   const { proyectoActual } = useAuth();
   const { appColorTokens, mode } = useTheme();
   const batchTokens = useMemo<BatchTokens | null>(
-    () => appColorTokens && generateBatchTokens(appColorTokens, mode),
-    [appColorTokens, mode]
+    () => appColorTokens && generateBatchTokens(appColorTokens),
+    [appColorTokens]
   );
 
   const [committedBatchSize, setCommittedBatchSize] = useState(50);

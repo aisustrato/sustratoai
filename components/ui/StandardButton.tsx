@@ -25,14 +25,16 @@ import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
 //#endregion ![head]
 
 //#region [def] - 📦 INTERFACE 📦
+export type IconProps = React.SVGProps<SVGSVGElement>;
+
 export interface StandardButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 	asChild?: boolean;
 	children: React.ReactNode;
 	styleType?: StandardButtonStyleType;
 	modifiers?: StandardButtonModifier[];
 	colorScheme?: ColorSchemeVariant;
-	leftIcon?: React.ComponentType<any>;
-	rightIcon?: React.ComponentType<any>;
+	leftIcon?: React.ComponentType<IconProps>;
+	rightIcon?: React.ComponentType<IconProps>;
 	loading?: boolean;
 	loadingText?: string;
 	size?: StandardButtonSize; // Ahora usa el tipo corregido.
@@ -77,26 +79,27 @@ const StandardButton = React.forwardRef<HTMLButtonElement, StandardButtonProps>(
         const buttonRef = useRef<HTMLButtonElement | null>(null);
         const triggerRipple = useRipple();
 
-		const actualModifiers =
-			styleType === "solid" && (!modifiers || modifiers.length === 0)
-				? ['gradient', 'elevated'] as StandardButtonModifier[]
-				: modifiers;
-
 		const recipe: StandardButtonRecipe | null = useMemo(() => {
 			if (!appColorTokens) return null;
+            
+            const computedModifiers = 
+                styleType === "solid" && (!modifiers || modifiers.length === 0)
+                    ? ['gradient', 'elevated'] as StandardButtonModifier[]
+                    : modifiers;
+
 			const options: StandardButtonTokenOptions = {
 				styleType,
 				colorScheme,
-				size, // Este 'size' ya no será 'icon', sino un tamaño real (xs, sm, etc.)
+				size,
 				rounded,
-				modifiers: actualModifiers,
+				modifiers: computedModifiers,
 				isHovered,
 				isPressed,
 				isDisabled: !!isEffectivelyDisabled,
                 iconOnly 
 			};
 			return generateStandardButtonTokens(appColorTokens, mode, options);
-		}, [appColorTokens, mode, styleType, colorScheme, size, rounded, actualModifiers, isHovered, isPressed, isEffectivelyDisabled, iconOnly]);
+		}, [appColorTokens, mode, styleType, colorScheme, size, rounded, modifiers, isHovered, isPressed, isEffectivelyDisabled, iconOnly]);
 
 		const componentStyles = useMemo(() => {
 			if (!recipe) return {};
@@ -146,7 +149,7 @@ const StandardButton = React.forwardRef<HTMLButtonElement, StandardButtonProps>(
 
 		const Comp = asChild ? Slot : "button";
 
-		const renderIcon = (IconComponent: React.ComponentType<any>) => (
+		const renderIcon = (IconComponent: React.ComponentType<IconProps>) => (
 			<StandardIcon
 				size={recipe.iconSize}
 				colorScheme={colorScheme}

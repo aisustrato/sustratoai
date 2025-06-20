@@ -157,7 +157,7 @@ export default function StandardSliderShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoColorScheme}
-											onChange={(val) => setDemoColorScheme(val as any)}
+											onChange={(val) => setDemoColorScheme(val as NonNullable<StandardSliderProps["colorScheme"]>)}
 											options={sliderColorSchemes.map((s) => ({
 												value: s,
 												label: s,
@@ -171,7 +171,7 @@ export default function StandardSliderShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoStyleType}
-											onChange={(val) => setDemoStyleType(val as any)}
+											onChange={(val) => setDemoStyleType(val as NonNullable<StandardSliderProps["styleType"]>)}
 											options={styleTypes.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>
@@ -182,7 +182,7 @@ export default function StandardSliderShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoSize}
-											onChange={(val) => setDemoSize(val as any)}
+											onChange={(val) => setDemoSize(val as NonNullable<StandardSliderProps["size"]>)}
 											options={sizes.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>

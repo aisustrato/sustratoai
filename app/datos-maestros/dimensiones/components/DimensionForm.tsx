@@ -20,10 +20,7 @@ import {
 } from "@/components/ui/StandardSelect"; // Assuming SelectOption type is compatible or similar
 import { StandardFormField } from "@/components/ui/StandardFormField";
 import { StandardButton } from "@/components/ui/StandardButton";
-import {
-	StandardCard,
-	type StandardCardColorScheme,
-} from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { StandardText } from "@/components/ui/StandardText";
 import {
@@ -140,7 +137,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 		control,
 		handleSubmit,
 		watch,
-		formState: { errors, touchedFields, dirtyFields, isValid, isSubmitted },
+		formState: { errors, dirtyFields, isValid, isSubmitted },
 		getFieldState,
 	} = form;
 
@@ -226,7 +223,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 			typeof index === "number" && subFieldName
 				? (`${fieldName}.${index}.${subFieldName}` as const)
 				: fieldName;
-		// @ts-ignore
+		// @ts-expect-error - fieldPath es válido para getFieldState
 		const fieldState = getFieldState(fieldPath);
 		let calculatedError;
 		const fieldErrorRoot = errors[fieldName];
@@ -246,7 +243,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 			calculatedError = fieldErrorRoot;
 		}
 		const error = calculatedError;
-		// @ts-ignore
+		// @ts-expect-error - fieldPath es válido para watch
 		return fieldState.isTouched && !error && !!watch(fieldPath);
 	};
 	//#endregion ![sub]

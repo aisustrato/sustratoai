@@ -8,6 +8,8 @@ import { StandardIcon } from "@/components/ui/StandardIcon";
 
 import { cn } from "@/lib/utils";
 
+export type IconProps = React.SVGProps<SVGSVGElement>;
+
 export interface BreadcrumbItem {
   label: string;
   href?: string;
@@ -21,7 +23,7 @@ export interface BackButtonProps {
 export interface StandardPageTitleProps {
   title: string;
   subtitle?: string;
-  mainIcon?: React.ComponentType<any>;
+  mainIcon?: React.ComponentType<IconProps>;
   breadcrumbs?: BreadcrumbItem[];
   showBackButton?: BackButtonProps | boolean;
   className?: string;

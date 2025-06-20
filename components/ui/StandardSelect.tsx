@@ -21,12 +21,14 @@ import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES & CONSTANTS 📦
+export type IconProps = React.SVGProps<SVGSVGElement>;
+
 export interface SelectOption {
 	value: string;
 	label: string;
 	disabled?: boolean;
 	description?: string;
-	icon?: React.ComponentType<any>;
+	icon?: React.ComponentType<IconProps>;
 }
 
 export interface StandardSelectProps
@@ -40,7 +42,7 @@ export interface StandardSelectProps
 	size?: StandardSelectSize;
 	error?: string;
 	placeholder?: string;
-	leadingIcon?: React.ComponentType<any>;
+	leadingIcon?: React.ComponentType<IconProps>;
 	clearable?: boolean;
 	multiple?: boolean;
 	disabled?: boolean;
@@ -112,10 +114,10 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 			return [];
 		});
 		
-		const selectTokensInternal: StandardSelectTokens | null = React.useMemo(() => {
-			if (!appColorTokens) return null;
-			return generateStandardSelectTokens(appColorTokens, mode);
-		}, [appColorTokens, mode]);
+		const selectTokensInternal: StandardSelectTokens | null = React.useMemo(
+			() => (appColorTokens ? generateStandardSelectTokens(appColorTokens, mode) : null),
+			[appColorTokens, mode]
+		);
 
         const selectedOptions = React.useMemo(
 			() => options.filter((o) => selectedValues.includes(o.value)),
@@ -367,9 +369,15 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 							if (!isOpen) { selectClickableRef.current?.focus(); setIsFocused(true); }
 						}
 					}}
-                    aria-expanded={isOpen} aria-haspopup="listbox" aria-disabled={disabled}
-					aria-readonly={readOnly} aria-invalid={isErrorActive} aria-required={isRequired}
-					aria-describedby={ariaDescribedBy} role="combobox"
+                    aria-expanded={isOpen} 
+                    aria-haspopup="listbox" 
+                    aria-disabled={disabled}
+                    aria-readonly={readOnly} 
+                    aria-invalid={isErrorActive} 
+                    aria-required={isRequired}
+                    aria-describedby={ariaDescribedBy} 
+                    aria-controls={isOpen ? `${id}-listbox` : undefined}
+                    role="combobox"
 				>
 					{(hasActualLeadingIcon || hasSelectedOptionIcon) && (
 						<div className={`absolute top-0 h-full flex items-center pointer-events-none ${ size === "sm" ? "left-2" : size === "lg" ? "left-3.5" : "left-2.5"}`}>
@@ -496,7 +504,7 @@ StandardSelect.displayName = "StandardSelect";
 export { StandardSelect };
 export { StandardSelect as Select };
 export const SelectContent = React.Fragment;
-export const SelectItem = (props: any) => <div {...props} />;
-export const SelectTrigger = (props: any) => <div {...props} />;
-export const SelectValue = (props: any) => <div {...props} />;
+export const SelectItem = (props: React.ComponentPropsWithoutRef<'div'>) => <div {...props} />;
+export const SelectTrigger = (props: React.ComponentPropsWithoutRef<'div'>) => <div {...props} />;
+export const SelectValue = (props: React.ComponentPropsWithoutRef<'div'>) => <div {...props} />;
 //#endregion ![foo]

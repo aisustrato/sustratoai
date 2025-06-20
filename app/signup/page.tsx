@@ -10,9 +10,7 @@ import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard } from "@/components/ui/StandardCard";
 import {
 	Mail,
-	Lock,
 	ArrowRight,
-	UserPlus,
 	Send,
 	Users,
 	Shield,

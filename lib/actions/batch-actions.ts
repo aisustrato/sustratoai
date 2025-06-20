@@ -491,7 +491,15 @@ export async function getProjectBatchesForDisplay(
         return { success: true, data: { lotes: [], canResetAll: false, totalLotes: 0, totalLotesPending: 0, } };
     }
     
-    const lotesTransformados: BatchForDisplay[] = rpcData.map((lote: any) => ({
+    interface RpcLoteData {
+      id: string | number;
+      batch_number: string | number;
+      name: string;
+      status: string;
+      assigned_to_member_name: string | null;
+      article_count: string | number;
+    }
+    const lotesTransformados: BatchForDisplay[] = rpcData.map((lote: RpcLoteData) => ({
       id: lote.id, batch_number: lote.batch_number, name: lote.name, status: lote.status, 
       assigned_to_member_name: lote.assigned_to_member_name,
       article_count: Number(lote.article_count) 

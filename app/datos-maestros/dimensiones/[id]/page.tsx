@@ -5,7 +5,7 @@
 import { useParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardBadge } from "@/components/ui/StandardBadge";
 

@@ -2,7 +2,6 @@
 
 import type { AppColorTokens, ColorSchemeVariant, Mode } from "../ColorToken";
 import tinycolor from "tinycolor2";
-import { generateLinearGradient } from "../utils/gradients";
 
 // --- Definiciones de Tipo ---
 
@@ -39,7 +38,7 @@ export type TableTokens = {
 /**
  * Genera un degradado para encabezados de tabla, exactamente igual al de los botones
  */
-function generateHeaderGradient(appColorTokens: AppColorTokens, isDark: boolean): string {
+function generateHeaderGradient(appColorTokens: AppColorTokens): string {
     const primary = appColorTokens.primary;
     
     // Replicamos EXACTAMENTE el mismo degradado que usan los botones con el modificador 'gradient'
@@ -57,7 +56,7 @@ export function generateTableTokens(appColorTokens: AppColorTokens, mode: Mode):
     return {
         container: { backgroundColor: isDark ? neutral.bgShade : appColorTokens.white.bg, borderColor: isDark ? neutral.pureShade : neutral.bgShade },
         header: { 
-            backgroundColor: generateHeaderGradient(appColorTokens, isDark), 
+            backgroundColor: generateHeaderGradient(appColorTokens), 
             foregroundColor: appColorTokens.primary.contrastText, 
             borderColor: isDark ? appColorTokens.primary.pureShade : appColorTokens.primary.pureShade, 
             sortIconColor: appColorTokens.primary.contrastText, 

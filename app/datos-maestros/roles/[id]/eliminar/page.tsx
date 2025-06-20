@@ -8,10 +8,9 @@ import { useAuth } from "@/app/auth-provider";
 import { 
     eliminarRolDeProyecto,
     obtenerDetallesRolProyecto, // Para mostrar el nombre del rol en la confirmación
-    type ProjectRoleRow,
-    type ResultadoOperacion 
+    type ProjectRoleRow
 } from "@/lib/actions/proyect-role-actions";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { AlertTriangle, Trash2, ShieldAlert } from "lucide-react";
 import { toast as sonnerToast } from "sonner";

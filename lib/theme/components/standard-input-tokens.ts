@@ -66,7 +66,7 @@ export function generateStandardInputTokens(
 		neutral,
 		danger,
 		success,
-		white,
+
 	} = appColorTokens;
 
 	//> 📝 Definiciones base de colores para los inputs
@@ -90,7 +90,7 @@ export function generateStandardInputTokens(
 
 	const commonReadOnlyBackground =
 		mode === "dark"
-			? tinycolor(neutral.bgDark).lighten(5).setAlpha(0.8).toString()
+			? tinycolor(neutral.bgShade).lighten(5).setAlpha(0.8).toString()
 			: tinycolor(neutral.contrastText).darken(0).setAlpha(0.8).toString();
 	const commonReadOnlyBorder =
 		mode === "dark"

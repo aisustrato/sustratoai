@@ -9,19 +9,16 @@ import { useAuth } from "@/app/auth-provider";
 import { 
   obtenerDetallesMiembroProyecto,
   eliminarMiembroDeProyecto,
-  type ProjectMemberDetails,
-  type ResultadoOperacion
-} from "@/lib/actions/member-actions";
-import type { MemberProfileData } from "@/lib/actions/member-actions";
+  type ProjectMemberDetails } from "@/lib/actions/member-actions";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
-import { PageHeader } from "@/components/common/page-header";
+
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { ArrowLeft, Trash2, User, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 
 import { StandardDialog } from "@/components/ui/StandardDialog";
@@ -76,7 +73,7 @@ export default function EliminarMiembroPage() {
     cargarDatosMiembro();
   }, [cargarDatosMiembro]);
 
-  const handleEliminarMiembro = async () => {
+  const handleConfirmarEliminacion = async () => {
     if (!proyectoActual?.id || !memberId) return;
     
     setIsDeleting(true);
@@ -252,11 +249,7 @@ export default function EliminarMiembroPage() {
             </StandardDialog.Close>
             <StandardButton 
               colorScheme="danger" 
-              onClick={() => {
-                // Deshabilitado temporalmente
-                console.log('Acción de eliminación temporalmente deshabilitada');
-                // handleEliminarMiembro(); // Comentado temporalmente
-              }}
+              onClick={handleConfirmarEliminacion}
               loading={isDeleting}
             >
               {isDeleting ? 'Eliminando...' : 'Sí, eliminar'}

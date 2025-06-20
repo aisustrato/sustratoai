@@ -9,15 +9,13 @@ import ProjectBatchesDisplay, { type DisplayableBatch } from './components/Proje
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
 import { StandardText } from '@/components/ui/StandardText';
 import { StandardIcon } from '@/components/ui/StandardIcon';
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardPageTitle } from '@/components/ui/StandardPageTitle';
 import { Boxes, AlertTriangle } from 'lucide-react';
 
 import { 
     getProjectBatchesForDisplay, 
-    resetProjectBatchesIfNotInitialized, 
-    type GetProjectBatchesData,
-    type ResetBatchesResult 
+    resetProjectBatchesIfNotInitialized
 } from '@/lib/actions/batch-actions'; 
 
 // Para los tokens de color (SOLO para ProjectBatchesDisplay y la leyenda en Orquestador si es necesario)
@@ -41,15 +39,15 @@ export default function LotesOrquestadorPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const [projectMembers, setProjectMembers] = useState<ProjectMemberDetails[]>([]);
-  const { appColorTokens, mode } = useTheme();
+  const { appColorTokens } = useTheme();
 
   // Generar batchTokens y memberColorMap aquí, SOLO para pasarlos a ProjectBatchesDisplay
   const batchTokens = useMemo<BatchTokens | null>(() => {
-    if (appColorTokens && mode) {
-      return generateBatchTokens(appColorTokens, mode);
+    if (appColorTokens) {
+      return generateBatchTokens(appColorTokens);
     }
     return null; 
-  }, [appColorTokens, mode]);
+  }, [appColorTokens]);
 
   const memberColorMap = useMemo<Record<string, BatchAuxColor>>(() => {
     if (!batchTokens || projectMembers.length === 0) return {};

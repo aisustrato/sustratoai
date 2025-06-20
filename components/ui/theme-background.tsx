@@ -3,7 +3,7 @@
 import type React from "react"
 import { type ReactNode, useEffect, useState } from "react"
 import { useTheme } from "@/app/theme-provider"
-import colors from "@/lib/theme/colors"
+import { themes, neutral } from "@/lib/theme/colors"
 
 interface ThemeBackgroundProps {
   children?: ReactNode
@@ -19,40 +19,43 @@ export function ThemeBackground({ children }: ThemeBackgroundProps) {
 
   useEffect(() => {
     try {
-      // Validar que colorScheme sea un valor válido
-      const validColorSchemes = ["blue", "green", "orange"] as const
-      const validColorScheme = validColorSchemes.includes(colorScheme as any) ? colorScheme : "blue"
+      // Determinar la clave del tema correcta basada en el modo
+      const themeKey = mode === 'dark' ? `${colorScheme}Dark` : colorScheme;
+
+      // Validar que la clave del tema exista
+      const isValidScheme = Object.keys(themes).includes(themeKey);
+      const validThemeKey = isValidScheme ? themeKey : (mode === 'dark' ? 'blueDark' : 'blue');
 
       // Acceder al tema de forma segura
-      const themeColors = colors.themes[validColorScheme as keyof typeof colors.themes]
+      const themeColors = themes[validThemeKey as keyof typeof themes];
 
       // Verificar que themeColors existe
       if (!themeColors || !themeColors.primary) {
-        console.error(`Theme colors not found for scheme: ${validColorScheme}`)
+        console.error(`Theme colors not found for scheme: ${validThemeKey}`);
         // Usar un color de fallback
         setStyle({
           backgroundColor: mode === "dark" ? "#0a0d14" : "#f9fafb",
           color: mode === "dark" ? "#f9fafb" : "#0a0d14",
-        })
-        return
+        });
+        return;
       }
 
       // Definir el color de fondo basado en el tema y modo
       if (mode === "dark") {
         // En modo oscuro, usar un color oscuro específico del tema
         setStyle({
-          backgroundColor: themeColors.primary.textDark || "#0a0d14",
-          color: colors.neutral.gray[100],
-        })
+          backgroundColor: themeColors.primary.bg || "#0a0d14",
+          color: neutral.gray[100],
+        });
       } else {
         // En modo claro, usar un color muy suave del tema
         setStyle({
           backgroundColor: `${themeColors.primary.bg}15` || "#f9fafb",
-          color: colors.neutral.gray[900],
-        })
+          color: neutral.gray[900],
+        });
       }
-    } catch (error) {
-      console.error("Error setting theme background:", error)
+    } catch (error: unknown) {
+      console.error("Error setting theme background:", error);
       // Fallback en caso de error
       setStyle({
         backgroundColor: mode === "dark" ? "#0a0d14" : "#f9fafb",

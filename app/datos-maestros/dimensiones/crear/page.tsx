@@ -15,7 +15,7 @@ import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { AlertTriangle, ArrowLeft, PlusCircle } from "lucide-react"; // LayoutGrid para dimensiones
 import {
@@ -61,7 +61,8 @@ export default function CrearDimensionPage() {
      else {
       setErrorPage(null);
     }
-  }, [proyectoActual, loadingProyectos, puedeGestionarDimensiones, router, sonnerToast]);
+    // sonnerToast es un import de módulo, no necesita estar en las dependencias
+  }, [proyectoActual, loadingProyectos, puedeGestionarDimensiones, router]);
 
   const handleFormSubmit = async (data: DimensionFormValues) => {
     if (!proyectoActual?.id) {

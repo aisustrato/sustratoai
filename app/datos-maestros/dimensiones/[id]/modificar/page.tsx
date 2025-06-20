@@ -17,7 +17,7 @@ import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { AlertTriangle, ArrowLeft, Edit } from "lucide-react";
 import {
@@ -95,7 +95,7 @@ export default function ModificarDimensionPage() {
     } finally {
       setIsPageLoading(false);
     }
-  }, [proyectoActual?.id, dimensionId, loadingProyectos, puedeGestionarDimensiones, router]); // router añadido como dep si se usa
+  }, [proyectoActual?.id, proyectoActual?.name, dimensionId, loadingProyectos, puedeGestionarDimensiones, router]);
 
   useEffect(() => {
     // Disparar carga solo si tenemos la información necesaria o si la carga de proyectos ha terminado

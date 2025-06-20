@@ -1,8 +1,7 @@
 //. 📍 lib/theme/components/standard-check-tokens.ts
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import type { AppColorTokens, ColorShade, Mode } from "../ColorToken";
-import tinycolor from "tinycolor2";
+import type { AppColorTokens } from "../ColorToken";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -31,6 +30,16 @@ export interface StandardCheckTokens {
 		padding: string;
 	};
 }
+
+interface SizeProperties {
+  borderThickness: string;
+  box: string;
+  checkThickness: number;
+  borderRadius: string;
+  fontSize: string;
+  padding: string;
+}
+
 //#endregion ![def]
 
 //#region [main] - 🔧 LOGIC 🔧
@@ -49,39 +58,39 @@ function getColorForVariant(variant: StandardCheckVariant, appColorTokens: AppCo
 	}
 }
 
-function getSizeTokens(size: StandardCheckSize) {
+function getSizeTokens(size: StandardCheckSize): SizeProperties {
 	switch (size) {
-		case "xs": return { box: "16px", checkThickness: 2.5, borderRadius: "3px", fontSize: "0.75rem", padding: "0.25rem" };
-		case "sm": return { box: "18px", checkThickness: 3, borderRadius: "4px", fontSize: "0.875rem", padding: "0.375rem" };
-		case "lg": return { box: "24px", checkThickness: 4, borderRadius: "6px", fontSize: "1.125rem", padding: "0.625rem" };
-		case "xl": return { box: "28px", checkThickness: 5, borderRadius: "7px", fontSize: "1.25rem", padding: "0.75rem" };
-		default: return { box: "20px", checkThickness: 3.5, borderRadius: "5px", fontSize: "1rem", padding: "0.5rem" };
+		case "xs": return { borderThickness: "1px", box: "16px", checkThickness: 2.5, borderRadius: "3px", fontSize: "0.75rem", padding: "0.25rem" };
+		case "sm": return { borderThickness: "1.5px", box: "18px", checkThickness: 3, borderRadius: "4px", fontSize: "0.875rem", padding: "0.375rem" };
+		case "lg": return { borderThickness: "2.5px", box: "24px", checkThickness: 4, borderRadius: "6px", fontSize: "1.125rem", padding: "0.625rem" };
+		case "xl": return { borderThickness: "3px", box: "28px", checkThickness: 5, borderRadius: "7px", fontSize: "1.25rem", padding: "0.75rem" };
+		default: return { borderThickness: "2px", box: "20px", checkThickness: 3.5, borderRadius: "5px", fontSize: "1rem", padding: "0.5rem" };
 	}
 }
 
 function generateNeutralTokens(
 	neutralTokenSet: AppColorTokens["neutral"],
 	visualVariant: StandardCheckStyleType,
-	sizeTokens: any
+	sizeTokens: SizeProperties
 ): StandardCheckTokens {
-	let background: string, border: string, check: string, checkedBackground: string, checkedBorder: string;
+	let background: string, border: string, checkedBackground: string, checkedBorder: string;
 	const checkColor = neutralTokenSet.contrastText;
 
 	switch (visualVariant) {
 		case "outline":
-			background = "transparent"; border = neutralTokenSet.bgShade; check = checkColor;
+			background = "transparent"; border = neutralTokenSet.bgShade;
 			checkedBackground = "transparent"; checkedBorder = neutralTokenSet.text;
 			break;
 		case "subtle":
-			background = `${neutralTokenSet.bg}40`; border = neutralTokenSet.bgShade; check = checkColor;
+			background = `${neutralTokenSet.bg}40`; border = neutralTokenSet.bgShade;
 			checkedBackground = `${neutralTokenSet.bg}80`; checkedBorder = neutralTokenSet.text;
 			break;
 		case "solid":
-			background = neutralTokenSet.bg; border = neutralTokenSet.bgShade; check = checkColor;
+			background = neutralTokenSet.bg; border = neutralTokenSet.bgShade;
 			checkedBackground = neutralTokenSet.bgShade; checkedBorder = neutralTokenSet.text;
 			break;
 		default:
-			background = "#ffffff"; border = neutralTokenSet.bgShade; check = checkColor;
+			background = "#ffffff"; border = neutralTokenSet.bgShade;
 			checkedBackground = "#ffffff"; checkedBorder = neutralTokenSet.text;
 			break;
 	}
@@ -100,7 +109,7 @@ function generateNeutralTokens(
 function generateColorTokens(
 	baseColorTokenSet: AppColorTokens[keyof AppColorTokens] & { pure: string; bg: string; contrastText: string; text: string; bgShade: string; },
 	visualVariant: StandardCheckStyleType,
-	sizeTokens: any,
+	sizeTokens: SizeProperties,
 	neutralTokenSet: AppColorTokens["neutral"],
 	appColorTokens: AppColorTokens,
 	variant: StandardCheckVariant
@@ -109,7 +118,7 @@ function generateColorTokens(
 		return generateNeutralTokens(neutralTokenSet, visualVariant, sizeTokens);
 	}
 
-	let background: string, border: string, check: string, checkedBackground: string, checkedBorder: string;
+	let background: string, border: string, checkedBackground: string, checkedBorder: string;
 	const useSecondaryCheck = visualVariant === "default" && variant === "primary" && appColorTokens.secondary?.pure;
 	const defaultCheckColor = baseColorTokenSet.contrastText;
 	const checkColorOnWhite = baseColorTokenSet.pure;
@@ -117,21 +126,18 @@ function generateColorTokens(
 	switch (visualVariant) {
 		case "outline":
 			background = "transparent"; border = baseColorTokenSet.pure;
-			check = useSecondaryCheck ? appColorTokens.secondary.pure : checkColorOnWhite;
 			checkedBackground = "transparent"; checkedBorder = baseColorTokenSet.pure;
 			break;
 		case "subtle":
 			background = `${baseColorTokenSet.pure}20`; border = `${baseColorTokenSet.pure}60`;
-			check = useSecondaryCheck ? appColorTokens.secondary.pure : checkColorOnWhite;
 			checkedBackground = `${baseColorTokenSet.pure}40`; checkedBorder = baseColorTokenSet.pure;
 			break;
 		case "solid":
-			background = baseColorTokenSet.bg; border = baseColorTokenSet.pure; check = baseColorTokenSet.contrastText;
+			background = baseColorTokenSet.bg; border = baseColorTokenSet.pure;
 			checkedBackground = baseColorTokenSet.pure; checkedBorder = baseColorTokenSet.pure;
 			break;
 		default:
 			background = "#ffffff"; border = baseColorTokenSet.pure;
-			check = useSecondaryCheck ? appColorTokens.secondary.pure : checkColorOnWhite;
 			checkedBackground = "#ffffff"; checkedBorder = baseColorTokenSet.pure;
 			break;
 	}
@@ -164,7 +170,7 @@ export function generateStandardCheckTokens(
 	} else {
 		const baseColorTokenSet = getColorForVariant(variant, appColorTokens);
 		return generateColorTokens(
-			baseColorTokenSet as any, visualVariant, sizeTokens,
+			baseColorTokenSet, visualVariant, sizeTokens,
 			appColorTokens.neutral, appColorTokens, variant
 		);
 	}

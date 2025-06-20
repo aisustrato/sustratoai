@@ -1,5 +1,3 @@
-//. 📍 app/routes/showroom/standard-table/page.tsx (v4.1 - Compatible con Tabla v5.6)
-
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -56,16 +54,56 @@ const tasksData: Task[] = [
 export default function StandardTableShowroomPage() {
     const [rowStatuses, setRowStatuses] = useState<Record<string, 'success' | 'warning' | 'danger'>>({});
 
+    // ✅ CORRECCIÓN: Se mantiene el tipo explícito en `useMemo` y se utilizan aserciones de tipo (`as Type`)
+    // dentro de las funciones `cell` para resolver los conflictos de tipado.
     const columns = useMemo<ColumnDef<Task>[]>(() => [
-        { id: 'expander', header: () => null, cell: ({ row }) => row.getCanExpand() ? '' : null, meta: { isSticky: 'left' }, size: 40, },
-        { accessorKey: 'tarea', header: 'Tarea', size: 350, },
-        { accessorKey: 'asignadoA', header: 'Asignado a', size: 150, },
-        { accessorKey: 'prioridad', header: 'Prioridad', cell: ({ getValue }) => { const value = getValue<'Alta' | 'Media' | 'Baja'>(); let colorScheme: 'danger' | 'warning' | 'neutral' = 'neutral'; if (value === 'Alta') colorScheme = 'danger'; if (value === 'Media') colorScheme = 'warning'; return <StandardBadge colorScheme={colorScheme} styleType="subtle" size="sm">{value}</StandardBadge>; }, size: 100, },
-        { accessorKey: 'progreso', header: 'Progreso', cell: ({ getValue }) => { const value = getValue<number>(); return ( <div className="w-full bg-neutral-bgShade rounded-full h-2.5"> <div className="bg-primary-pure h-2.5 rounded-full" style={{ width: `${value}%` }}></div> </div> ) }, size: 150, },
-        { accessorKey: 'complejidad', header: 'Complejidad', meta: {  align: 'center', cellVariant: (context: CellContext<Task, any>) => context.getValue<number>() > 90 ? 'highlight' : undefined, }, size: 100, },
-        { accessorKey: 'estado', header: 'Estado', cell: ({ getValue }) => { const value = getValue<string>(); let colorScheme: 'primary' | 'neutral' | 'success' = 'neutral'; if (value === 'En Progreso') colorScheme = 'primary'; if (value === 'Completado') colorScheme = 'success'; return <StandardBadge colorScheme={colorScheme} styleType="subtle" size="sm">{value}</StandardBadge>; }, size: 150, },
-        { accessorKey: 'fechaCreacion', header: 'Fecha de Creación', size: 150, },
-        { id: 'acciones', header: 'Acciones', cell: () => <StandardButton size="sm" styleType="ghost">...</StandardButton>, meta: { isSticky: 'right' }, size: 80, }
+        { id: 'expander', header: () => null, cell: ({ row }) => row.getCanExpand() ? '' : null, meta: { isSticky: 'left' }, size: 40 },
+        { accessorKey: 'tarea', header: 'Tarea', size: 350 },
+        { accessorKey: 'asignadoA', header: 'Asignado a', size: 150 },
+        {
+            accessorKey: 'prioridad',
+            header: 'Prioridad',
+            cell: (info) => {
+                const value = info.getValue() as Task['prioridad'];
+                let colorScheme: 'danger' | 'warning' | 'neutral' = 'neutral';
+                if (value === 'Alta') colorScheme = 'danger';
+                if (value === 'Media') colorScheme = 'warning';
+                return <StandardBadge colorScheme={colorScheme} styleType="subtle" size="sm">{value}</StandardBadge>;
+            },
+            size: 100,
+        },
+        {
+            accessorKey: 'progreso',
+            header: 'Progreso',
+            cell: (info) => {
+                const value = info.getValue() as number;
+                return ( <div className="w-full bg-neutral-bgShade rounded-full h-2.5"> <div className="bg-primary-pure h-2.5 rounded-full" style={{ width: `${value}%` }}></div> </div> )
+            },
+            size: 150,
+        },
+        {
+            accessorKey: 'complejidad',
+            header: 'Complejidad',
+            meta: {
+                align: 'center',
+                cellVariant: (context) => (context.getValue() as number) > 90 ? 'highlight' : undefined,
+            },
+            size: 100,
+        },
+        {
+            accessorKey: 'estado',
+            header: 'Estado',
+            cell: (info) => {
+                const value = info.getValue() as Task['estado'];
+                let colorScheme: 'primary' | 'neutral' | 'success' = 'neutral';
+                if (value === 'En Progreso') colorScheme = 'primary';
+                if (value === 'Completado') colorScheme = 'success';
+                return <StandardBadge colorScheme={colorScheme} styleType="subtle" size="sm">{value}</StandardBadge>;
+            },
+            size: 150,
+        },
+        { accessorKey: 'fechaCreacion', header: 'Fecha de Creación', size: 150 },
+        { id: 'acciones', header: 'Acciones', cell: () => <StandardButton size="sm" styleType="ghost">...</StandardButton>, meta: { isSticky: 'right' }, size: 80 }
     ], []);
 
     const getRowStatus = (row: Task) => {
@@ -107,7 +145,6 @@ export default function StandardTableShowroomPage() {
                     filterPlaceholder="Buscar por tarea o asignado..."
                     maxTableHeight="calc(100vh - 300px)"
                 >
-                    {/* ✅ REFACTOR: El Toolbar ya no se llama aquí, está integrado en StandardTable.Table */}
                     <StandardTable.Table />
                 </StandardTable>
             </div>

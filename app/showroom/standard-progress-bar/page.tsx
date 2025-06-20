@@ -174,7 +174,7 @@ export default function StandardProgressBarShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoColorScheme}
-											onChange={(val) => setDemoColorScheme(val as any)}
+											onChange={(val) => setDemoColorScheme(val as NonNullable<StandardProgressBarProps["colorScheme"]>)}
 											options={progressBarColorSchemes.map((s) => ({
 												value: s,
 												label: s,
@@ -188,7 +188,7 @@ export default function StandardProgressBarShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoStyleType}
-											onChange={(val) => setDemoStyleType(val as any)}
+											onChange={(val) => setDemoStyleType(val as NonNullable<StandardProgressBarProps["styleType"]>)}
 											options={styleTypes.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>
@@ -199,7 +199,7 @@ export default function StandardProgressBarShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoSize}
-											onChange={(val) => setDemoSize(val as any)}
+											onChange={(val) => setDemoSize(val as NonNullable<StandardProgressBarProps["size"]>)}
 											options={sizes.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>

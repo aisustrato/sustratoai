@@ -63,8 +63,6 @@ export function generateUserAvatarTokens(
   const backgroundGradient = `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})`;
   
   // Crear colores semi-transparentes para efectos
-  const primaryA10 = tinycolor(primary.pure).setAlpha(0.1).toRgbString();
-  const primaryA20 = tinycolor(primary.pure).setAlpha(0.2).toRgbString();
 
   return {
     avatar: {
@@ -113,13 +111,13 @@ export function generateUserAvatarTokens(
 export function getUserAvatarTokenValue(
   tokens: UserAvatarTokens,
   path: string
-): any {
+): unknown {
   const parts = path.split('.');
-  let current: any = tokens;
+  let current: unknown = tokens;
   
   for (const part of parts) {
     if (current && typeof current === 'object' && part in current) {
-      current = current[part];
+      current = (current as Record<string, unknown>)[part];
     } else {
       return undefined; // Token not found
     }

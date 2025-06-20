@@ -1,4 +1,4 @@
-import type { AppColorTokens, Mode } from "../ColorToken";
+import type { AppColorTokens } from "../ColorToken";
 import type { ColorShade } from "../colors"; // Asegúrate que ColorShade se exporte desde colors.ts o ColorToken.ts
 
 /**
@@ -17,12 +17,10 @@ export type SustratoLoadingLogoComponentTokens = {
  * utilizando los AppColorTokens globales.
  *
  * @param appTokens Los tokens de color globales de la aplicación.
- * @param mode El modo actual ('light' o 'dark'). No se usa directamente aquí, pero es buena práctica pasarlo.
  * @returns Un objeto con los colores necesarios para SustratoLoadingLogo.
  */
 export function generateSustratoLoadingLogoTokens(
-  appTokens: AppColorTokens | any, // Permitir 'any' para compatibilidad inicial si viene de un contexto antiguo
-  mode: Mode
+  appTokens: AppColorTokens
 ): SustratoLoadingLogoComponentTokens {
   // Fallback defensivo si appTokens no tiene la estructura esperada
   const safeAppTokens =

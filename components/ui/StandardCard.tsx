@@ -9,7 +9,7 @@ import { motion, AnimatePresence, type HTMLMotionProps, type Transition, type Va
 import { Check, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
-import type { AppColorTokens, ColorSchemeVariant as StandardCardColorScheme, Mode } from "@/lib/theme/ColorToken";
+import type { ColorSchemeVariant as StandardCardColorScheme } from "@/lib/theme/ColorToken";
 import { generateStandardCardTokens, type StandardCardStyleType, type StandardCardAccentPlacement, type StandardCardShadow } from "@/lib/theme/components/standard-card-tokens";
 import { StandardText, type StandardTextProps } from "@/components/ui/StandardText";
 // ✅ CORRECCIÓN: La ruta de importación ahora es la correcta.
@@ -104,24 +104,28 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 		const cssVariables = useMemo(() => {
 			if (!cardTokens) return {};
 			const currentCardScheme = colorScheme || "neutral";
-			const vars: React.CSSProperties & { [key: string]: any } = {};
+			const vars: React.CSSProperties & { [key: `--${string}`]: string | number; } = {};
 			const styleTypeTokens = cardTokens.styleTypes[styleType]?.[currentCardScheme] || cardTokens.styleTypes[styleType]?.neutral;
 
+			// Background and text colors with fallbacks
 			vars["--sc-bg"] = styleTypeTokens?.background || "transparent";
-			vars["--sc-text-color"] = styleTypeTokens?.color || cardTokens.defaultTextColor;
+			vars["--sc-text-color"] = styleTypeTokens?.color || cardTokens.defaultTextColor || "currentColor";
 			
+			// Outline styles with fallbacks
 			const effectiveOutlineScheme = outlineColorScheme || currentCardScheme;
 			if (hasOutline) {
 				const outlineTokens = cardTokens.outline[effectiveOutlineScheme] || cardTokens.outline.neutral;
 				if (outlineTokens) {
-					vars["--sc-outline-border-color"] = outlineTokens.borderColor;
-					vars["--sc-outline-border-width"] = outlineTokens.borderWidth;
-					vars["--sc-outline-border-style"] = outlineTokens.borderStyle;
+					vars["--sc-outline-border-color"] = outlineTokens.borderColor || "currentColor";
+					vars["--sc-outline-border-width"] = outlineTokens.borderWidth || "1px";
+					vars["--sc-outline-border-style"] = outlineTokens.borderStyle || "solid";
 				}
 			} else {
-				vars["--sc-outline-border-width"] = "0px"; vars["--sc-outline-border-style"] = "none";
+				vars["--sc-outline-border-width"] = "0px";
+				vars["--sc-outline-border-style"] = "none";
 			}
 
+			// Accent styles with fallbacks
 			const mainCardScheme = currentCardScheme;
 			const effectiveAccentColorScheme = accentColorScheme || mainCardScheme;
 			const accentTokenDefinitions = cardTokens.accents[accentPlacement]?.[effectiveAccentColorScheme];
@@ -129,38 +133,42 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 			if (accentPlacement !== "none" && accentTokenDefinitions) {
 				if (accentColorScheme === "accent") {
 					if (mainCardScheme === "accent") {
-						vars["--sc-accent-bg"] = cardTokens.accents[accentPlacement]?.accent?.duotoneMagicBackground;
+						vars["--sc-accent-bg"] = cardTokens.accents[accentPlacement]?.accent?.duotoneMagicBackground || "currentColor";
 					} else {
-						vars["--sc-accent-bg"] = cardTokens.accents[accentPlacement]?.[mainCardScheme]?.duotoneMagicBackground || accentTokenDefinitions.standardBackground;
+						vars["--sc-accent-bg"] = cardTokens.accents[accentPlacement]?.[mainCardScheme]?.duotoneMagicBackground || 
+							accentTokenDefinitions.standardBackground || "currentColor";
 					}
 				} else {
-					vars["--sc-accent-bg"] = accentTokenDefinitions.standardBackground;
+					vars["--sc-accent-bg"] = accentTokenDefinitions.standardBackground || "currentColor";
 				}
-				if (!vars["--sc-accent-bg"]) vars["--sc-accent-bg"] = accentTokenDefinitions.standardBackground || "transparent";
-				if (accentTokenDefinitions.height) vars["--sc-accent-dimension-h"] = accentTokenDefinitions.height;
-				if (accentTokenDefinitions.width) vars["--sc-accent-dimension-w"] = accentTokenDefinitions.width;
+				if (!vars["--sc-accent-bg"]) vars["--sc-accent-bg"] = "currentColor";
+				vars["--sc-accent-dimension-h"] = accentTokenDefinitions.height || "100%";
+				vars["--sc-accent-dimension-w"] = accentTokenDefinitions.width || "100%";
 			} else {
 				vars["--sc-accent-bg"] = "transparent";
 			}
 			
+			// Selected state styles with fallbacks
 			if (selected && !inactive) {
 				const selectedTokens = cardTokens.selected[currentCardScheme] || cardTokens.selected.neutral;
 				if (selectedTokens) {
-					vars["--sc-selected-border-color"] = selectedTokens.borderColor;
-					vars["--sc-selected-border-width"] = selectedTokens.borderWidth;
-					vars["--sc-selected-overlay-bg"] = selectedTokens.overlayBackground;
+					vars["--sc-selected-border-color"] = selectedTokens.borderColor || "currentColor";
+					vars["--sc-selected-border-width"] = selectedTokens.borderWidth || "2px";
+					vars["--sc-selected-overlay-bg"] = selectedTokens.overlayBackground || "rgba(0,0,0,0.1)";
 				}
 			}
 
+			// Checkbox styles with fallbacks
 			const checkboxTokens = cardTokens.checkbox[currentCardScheme] || cardTokens.checkbox.neutral;
 			if (checkboxTokens) {
-				vars["--sc-checkbox-border-color"] = checkboxTokens.borderColor;
-				vars["--sc-checkbox-icon-color"] = checkboxTokens.iconColor;
-				vars["--sc-checkbox-focus-ring-color"] = checkboxTokens.focusRingColor;
+				vars["--sc-checkbox-border-color"] = checkboxTokens.borderColor || "currentColor";
+				vars["--sc-checkbox-icon-color"] = checkboxTokens.iconColor || "currentColor";
+				vars["--sc-checkbox-focus-ring-color"] = checkboxTokens.focusRingColor || "currentColor";
 			}
 			
-			vars['--sc-inactive-overlay-bg'] = cardTokens.inactiveOverlayBackground;
-			vars['--sc-loading-overlay-bg'] = cardTokens.loadingOverlayBackground;
+			// Overlay backgrounds with fallbacks
+			vars['--sc-inactive-overlay-bg'] = cardTokens.inactiveOverlayBackground || "rgba(255,255,255,0.7)";
+			vars['--sc-loading-overlay-bg'] = cardTokens.loadingOverlayBackground || "rgba(255,255,255,0.9)";
 
 			return vars;
 		}, [cardTokens, colorScheme, styleType, hasOutline, outlineColorScheme, accentPlacement, accentColorScheme, selected, inactive]);

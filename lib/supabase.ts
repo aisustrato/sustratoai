@@ -6,7 +6,6 @@ import type { Database } from './database.types'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const isProduction = process.env.NODE_ENV === 'production'
-const isVercel = process.env.VERCEL === '1';
 const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '';
 
 // Obtener dominio dinámicamente
@@ -170,47 +169,49 @@ export const mockSupabase = {
   from: (table: string) => {
     if (table === "fundaciones") {
       return {
-        select: (_columns: string) => ({
-          order: (column: string, { ascending = true } = {}) => ({
-            then: (callback: Function) => {
-              callback({ data: mockFundaciones, error: null });
-              return { data: mockFundaciones, error: null };
+        select() {
+          return {
+            order() {
+              return {
+                then: (callback: (result: { data: any; error: Error | null }) => void) => {
+                  callback({ data: mockFundaciones, error: null });
+                  return { data: mockFundaciones, error: null };
+                },
+              };
             },
-          }),
-          eq: (column: string, value: any) => ({
-            maybeSingle: () => {
-              const found = mockFundaciones.find(
-                (f) => f[column as keyof typeof f] === value
-              );
-              return { data: found || null, error: null };
+            eq(column: string, value: any) {
+              return {
+                maybeSingle() {
+                  const found = mockFundaciones.find(
+                    (f) => f[column as keyof typeof f] === value
+                  );
+                  return { data: found || null, error: null };
+                },
+              };
             },
-          }),
-        }),
-        insert: (rows: any[]) => ({
-          select: () => ({
-            single: () => {
-              const newId = mockFundaciones.length + 1;
-              const newRow = { id: newId, ...rows[0] };
-              mockFundaciones.push(newRow);
-              return { data: newRow, error: null };
+          };
+        },
+        insert(rows: any[]) {
+          return {
+            select() {
+              return {
+                single() {
+                  const newId = mockFundaciones.length + 1;
+                  const newRow = { id: newId, ...rows[0] };
+                  mockFundaciones.push(newRow);
+                  return { data: newRow, error: null };
+                },
+              };
             },
-          }),
-        }),
+          };
+        },
       };
     }
     return {};
   },
   auth: {
-    signInWithPassword: async ({
-      email,
-      password,
-    }: {
-      email: string;
-      password: string;
-    }) => {
-      const user = mockUsers.find(
-        (u) => u.email === email && u.password === password
-      );
+    signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
+      const user = mockUsers.find((u) => u.email === email && u.password === password);
       if (user) {
         return {
           data: {
@@ -225,13 +226,7 @@ export const mockSupabase = {
         error: { message: "Credenciales inválidas" },
       };
     },
-    signUp: async ({
-      email,
-      password,
-    }: {
-      email: string;
-      password: string;
-    }) => {
+    signUp: async ({ email, password }: { email: string; password: string }) => {
       const exists = mockUsers.some((u) => u.email === email);
       if (exists) {
         return {
@@ -256,7 +251,7 @@ export const mockSupabase = {
       // Simulamos que no hay sesión activa por defecto
       return { data: { session: null }, error: null };
     },
-    onAuthStateChange: (callback: Function) => {
+    onAuthStateChange() {
       // Simulamos que no hay cambios de estado de autenticación
       return { data: { subscription: { unsubscribe: () => {} } }, error: null };
     },

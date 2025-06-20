@@ -15,7 +15,6 @@ export default function Home() {
   const defaultClientName = "Universidad Católica de Chile";
   const defaultProjectName = "Ayudas Técnicas";
   const defaultDepartmentName = "Escuela de Trabajo Social";
-  const defaultProjectDescription = "Plataforma de herramientas para investigación y análisis de datos cualitativos";
 
   // Mientras la autenticación no se haya inicializado o no haya proyecto actual y el usuario sí esté (evitando flash si es público)
   if (!authInitialized || (user && !proyectoActual)) {

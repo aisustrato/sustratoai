@@ -85,9 +85,10 @@ export function ColorSchemeSwitcher() {
         toast.error(result.error || "Ups! Tuvimos un problema al guardar tu preferencia de tema. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.");
         console.error("[ColorSchemeSwitcher v1.1] Error en persistencia desde actualizarPreferenciasUI:", result.error);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[ColorSchemeSwitcher v1.1] Excepción durante la persistencia del tema:", error);
-      toast.error(error.message || "Ups! Hubo una excepción al guardar tu preferencia de tema. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.");
+      const errorMessage = error instanceof Error ? error.message : "Ups! Hubo una excepción al guardar tu preferencia de tema. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.";
+      toast.error(errorMessage);
     }
   };
   

@@ -72,23 +72,32 @@ function generateStatusShades(appTokens: AppColorTokens): Record<BatchStatusToke
 }
 
 export function generateBatchTokens(
-	appColorTokens: AppColorTokens,
-	mode: Mode // Mode ya no se usa directamente aquí si los appTokens ya son específicos del modo
+	appColorTokens: AppColorTokens
 ): BatchTokens {
     if (!appColorTokens || !appColorTokens.primary || !appColorTokens.neutral) {
         // ... (tu lógica de fallback para appColorTokens si es incompleto, la mantenemos) ...
         const fallbackPure = '#777777'; const fallbackBg = '#f0f0f0'; const fallbackText = '#333333';
-        const fallbackShade = { pure: fallbackPure, pureShade: fallbackPure, text: fallbackText, contrastText: fallbackBg, textShade: fallbackText, bg: fallbackBg, bgShade: fallbackBg, /* bgDark y textDark se infieren o no se usan si appColorTokens ya es mode-specific */ };
+        // Usando solo las propiedades definidas en ColorShade
+        const fallbackShade = { 
+            pure: fallbackPure, 
+            pureShade: fallbackPure, 
+            text: fallbackText, 
+            contrastText: fallbackBg, 
+            textShade: fallbackText, 
+            bg: fallbackBg, 
+            bgShade: fallbackBg 
+        };
+        
         appColorTokens = {
-            primary: { ...fallbackShade, pureDark: fallbackPure, textDark: fallbackText, bgDark: fallbackBg },
-            secondary: { ...fallbackShade, pureDark: fallbackPure, textDark: fallbackText, bgDark: fallbackBg },
-            tertiary: { ...fallbackShade, pureDark: fallbackPure, textDark: fallbackText, bgDark: fallbackBg },
-            accent: { ...fallbackShade, pureDark: fallbackPure, textDark: fallbackText, bgDark: fallbackBg },
-            success: { ...fallbackShade, pureDark: fallbackPure, textDark: fallbackText, bgDark: fallbackBg },
-            warning: { ...fallbackShade, pureDark: fallbackPure, textDark: fallbackText, bgDark: fallbackBg },
-            danger: { ...fallbackShade, pureDark: fallbackPure, textDark: fallbackText, bgDark: fallbackBg },
-            neutral: { ...fallbackShade, pureDark: fallbackPure, textDark: fallbackText, bgDark: fallbackBg },
-            white: { ...fallbackShade, pureDark: fallbackPure, textDark: fallbackText, bgDark: fallbackBg }
+            primary: { ...fallbackShade },
+            secondary: { ...fallbackShade },
+            tertiary: { ...fallbackShade },
+            accent: { ...fallbackShade },
+            success: { ...fallbackShade },
+            warning: { ...fallbackShade },
+            danger: { ...fallbackShade },
+            neutral: { ...fallbackShade },
+            white: { ...fallbackShade }
         };
     }
 

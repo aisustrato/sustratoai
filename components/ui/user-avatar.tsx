@@ -2,7 +2,7 @@
 // Versión: 1.1 (Refactor handleProjectChange con setProyectoActivoLocal y toasts locales)
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogOut, Check, Loader2 } from "lucide-react"; // Añadido Loader2 para feedback visual
 import { StandardIcon } from "@/components/ui/StandardIcon"; // Added StandardIcon import
@@ -11,7 +11,6 @@ import { useAuth } from "@/app/auth-provider";
 import { toast } from "sonner"; // Re-importado para toasts locales
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardSelect, type SelectOption } from "@/components/ui/StandardSelect"; // Assuming SelectOption type is compatible or similar
-import React from "react";
 import { generateUserAvatarTokens } from "@/lib/theme/components/user-avatar-tokens";
 import { actualizarProyectoActivo } from "@/app/actions/proyecto-actions"; // Importar server action y tipo
 

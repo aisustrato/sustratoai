@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 // --- ✅ Componentes "Standard" ---
 import {
 	StandardText,
-	type StandardTextProps,
 	type StandardTextPreset,
 	type StandardTextSize,
 	type StandardTextWeight,
@@ -191,7 +190,7 @@ export default function StandardTextShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoSize}
-											onChange={(val) => setDemoSize(val as any)}
+											onChange={(val) => setDemoSize(val as StandardTextSize)}
 											options={sizes.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>
@@ -201,7 +200,7 @@ export default function StandardTextShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoWeight}
-											onChange={(val) => setDemoWeight(val as any)}
+											onChange={(val) => setDemoWeight(val as StandardTextWeight)}
 											options={weights.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>
@@ -211,7 +210,7 @@ export default function StandardTextShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoAlign}
-											onChange={(val) => setDemoAlign(val as any)}
+											onChange={(val) => setDemoAlign(val as StandardTextAlign)}
 											options={aligns.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>
@@ -221,7 +220,7 @@ export default function StandardTextShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoColorScheme}
-											onChange={(val) => setDemoColorScheme(val as any)}
+											onChange={(val) => setDemoColorScheme(val as ColorSchemeVariant)}
 											options={colorSchemes.map((s) => ({
 												value: s,
 												label: s,
@@ -234,7 +233,7 @@ export default function StandardTextShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoColorShade}
-											onChange={(val) => setDemoColorShade(val as any)}
+											onChange={(val) => setDemoColorShade(val as StandardTextColorShade)}
 											options={colorShades.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>

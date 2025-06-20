@@ -26,7 +26,7 @@ import { toast } from "sonner"; // Para notificaciones
 import { useLoading } from "@/contexts/LoadingContext"; // Opcional, para loading global
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 //#endregion ![head]
 
 //#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
@@ -39,7 +39,7 @@ export default function CrearMiembroPage() {
   //#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
   const router = useRouter();
   const { proyectoActual } = useAuth();
-  const { showLoading, hideLoading, isLoading: isGlobalLoading } = useLoading(); // Opcional
+  const { showLoading, hideLoading } = useLoading(); // Opcional
 
   const [isPageLoading, setIsPageLoading] = useState(true); // Para la carga inicial de roles
   const [isSubmitting, setIsSubmitting] = useState(false); // Para el estado de envío del formulario

@@ -34,24 +34,22 @@ export function SustratoLoadingLogo({
   breathingEffect = true,
   colorTransition = true,
 }: SustratoLoadingLogoProps) {
-  const { appColorTokens, mode } = useTheme();
+  const { appColorTokens } = useTheme();
   const [progress, setProgress] = useState(0);
   const [colorPhase, setColorPhase] = useState(0);
 
   // Generate component-specific tokens
   const componentTokens = useMemo(() => {
     return appColorTokens
-      ? generateSustratoLoadingLogoTokens(appColorTokens, mode)
+      ? generateSustratoLoadingLogoTokens(appColorTokens)
       : null;
-  }, [appColorTokens, mode]);
+  }, [appColorTokens]);
 
   // Use generated tokens with overrides
   const actualPrimaryColor =
     primaryColor || componentTokens?.colors?.primary?.pure || "currentColor";
-  const actualSecondaryColor =
-    secondaryColor || componentTokens?.colors?.secondary?.pure || "transparent";
-  const actualPrimaryTextColor =
-    componentTokens?.colors?.primary?.text || "currentColor";
+  const actualAccentColor =
+    accentColor || componentTokens?.colors?.accent?.pure || "currentColor";
 
   // Determinar la duración de la animación según la velocidad
   const getDuration = () => {
@@ -327,8 +325,7 @@ export function SustratoLoadingLogo({
             <SustratoLogo
               size={size}
               primaryColor={actualPrimaryColor}
-              secondaryColor={actualSecondaryColor}
-              accentColor="transparent"
+              accentColor={actualAccentColor}
             />
 
             {/* Punto central personalizado con efecto de respiración y transición de color */}
@@ -360,9 +357,7 @@ export function SustratoLoadingLogo({
             preset="body"
             size="sm"
             weight="medium"
-            colorScheme={actualPrimaryTextColor?.startsWith('#') ? undefined : (actualPrimaryTextColor as any)}
-            className={actualPrimaryTextColor?.startsWith('#') ? undefined : ''}
-            style={actualPrimaryTextColor?.startsWith('#') ? { color: actualPrimaryTextColor } : undefined}
+            colorScheme="primary"
           >
             {text}
           </StandardText>

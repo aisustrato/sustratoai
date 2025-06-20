@@ -13,7 +13,7 @@ import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { AlertTriangle, ArrowLeft, Edit, Eye } from "lucide-react"; // Eye para ver
 import {
@@ -59,7 +59,7 @@ export default function VerDimensionPage() {
     setDimensionActual(null); 
 
     try {
-      const resultado = await listDimensions(proyectoActual.id); // RLS debe proteger esto
+      const resultado = await listDimensions(proyectoActual.id);
       if (resultado.success) {
         const dim = resultado.data.find(d => d.id === dimensionId);
         if (dim) {
@@ -78,7 +78,7 @@ export default function VerDimensionPage() {
     } finally {
       setIsPageLoading(false);
     }
-  }, [proyectoActual?.id, dimensionId, loadingProyectos]);
+  }, [proyectoActual?.id, proyectoActual?.name, dimensionId, loadingProyectos, setErrorPage, setIsPageLoading, setDimensionActual]);
 
   useEffect(() => {
     if ((proyectoActual?.id && dimensionId) || !loadingProyectos) {

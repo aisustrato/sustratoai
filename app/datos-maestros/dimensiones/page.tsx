@@ -19,7 +19,6 @@ import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { StandardText } from "@/components/ui/StandardText";
 import {
 	StandardCard,
-	type StandardCardColorScheme,
 } from "@/components/ui/StandardCard";
 import { EmptyState } from "@/components/common/empty-state";
 import { AlertTriangle, PlusCircle, LayoutGrid } from "lucide-react";
@@ -37,7 +36,7 @@ export default function DimensionesPage() {
 	const router = useRouter();
 	const { proyectoActual, loadingProyectos } = useAuth();
 	//#region [sub] - 🧰 HELPER FUNCTIONS & LOGIC 🧰
-	const { showLoading, hideLoading } = useLoading(); // Opcional para feedback global
+		useLoading(); // Opcional para feedback global
 
 	const [dimensions, setDimensions] = useState<FullDimension[]>([]);
 	const [isLoading, setIsLoading] = useState(true);

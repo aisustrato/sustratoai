@@ -1,4 +1,4 @@
-// En: /components/ui/standard/StandardTabs/index.ts
+// En: /components/ui/StandardTabs/index.ts
 
 export * from './StandardTabs';
 export * from './StandardTabsList';

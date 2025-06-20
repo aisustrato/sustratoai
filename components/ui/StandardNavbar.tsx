@@ -10,14 +10,11 @@ import {
   Menu,
   X,
   FileText,
-  Database,
   Settings,
-  Building,
-  Users,
   MessageSquare,
   Home,
   BookOpen,
-  UserCircle,
+
   LayoutDashboard,
   FileSpreadsheet,
   Layers,
@@ -28,12 +25,11 @@ import {
 
 // Define consistent icon size for the navbar
 const NAV_ICON_SIZE = "h-4 w-4";
-import { useState, useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { FontThemeSwitcher } from "@/components/ui/font-theme-switcher";
-import { AnimatePresence } from "framer-motion";
 import { SustratoLogo } from "@/components/ui/sustrato-logo";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import { StandardText, type StandardTextProps } from "@/components/ui/StandardText";
@@ -112,21 +108,220 @@ export function StandardNavbar() {
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
   const ripple = useRipple();
   const { mode, appColorTokens } = useTheme();
-  const { proyectoActual } = useAuth(); // Added useAuth hook
+  const { proyectoActual } = useAuth();
 
   const currentNavTokens: StandardNavbarTokens | null = useMemo(() => {
     if (!appColorTokens) {
-      return generateStandardNavbarTokens(createAppColorTokens("blue", "light"), "light");
+      return generateStandardNavbarTokens(
+        createAppColorTokens("blue", "light"),
+        "light",
+      );
     }
     return generateStandardNavbarTokens(appColorTokens, mode);
   }, [appColorTokens, mode]);
 
-  // Early return or conditional rendering if tokens are not ready
+  const handleScroll = useCallback(() => {
+    const offset = window.scrollY;
+    if (offset > 20) {
+      setScrolled(true);
+    } else {
+      setScrolled(false);
+    }
+  }, []);
+
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (navRef.current && !navRef.current.contains(event.target as Node)) {
+      setOpenSubmenu(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [handleScroll]);
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [handleClickOutside]);
+
+  const navItems: NavItem[] = useMemo(() => {
+    if (!proyectoActual) {
+      return [];
+    }
+
+    const baseItems: NavItem[] = [
+      {
+        id: "inicio",
+        label: "Inicio",
+        href: "/",
+        icon: (isActive: boolean) => (
+          <StandardIcon
+            colorScheme={isActive ? "primary" : "neutral"}
+            styleType={isActive ? "inverseStroke" : "outlineGradient"}
+            className="mr-2"
+            size="sm"
+          >
+            <Home />
+          </StandardIcon>
+        ),
+      },
+    ];
+
+    if (proyectoActual.module_interviews) {
+      baseItems.push({
+        id: "entrevistas",
+        label: "Entrevistas",
+        href: "/entrevistas",
+        icon: () => (
+          <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
+            <FileText />
+          </StandardIcon>
+        ),
+        submenu: [
+          {
+            label: "Entrevistas",
+            href: "/entrevistas",
+            icon: () => (
+              <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
+                <MessageSquare />
+              </StandardIcon>
+            ),
+          },
+          {
+            label: "Listado de Transcripciones",
+            href: "/transcripciones",
+            icon: () => (
+              <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
+                <FileSpreadsheet />
+              </StandardIcon>
+            ),
+          },
+          {
+            label: "Matriz de Vaciado",
+            href: "/entrevistas/matriz",
+            icon: () => (
+              <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
+                <Layers className="h-4 w-4" />
+              </StandardIcon>
+            ),
+          },
+        ],
+      });
+    }
+
+    if (proyectoActual.module_bibliography) {
+      baseItems.push({
+        id: "articulos",
+        label: "Artículos",
+        href: "/articulos",
+        icon: () => (
+          <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
+            <BookOpen />
+          </StandardIcon>
+        ),
+        submenu: [
+          {
+            label: "Preclasificación",
+            href: "/articulos/preclasificacion",
+            icon: () => (
+              <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
+                <LayoutDashboard className={NAV_ICON_SIZE} />
+              </StandardIcon>
+            ),
+          },
+        ],
+      });
+    }
+
+    if (proyectoActual) {
+      baseItems.push({
+        id: "datos-maestros",
+        label: "Datos Maestros",
+        href: "/datos-maestros",
+        icon: (isActive: boolean) => (
+          <StandardIcon
+            colorScheme={isActive ? "primary" : "neutral"}
+            styleType={isActive ? "inverseStroke" : "outlineGradient"}
+            className="mr-2"
+            size="sm"
+          >
+            <Settings />
+          </StandardIcon>
+        ),
+        submenu: [
+          {
+            label: "Miembros Proyecto",
+            href: "/datos-maestros/miembros",
+            icon: (isActive: boolean) => (
+              <StandardIcon
+                colorScheme={isActive ? "primary" : "neutral"}
+                styleType={isActive ? "inverseStroke" : "outlineGradient"}
+                className="mr-2"
+                size="sm"
+              >
+                <UserPlus />
+              </StandardIcon>
+            ),
+          },
+          {
+            label: "Roles Proyecto",
+            href: "/datos-maestros/roles",
+            icon: (isActive: boolean) => (
+              <StandardIcon
+                colorScheme={isActive ? "primary" : "neutral"}
+                styleType={isActive ? "inverseStroke" : "outlineGradient"}
+                className="mr-2"
+                size="sm"
+              >
+                <ShieldCheck />
+              </StandardIcon>
+            ),
+          },
+          {
+            label: "lotes",
+            href: "/datos-maestros/lote",
+            icon: () => (
+              <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
+                <Layers className="h-4 w-4" />
+              </StandardIcon>
+            ),
+          },
+          {
+            label: "Dimensiones",
+            href: "/datos-maestros/dimensiones",
+            icon: () => (
+              <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
+                <LayoutGrid />
+              </StandardIcon>
+            ),
+          },
+        ],
+      });
+    }
+
+    return baseItems;
+  }, [proyectoActual]);
+
   if (!currentNavTokens) {
-    return null; // Or a loading spinner, or a basic non-styled navbar
+    return null;
   }
+
+  const handleSubmenu = (item: string) => {
+    if (openSubmenu === item) {
+      setOpenSubmenu(null);
+    } else {
+      setOpenSubmenu(item);
+    }
+  };
+
 
   const MENU_RIPPLE_COLOR = currentNavTokens.active.bg;
   const SUBMENU_RIPPLE_COLOR = currentNavTokens.active.bg;
@@ -140,190 +335,9 @@ export function StandardNavbar() {
     );
   };
 
-  const allNavItems: NavItem[] = useMemo(
-    () => [
-      {
-        id: "inicio",
-        label: "Inicio",
-        href: "/",
-        icon: (isActive: boolean) => (
-          <StandardIcon 
-            colorScheme={isActive ? "primary" : "neutral"} 
-            styleType={isActive ? "inverseStroke" : "outlineGradient"} 
-            className="mr-2" 
-            size="sm"
-          >
-            <Home />
-          </StandardIcon>
-        ),
-      },
-      ...(proyectoActual?.module_interviews
-        ? [
-            {
-              id: "entrevistas",
-              label: "Entrevistas",
-              href: "/entrevistas",
-              icon: (isActive: boolean) => (
-                <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
-                  <FileText />
-                </StandardIcon>
-              ),
-              submenu: [
-                {
-                  label: "Entrevistas",
-                  href: "/entrevistas",
-                  icon: (isActive: boolean) => (
-                    <StandardIcon styleType="outlineGradient"  className="mr-2" size="sm">
-                      <MessageSquare />
-                    </StandardIcon>
-                  ),
-                },
-                {
-                  label: "Listado de Transcripciones",
-                  href: "/transcripciones",
-                  icon: (isActive: boolean) => (
-                    <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
-                      <FileSpreadsheet />
-                    </StandardIcon>
-                  ),
-                },
-                {
-                  label: "Matriz de Vaciado",
-                  href: "/entrevistas/matriz",
-                  icon: (isActive: boolean) => (
-                    <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
-                      <Layers className="h-4 w-4" />
-                    </StandardIcon>
-                  ),
-                },
-              ],
-            },
-          ]
-        : []),
-      ...(proyectoActual?.module_bibliography
-        ? [
-            {
-              id: "articulos",
-              label: "Artículos",
-              href: "/articulos",
-              icon: (isActive: boolean) => (
-                <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
-                  <BookOpen />
-                </StandardIcon>
-              ),
-              submenu: [
-                {
-                  label: "Preclasificación",
-                  href: "/articulos/preclasificacion",
-                  icon: (isActive: boolean) => (
-                    <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
-                      <LayoutDashboard className={NAV_ICON_SIZE} />
-                    </StandardIcon>
-                  ),
-                },
-              ],
-            },
-          ]
-        : []),
-      ...(proyectoActual
-        ? [
-            {
-              // Show "Datos Maestros" if proyectoActual exists
-              id: "datos-maestros",
-              label: "Datos Maestros",
-              href: "/datos-maestros",
-              icon: (isActive: boolean) => (
-                <StandardIcon 
-                  colorScheme={isActive ? "primary" : "neutral"} 
-                  styleType={isActive ? "inverseStroke" : "outlineGradient"} 
-                  className="mr-2" 
-                  size="sm"
-                >
-                  <Settings />
-                </StandardIcon>
-              ),
-              submenu: [
-                {
-                  label: "Miembros Proyecto",
-                  href: "/datos-maestros/miembros",
-                  icon: (isActive: boolean) => (
-                    <StandardIcon 
-                      colorScheme={isActive ? "primary" : "neutral"} 
-                      styleType={isActive ? "inverseStroke" : "outlineGradient"} 
-                      className="mr-2" 
-                      size="sm"
-                    >
-                      <UserPlus />
-                    </StandardIcon>
-                  ),
-                },
-                {
-                  label: "Roles Proyecto",
-                  href: "/datos-maestros/roles",
-                  icon: (isActive: boolean) => (
-                    <StandardIcon 
-                      colorScheme={isActive ? "primary" : "neutral"} 
-                      styleType={isActive ? "inverseStroke" : "outlineGradient"} 
-                      className="mr-2" 
-                      size="sm"
-                    >
-                      <ShieldCheck />
-                    </StandardIcon>
-                  ),
-                },
-                {
-                  label: "lotes",
-                  href: "/datos-maestros/lote",
-                  icon: (isActive: boolean) => (
-                    <StandardIcon styleType="outlineGradient" className="mr-2" size="sm">
-                      <Layers className="h-4 w-4" />
-                    </StandardIcon>
-                  ),
-                },
-                {
-                  label: "Dimensiones",
-                  href: "/datos-maestros/dimensiones",
-                  icon: (isActive: boolean) => (
-                    <StandardIcon styleType="outlineGradient"  className="mr-2" size="sm">
-                      <LayoutGrid />
-                    </StandardIcon>
-                  ),
-                },
-              ],
-            },
-          ]
-        : []),
-    ],
-    [pathname, proyectoActual] // Added proyectoActual to dependencies
-  );
-
-  // Filtra los navItems basados en las variables booleanas
-  // El menú "Inicio" siempre se muestra, los demás dependen de sus variables.
-  const navItems = allNavItems; // En este caso, la lógica de filtrado ya está en `allNavItems`
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (openSubmenu && !(event.target as Element).closest("[data-submenu]")) {
-        setOpenSubmenu(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [openSubmenu]);
-
   const toggleSubmenu = (label: string, e: React.MouseEvent) => {
     ripple(e.nativeEvent, MENU_RIPPLE_COLOR, NAVBAR_RIPPLE_SCALE);
-    setOpenSubmenu(openSubmenu === label ? null : label);
+    handleSubmenu(label);
   };
 
   const gradientBarStyle = {
@@ -369,7 +383,6 @@ export function StandardNavbar() {
                   size={40}
                   className="flex-shrink-0"
                   primaryColor={currentNavTokens.logo.primary}
-                  secondaryColor={currentNavTokens.logo.secondary}
                   accentColor={currentNavTokens.logo.accent}
                 />
                 <div className="flex flex-col">

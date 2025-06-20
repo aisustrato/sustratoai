@@ -63,7 +63,7 @@ export interface FontSelectorTokens {
     fontSize: string;
     lineHeight: string;
     marginBottom: string;
-    firstOfType: {};
+    firstOfType: Record<string, string>;
     lastOfType: {
       marginBottom: string;
     };
@@ -173,20 +173,31 @@ export function generateFontSelectorTokens(
 }
 
 // Helper function to get token value
+type NestedStringObject = {
+  [key: string]: string | NestedStringObject | undefined;
+} & object;
+
+/**
+ * Type guard to check if a value is a NestedStringObject
+ */
+function isNestedStringObject(value: unknown): value is NestedStringObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export function getFontSelectorTokenValue(
   tokens: FontSelectorTokens,
   path: string
-): any {
+): string | undefined {
   const parts = path.split('.');
-  let current: any = tokens;
+  let current: unknown = tokens;
   
   for (const part of parts) {
-    if (current && typeof current === 'object' && part in current) {
+    if (isNestedStringObject(current) && part in current) {
       current = current[part];
     } else {
       return undefined; // Token not found
     }
   }
   
-  return current;
+  return typeof current === 'string' ? current : undefined;
 }

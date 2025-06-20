@@ -22,13 +22,11 @@ const isPublicPage = (pathname: string | null): boolean => {
 
 export function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
   // MODIFICACIÓN V2.1: Obtenemos más estados para la lógica defensiva
-  const { user, authLoading, authInitialized, proyectoActual } = useAuth(); 
+  const { user, authLoading, authInitialized } = useAuth(); 
   const pathname = usePathname();
   
   const isNoNavbarPage = pathname ? NO_NAVBAR_PAGES.some(path => pathname === path || pathname.startsWith(`${path}/`)) : false;
   const currentPathIsPublic = isPublicPage(pathname); // Para la lógica defensiva
-
-  const LOG_PREFIX_WRAPPER = "[AUTH_LAYOUT_WRAPPER_V2.1]";
 
   // CASO 1: Carga Global del AuthProvider Activa (o carga inicial antes de que authInitialized sea true)
   // `authLoading` cubre el inicio de sesión, cierre de sesión, cambio de proyecto.

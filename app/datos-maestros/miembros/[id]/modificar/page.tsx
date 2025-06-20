@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { ArrowLeft, User } from "lucide-react";
 import { useLoading } from "@/contexts/LoadingContext";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 //#endregion ![head]
 
 //#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
@@ -41,7 +41,7 @@ export default function ModificarMiembroPage() {
   const params = useParams();
   const memberId = params?.id ? String(params.id) : "";
   const { proyectoActual } = useAuth();
-  const { showLoading, hideLoading, isLoading: isGlobalLoading } = useLoading();
+  const { showLoading, hideLoading } = useLoading();
 
   const [isButtonSubmitting, setIsButtonSubmitting] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -118,7 +118,7 @@ export default function ModificarMiembroPage() {
     } else if (!memberId && proyectoActual?.id && !isPageLoading) {
       setError("ID de miembro no especificado.");
     }
-  }, [proyectoActual?.id, memberId, cargarDatos]);
+  }, [proyectoActual?.id, memberId, cargarDatos, isPageLoading]);
 
   const onSubmit = async (data: MiembroFormValues) => {
     console.log('[Page] onSubmit - Datos del formulario:', data);

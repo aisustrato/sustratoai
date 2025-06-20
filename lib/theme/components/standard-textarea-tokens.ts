@@ -76,7 +76,7 @@ export function generateStandardTextareaTokens(
 	const commonDisabledText = tinycolor(baseTextColor).setAlpha(0.5).toRgbString();
 
 	const commonReadOnlyBackground = mode === "dark"
-			? tinycolor(neutral.bgDark).lighten(5).setAlpha(0.8).toString()
+			? tinycolor(neutral.bgShade).lighten(5).setAlpha(0.8).toString()
 			: tinycolor(neutral.contrastText).darken(0).setAlpha(0.8).toString();
 	const commonReadOnlyBorder = mode === "dark"
 			? tinycolor(neutral.pure).darken(10).toRgbString()

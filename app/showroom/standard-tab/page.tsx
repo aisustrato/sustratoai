@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/StandardTabs"; // Asumiendo que los exportas desde un index
 import { TabsContent } from "@radix-ui/react-tabs";
 import { StandardCard } from "@/components/ui/StandardCard";
-import { Coffee, Code, Component } from "lucide-react";
 
 // Es una buena práctica crear un componente de ejemplo reutilizable.
 const TabExample = ({
@@ -53,7 +52,7 @@ export default function TabsShowroomPage() {
 
 			{/* --- SECCIÓN: STYLETYPE "LINE" --- */}
 			<h2 className="text-2xl font-semibold mt-8 mb-4">
-				Estilo: "line" (por defecto)
+				Estilo: &quot;line&quot; (por defecto)
 			</h2>
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<StandardCard>
@@ -83,7 +82,7 @@ export default function TabsShowroomPage() {
 			</div>
 
 			{/* --- SECCIÓN: STYLETYPE "ENCLOSED" --- */}
-			<h2 className="text-2xl font-semibold mt-12 mb-4">Estilo: "enclosed"</h2>
+			<h2 className="text-2xl font-semibold mt-12 mb-4">Estilo: &quot;enclosed&quot;</h2>
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<StandardCard>
 					<StandardCard.Header title="Color: Primary" />

@@ -10,12 +10,12 @@ import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardSelect } from "@/components/ui/StandardSelect";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
+import { TabsContent } from "@radix-ui/react-tabs";
 import {
 	StandardTabs,
-	StandardTabsContent,
 	StandardTabsList,
 	StandardTabsTrigger,
-} from "@/components/ui/StandardTabs/StandardTabs";
+} from "@/components/ui/StandardTabs";
 import { AtSign, Lock, User, Mail, HelpCircle } from "lucide-react";
 import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
 import type { StandardInputSize } from "@/lib/theme/components/standard-input-tokens";
@@ -131,7 +131,7 @@ export default function StandardInputShowroomPage() {
 
 				<AnimatePresence mode="wait">
 					{activeTab === "interactive" && (
-						<StandardTabsContent forceMount value="interactive" asChild>
+						<TabsContent forceMount value="interactive" asChild>
 							<motion.section
 								key="interactive"
 								variants={tabContentVariants}
@@ -216,6 +216,20 @@ export default function StandardInputShowroomPage() {
 									</div>
 									<div className="space-y-1">
 										<StandardText size="sm" weight="medium">
+											MaxLength:
+										</StandardText>
+										<StandardInput
+											value={demoMaxLength}
+											onChange={(e) => {
+												const num = parseInt(e.target.value, 10);
+												if (!isNaN(num) && num >= 0) {
+													setDemoMaxLength(num);
+												}
+											}}
+										/>
+									</div>
+									<div className="space-y-1">
+										<StandardText size="sm" weight="medium">
 											Placeholder:
 										</StandardText>
 										<StandardInput
@@ -288,11 +302,11 @@ export default function StandardInputShowroomPage() {
 									/>
 								</div>
 							</motion.section>
-						</StandardTabsContent>
+						</TabsContent>
 					)}
 
 					{activeTab === "schemes" && (
-						<StandardTabsContent forceMount value="schemes" asChild>
+						<TabsContent forceMount value="schemes" asChild>
 							<motion.section
 								key="schemes"
 								variants={tabContentVariants}
@@ -323,11 +337,11 @@ export default function StandardInputShowroomPage() {
 									))}
 								</motion.div>
 							</motion.section>
-						</StandardTabsContent>
+						</TabsContent>
 					)}
 
 					{activeTab === "sizes" && (
-						<StandardTabsContent forceMount value="sizes" asChild>
+						<TabsContent forceMount value="sizes" asChild>
 							<motion.section
 								key="sizes"
 								variants={tabContentVariants}
@@ -359,11 +373,11 @@ export default function StandardInputShowroomPage() {
 									))}
 								</motion.div>
 							</motion.section>
-						</StandardTabsContent>
+						</TabsContent>
 					)}
 
 					{activeTab === "states" && (
-						<StandardTabsContent forceMount value="states" asChild>
+						<TabsContent forceMount value="states" asChild>
 							<motion.section
 								key="states"
 								variants={tabContentVariants}
@@ -437,11 +451,11 @@ export default function StandardInputShowroomPage() {
 									</motion.div>
 								</motion.div>
 							</motion.section>
-						</StandardTabsContent>
+						</TabsContent>
 					)}
 
 					{activeTab === "icons" && (
-						<StandardTabsContent forceMount value="icons" asChild>
+						<TabsContent forceMount value="icons" asChild>
 							<motion.section
 								key="icons"
 								variants={tabContentVariants}
@@ -486,7 +500,7 @@ export default function StandardInputShowroomPage() {
 									</motion.div>
 								</motion.div>
 							</motion.section>
-						</StandardTabsContent>
+						</TabsContent>
 					)}
 				</AnimatePresence>
 			</StandardTabs>

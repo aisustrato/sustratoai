@@ -8,8 +8,7 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
 import { generateDialogTokens } from "@/lib/theme/components/standard-dialog-tokens";
-import { StandardButton } from "@/components/ui/StandardButton";
-import { StandardText, type StandardTextProps } from "@/components/ui/StandardText";
+import { StandardText } from "@/components/ui/StandardText";
 import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
 
 // --- Se definen los componentes base ---
@@ -51,17 +50,18 @@ const StandardDialogContent = React.forwardRef<
     const allTokens = generateDialogTokens(appColorTokens, mode);
     const tokenSet = allTokens[colorScheme] || allTokens.neutral;
 
-    const vars: React.CSSProperties & { [key: string]: any } = {
-      '--dialog-bg': tokenSet.content.background,
-      '--dialog-border': tokenSet.content.border,
-      '--dialog-shadow': tokenSet.content.shadow,
-      '--dialog-radius': tokenSet.content.borderRadius,
-      '--dialog-header-bg': tokenSet.header.background,
-      '--dialog-header-border': tokenSet.header.border,
-      '--dialog-footer-bg': tokenSet.footer.background,
-      '--dialog-footer-border': tokenSet.footer.border,
-      '--dialog-close-color': tokenSet.close.color,
-      '--dialog-close-bg-hover': tokenSet.close.backgroundHover,
+    // Ensure we have fallback values for all required properties
+    const vars: React.CSSProperties & { [key: `--${string}`]: string | number } = {
+      '--dialog-bg': tokenSet.content.background || '',
+      '--dialog-border': tokenSet.content.border || 'none',
+      '--dialog-shadow': tokenSet.content.shadow || 'none',
+      '--dialog-radius': tokenSet.content.borderRadius || '0.5rem',
+      '--dialog-header-bg': tokenSet.header.background || 'transparent',
+      '--dialog-header-border': tokenSet.header.border || 'none',
+      '--dialog-footer-bg': tokenSet.footer.background || 'transparent',
+      '--dialog-footer-border': tokenSet.footer.border || 'none',
+      '--dialog-close-color': tokenSet.close.color || 'currentColor',
+      '--dialog-close-bg-hover': tokenSet.close.backgroundHover || 'transparent',
     };
     return vars;
   }, [appColorTokens, mode, colorScheme]);

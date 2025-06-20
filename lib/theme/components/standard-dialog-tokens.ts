@@ -39,7 +39,7 @@ export function generateDialogTokens(appColorTokens: AppColorTokens, mode: Mode)
           backdropFilter: "blur(2px)",
         },
         content: {
-          background: isDark ? colorSet.bgDark : colorSet.bg,
+          background: isDark ? colorSet.bgShade : colorSet.bg,
           border: `1px solid ${isDark ? colorSet.bgShade : colorSet.bgShade}`,
           shadow: isDark ? "0 25px 50px -12px rgba(0, 0, 0, 0.6)" : "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
           borderRadius: "12px",

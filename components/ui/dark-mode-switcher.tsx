@@ -51,12 +51,10 @@ function useDarkMode() {
 				// Opcional: Revertir el cambio visual si la persistencia es crítica
 				// setMode(mode);
 			}
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Excepción en toggleMode:", error);
-			toast.error(
-				error.message ||
-					"Error inesperado al guardar tu preferencia de modo."
-			);
+			const errorMessage = error instanceof Error ? error.message : "Error inesperado al guardar tu preferencia de modo.";
+			toast.error(errorMessage);
 			// Opcional: Revertir el cambio visual
 			// setMode(mode);
 		}

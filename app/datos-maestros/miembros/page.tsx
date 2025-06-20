@@ -3,19 +3,17 @@
 
 // 📚 DOCUMENTACIÓN 📚
 /* *
- * Definiciones de animaciones para el componente Button                       *
- * Contiene configuraciones y utilidades de animación                          *
+ * Página principal de gestión de miembros del proyecto
+ * Permite ver, agregar, editar y eliminar miembros del proyecto actual
  */
-// Note: Removed custom region for documentation to adhere to standard format.
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import { Variants, Variant } from "framer-motion";
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import { obtenerMiembrosConPerfilesYRolesDelProyecto } from "@/lib/actions/member-actions";
 import { StandardText } from "@/components/ui/StandardText";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardTable } from "@/components/ui/StandardTable";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
@@ -23,26 +21,22 @@ import { UserPlus, AlertCircle, Trash2, PenLine, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { EmptyState } from "@/components/common/empty-state";
 import type { ProjectMemberDetails } from "@/lib/actions/member-actions";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, CellContext } from "@tanstack/react-table";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
-import { CellVariant } from "@/lib/theme/components/standard-table-tokens";
 import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
-import Link from "next/link";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
-// Types are imported (ProjectMemberDetails, BadgeVariant, CellVariant)
-// or defined by usage (columnas for ProTable).
+// Los tipos principales ya están importados arriba
 //#endregion ![def]
 
 //#region [main] - 🔧 COMPONENT 🔧
 export default function MiembrosPage() {
 	const router = useRouter();
-	const searchParams = useSearchParams();
 	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HANDLERS 🧰
-	const { proyectoActual, loadingProyectos } = useAuth();
+	const { proyectoActual } = useAuth();
 	const { toast } = useToast();
 
 	const [miembros, setMiembros] = useState<ProjectMemberDetails[]>([]);
@@ -52,7 +46,7 @@ export default function MiembrosPage() {
 	const puedeGestionarMiembros =
 		proyectoActual?.permissions?.can_manage_master_data || false;
 
-	const cargarMiembros = async () => {
+	const cargarMiembros = useCallback(async () => {
 		setIsLoading(true);
 		setError(null);
 
@@ -85,13 +79,13 @@ export default function MiembrosPage() {
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, [proyectoActual?.id, toast]);
 
-	useEffect(() => {
-		if (proyectoActual?.id) {
-			cargarMiembros();
-		}
-	}, [proyectoActual?.id]);
+  useEffect(() => {
+    if (proyectoActual?.id) {
+      cargarMiembros();
+    }
+  }, [proyectoActual?.id, cargarMiembros]);
 
 	const handleAgregarMiembro = () => {
 		router.push(`/datos-maestros/miembros/nuevo/crear`);
@@ -130,7 +124,7 @@ export default function MiembrosPage() {
 				}
 				return "Sin nombre registrado";
 			},
-			cell: ({ getValue }: any) => <StandardText weight="semibold">{getValue() as string}</StandardText>,
+						cell: ({ getValue }: CellContext<ProjectMemberDetails, unknown>) => <StandardText weight="semibold">{getValue() as string}</StandardText>,
 			meta: {
 				size: 250,
 			},
@@ -139,7 +133,7 @@ export default function MiembrosPage() {
 			header: "Institución",
 			accessorFn: (row: ProjectMemberDetails) =>
 				row.profile?.primary_institution || "No especificada",
-			cell: ({ getValue }: any) => getValue(),
+			cell: ({ getValue }: CellContext<ProjectMemberDetails, unknown>) => getValue() as string,
 			meta: {
 				size: 200,
 			},
@@ -148,16 +142,16 @@ export default function MiembrosPage() {
 			header: "Perfil de Usuario",
 			accessorFn: (row: ProjectMemberDetails) =>
 				row.profile?.public_contact_email || "No especificado",
-			cell: ({ getValue }: any) => getValue(),
+			cell: ({ getValue }: CellContext<ProjectMemberDetails, unknown>) => getValue() as string,
 			meta: { size: 200 },
 		},
 		{
 			header: "Rol en el Proyecto",
 			accessorFn: (row: ProjectMemberDetails) =>
 				row.role_name || "Sin rol asignado",
-			cell: ({ getValue }: any) => (
+						cell: ({ getValue }: CellContext<ProjectMemberDetails, unknown>) => (
 				<StandardBadge size="md" colorScheme="primary" styleType="subtle">
-					{String(getValue())}
+					{getValue() as string}
 				</StandardBadge>
 			),
 			meta: { size: 200 },
@@ -166,7 +160,7 @@ export default function MiembrosPage() {
 			id: 'actions',
 			header: () => <div className="text-right pr-2">Acciones</div>,
 			meta: { align: 'right', isSticky: 'right' },
-			cell: ({ row }: any) => {
+						cell: ({ row }: CellContext<ProjectMemberDetails, unknown>) => {
 				const miembro = row.original as ProjectMemberDetails;
 				return (
 					<div className="flex gap-2 justify-end">
@@ -260,17 +254,18 @@ export default function MiembrosPage() {
 							title="No hay miembros en este proyecto"
 							description={
 								puedeGestionarMiembros
-									? "Agrega investigadores al proyecto para comenzar a colaborar."
-									: "Aún no hay investigadores asociados a este proyecto."
+								? "Agrega investigadores al proyecto para comenzar a colaborar."
+								: "Aún no hay investigadores asociados a este proyecto."
 							}
 							action={
 								puedeGestionarMiembros ? (
-									<Link href="/datos-maestros/miembros/crear" passHref>
-										<StandardButton colorScheme="primary" styleType="solid">
-											<StandardIcon><UserPlus /></StandardIcon>
-											Agregar Nuevo Miembro
-										</StandardButton>
-									</Link>
+									<StandardButton 
+										onClick={handleAgregarMiembro}
+										colorScheme="primary"
+										leftIcon={UserPlus}
+									>
+										Agregar Miembro
+									</StandardButton>
 								) : undefined
 							}
 						/>
@@ -280,7 +275,6 @@ export default function MiembrosPage() {
 							styleType="subtle"
 							colorScheme="primary"
 							accentPlacement="top"
-							accentColorScheme="primary"
 							shadow="md"
 							className="overflow-hidden hover:shadow-md transition-shadow duration-300"
 						>
@@ -288,31 +282,22 @@ export default function MiembrosPage() {
 								<div className="flex justify-end mb-4 pt-4">
 									<StandardButton
 										onClick={handleAgregarMiembro}
+										colorScheme="primary"
 										leftIcon={UserPlus}
-										colorScheme="primary">
+									>
 										Agregar Miembro
 									</StandardButton>
 								</div>
 							)}
-							<StandardCard
-								styleType="subtle"
-								colorScheme="primary"
-								hasOutline={false}
-								shadow="none"
-								disableShadowHover={true}
-								accentPlacement="none"
+							<StandardTable<ProjectMemberDetails>
+								data={miembros}
+								columns={columnas}
+								filterPlaceholder="Buscar por nombre, rol o perfil..."
 							>
-								<StandardTable<ProjectMemberDetails>
-									data={miembros}
-									columns={columnas}
-									filterPlaceholder="Buscar por nombre, rol o perfil..."
-								>
-									<StandardTable.Table />
-								</StandardTable>
-							</StandardCard>
+								<StandardTable.Table />
+							</StandardTable>
 						</StandardCard>
 					)}
-					{/* //#endregion [render_sub] */}
 				</div>
 			</div>
 		</StandardPageBackground>
@@ -323,10 +308,10 @@ export default function MiembrosPage() {
 
 //#region [foo] - 🔚 EXPORTS 🔚
 // Default export is part of the component declaration
-//#endregion ![foo]
+//#endregion [foo]
 
 //#region [todo] - 👀 PENDIENTES 👀
 // Implementar la funcionalidad de eliminación real (actualmente redirige a una página de confirmación).
 // Considerar paginación para la tabla si la lista de miembros puede ser muy larga.
 // Mejorar el feedback visual durante la carga o errores (ej. skeletons).
-//#endregion ![todo]
+//#endregion [todo]

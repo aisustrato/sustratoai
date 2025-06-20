@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardTextarea } from "@/components/ui/StandardTextarea";
@@ -53,7 +54,7 @@ export default function ContactPage() {
       <StandardCard className="max-w-xl w-full" accentPlacement="top" accentColorScheme="primary">
         <StandardCard.Header className="space-y-2 text-center">
           <div className="flex justify-center mb-2">
-            <img src="/logo.svg" alt="Logo" width={120} height={40} />
+            <Image src="/logo.svg" alt="Logo" width={120} height={40} />
           </div>
           <StandardText
             preset="subheading"

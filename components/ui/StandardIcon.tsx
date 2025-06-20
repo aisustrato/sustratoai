@@ -65,7 +65,7 @@ export function StandardIcon({
 			)}
 			{React.Children.map(children, (child) => {
 				if (React.isValidElement(child)) {
-					return React.cloneElement(child as React.ReactElement<any>, {
+					return React.cloneElement(child as React.ReactElement<React.SVGProps<SVGSVGElement>>, {
                         // ✅ Se aplica la clase 'animate-spin' si isSpinning es true.
 						className: cn(sizeClasses[size], { "animate-spin": isSpinning }, className),
 						style: {
@@ -85,7 +85,7 @@ export function StandardIcon({
 }
 
 export function createStandardIcon(
-	IconComponent: React.ComponentType<any>,
+	IconComponent: React.ComponentType<React.SVGProps<SVGSVGElement>>,
 	defaultProps: Partial<StandardIconProps> = {}
 ) {
 	const WrappedIcon = (props: Partial<StandardIconProps>) => (

@@ -19,12 +19,14 @@ import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES & INTERFACE 📦
+export type IconProps = React.SVGProps<SVGSVGElement>;
+
 export interface StandardInputProps
 	extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
 	colorScheme?: ColorSchemeVariant;
 	size?: StandardInputSize;
-	leadingIcon?: React.ComponentType<any>;
-	trailingIcon?: React.ComponentType<any>;
+	leadingIcon?: React.ComponentType<IconProps>;
+	trailingIcon?: React.ComponentType<IconProps>;
 	error?: string;
 	success?: boolean;
 	isEditing?: boolean;

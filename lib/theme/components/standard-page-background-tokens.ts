@@ -1,5 +1,4 @@
-import type { Mode } from "../ColorToken";
-import type { AppColorTokens } from "../ColorToken";
+import type { Mode, AppColorTokens } from "../ColorToken";
 
 // Tipos de variantes para PageBackground
 export type StandardPageBackgroundVariant =

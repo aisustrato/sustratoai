@@ -6,6 +6,7 @@ import { LucideIcon } from "lucide-react";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import tinycolor from "tinycolor2";
 import { useRipple } from "@/components/ripple/RippleProvider";
+import type { AppColorTokens } from "@/lib/theme/ColorToken";
 
 interface SidebarNavItem {
   title: string;
@@ -18,7 +19,7 @@ interface SidebarNavAnimationsProps {
   items: SidebarNavItem[];
   activeHref: string;
   hoverStyles: React.CSSProperties;
-  appColorTokens: any;
+  appColorTokens: AppColorTokens;
 }
 
 const SIDEBAR_RIPPLE_SCALE = 9;

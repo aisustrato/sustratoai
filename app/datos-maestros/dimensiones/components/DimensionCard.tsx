@@ -59,7 +59,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 		dynamicColorScheme = "tertiary";
 	}
 
-	const { appColorTokens, mode } = useTheme();
+	const { appColorTokens } = useTheme();
 	const triggerRipple = useRipple();
 
 	// Color para el ripple (accent background)

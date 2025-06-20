@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
 import {
@@ -24,7 +24,7 @@ export function StandardDivider({
 }: StandardDividerProps) {
   const { appColorTokens } = useTheme();
 
-  const dividerTokens = React.useMemo(() => {
+  const dividerTokens = useMemo(() => {
     if (!appColorTokens) return null;
     return generateStandardDividerTokens(appColorTokens);
   }, [appColorTokens]);

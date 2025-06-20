@@ -12,7 +12,7 @@ import {
     type ProjectRoleRow,
     type ResultadoOperacion 
 } from "@/lib/actions/proyect-role-actions";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { ShieldCheck, AlertTriangle, PenLine, Trash2 } from "lucide-react";
 import { toast as sonnerToast } from "sonner"; //> 📝 sonnerToast no se usa aquí, pero lo dejo por si acaso
