@@ -55,12 +55,11 @@ const StandardInput = React.forwardRef<HTMLInputElement, StandardInputProps>(
 		);
 
 		//#region [sub_bridge] - 🌉 THE BRIDGE 🌉
-		let variant: StandardInputVariant;
-		if (colorScheme) {
-			variant = colorScheme as StandardInputVariant;
-		} else {
-			variant = "default";
+		function isStandardInputVariant(value: any): value is StandardInputVariant {
+			return ["default", "primary", "secondary", "tertiary", "accent", "neutral"].includes(value);
 		}
+		const effectiveColorScheme: StandardInputVariant =
+			colorScheme && isStandardInputVariant(colorScheme) ? colorScheme : "default";
 		//#endregion ![sub_bridge]
 
 		//#region [sub_init] - 🪝 HOOKS, STATE, REFS, MEMOS 🪝
@@ -86,7 +85,7 @@ const StandardInput = React.forwardRef<HTMLInputElement, StandardInputProps>(
 		React.useEffect(() => {
 			const element = inputRef.current;
 			if (element && inputTokens && appColorTokens) {
-				const cvt = inputTokens.variants[variant];
+				const cvt = inputTokens.variants[effectiveColorScheme];
 				let effectiveBackgroundColor = cvt.background;
 				let effectiveTextColor = cvt.text;
 
@@ -126,7 +125,7 @@ const StandardInput = React.forwardRef<HTMLInputElement, StandardInputProps>(
 				element.style.setProperty("--input-autofill-bg", effectiveBackgroundColor);
 				element.style.setProperty("--input-text", effectiveTextColor);
 			}
-		}, [ inputTokens, variant, appColorTokens, disabled, error, success, isEditing, readOnly, id, name, ]);
+		}, [ inputTokens, effectiveColorScheme, appColorTokens, disabled, error, success, isEditing, readOnly, id, name, ]);
         
 		const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 			onChange?.(e);
@@ -155,47 +154,33 @@ const StandardInput = React.forwardRef<HTMLInputElement, StandardInputProps>(
 		//#endregion ![sub_helpers]
         
 		const sizeTokens = inputTokens ? inputTokens.sizes[size] : { height: "h-10", fontSize: "text-sm", paddingX: "px-3", paddingY: "py-2" };
+		const paddings = {
+			sm: { withIcon: "pl-7", withoutIcon: "pl-3", withTrailer: "pr-7", withoutTrailer: "pr-3" },
+			md: { withIcon: "pl-10", withoutIcon: "pl-4", withTrailer: "pr-10", withoutTrailer: "pr-4" },
+			lg: { withIcon: "pl-12", withoutIcon: "pl-4", withTrailer: "pr-12", withoutTrailer: "pr-4" },
+		};
+		const currentPaddings = paddings[size];
+		const hasLeadingIcon = !!leadingIcon;
+		const hasAnyVisibleTrailingElement = !!trailingIcon || (value && onClear && !disabled && !readOnly) || !!error || success || type === "password";
 		const paddingClassesArray: string[] = [];
-		if (inputTokens) {
-			const basePaddingXFromTokens = sizeTokens.paddingX;
-			const specificLeadingPaddingClass = size === "sm" ? "pl-7" : size === "lg" ? "pl-12" : "pl-10";
-			const specificTrailingPaddingClassBase = size === "sm" ? "pr-7" : size === "lg" ? "pr-12" : "pr-10";
-			const hasLeadingIcon = !!leadingIcon;
-			const hasAnyVisibleTrailingElement = !!trailingIcon || (value && onClear && !disabled && !readOnly) || !!error || success || type === "password";
-
-			if (hasLeadingIcon) {
-				paddingClassesArray.push(specificLeadingPaddingClass);
+		paddingClassesArray.push(hasLeadingIcon ? currentPaddings.withIcon : currentPaddings.withoutIcon);
+		if (hasAnyVisibleTrailingElement) {
+			let numTrailingElements = 0;
+			if (type === "password" && !readOnly && !disabled) numTrailingElements++;
+			if (value && onClear && !disabled && !readOnly) numTrailingElements++;
+			if ((error || (success && !error)) && !disabled && !readOnly) numTrailingElements++;
+			if (trailingIcon && !error && !(success && !error) && !(value && onClear && !disabled && !readOnly) && type !== "password") numTrailingElements++;
+			if (numTrailingElements > 1) {
+				const basePrValue = size === "sm" ? 7 : size === "md" ? 10 : 12;
+				const iconWidthApprox = size === "sm" ? 5 : size === "md" ? 6 : 7;
+				paddingClassesArray.push(`pr-${basePrValue + (numTrailingElements - 1) * iconWidthApprox}`);
+			} else if (numTrailingElements === 1) {
+				paddingClassesArray.push(currentPaddings.withTrailer);
 			} else {
-				if (basePaddingXFromTokens.startsWith("px-")) {
-					paddingClassesArray.push(basePaddingXFromTokens.replace("px-", "pl-"));
-				} else { paddingClassesArray.push(basePaddingXFromTokens); }
-			}
-
-			if (hasAnyVisibleTrailingElement) {
-				let numTrailingElements = 0;
-				if (type === "password" && !readOnly && !disabled) numTrailingElements++;
-				if (value && onClear && !disabled && !readOnly) numTrailingElements++;
-				if ((error || (success && !error)) && !disabled && !readOnly) numTrailingElements++;
-				if (trailingIcon && !error && !(success && !error) && !(value && onClear && !disabled && !readOnly) && type !== "password") numTrailingElements++;
-
-				if (numTrailingElements > 1) {
-					const basePrValue = size === "sm" ? 7 : size === "md" ? 10 : 12;
-					const iconWidthApprox = size === "sm" ? 5 : size === "md" ? 6 : 7;
-					paddingClassesArray.push(`pr-${basePrValue + (numTrailingElements - 1) * iconWidthApprox}`);
-				} else if (numTrailingElements === 1) {
-					paddingClassesArray.push(specificTrailingPaddingClassBase);
-				} else {
-					if (basePaddingXFromTokens.startsWith("px-")) {
-						paddingClassesArray.push(basePaddingXFromTokens.replace("px-", "pr-"));
-					} else { paddingClassesArray.push(basePaddingXFromTokens); }
-				}
-			} else {
-				if (basePaddingXFromTokens.startsWith("px-")) {
-					paddingClassesArray.push(basePaddingXFromTokens.replace("px-", "pr-"));
-				} else { paddingClassesArray.push(basePaddingXFromTokens); }
+				paddingClassesArray.push(currentPaddings.withoutTrailer);
 			}
 		} else {
-			paddingClassesArray.push("px-3");
+			paddingClassesArray.push(currentPaddings.withoutTrailer);
 		}
 
 		const baseClasses = [ "peer", "flex", "w-full", "rounded-md", "transition-all", "border", sizeTokens.height, sizeTokens.fontSize, ...paddingClassesArray, sizeTokens.paddingY, "placeholder:text-[var(--input-placeholder)]", "text-[var(--input-text)]", ];

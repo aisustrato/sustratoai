@@ -15,6 +15,7 @@ import { StandardBadge } from "@/components/ui/StandardBadge";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import {
+	Shield,
 	ShieldPlus,
 	AlertCircle,
 	Trash2,
@@ -24,7 +25,7 @@ import {
 	XSquare,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { EmptyState } from "@/components/common/empty-state";
+import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
@@ -273,27 +274,27 @@ export default function RolesPage() {
 			<div className="container mx-auto py-6">
 				<div className="space-y-6">
 					<StandardPageTitle
-						title="Roles del Proyecto"
-						subtitle={`Gestión de roles y permisos para el proyecto ${
-							proyectoActual?.name || "actual"
-						}`}
-						mainIcon={ShieldPlus}
+						title="Roles y Permisos"
+						subtitle="Definición de permisos y capacidades"
+						description="Crea y gestiona los roles que determinan qué acciones pueden realizar los miembros dentro del proyecto."
+						mainIcon={Shield}
 						breadcrumbs={[
 							{ label: "Datos Maestros", href: "/datos-maestros" },
 							{ label: "Roles" },
 						]}
+						actions={
+							puedeGestionarRoles ? (
+								<StandardButton
+									onClick={handleAgregarRol}
+									leftIcon={ShieldPlus}
+									colorScheme="primary">
+									Crear Rol
+								</StandardButton>
+							) : undefined
+						}
 					/>
 
-					{puedeGestionarRoles && (
-						<div className="flex justify-end">
-							<StandardButton
-								onClick={handleAgregarRol}
-								leftIcon={ShieldPlus}
-								colorScheme="primary">
-								Agregar Nuevo Rol
-							</StandardButton>
-						</div>
-					)}
+					
 
 					{/* //#region [render_sub] - LOADING, ERROR, EMPTY STATES & TABLE DISPLAY 🎨 */}
 					{isLoading ? (
@@ -343,7 +344,7 @@ export default function RolesPage() {
 							</StandardCard>
 						</StandardCard>
 					) : roles.length === 0 ? (
-						<EmptyState
+						<StandardEmptyState
 							icon={ShieldPlus}
 							title="No hay roles definidos para este proyecto"
 							description={

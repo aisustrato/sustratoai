@@ -137,7 +137,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 		control,
 		handleSubmit,
 		watch,
-		formState: { errors, dirtyFields, isValid, isSubmitted },
+		formState: { errors, dirtyFields, isValid, isSubmitted, touchedFields },
 		getFieldState,
 	} = form;
 
@@ -219,32 +219,20 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 	) => {
 		if (isReadOnlyEffective) return false;
 
-		const fieldPath =
-			typeof index === "number" && subFieldName
-				? (`${fieldName}.${index}.${subFieldName}` as const)
-				: fieldName;
-		// @ts-expect-error - fieldPath es válido para getFieldState
-		const fieldState = getFieldState(fieldPath);
-		let calculatedError;
-		const fieldErrorRoot = errors[fieldName];
+		let isTouched = false;
+		let hasError = false;
 
-		if (typeof index === 'number' && fieldErrorRoot && Array.isArray(fieldErrorRoot)) {
-			const errorAtIndex = fieldErrorRoot[index]; 
-			if (errorAtIndex) { 
-				if (subFieldName && typeof errorAtIndex === 'object' && errorAtIndex !== null) {
-					calculatedError = errorAtIndex[subFieldName as keyof typeof errorAtIndex];
-				} else if (!subFieldName) {
-					calculatedError = errorAtIndex;
-				}
-			}
+		if (subFieldName && typeof index === "number") {
+			// @ts-ignore
+			isTouched = touchedFields[fieldName]?.[index]?.[subFieldName];
+			// @ts-ignore
+			hasError = !!errors[fieldName]?.[index]?.[subFieldName];
+		} else {
+			isTouched = !!touchedFields[fieldName];
+			hasError = !!errors[fieldName];
 		}
 
-		if (typeof calculatedError === 'undefined') {
-			calculatedError = fieldErrorRoot;
-		}
-		const error = calculatedError;
-		// @ts-expect-error - fieldPath es válido para watch
-		return fieldState.isTouched && !error && !!watch(fieldPath);
+		return isTouched && !hasError;
 	};
 	//#endregion ![sub]
 
@@ -400,10 +388,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 										type="button"
 										styleType="outline"
 										size="sm"
+										leftIcon={PlusCircle}
 										onClick={addNewOption}>
-										<StandardIcon>
-											<PlusCircle />
-										</StandardIcon>
 										{optionFields.length === 0
 											? "Añadir Opción"
 											: "Añadir Otra Opción"}
@@ -446,9 +432,10 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 													render={(
 														{ field } // 'field' aquí se refiere al campo del Controller
 													) => (
-														<StandardInput
+																												<StandardInput
 															placeholder={`Valor Opción ${index + 1}`}
 															readOnly={isReadOnlyEffective}
+															isEditing={modo === "editar" && !isReadOnlyEffective}
 															error={errors.options?.[index]?.value?.message}
 															success={getFieldSuccessState(
 																"options",
@@ -475,10 +462,11 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 													styleType="ghost"
 													colorScheme="danger"
 													size="sm"
-													onClick={() => removeOption(index)}>
-													<StandardIcon>
-														<Trash2 />
-													</StandardIcon>
+													iconOnly={true}
+													leftIcon={Trash2}
+													onClick={() => removeOption(index)}
+													aria-label="Eliminar opción">
+													Eliminar
 												</StandardButton>
 											)}
 											{getFieldSuccessState("options", index, "value") &&
@@ -533,10 +521,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 									type="button"
 									styleType="outline"
 									size="sm"
+									leftIcon={HelpCircle}
 									onClick={addNewQuestion}>
-									<StandardIcon>
-										<HelpCircle />
-									</StandardIcon>
 									{questionFields.length === 0
 										? "Añadir Pregunta"
 										: "Añadir Otra Pregunta"}
@@ -559,6 +545,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 												<StandardTextarea
 													placeholder={`Pregunta guía ${index + 1}`}
 													readOnly={isReadOnlyEffective}
+													isEditing={modo === "editar" && !isReadOnlyEffective}
 													className="min-h-[40px]"
 													rows={1}
 													error={errors.questions?.[index]?.question?.message}
@@ -585,11 +572,12 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 											type="button"
 											styleType="ghost"
 											colorScheme="danger"
+											iconOnly={true}
+											leftIcon={Trash2}
 											onClick={() => removeQuestion(index)}
-											className="mt-1">
-											<StandardIcon>
-												<Trash2 />
-											</StandardIcon>
+											className="mt-1"
+											aria-label="Eliminar pregunta">
+											Eliminar
 										</StandardButton>
 									)}
 									{getFieldSuccessState("questions", index, "question") &&
@@ -642,10 +630,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 									type="button"
 									styleType="outline"
 									size="sm"
+									leftIcon={Lightbulb}
 									onClick={addNewExample}>
-									<StandardIcon>
-										<Lightbulb />
-									</StandardIcon>
 									{exampleFields.length === 0
 										? "Añadir Ejemplo"
 										: "Añadir Otro Ejemplo"}
@@ -668,6 +654,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 												<StandardTextarea
 													placeholder={`Ejemplo ${index + 1}`}
 													readOnly={isReadOnlyEffective}
+													isEditing={modo === "editar" && !isReadOnlyEffective}
 													className="min-h-[40px]"
 													rows={1}
 													error={errors.examples?.[index]?.example?.message}
@@ -694,12 +681,12 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 											type="button"
 											styleType="ghost"
 											colorScheme="danger"
-											size="sm"
+											iconOnly={true}
+											leftIcon={Trash2}
 											onClick={() => removeExample(index)}
-											className="mt-1">
-											<StandardIcon>
-												<Trash2 />
-											</StandardIcon>
+											className="mt-1"
+											aria-label="Eliminar ejemplo">
+											Eliminar
 										</StandardButton>
 									)}
 									{getFieldSuccessState("examples", index, "example") &&
@@ -721,9 +708,10 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 								colorScheme="primary"
 								size="lg"
 								loading={loading}
+								leftIcon={CheckCircle}
 								disabled={
 									loading ||
-									(modo === "editar" && !dirtyFields) ||
+									(modo === "editar" && !Object.keys(dirtyFields).length) ||
 									(!isValid && isSubmitted)
 								}>
 								{modo === "crear" ? "Crear Dimensión" : "Guardar Cambios"}

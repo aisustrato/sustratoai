@@ -48,10 +48,11 @@ export default function Home() {
         <div className="flex flex-col items-center mb-4">
           <StandardText
            
-            colorScheme="primary"
-            colorShade="pure"
+            colorScheme="tertiary"
+            colorShade="subtle"
+            size="md"
             className="uppercase tracking-wider mb-3 font-bold"
-            preset="heading"
+            preset="subtitle"
           >
             {clientName}
           </StandardText>
@@ -59,7 +60,7 @@ export default function Home() {
         </div>
 
         <StandardText
-          asElement="h1"
+        
           preset="heading"
           size="5xl"
           applyGradient="primary"
@@ -72,7 +73,7 @@ export default function Home() {
         <StandardText
           asElement="h2"
           preset="subheading"
-          size="3xl"
+          size="2xl"
           applyGradient="secondary"
           className="mb-6"
           
@@ -83,6 +84,7 @@ export default function Home() {
         <StandardText
           preset="subtitle"
           size="xl"
+          colorShade="subtle"
           colorScheme="neutral"
           className="max-w-2xl mx-auto"
           

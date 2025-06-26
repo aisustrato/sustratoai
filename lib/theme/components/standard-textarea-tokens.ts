@@ -152,7 +152,7 @@ export function generateStandardTextareaTokens(
 			secondary: createColoredVariant(secondary),
 			tertiary: createColoredVariant(tertiary),
 			accent: createColoredVariant(accent),
-			neutral: createColoredVariant(neutral, neutral),
+			neutral: createColoredVariant(neutral, primary),
 		},
 		sizes: {
 			sm: { height: "h-auto", minHeight: "min-h-[70px]", fontSize: "text-xs", paddingX: "px-2", paddingY: "py-1.5" },

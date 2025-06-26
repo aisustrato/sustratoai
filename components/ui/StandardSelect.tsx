@@ -57,10 +57,7 @@ export interface StandardSelectProps
 	"aria-describedby"?: string;
 }
 
-const dropdownVariantsBase = {
-	hidden: { opacity: 0, y: -5, scale: 0.98, transition: { duration: 0.1, ease: "easeInOut" } },
-	visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.15, ease: "easeOut" } },
-};
+
 
 const optionVariantsBase = {
 	hidden: { opacity: 0, y: -3 },
@@ -86,12 +83,11 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 		forwardedRef
 	) => {
 		//#region [sub_bridge] - 🌉 THE BRIDGE 🌉
-		let variant: StandardSelectVariant;
-		if (colorScheme) {
-			variant = colorScheme as StandardSelectVariant;
-		} else {
-			variant = "default";
-		}
+		const validVariants: StandardSelectVariant[] = [ "default", "primary", "secondary", "tertiary", "accent", "neutral", ];
+		const effectiveColorScheme: StandardSelectVariant =
+			colorScheme && validVariants.includes(colorScheme as StandardSelectVariant)
+				? (colorScheme as StandardSelectVariant)
+				: "default";
 		//#endregion ![sub_bridge]
 
 		//#region [sub_init] - 🪝 HOOKS, STATE, REFS, MEMOS 🪝
@@ -142,7 +138,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 		React.useEffect(() => {
 			const rootElement = componentRootRef.current;
 			if (rootElement && selectTokensInternal) {
-				const cvt: StandardSelectVariantTokens = selectTokensInternal.variants[variant];
+				const cvt: StandardSelectVariantTokens = selectTokensInternal.variants[effectiveColorScheme];
 				let internalBg = cvt.background;
 				let internalBorder = cvt.border;
 				let internalText = cvt.text;
@@ -197,7 +193,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 				rootElement.style.setProperty("--select-option-selected-text", cvt.optionSelectedText);
 				rootElement.style.setProperty("--select-chevron-button-bg", cvt.chevronButtonBackground);
 			}
-		}, [selectTokensInternal, variant, disabled, readOnly, errorProp, success, isEditing, appColorTokens, mode]);
+		}, [selectTokensInternal, effectiveColorScheme, disabled, readOnly, errorProp, success, isEditing, appColorTokens, mode]);
 
         React.useEffect(() => {
 			const handleClickOutside = (event: MouseEvent) => {
@@ -320,23 +316,84 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 		const currentSizeTokens = selectTokensInternal
 			? selectTokensInternal.sizes[size]
 			: { height: "h-10", fontSize: "text-sm", paddingX: "px-3", paddingY: "py-2", optionPaddingX: "px-3", optionPaddingY: "py-2", dropdownMaxHeight: "max-h-60" };
+
+		const [dropdownPosition, setDropdownPosition] = React.useState<React.CSSProperties>({});
+
+		const dropdownVariants = React.useMemo(() => {
+			const base = {
+				hidden: { opacity: 0, y: -5, scale: 0.98, transition: { duration: 0.1, ease: "easeInOut" } },
+				visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.15, ease: "easeOut" } },
+			};
+
+			if (!appColorTokens || !mode || !selectTokensInternal) return base;
+
+			const variantTokens = selectTokensInternal.variants[effectiveColorScheme];
+
+			return {
+				...base,
+				visible: {
+					...base.visible,
+					backgroundColor: variantTokens.dropdownBackground,
+					borderColor: variantTokens.dropdownBorder,
+				},
+			};
+		}, [appColorTokens, mode, effectiveColorScheme, selectTokensInternal]);
+
+		React.useLayoutEffect(() => {
+			if (!isOpen) return;
+
+			const updatePosition = () => {
+				if (!selectClickableRef.current) return;
+
+				const rect = selectClickableRef.current.getBoundingClientRect();
+				const spaceBelow = window.innerHeight - rect.bottom - 8;
+				
+				const maxHeightRem = parseInt(currentSizeTokens.dropdownMaxHeight.replace('max-h-', ''));
+				const maxHeightPx = maxHeightRem * 16;
+				const estimatedDropdownHeight = Math.min(options.length * 44 + 8, maxHeightPx || 240);
+
+				let top = rect.bottom + 4;
+				if (spaceBelow < estimatedDropdownHeight && rect.top > spaceBelow) {
+					top = rect.top - estimatedDropdownHeight - 4;
+				}
+
+				setDropdownPosition({
+					position: 'fixed',
+					top: `${top}px`,
+					left: `${rect.left}px`,
+					width: `${rect.width}px`,
+					zIndex: 1300,
+				});
+			};
+
+			updatePosition();
+			window.addEventListener('resize', updatePosition);
+			window.addEventListener('scroll', updatePosition, true);
+
+			return () => {
+				window.removeEventListener('resize', updatePosition);
+				window.removeEventListener('scroll', updatePosition, true);
+			};
+		}, [isOpen, options.length, currentSizeTokens.dropdownMaxHeight, appColorTokens, mode]);
 		
-		const hasActualLeadingIcon = leadingIcon && (!multiple || selectedOptions.length === 0) && (selectedOptions.length === 0 || !selectedOptions[0].icon);
-		const hasSelectedOptionIcon = selectedOptions.length > 0 && !multiple && selectedOptions[0].icon;
-		let effectivePaddingLeft = currentSizeTokens.paddingX.replace("px-", "pl-");
-		if (hasActualLeadingIcon || hasSelectedOptionIcon) {
-			effectivePaddingLeft = size === "sm" ? "pl-7" : size === "lg" ? "pl-10" : "pl-8";
-		}
-		const clearButtonVisible = clearable && selectedValues.length > 0 && !disabled && !readOnly;
-		let effectivePaddingRight = size === "sm" ? "pr-7" : size === "lg" ? "pr-10" : "pr-8";
-		if (clearButtonVisible) {
-			effectivePaddingRight = size === "sm" ? "pr-12" : size === "lg" ? "pr-16" : "pr-14";
-		}
+		const hasLeadingIcon = (leadingIcon && (!multiple || selectedOptions.length === 0) && (selectedOptions.length === 0 || !selectedOptions[0].icon)) || (selectedOptions.length > 0 && !multiple && selectedOptions[0].icon);
+		const hasClearButton = clearable && selectedValues.length > 0 && !disabled && !readOnly;
+		const paddings = {
+			sm: { withIcon: "pl-7",  withoutIcon: "pl-3",  withChevron: "pr-7",  withChevronAndClear: "pr-12" },
+			md: { withIcon: "pl-8",  withoutIcon: "pl-4",  withChevron: "pr-8",  withChevronAndClear: "pr-14" },
+			lg: { withIcon: "pl-10", withoutIcon: "pl-4",  withChevron: "pr-10", withChevronAndClear: "pr-16" },
+		};
+		const currentPaddings = paddings[size];
+		const paddingClasses = [
+			hasLeadingIcon ? currentPaddings.withIcon : currentPaddings.withoutIcon,
+			hasClearButton ? currentPaddings.withChevronAndClear : currentPaddings.withChevron,
+		];
 		const isErrorActive = !!errorProp;
 		const finalSelectContainerClasses = cn(
 			"relative", "rounded-md", "border", "transition-colors", "duration-150",
 			"flex", "items-center", "w-full", currentSizeTokens.height,
 			currentSizeTokens.fontSize, currentSizeTokens.paddingY,
+			...paddingClasses,
 			"bg-[var(--select-internal-bg)]", "border-[var(--select-internal-border)]",
 			"text-[var(--select-internal-text)]",
 			disabled ? "cursor-not-allowed opacity-70" : readOnly ? "cursor-default" : "hover:border-[var(--select-hover-border)]",
@@ -346,43 +403,67 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 					: success
 					? ["outline-none", "!border-[var(--select-success-border)]", "shadow-[0_0_0_3px_var(--select-success-ring)]"]
 					: ["outline-none", "!border-[var(--select-focus-border)]", "shadow-[0_0_0_3px_var(--select-focus-ring)]"]),
-			effectivePaddingLeft, effectivePaddingRight, className
+			className
 		);
 		
-		//#region [render] - 🎨 RENDER 🎨
+		const finalTriggerClasses = cn("flex-1", "truncate", "text-left");
+
+		const getIconLeftPosition = () => {
+			switch (size) {
+				case "sm": return "left-2.5";
+				case "lg": return "left-3.5";
+				default: return "left-3";
+			}
+		};
+
+		const getChevronRightPosition = () => {
+			switch (size) {
+				case "sm": return "right-2";
+				case "lg": return "right-3";
+				default: return "right-2.5";
+			}
+		};
+
+		const getClearButtonRightPosition = () => {
+			switch (size) {
+				case "sm": return "right-7";
+				case "lg": return "right-9";
+				default: return "right-8";
+			}
+		};
+
+		//#region [render] - RENDER 
 		return (
-			<div className={cn("relative", fullWidth ? "w-full" : "w-auto")} ref={componentRootRef} {...restRootProps}>
+			<div
+				className={cn("relative", { "w-full": fullWidth })}
+				ref={componentRootRef}
+				{...restRootProps}
+			>
 				<div
-					ref={selectClickableRef} id={id} className={finalSelectContainerClasses}
-					tabIndex={disabled || readOnly ? -1 : 0}
-                    onKeyDown={handleKeyDown}
-					onFocus={() => { if (!disabled && !readOnly) setIsFocused(true); }}
-					onBlur={(e) => {
-						if (optionsRef.current && optionsRef.current.contains(e.relatedTarget as Node)) { return; }
-						setIsFocused(false);
-						if (isOpen) setIsOpen(false);
-						onBlurProp?.();
-					}}
-					onClick={() => {
-						if (!disabled && !readOnly) {
-							setIsOpen(!isOpen);
-							if (!isOpen) { selectClickableRef.current?.focus(); setIsFocused(true); }
-						}
-					}}
-                    aria-expanded={isOpen} 
-                    aria-haspopup="listbox" 
-                    aria-disabled={disabled}
-                    aria-readonly={readOnly} 
-                    aria-invalid={isErrorActive} 
-                    aria-required={isRequired}
-                    aria-describedby={ariaDescribedBy} 
-                    aria-controls={isOpen ? `${id}-listbox` : undefined}
-                    role="combobox"
+					ref={selectClickableRef}
+					className={finalSelectContainerClasses}
+					onClick={() => !disabled && !readOnly && setIsOpen(!isOpen)}
+					onKeyDown={handleKeyDown}
+					onFocus={() => !disabled && !readOnly && setIsFocused(true)}
+					onBlur={() => { if (!isOpen) { setIsFocused(false); onBlurProp?.(); } }}
+					tabIndex={disabled ? -1 : 0}
+					role="combobox"
+					aria-haspopup="listbox"
+					aria-expanded={isOpen}
+					aria-controls={id ? `${id}-options` : undefined}
+					aria-required={isRequired}
+					aria-invalid={isErrorActive}
+					aria-disabled={disabled}
+					aria-readonly={readOnly}
+					aria-describedby={ariaDescribedBy}
 				>
-					{(hasActualLeadingIcon || hasSelectedOptionIcon) && (
-						<div className={`absolute top-0 h-full flex items-center pointer-events-none ${ size === "sm" ? "left-2" : size === "lg" ? "left-3.5" : "left-2.5"}`}>
-							<StandardIcon styleType="outline" size={iconInternalSize} colorScheme="primary" colorShade="text">
-								{React.createElement( hasSelectedOptionIcon && selectedOptions[0].icon ? selectedOptions[0].icon : leadingIcon! )}
+					{hasLeadingIcon && (
+						<div className={`absolute ${getIconLeftPosition()} top-1/2 -translate-y-1/2 flex items-center pointer-events-none`}>
+							<StandardIcon size={iconInternalSize} styleType="outline" colorScheme="primary" colorShade="text">
+								{selectedOptions.length > 0 && !multiple && selectedOptions[0].icon 
+									? React.createElement(selectedOptions[0].icon!) 
+									: React.createElement(leadingIcon!)
+								}
 							</StandardIcon>
 						</div>
 					)}
@@ -396,7 +477,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 												<StandardIcon styleType="outline" size="xs" colorScheme="primary">{React.createElement(option.icon)}</StandardIcon>
 											</span>
 										)}
-                                        <StandardText size="xs" weight="medium" truncate>{option.label}</StandardText>
+										<StandardText size="xs" weight="medium" truncate>{option.label}</StandardText>
 										{clearable && !disabled && !readOnly && (
 											<button type="button" onClick={(e) => handleClear(e, option.value)} className={cn("cursor-pointer flex-shrink-0 ml-1 p-0.5 rounded-full", "hover:bg-[rgba(255,255,255,0.2)]")} aria-label={`Quitar ${option.label}`}>
 												<StandardIcon styleType="outline" size="xs" colorScheme="primary"><X /></StandardIcon>
@@ -405,7 +486,6 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 									</div>
 								))
 							) : (
-                                //> 💡 CORREGIDO: Se elimina el renderizado duplicado del icono.
 								<StandardText truncate>{selectedOptions[0].label}</StandardText>
 							)
 						) : (
@@ -439,10 +519,21 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 
 				<AnimatePresence>
 					{isOpen && !readOnly && (
-						<motion.div ref={optionsRef} tabIndex={-1} role="listbox" aria-multiselectable={multiple}
-                            className={cn("absolute z-50 mt-1 w-full rounded-md border shadow-lg overflow-auto outline-none", "bg-[var(--select-dropdown-bg)] border-[var(--select-dropdown-border)]", currentSizeTokens.dropdownMaxHeight)}
-							initial="hidden" animate="visible" exit="hidden" variants={dropdownVariantsBase}
-                        >
+						<motion.div
+							ref={optionsRef}
+							tabIndex={-1}
+							role="listbox"
+							aria-multiselectable={multiple}
+							className={cn(
+								"rounded-md border shadow-lg overflow-auto outline-none",
+								currentSizeTokens.dropdownMaxHeight
+							)}
+							style={dropdownPosition}
+							initial="hidden"
+							animate="visible"
+							exit="hidden"
+							variants={dropdownVariants}
+						>
 							<div className="py-1">
 								{options.map((option, index) => {
 									const isSelected = selectedValues.includes(option.value);

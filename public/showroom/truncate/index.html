@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Prueba de Truncamiento Pura</title>
+</head>
+<body>
+
+  <style>
+    .truncate-2-lines {
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+  </style>
+
+  <h1>Prueba de CSS Puro</h1>
+  <p>Esta prueba no usa React ni Next.js. Es solo para ver si el CSS de "line-clamp" funciona en tu navegador.</p>
+
+  <div style="width: 400px; border: 1px solid red; margin-top: 20px; padding: 10px;">
+    <h2>Contenedor de Prueba</h2>
+    <p class="truncate-2-lines">
+      Ahora estamos entrando en territorio de texto realmente largo. Este párrafo está diseñado específicamente para ser tan extenso que excederá con toda seguridad el límite de dos líneas que hemos establecido. Si este texto aparece cortado a dos líneas, significa que el CSS funciona, y el problema está en cómo Tailwind lo está aplicando en tu proyecto. Si este texto NO se corta, el problema es más profundo, posiblemente a nivel del navegador o del sistema operativo.
+    </p>
+  </div>
+
+</body>
+</html>

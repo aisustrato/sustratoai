@@ -45,12 +45,11 @@ const StandardTextarea = React.forwardRef<
 		ref
 	) => {
 		//#region [sub_bridge] - 🌉 THE BRIDGE 🌉
-		let variant: StandardTextareaVariant;
-		if (colorScheme) {
-			variant = colorScheme as StandardTextareaVariant;
-		} else {
-			variant = "default";
-		}
+		const validVariants: StandardTextareaVariant[] = [ "default", "primary", "secondary", "tertiary", "accent", "neutral", ];
+		const effectiveColorScheme: StandardTextareaVariant =
+			colorScheme && validVariants.includes(colorScheme as StandardTextareaVariant)
+				? (colorScheme as StandardTextareaVariant)
+				: "default";
 		//#endregion ![sub_bridge]
 
 		//#region [sub_init] - 🪝 HOOKS, STATE, REFS, MEMOS 🪝
@@ -76,7 +75,7 @@ const StandardTextarea = React.forwardRef<
 		React.useEffect(() => {
 			const element = textareaRef.current;
 			if (element && textareaTokens && appColorTokens) {
-				const cvt = textareaTokens.variants[variant];
+				const cvt = textareaTokens.variants[effectiveColorScheme];
 
 				let effectiveBackgroundColor = cvt.background;
 				if (disabled) { effectiveBackgroundColor = cvt.disabledBackground; } 
@@ -106,7 +105,7 @@ const StandardTextarea = React.forwardRef<
 				element.style.setProperty("--textarea-editing-bg", cvt.editingBackground);
 				element.style.setProperty("--textarea-autofill-bg", effectiveBackgroundColor);
 			}
-		}, [ textareaTokens, variant, appColorTokens, disabled, error, success, isEditing, readOnly, id, name, ]);
+		}, [ textareaTokens, effectiveColorScheme, appColorTokens, disabled, error, success, isEditing, readOnly, id, name, ]);
 		//#endregion ![sub_effects]
 
 		const sizeTokens = textareaTokens

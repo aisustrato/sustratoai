@@ -184,8 +184,8 @@ export default function CrearDimensionPage() {
                         onClick={handleVolver}
                         styleType="outline"
                         colorScheme="danger"
+                        leftIcon={ArrowLeft}
                     >
-                        <StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
                         Volver a Dimensiones
                     </StandardButton>
                 </StandardCard.Footer>

@@ -188,11 +188,11 @@ export default function VerDimensionPage() {
               puedeGestionarDimensiones ? (
                 <StandardButton
                   onClick={handleEditar}
-                  colorScheme="secondary" // o 'primary' si prefieres
+                  colorScheme="secondary"
                   styleType="outline"
                   size="sm"
+                  leftIcon={Edit}
                 >
-                  <StandardIcon><Edit /></StandardIcon>
                   Editar Dimensión
                 </StandardButton>
               ) : undefined

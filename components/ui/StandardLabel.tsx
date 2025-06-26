@@ -1,24 +1,17 @@
-//. 📍 components/ui/StandardLabel.tsx
-
-//#region [head] - 🏷️ IMPORTS 🏷️
 "use client";
 
 import * as React from "react";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { cn } from "@/lib/utils";
-import { StandardText, type StandardTextProps } from "./StandardText";
-type NewType = Pick<StandardTextProps, "preset" | "size" | "weight" | "align" | "truncate" | "applyGradient" | "colorScheme" | "colorShade">;
-
-//#endregion ![head]
+// --- ✅ PASO 2: Importamos el componente Y el nuevo tipo de props de ESTILO ---
+import { StandardText, type StandardTextStyleProps } from "./StandardText";
 
 //#region [def] - 📦 TYPES & INTERFACE 📦
 
-//> 💡 CORREGIDO: Seleccionamos explícitamente solo las props de estilo de StandardText que necesitamos.
-type StandardLabelStyleProps = NewType
-//> 💡 La nueva interfaz ahora extiende las props de Radix y añade nuestras props de estilo sin conflicto.
+// --- La nueva interfaz ahora extiende las props de Radix y AÑADE el tipo de estilo desacoplado ---
 export interface StandardLabelProps
 	extends React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>,
-		StandardLabelStyleProps {
+		StandardTextStyleProps { // <-- ¡Mucho más simple y robusto!
 	children: React.ReactNode;
 	className?: string;
 }
@@ -31,7 +24,7 @@ const StandardLabel = React.forwardRef<
 >(
 	(
 		{
-			//> Props de StandardText para el estilo
+			// Props de StandardText para el estilo (ahora vienen de StandardTextStyleProps)
 			className,
 			children,
 			preset = "caption",
@@ -42,7 +35,7 @@ const StandardLabel = React.forwardRef<
 			align,
 			truncate,
 			applyGradient,
-			//> El resto de las props son para LabelPrimitive.Root (ej. htmlFor)
+			// El resto de las props son para LabelPrimitive.Root (ej. htmlFor)
 			...labelProps
 		},
 		ref

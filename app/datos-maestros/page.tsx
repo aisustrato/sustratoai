@@ -7,7 +7,14 @@ import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import Link from "next/link";
-import { UserPlus, Shield, Layers } from "lucide-react";
+import {
+  ClipboardList,
+  FileUp,
+  LayoutGrid,
+  Boxes,
+  User,
+  Shield,
+} from "lucide-react";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -22,67 +29,70 @@ export default function DatosMaestrosHome() {
     <div className="container mx-auto py-8">
       <StandardPageTitle
         title="Datos Maestros"
-        subtitle="Administra la información estructural clave de tu proyecto: roles, miembros y lotes."
+        description="Administra la información estructural clave de tu proyecto: datos básicos, artículos, dimensiones, lotes, miembros y roles."
         breadcrumbs={[{ label: "Datos Maestros" }]}
       />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        {/* Miembros */}
-        {/* //#region [render_sub] - CARD: Miembros 🧑‍🤝‍🧑 */}
-        <StandardCard
-          className="hover:shadow-lg transition-shadow duration-200 group"
-          styleType="subtle"
-          hasOutline={false}
-          accentPlacement="none"
-        >
-          <Link href="/datos-maestros/miembros" className="block p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <StandardIcon><UserPlus className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" /></StandardIcon>
-              <StandardText asElement="h2" weight="semibold" size="lg">Miembros</StandardText>
-            </div>
-            <StandardText colorScheme="neutral">
-              Gestiona los investigadores y colaboradores de tu proyecto. Permite agregar, editar y eliminar miembros.
-            </StandardText>
-          </Link>
-        </StandardCard>
-        {/* //#endregion [render_sub] */}
-
-        {/* //#region [render_sub] - CARD: Roles 🛡️ */}
-        <StandardCard
-          className="hover:shadow-lg transition-shadow duration-200 group"
-          styleType="subtle"
-          hasOutline={false}
-          accentPlacement="none"
-        >
-          <Link href="/datos-maestros/roles" className="block p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <StandardIcon><Shield className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" /></StandardIcon>
-              <StandardText asElement="h2" weight="semibold" size="lg">Roles</StandardText>
-            </div>
-            <StandardText colorScheme="neutral">
-              Define los permisos y responsabilidades de cada miembro. Crea y ajusta roles según las necesidades del proyecto.
-            </StandardText>
-          </Link>
-        </StandardCard>
-        {/* //#endregion [render_sub] */}
-
-        {/* //#region [render_sub] - CARD: Lotes 📦 */}
-        <StandardCard
-          className="hover:shadow-lg transition-shadow duration-200 group"
-          styleType="subtle"
-          hasOutline={false}
-          accentPlacement="none"
-        >
-          <Link href="/datos-maestros/lote" className="block p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <StandardIcon><Layers className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" /></StandardIcon>
-              <StandardText asElement="h2" weight="semibold" size="lg">Lotes</StandardText>
-            </div>
-            <StandardText colorScheme="neutral">
-              Administra los lotes de datos, simulaciones o agrupaciones relevantes para el flujo de trabajo del proyecto.
-            </StandardText>
-          </Link>
-        </StandardCard>
-        {/* //#endregion [render_sub] */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        {[ 
+          {
+            href: "/datos-maestros/datos-basicos",
+            icon: ClipboardList,
+            title: "Datos Básicos",
+            description: "Configura la información esencial y los parámetros iniciales que definen tu proyecto."
+          },
+          {
+            href: "/datos-maestros/cargar-articulos",
+            icon: FileUp,
+            title: "Cargar Artículos",
+            description: "Importa artículos de forma masiva desde un archivo CSV para agilizar la carga de datos."
+          },
+          {
+            href: "/datos-maestros/dimensiones",
+            icon: LayoutGrid,
+            title: "Dimensiones",
+            description: "Define las dimensiones y categorías que se usarán para analizar y clasificar los artículos."
+          },
+          {
+            href: "/datos-maestros/lote",
+            icon: Boxes,
+            title: "Lotes de Trabajo",
+            description: "Crea y gestiona los lotes de trabajo que serán asignados a los miembros del equipo."
+          },
+          {
+            href: "/datos-maestros/miembros",
+            icon: User,
+            title: "Miembros",
+            description: "Añade o elimina los perfiles de los investigadores y colaboradores asignados a este proyecto."
+          },
+          {
+            href: "/datos-maestros/roles",
+            icon: Shield,
+            title: "Roles y Permisos",
+            description: "Gestiona los roles que determinan qué acciones pueden realizar los miembros en el proyecto."
+          },
+        ].map(({ href, icon: Icon, title, description }) => (
+          <StandardCard
+            key={href}
+            className="hover:shadow-lg transition-shadow duration-200 group"
+            styleType="subtle"
+            hasOutline={false}
+            accentPlacement="none"
+          >
+            <Link href={href} className="block p-4 h-full">
+              <div className="flex items-center gap-3 mb-2">
+                <StandardIcon>
+                  <Icon className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
+                </StandardIcon>
+                <StandardText asElement="h2" weight="semibold" size="lg">
+                  {title}
+                </StandardText>
+              </div>
+              <StandardText colorScheme="neutral" size="sm">
+                {description}
+              </StandardText>
+            </Link>
+          </StandardCard>
+        ))}
       </div>
     </div>
   );

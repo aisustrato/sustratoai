@@ -229,6 +229,8 @@ export function UserAvatar() {
         )}
       </motion.button>
 
+
+
       <AnimatePresence>
         {isOpen && !isChangingProject && ( // No mostrar menú si está cargando cambio de proyecto
           <motion.div

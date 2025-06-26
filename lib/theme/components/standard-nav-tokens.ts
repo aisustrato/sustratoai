@@ -69,39 +69,40 @@ const generateStandardNavbarTokens = (appColorTokens: AppColorTokens, mode: Mode
       primary: primaryColor,
       secondary: secondaryColor,
       accent: accentColor,
-      titleGradient: titleGradient, // Nuevo token para el degradado del título
+      titleGradient: titleGradient,
     },
     gradientBar: {
       start: primaryColor,
       middle: accentColor,
-      // En modo oscuro, usamos un color más suave para el final del gradiente
       end: isDark ? neutral.bgShade : whiteColor,
     },
     hover: {
-      // Más visible en modo oscuro, usando color accent para el hover
-      bg: isDark ? `${accentColor}22` : `${accentColor}15`,
+      // Aumentar la opacidad para mejor contraste en modo oscuro
+      bg: isDark ? `${accentColor}33` : `${accentColor}15`,
     },
     active: {
-      // Más visible en modo oscuro
-      bg: isDark ? `${primaryColor}33` : `${primaryColor}15`,
+      // Color de fondo más visible en modo oscuro
+      bg: isDark ? `${primaryColor}44` : `${primaryColor}15`,
     },
     background: {
-      normal: "transparent",
-      // Usar un fondo oscuro con tinte del color del tema
-      scrolled: isDark ? themedDarkBackground : `${whiteColor}DD`,
+      normal: isDark ? neutral.bg : "transparent",
+      // Fondo más oscuro cuando se hace scroll
+      scrolled: isDark ? neutral.bgShade : `${whiteColor}DD`,
     },
     submenu: {
+      // Fondo más oscuro para el submenú
       background: isDark ? neutral.bgShade : neutral.bg,
-      border: borderColor,
+      border: isDark ? neutral.bgShade : borderColor,
     },
     icon: {
-      default: tertiaryColor,
-      // Cambiar a secondaryColor en lugar de accentColor
-      active: secondaryColor,
-      arrow: tertiaryColor,
+      // Iconos más claros en modo oscuro
+      default: isDark ? neutral.textShade : tertiaryColor,
+      // Color de icono activo más visible
+      active: isDark ? whiteColor : secondaryColor,
+      arrow: isDark ? neutral.textShade : tertiaryColor,
     },
-    // Sombra más sutil en modo oscuro
-    shadow: isDark ? "0 4px 8px rgba(0, 0, 0, 0.3)" : "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+    // Sombra más pronunciada en modo oscuro
+    shadow: isDark ? "0 4px 12px rgba(0, 0, 0, 0.4)" : "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
   }
 }
 

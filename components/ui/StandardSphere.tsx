@@ -8,10 +8,10 @@ import {
   SphereStyleType,
   SphereSizeVariant,
   generateSphereTokens,
-  ImportedIconSize // Importamos el tipo de tamaño de icono desde los tokens
+  ImportedIconSize,
 } from '@/lib/theme/components/standard-sphere-tokens';
 import { StandardText, type StandardTextSize } from './StandardText';
-import { StandardBadge } from './StandardBadge';
+import { StandardBadge, type StandardBadgeProps } from './StandardBadge';
 import { StandardTooltip } from './StandardTooltip';
 import { StandardIcon } from './StandardIcon'; // Asumiendo que existe StandardIcon
 
@@ -35,6 +35,15 @@ const SPHERE_ICON_SIZE_MAP: Record<SphereSizeVariant, ImportedIconSize> = {
 };
 
 // Props para el componente StandardSphere
+// Interfaz para la información del badge de estado, que se pasará a StandardSphere.
+export interface StatusBadgeInfo {
+  text: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  iconClassName?: string;
+  colorScheme?: ColorSchemeVariant;
+  styleType?: StandardBadgeProps['styleType'];
+}
+
 export interface StandardSphereProps {
   /**
    * Valor a mostrar dentro de la esfera. Puede ser un número, texto, o cualquier ReactNode.
@@ -43,7 +52,6 @@ export interface StandardSphereProps {
 
   /**
    * Identificador para agrupar o clasificar la esfera (e.g., ID de investigador, estado).
-   * La esfera lo almacena como dato, pero su interpretación para ordenamiento/filtrado recae en el contenedor.
    */
   keyGroup?: string;
 
@@ -60,8 +68,7 @@ export interface StandardSphereProps {
   styleType?: SphereStyleType;
 
   /**
-   * Tamaño de la esfera, alineado con la jerga de tamaños de otros componentes Standard.
-   * El orquestador calculará y pasará el tamaño apropiado (ej. 'md').
+   * Tamaño de la esfera.
    * @default 'md'
    */
   size?: SphereSizeVariant;
@@ -72,15 +79,10 @@ export interface StandardSphereProps {
   tooltip?: string;
 
   /**
-   * Contenido para mostrar en un badge asociado a la esfera.
-   * Se posicionará en la parte inferior de la esfera.
+   * Objeto con la configuración para renderizar un StandardBadge de estado debajo de la esfera.
+   * Esto hace que la esfera sea soberana sobre su badge.
    */
-  badge?: React.ReactNode;
-
-  /**
-   * Esquema de color para el badge (si es distinto al de la esfera)
-   */
-  badgeColorScheme?: ColorSchemeVariant;
+  statusBadge?: StatusBadgeInfo;
 
   /**
    * Icono para mostrar dentro de la esfera. Se espera un componente de icono (e.g., de Lucide React).
@@ -129,8 +131,7 @@ export const StandardSphere = ({
   styleType = 'filled',
   size = 'md',
   tooltip,
-  badge,
-  badgeColorScheme,
+  statusBadge, // <--- Prop nueva y estructurada
   icon: IconComponent, // Renombramos 'icon' a 'IconComponent' para evitar conflictos
   onlyIcon = false,
   onClick,
@@ -236,8 +237,8 @@ export const StandardSphere = ({
         className
       )}
       style={{
-        // Ajustar el padding inferior para dar espacio al badge
-        paddingBottom: badge ? tokens.badge.offset : '0',
+        // El espaciado ahora se maneja con un div y padding, no con posicionamiento absoluto.
+        // Esto asegura que el contenedor crezca y que el grid calcule el espacio correctamente.
       }}
       data-test-id={dataTestId}
     >
@@ -272,21 +273,17 @@ export const StandardSphere = ({
         )}
       </div>
 
-      {/* Badge fuera de la esfera pero dentro del contenedor principal */}
-      {badge && (
-        <div
-          className="absolute"
-          style={{
-            bottom: 0,
-            transform: "translateY(50%)",
-            zIndex: 10, // Asegura que el badge esté por encima de otros elementos
-          }}
-        >
+      {/* El badge de estado ahora es renderizado por la propia esfera, asegurando encapsulación */}
+      {statusBadge && (
+        <div className="pt-2"> {/* Espacio entre la esfera y el badge */}
           <StandardBadge
-            size="sm" // El badge tiene su propia prop 'size'
-            colorScheme={badgeColorScheme || colorScheme}
+            size="xs"
+            colorScheme={statusBadge.colorScheme || 'primary'}
+            styleType={statusBadge.styleType || 'subtle'}
+            leftIcon={statusBadge.icon}
+            iconClassName={statusBadge.iconClassName}
           >
-            {badge}
+            {statusBadge.text}
           </StandardBadge>
         </div>
       )}

@@ -11,7 +11,7 @@ import {
   type StandardBadgeStyleType,
 } from "@/lib/theme/components/standard-badge-tokens";
 import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
-import { StandardText, type StandardTextProps } from "./StandardText";
+import { StandardText, type StandardTextSize, type StandardTextWeight } from "./StandardText";
 import { StandardIcon } from "./StandardIcon";
 
 //#region [def] - 📦 VARIANTS & INTERFACES 📦
@@ -40,6 +40,7 @@ export interface StandardBadgeProps
   styleType?: StandardBadgeStyleType;
   leftIcon?: React.ComponentType<{ className?: string }>;
   rightIcon?: React.ComponentType<{ className?: string }>;
+  iconClassName?: string; // Permite sobreescribir estilos del ícono
   children: React.ReactNode;
 }
 //#endregion ![def]
@@ -55,6 +56,7 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
       size = "md",
       leftIcon: LeftIcon,
       rightIcon: RightIcon,
+      iconClassName, // Se recibe la nueva prop
       children,
       ...props
     },
@@ -103,30 +105,31 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
     }
 
     // Determinar textSize, textWeight, e iconSizeClass ANTES del return principal
-    let textSizeProp: StandardTextProps['size'] = 'xs'; // Default de StandardText
-    let textWeightProp: StandardTextProps['weight'] = 'medium'; // Default de StandardText
+    let textSizeProp: StandardTextSize = 'xs';
+    let textWeightProp: StandardTextWeight = 'medium';
     let iconClasses = "h-3.5 w-3.5"; // Default icon size
 
+    // Map Badge -> Text sizes con tamaños realmente soportados por StandardText
     switch (size) {
       case 'xs':
-        textSizeProp = '3xs';
+        textSizeProp = 'xs'; // equivalente ~10-12px
         textWeightProp = 'normal';
-        iconClasses = "h-3 w-3";
+        iconClasses = 'h-3 w-3';
         break;
       case 'sm':
-        textSizeProp = '2xs';
-        textWeightProp = 'medium';
-        iconClasses = "h-3 w-3";
-        break;
-      case 'md':
         textSizeProp = 'xs';
         textWeightProp = 'medium';
-        // iconClasses usa el default "h-3.5 w-3.5"
+        iconClasses = 'h-3 w-3';
         break;
-      case 'lg':
+      case 'md':
         textSizeProp = 'sm';
         textWeightProp = 'medium';
-        // iconClasses usa el default "h-3.5 w-3.5"
+        // iconClasses default h-3.5 w-3.5
+        break;
+      case 'lg':
+        textSizeProp = 'base';
+        textWeightProp = 'medium';
+        // iconClasses default h-3.5 w-3.5
         break;
     }
 
@@ -142,7 +145,7 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
         {...props}
       >
         {LeftIcon && (
-          <StandardIcon colorScheme={colorScheme} className={cn("-ml-0.5", iconClasses)}>
+          <StandardIcon colorScheme={colorScheme} className={cn("-ml-0.5", iconClasses, iconClassName)}>
             <LeftIcon />
           </StandardIcon>
         )}
@@ -150,7 +153,7 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
           {children}
         </StandardText>
         {RightIcon && (
-          <StandardIcon colorScheme={colorScheme} className={cn("-mr-0.5", iconClasses)}>
+          <StandardIcon colorScheme={colorScheme} className={cn("-mr-0.5", iconClasses, iconClassName)}>
             <RightIcon />
           </StandardIcon>
         )}

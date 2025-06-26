@@ -225,7 +225,7 @@ export function generateStandardSelectTokens(
 			secondary: createColoredVariant(secondary),
 			tertiary: createColoredVariant(tertiary),
 			accent: createColoredVariant(accent),
-			neutral: createColoredVariant(neutral, neutral),
+			neutral: createColoredVariant(neutral, primary),
 		},
 		sizes: {
 			sm: {

@@ -20,8 +20,8 @@ import { StandardText } from "@/components/ui/StandardText";
 import {
 	StandardCard,
 } from "@/components/ui/StandardCard";
-import { EmptyState } from "@/components/common/empty-state";
-import { AlertTriangle, PlusCircle, LayoutGrid } from "lucide-react";
+import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
+import { AlertTriangle, LayoutGrid, Trash2, Plus } from "lucide-react";
 import { DimensionCard } from "./components/DimensionCard"; // Tu componente DimensionCard
 import { toast as sonnerToast } from "sonner";
 import { useLoading } from "@/contexts/LoadingContext"; // Opcional, si lo usas
@@ -116,34 +116,38 @@ export default function DimensionesPage() {
 	};
 
 	const handleConfirmDelete = async () => {
-		if (!dialogToDelete || !proyectoActual?.id) return; // Asegurar que proyectoActual no sea null antes de usar su id
-		const nombreDimension = dialogToDelete.name; // Guardar el nombre antes de setDialogToDelete(null)
-		setIsDeleting(dialogToDelete.id);
-		setDialogToDelete(null);
+		if (!dialogToDelete || !proyectoActual?.id) return;
+
+		const { id: dimensionId, name: dimensionName } = dialogToDelete;
+
+		setIsDeleting(dimensionId);
+
 		try {
 			const payload: DeleteDimensionPayload = {
-				dimensionId: dialogToDelete.id,
+				dimensionId: dimensionId,
 				projectId: proyectoActual.id,
 			};
 			const resultado = await deleteDimension(payload);
+
 			if (resultado.success) {
-				sonnerToast.success("Dimensión Eliminada", {
-					description: `La dimensión "${nombreDimension}" ha sido eliminada correctamente.`,
-				});
-				cargarDimensiones(); // Recargar la lista para reflejar el cambio
+				sonnerToast.success(`Dimensión "${dimensionName}" eliminada`);
+        // Actualización optimista: removemos la dimensión del estado local inmediatamente.
+        setDimensions((dims) => dims.filter((d) => d.id !== dimensionId));
 			} else {
-				sonnerToast.error("Error al Eliminar", {
-					description: resultado.error || "Ocurrió un error desconocido.",
-					duration: 8000, // Mostrar errores importantes por más tiempo
+				sonnerToast.error("Error al eliminar", {
+					description: resultado.error,
 				});
 			}
-		} catch (err) {
-			sonnerToast.error("Error al Eliminar", {
-				description: err instanceof Error ? err.message : "Error desconocido.",
-				duration: 8000,
+		} catch (error) {
+			sonnerToast.error("Error inesperado", {
+				description:
+					error instanceof Error
+						? error.message
+						: "Ocurrió un error desconocido.",
 			});
 		} finally {
 			setIsDeleting(null);
+			setDialogToDelete(null);
 		}
 	};
 	// --- FIN FUNCIÓN ACTUALIZADA ---
@@ -176,30 +180,23 @@ export default function DimensionesPage() {
 	return (
 		<div className="container mx-auto py-8">
 				<StandardPageTitle
-					title="Dimensiones de Pre-clasificación"
-					subtitle={
-						proyectoActual?.name
-							? `Define y gestiona los ejes para la clasificación de artículos en el proyecto "${proyectoActual.name}".`
-							: "Selecciona un proyecto para ver o definir sus dimensiones de clasificación."
-					}
-					mainIcon={LayoutGrid}
-					breadcrumbs={[
-						{ label: "Datos Maestros", href: "/datos-maestros" },
-						{ label: "Dimensiones" },
-					]}
-				/>
-
-				{puedeGestionarDimensiones && proyectoActual?.id && (
-					<div className="my-6 flex justify-end">
-						<StandardButton
-							onClick={handleCrearDimension}
-							leftIcon={PlusCircle}
-							modifiers={['gradient', 'elevated']}
-							colorScheme="primary">
-							Agregar Dimensión
-						</StandardButton>
-					</div>
-				)}
+          title="Dimensiones"
+          subtitle="Estructura de clasificación"
+          description="Define las dimensiones y categorías que se usarán para analizar y clasificar los artículos del proyecto."
+          mainIcon={LayoutGrid}
+          mainleftIcon={Plus}
+          actions={
+            puedeGestionarDimensiones ? (
+              <StandardButton
+                onClick={handleCrearDimension}
+                colorScheme="primary"
+                leftIcon={Plus}
+              >
+                Crear Dimensión
+              </StandardButton>
+            ) : null
+          }
+        />
 
 				{error && (
 					<StandardCard
@@ -255,7 +252,7 @@ export default function DimensionesPage() {
 					!isLoading &&
 					!error &&
 					dimensions.length === 0 && (
-						<EmptyState
+						<StandardEmptyState
 							icon={LayoutGrid}
 							title="Aún no hay Dimensiones Definidas"
 							description={
@@ -267,10 +264,8 @@ export default function DimensionesPage() {
 								puedeGestionarDimensiones ? (
 									<StandardButton
 										onClick={handleCrearDimension}
-										colorScheme="primary">
-										<StandardIcon>
-											<PlusCircle />
-										</StandardIcon>
+										colorScheme="primary"
+										leftIcon={PlusCircle}>
 										Crear Primera Dimensión
 									</StandardButton>
 								) : undefined
@@ -324,7 +319,8 @@ export default function DimensionesPage() {
 							<StandardButton
 								colorScheme="danger"
 								onClick={handleConfirmDelete}
-								loading={isDeleting === dialogToDelete?.id}>
+								loading={isDeleting === dialogToDelete?.id}
+								leftIcon={Trash2}>
 								Eliminar
 							</StandardButton>
 						</StandardDialog.Footer>

@@ -15,11 +15,12 @@ interface SidebarNavItem {
 interface SidebarNavProps {
 	items: SidebarNavItem[];
 	className?: string;
+	isCollapsed: boolean;
 }
 
 import { SidebarNavAnimations } from "./sidebar-nav-animations";
 
-export function SidebarNav({ items }: SidebarNavProps) {
+export function SidebarNav({ items, className, isCollapsed }: SidebarNavProps) {
 	const pathname = usePathname() || "";
 	const { appColorTokens, mode } = useTheme();
 
@@ -47,6 +48,8 @@ export function SidebarNav({ items }: SidebarNavProps) {
       activeHref={pathname}
       hoverStyles={hoverStyles}
       appColorTokens={appColorTokens}
+      isCollapsed={isCollapsed}
+      className={className}
     />
   );
 }

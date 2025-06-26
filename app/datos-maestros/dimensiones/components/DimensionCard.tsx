@@ -119,26 +119,24 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 						{canManage && (
 							<div className="flex justify-end gap-1 mt-1">
 								<StandardButton
-									size="sm"
-									styleType="ghost"
-									onClick={onEdit}
-									disabled={isBeingDeleted}
-									tooltip="Editar dimensión">
-									<StandardIcon>
-										<PenLine />
-									</StandardIcon>
-								</StandardButton>
+										size="sm"
+										styleType="ghost"
+										onClick={(e) => { e.stopPropagation(); onEdit(); }}
+										disabled={isBeingDeleted}
+										tooltip="Editar dimensión"
+										leftIcon={PenLine}
+										iconOnly={true}
+										aria-label="Editar dimensión" />
 								<StandardButton
-									size="sm"
-									styleType="ghost"
-									colorScheme="danger"
-									onClick={onDelete}
-									disabled={isBeingDeleted}
-									tooltip="Eliminar dimensión">
-									<StandardIcon>
-										<Trash2 />
-									</StandardIcon>
-								</StandardButton>
+										size="sm"
+										styleType="ghost"
+										colorScheme="danger"
+										onClick={(e) => { e.stopPropagation(); onDelete(); }}
+										disabled={isBeingDeleted}
+										tooltip="Eliminar dimensión"
+										leftIcon={Trash2}
+										iconOnly={true}
+										aria-label="Eliminar dimensión" />
 							</div>
 						)}
 					</div>

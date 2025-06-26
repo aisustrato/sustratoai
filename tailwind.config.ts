@@ -25,7 +25,7 @@ const config = {
         // La clase 'font-heading' usará la variable --font-family-headings
         heading: ['var(--font-family-headings)'],
       },
-     
+      
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -47,7 +47,11 @@ const config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  // ✅ El único cambio está aquí, en el arreglo de plugins
+  plugins: [
+    require("tailwindcss-animate"),
+    require("@tailwindcss/line-clamp"), // <-- Se añade el plugin que faltaba
+  ],
 } satisfies Config;
 
 export default config;

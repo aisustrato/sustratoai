@@ -11,17 +11,17 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
 import type { ColorSchemeVariant as StandardCardColorScheme } from "@/lib/theme/ColorToken";
 import { generateStandardCardTokens, type StandardCardStyleType, type StandardCardAccentPlacement, type StandardCardShadow } from "@/lib/theme/components/standard-card-tokens";
-import { StandardText, type StandardTextProps } from "@/components/ui/StandardText";
+import { StandardText, type StandardTextSize, type StandardTextWeight, type StandardTextGradient, type StandardTextColorShade } from "@/components/ui/StandardText";
 // ✅ CORRECCIÓN: La ruta de importación ahora es la correcta.
 import { SustratoLoadingLogo, type SustratoLoadingLogoProps } from "@/components/ui/sustrato-loading-logo"; 
 //#endregion ![head]
 
 //#region [def] - 📦 INTERFACES, TYPES & VARIANTS 📦
 
-type CardTextSize = StandardTextProps['size'];
-type CardTextWeight = StandardTextProps['weight'];
-type CardTextGradient = StandardTextProps['applyGradient'];
-type CardTextColorShade = StandardTextProps['colorShade'];
+type CardTextSize = StandardTextSize;
+type CardTextWeight = StandardTextWeight;
+type CardTextGradient = StandardTextGradient;
+type CardTextColorShade = StandardTextColorShade;
 
 export interface StandardCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onAnimationStart" | "onDragStart" | "onDragEnd" | "onDrag"> {
 	colorScheme?: StandardCardColorScheme;
@@ -62,7 +62,7 @@ interface StandardCardComposition extends React.ForwardRefExoticComponent<Standa
 	Title: (props: StandardCardTitleProps) => JSX.Element;
 	Subtitle: (props: StandardCardSubtitleProps) => JSX.Element;
 	Media: (props: StandardCardMediaProps) => JSX.Element;
-	Content: (props: StandardCardContentProps) => JSX.Element;
+	Content: React.ForwardRefExoticComponent<StandardCardContentProps & React.RefAttributes<HTMLDivElement>>;
 	Actions: (props: StandardCardActionsProps) => JSX.Element;
 	Footer: (props: StandardCardFooterProps) => JSX.Element;
 }
@@ -307,7 +307,13 @@ Subtitle.displayName = "StandardCard.Subtitle";
 
 const Media = ({ className, children, ...props }: StandardCardMediaProps): JSX.Element => (<div className={cn("mb-3 overflow-hidden", className)} {...props}>{children}</div>);
 Media.displayName = "StandardCard.Media";
-const Content = ({ className, children, ...props }: StandardCardContentProps): JSX.Element => (<div className={cn(className)} {...props}>{children}</div>);
+const Content = React.forwardRef<HTMLDivElement, StandardCardContentProps>(
+    ({ className, children, ...props }, ref) => (
+        <div ref={ref} className={cn(className)} {...props}>
+            {children}
+        </div>
+    )
+);
 Content.displayName = "StandardCard.Content";
 const Actions = ({ className, children, ...props }: StandardCardActionsProps): JSX.Element => (<div className={cn("mt-4 flex flex-wrap items-center gap-2", className)} {...props}>{children}</div>);
 Actions.displayName = "StandardCard.Actions";

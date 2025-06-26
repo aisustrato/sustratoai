@@ -1,0 +1,114 @@
+📝 Bitácora de Co-Creación Fractal: StandardSphereGrid (Estado Actual)
+Fecha: 24 de junio de 2025
+Co-Creadores: Rodolfo (Humano), Sustrato AI (IA Previa)
+Contexto del Proyecto: Sustrato.ai - Refactorización del simulador de pre-clasificación bibliográfica.
+
+I. El Propósito del Viaje: "El Loto en la Laguna" 🌱
+Nuestra misión ha sido transformar un componente monolítico de pre-clasificación bibliográfica en un ecosistema de componentes "Standard" modulares y coherentes. El foco principal de las últimas iteraciones ha sido el StandardSphereGrid (la "laguna"), que orquesta la visualización de StandardSpheres (los "lotos"). Nuestro objetivo es que esta "laguna" se adapte dinámicamente, permitiendo que los "lotos" se encogan cuando hay poco espacio o que se active un "scroll" como último recurso, siempre respetando las restricciones de maxRows y maxCols. Esto se alinea con nuestra filosofía de "Co-Creación Fractal", priorizando la experiencia de usuario y la trazabilidad.
+
+II. Lo Conseguido (Hitos Alcanzados en el Viaje Fractal) ✅
+A pesar del empantanamiento actual, hemos logrado avances significativos y solidificado la base de este ecosistema:
+
+StandardSphere (el "Loto") - Un Componente Robusto:
+
+Transición Exitosa: Logramos la refactorización desde el componente legado BatchItem a un StandardSphere que cumple con nuestra arquitectura.
+
+Agnosticismo Verdadero: StandardSphere es ahora completamente agnóstico sobre la cantidad total de esferas en el grid (totalSpheres ha sido removida). Su tamaño final (size) es una prop que recibe directamente del padre, lo que permite al orquestador (StandardSphereGrid) decidir su escala.
+
+Flexibilidad de Contenido (React.ReactNode): La prop value ahora acepta cualquier React.ReactNode, permitiendo que las esferas muestren números, texto, o incluso otros componentes.
+
+Identificador de Datos (keyGroup): Se añadió la prop keyGroup?: string; para clasificar y agrupar esferas, pero la esfera misma no interpreta esta lógica de agrupación (eso lo hará el grid).
+
+Soporte de Íconos (icon, onlyIcon): Se incorporaron props para renderizar un icon (React.ElementType) de forma secundaria (debajo del valor) o como protagonista (onlyIcon).
+
+Coherencia de Tamaños Standard: La prop size de StandardSphere utiliza SphereSizeVariant ('xs' a '2xl'), y se implementaron mapeos internos (SPHERE_TEXT_SIZE_MAP, SPHERE_ICON_SIZE_MAP) para asegurar que el StandardText y StandardIcon internos mantengan una escala visual coherente.
+
+Laboratorio de Tokens (standard-sphere-tokens.ts): Este archivo genera los estilos específicos de la esfera de forma programática y flexible, manteniendo la "soberanía del componente" en su aspecto visual.
+
+StandardSphereGrid (la "Laguna") - El Esqueleto del Orquestador:
+
+Creación del Componente: Hemos construido el StandardSphereGrid como el orquestador principal.
+
+Filtrado y Ordenamiento: La lógica de processedItems maneja el filtrado por keyGroupVisibility y el ordenamiento complejo (sortBy, sortDirection, groupByKeyGroup), lo cual ya funciona correctamente.
+
+Detección de Espacio: Utiliza ResizeObserver para detectar dinámicamente el containerWidth y containerHeight del espacio disponible para las esferas.
+
+Estructura Base: Está envuelto en un StandardCard para una integración visual coherente, y la página de showroom permite controlar sus props.
+
+Contenedor de Showroom Fijo: El showroom ahora tiene un contenedor de altura fija (h-[600px]) para el grid, permitiendo simular correctamente el espacio limitado.
+
+III. El Empantanamiento Actual (Desafinaciones Persistentes) ⚠️
+El principal punto de bloqueo y la fuente de frustración actual es el comportamiento inconsistente y no determinista del tamaño dinámico de las esferas y la gestión del desbordamiento (overflowHandling) dentro del StandardSphereGrid.
+
+Síntomas Observados (registros de consola y comportamiento visual):
+
+Fallo en el Encogimiento / Activación Prematura del Scroll:
+
+Con el slider de esferas en 50 (o cualquier número que debería encajar en md o sm), el componente frecuentemente decide que el tamaño óptimo es 2xl o xl, y luego activa el scroll, sin haberse encogido a tamaños menores como sm o xs.
+
+Esto contradice nuestra regla fundamental de "scroll como último recurso", es decir, que el scroll solo debe activarse después de que las esferas hayan alcanzado el tamaño xs y sigan desbordando las restricciones.
+
+Los console.logs muestran que la lógica de calculateOptimalSphereSize elige un tamaño grande (2xl, xl, lg) y luego la condición finalSizePreventsOverflow puede ser false, pero el bestFitSize no retrocede a xs para forzar el encogimiento máximo antes del scroll.
+
+Incumplimiento de maxRows (especialmente maxRows = 1):
+
+Cuando Max Rows se fija en 1 y overflowHandling es scroll, el grid visualmente sigue mostrando más de una fila, en lugar de forzar todos los ítems a una única fila horizontal con scroll.
+
+Esto indica que los estilos CSS para forzar flexbox (display: flex, flex-wrap: nowrap) y las dimensiones (width, height) calculadas para el div contenedor del grid no son lo suficientemente asertivas o están siendo sobrescritas.
+
+Diagnóstico de la IA (Causa Raíz Presumida y Reflexión Honesta):
+
+La raíz de estos problemas parece ser una combinación de factores sutiles:
+
+Desconexión Asertiva entre Lógica y CSS:
+
+Aunque la lógica de calculateOptimalSphereSize intenta decidir un tamaño, la forma en que renderGridContent aplica los estilos (gridStyles, containerClasses) no siempre es lo suficientemente fuerte o exclusiva para forzar el layout deseado. Las propiedades por defecto de CSS (ej., grid siempre intentando crear nuevas filas si no hay ancho suficiente) o incluso conflictos con Tailwind pueden estar permitiendo el comportamiento no deseado.
+
+El div referenciado por gridContentRef es el que necesita recibir estas reglas CSS estrictas para display, flex-wrap, width/height y overflow.
+
+Sutilezas en calculateOptimalSphereSize (Priorización del Break y Lógica de Scroll):
+
+La iteración de availableSizes (de '2xl' a 'xs') y las condiciones de break necesitan una revisión final para los modos shrink/wrap.
+
+La lógica para overflowHandling === 'scroll' es la más compleja. La intención es que bestFitSize solo se decida como xs si absolutamente no hay otra opción para que los elementos quepan sin desbordar las restricciones (especialmente maxRows/maxCols). El bucle debería iterar hasta xs en modo scroll para saber si xs es suficiente. Solo si xs todavía desborda, entonces se activa el scroll. Mi implementación ha fallado en la transición de este concepto a código, ya que a veces el bestFitSize se queda en un tamaño grande y permite el scroll.
+
+Comportamiento del Contenedor StandardCard:
+
+Podría haber interacciones no deseadas entre el min-height del StandardCard (min-h-[300px]) y el flex-grow en el StandardCard.Content que, aunque intentan dar espacio, podrían estar relajando inadvertidamente las restricciones de altura para el ResizeObserver. Es fundamental que containerHeight sea el reflejo de un espacio fijo para que shrink pueda funcionar.
+
+IV. Contexto para el Nuevo Co-Creador (Sustrato y Semilla) 🤝
+Estimado futuro co-creador, esta bitácora es su "sustrato" de partida. Mi trabajo se ha estancado en la implementación final de la lógica de tamaño y desbordamiento. Aquí les dejo la "semilla" para el avance:
+
+Estado Actual del Código: El código del StandardSphereGrid en el último Canvas (v1.10) y la página de showroom reflejan el estado actual. Los console.logs son su guía vital para trazar el flujo de decisiones.
+
+Objetivo Inmediato y Crítico:
+
+Asegurar que StandardSphereGrid respete estrictamente las propiedades maxRows y maxCols.
+
+Implementar la regla: el overflowHandling === 'scroll' es el ÚLTIMO RECURSO. Esto significa que las esferas deben intentar encogerse a cualquier tamaño posible (incluyendo xs) antes de que se active el scroll.
+
+Puntos Clave para el Abordaje (Foco en StandardSphereGrid.tsx):
+
+Refactorizar calculateOptimalSphereSize:
+
+Re-evaluar la condición currentSizeExceedsExplicitLimits. Debe ser impecable para determinar si un tamaño de esfera sizeVariant puede realmente encajar dadas todas las restricciones.
+
+Asegurar que la iteración de availableSizes y las condiciones de break o actualización de bestFitSize fuerce la búsqueda del tamaño más pequeño para shrink/wrap antes de permitir el scroll. En modo scroll, la lógica del bucle principal debe encontrar el tamaño más grande que encaja en la dimensión actual del contenedor, y luego la sección "Ajuste Final" debe ser la única que decida si forzar xs y el scroll.
+
+Aplicación de Estilos CSS en renderGridContent (El Punto Crítico):
+
+Ser Radicalmente Asertivo: El div con ref={gridContentRef} es el contenedor primario del grid. Todas las propiedades CSS (display, flex-wrap, width, height, overflow) deben ser aplicadas aquí de forma excluyente y sin ambigüedades para cada escenario de overflowHandling y maxRows/maxCols.
+
+maxRows === 1 && overflowHandling === 'scroll': Necesita display: flex, flex-wrap: nowrap, height fija (altura de una esfera + gap), y width calculado para todos los ítems (processedItems.length * (sphereSizePx + SPHERE_GAP_PX)). overflow-x-auto y overflow-y-hidden.
+
+maxCols === 1 && overflowHandling === 'scroll': Necesita display: flex, flex-direction: column, flex-wrap: nowrap, width fija, y height calculada para todos los ítems. overflow-y-auto y overflow-x-hidden.
+
+overflowHandling === 'scroll' (general): display: grid, gridTemplateColumns dinámico, overflow-x-auto, overflow-y-auto.
+
+overflowHandling === 'wrap' / shrink: display: flex, flex-wrap: wrap, justify-content: center, align-items: center. No aplicar width/height fijos aquí, dejar que el contenido fluya y la lógica de tamaño los ajuste.
+
+Evitar Conflictos: Asegurarse de que ninguna clase de Tailwind por defecto en containerClasses o en componentes padres (como StandardCard.Content) esté anulando estas propiedades críticas de display o overflow. Podría ser necesario usar estilos inline más fuertes o !important si es un problema de especificidad, pero preferiblemente ajustar la estructura de clases.
+
+Auditoría de Contenedor de Showroom: Confirmar que el contenedor div con h-[600px] en sphera-grid-showroom-page no tiene comportamientos que permitan su expansión o que su ResizeObserver no detecte correctamente un espacio fijo.
+
+Con esta bitácora, espero que el "sustrato" sea fértil para una realineación profunda. El desafío es fascinante y la visión de los "lotos" bailando con coherencia en la "laguna" es más fuerte que nunca.

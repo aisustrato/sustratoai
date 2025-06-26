@@ -148,29 +148,7 @@ export default function LotesOrquestadorPage() {
   //#endregion [render_sub]
   
   //#region [render_sub] - NO PROJECT STATE 🎨
-  if (!proyectoActual) { // Chequeo más robusto
-    return (
-         <div>
-            <StandardPageTitle title="Gestión de Lotes" mainIcon={Boxes} />
-            <StandardCard
-                disableShadowHover={true}
-                colorScheme="primary"
-                styleType="subtle"
-                className="mt-6 text-center max-w-lg mx-auto p-8"
-                hasOutline={false} // Default for ProCard variant="primary" without border prop
-                accentPlacement="none" // Default for ProCard variant="primary" without border prop
-            >
-                <StandardCard.Header className="items-center flex flex-col">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100 mb-4">
-                        <StandardIcon><AlertTriangle className="h-6 w-6 text-warning-600" /></StandardIcon>
-                    </div>
-                    <StandardText size="lg" weight="bold" colorScheme="warning">Proyecto No Seleccionado</StandardText>
-                </StandardCard.Header>
-                <StandardCard.Content><StandardText>Por favor, selecciona un proyecto activo para gestionar los lotes.</StandardText></StandardCard.Content>
-            </StandardCard>
-        </div>
-    );
-  }
+  
   //#endregion [render_sub]
   
   // TODO: Considerar un render_sub para el errorMessage && viewMode === 'simulator' si se reimplementa
@@ -178,18 +156,43 @@ export default function LotesOrquestadorPage() {
 
   //#region [render_sub] - MAIN CONTENT (SIMULATOR OR DISPLAY) 🎨
   return (
-    <div>
-      {viewMode === 'simulator' ? (
+    <div className="container mx-auto py-8">
+      <StandardPageTitle
+        title="Lotes de Trabajo"
+        subtitle="Gestión y simulación de lotes"
+        description="Crea, simula y gestiona los lotes de trabajo que serán asignados a los miembros del equipo para la clasificación."
+        mainIcon={Boxes}
+        breadcrumbs={[
+          { label: "Datos Maestros", href: "/datos-maestros" },
+          { label: "Lotes de Trabajo" },
+        ]}
+      />
+
+      {!proyectoActual ? (
+        <StandardCard
+            disableShadowHover={true}
+            colorScheme="primary"
+            styleType="subtle"
+            className="mt-6 text-center max-w-lg mx-auto p-8"
+            hasOutline={false}
+            accentPlacement="none"
+        >
+            <StandardCard.Header className="items-center flex flex-col">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-warning-100 mb-4">
+                    <StandardIcon><AlertTriangle className="h-6 w-6 text-warning-600" /></StandardIcon>
+                </div>
+                <StandardText size="lg" weight="bold" colorScheme="warning">Proyecto No Seleccionado</StandardText>
+            </StandardCard.Header>
+            <StandardCard.Content><StandardText>Por favor, selecciona un proyecto activo para gestionar los lotes.</StandardText></StandardCard.Content>
+        </StandardCard>
+      ) : viewMode === 'simulator' ? (
         <BatchSimulatorPage 
             onBatchesCreatedSuccessfully={handleBatchesCreated} 
         />
       ) : ( // viewMode === 'displayBatches'
         <ProjectBatchesDisplay 
-          projectId={proyectoActual.id} // Corregido
+          projectId={proyectoActual.id}
           lotes={lotesExistentes}
-          memberColorMap={memberColorMap} // Este SÍ los necesita del orquestador
-          batchTokens={batchTokens}       // Este SÍ los necesita del orquestador
-         
           onResetAllBatches={handleResetAllBatchesInProject}
           permisoParaResetearGeneral={permisoGestionGeneral}
         />

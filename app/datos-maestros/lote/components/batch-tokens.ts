@@ -3,6 +3,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import type { AppColorTokens, Mode, ColorShade } from "@/lib/theme/ColorToken";
+import type { StandardCardColorScheme } from "@/components/ui/StandardCard";
 import type { BatchStatusEnum } from '@/lib/database.types';
 import tinycolor from "tinycolor2";
 //#endregion ![head]
@@ -17,23 +18,24 @@ export interface BatchAuxColor {
 	text: string;
 	border: string;
 	name: string;
+	colorScheme: StandardCardColorScheme;
 }
 
 // Tipo para las claves de estado que vamos a mapear
 export type BatchStatusTokenKey = BatchStatusEnum | 'default';
 
 export interface BatchTokens {
-	auxiliaries: BatchAuxColor[]; 
-    // NUEVO: Mapeo de estado a una clave de AppColorTokens (o directamente a ColorShade)
-    statusShades: Record<BatchStatusTokenKey, ColorShade>; 
-	batch: { 
-		background: string; 
+	auxiliaries: BatchAuxColor[];
+	statusShades: Record<BatchStatusTokenKey, ColorShade>;
+	batch: {
+		background: string;
 	};
-    pesoLote: {
-        barBackground: string;
-        barFill: string;
-        containerBorder: string;
-    };
+	pesoLote: {
+		barBackground: string;
+		barFill: string;
+		containerBorder: string;
+	};
+	fallbackMemberColor: BatchAuxColor;
 }
 //#endregion ![def]
 
@@ -52,6 +54,7 @@ function generatePastelPalette(baseColor: string, count: number): BatchAuxColor[
 			text: tinycolor.mostReadable(pastel, ["#222", "#fff"]).toHexString(),
 			border: tinycolor(pastel).darken(10).toHexString(),
 			name: names[i] || `Lote ${i + 1}`,
+			colorScheme: "neutral",
 		};
 	});
 }
@@ -102,25 +105,31 @@ export function generateBatchTokens(
     }
 
 	const auxiliaries = generatePastelPalette(appColorTokens.primary.pure, 5);
-    auxiliaries.push({
-        key: 'auxDefault', solid: appColorTokens.neutral.bgShade || '#e0e0e0',
-        gradient: `linear-gradient(135deg, ${appColorTokens.neutral.bgShade || '#e0e0e0'} 0%, ${appColorTokens.neutral.bgShade || '#cccccc'} 100%)`,
-        text: appColorTokens.neutral.text || '#555555', border: appColorTokens.neutral.bg || '#cccccc', name: 'Default',
-    });
-    
-    const statusShadesMap = generateStatusShades(appColorTokens);
+	const fallbackMemberColor: BatchAuxColor = {
+		key: "auxDefault",
+		solid: appColorTokens.neutral.bgShade || "#e0e0e0",
+		gradient: `linear-gradient(135deg, ${appColorTokens.neutral.bgShade || "#e0e0e0"} 0%, ${appColorTokens.neutral.bgShade || "#cccccc"} 100%)`,
+		text: appColorTokens.neutral.text || "#555555",
+		border: appColorTokens.neutral.bg || "#cccccc",
+		name: "Default",
+		colorScheme: "neutral",
+	};
+	auxiliaries.push(fallbackMemberColor);
+
+	const statusShadesMap = generateStatusShades(appColorTokens);
 
 	return {
 		auxiliaries,
-        statusShades: statusShadesMap,
+		statusShades: statusShadesMap,
 		batch: {
 			background: appColorTokens.neutral.bg, // Usar el bg del modo actual
 		},
-        pesoLote: { 
-            barBackground: appColorTokens.white.bg, // Blanco para el fondo de la barra
-            barFill: appColorTokens.primary.pure, // Usar el color primario para las barritas
-            containerBorder: appColorTokens.neutral.bgShade,
-        }
+		pesoLote: {
+			barBackground: appColorTokens.white.bg, // Blanco para el fondo de la barra
+			barFill: appColorTokens.primary.pure, // Usar el color primario para las barritas
+			containerBorder: appColorTokens.neutral.bgShade,
+		},
+		fallbackMemberColor,
 	};
 }
 //#endregion ![main]

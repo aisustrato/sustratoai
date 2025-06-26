@@ -29,7 +29,7 @@ export type IconProps = React.SVGProps<SVGSVGElement>;
 
 export interface StandardButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 	asChild?: boolean;
-	children: React.ReactNode;
+	children?: React.ReactNode;
 	styleType?: StandardButtonStyleType;
 	modifiers?: StandardButtonModifier[];
 	colorScheme?: ColorSchemeVariant;

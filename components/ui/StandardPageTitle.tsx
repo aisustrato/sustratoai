@@ -23,6 +23,7 @@ export interface BackButtonProps {
 export interface StandardPageTitleProps {
   title: string;
   subtitle?: string;
+  description?: string;
   mainIcon?: React.ComponentType<IconProps>;
   breadcrumbs?: BreadcrumbItem[];
   showBackButton?: BackButtonProps | boolean;
@@ -33,6 +34,7 @@ export interface StandardPageTitleProps {
 export function StandardPageTitle({
   title,
   subtitle,
+  description,
   mainIcon: MainIcon,
   breadcrumbs,
   showBackButton,
@@ -89,26 +91,21 @@ export function StandardPageTitle({
               <MainIcon />
             </StandardIcon>
           )}
-          <div>
-            <h1 className="leading-tight">
-              <StandardText
-                preset="heading"
-                size="2xl"
-                applyGradient={true}
-                >
-                {title}
-              </StandardText>
-            </h1>
+          <div className="flex flex-col justify-center">
+            <StandardText preset="heading" applyGradient={true}>
+              {title}
+            </StandardText>
+
             {subtitle && (
-              <p className="mt-1 text-muted-foreground">
-              <StandardText
-                preset="subtitle"
-                size="md"
-                colorScheme="neutral"
-              >
+              <StandardText preset="subheading" colorScheme="secondary" className="mt-1">
                 {subtitle}
               </StandardText>
-            </p>
+            )}
+
+            {description && (
+              <StandardText preset="body" colorScheme="neutral" className="mt-2 text-muted-foreground">
+                {description}
+              </StandardText>
             )}
           </div>
         </div>

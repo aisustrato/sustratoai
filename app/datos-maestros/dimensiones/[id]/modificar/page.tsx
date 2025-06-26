@@ -243,8 +243,7 @@ export default function ModificarDimensionPage() {
                 </StandardCard.Header>
                 <StandardCard.Content className="text-center"><StandardText>{errorPage}</StandardText></StandardCard.Content>
                 <StandardCard.Footer className="flex justify-center">
-                     <StandardButton onClick={handleVolver} styleType="outline" colorScheme="danger">
-                        <StandardIcon><ArrowLeft /></StandardIcon>
+                     <StandardButton onClick={handleVolver} styleType="outline" colorScheme="danger" leftIcon={ArrowLeft}>
                         Volver a Dimensiones
                     </StandardButton>
                 </StandardCard.Footer>
@@ -271,8 +270,7 @@ export default function ModificarDimensionPage() {
           >
             <StandardText preset="subheading">Dimensión no disponible</StandardText>
             <StandardText colorScheme="neutral" className="mt-2">No se pudo cargar la información de la dimensión. Intenta volver a la lista.</StandardText>
-            <StandardButton onClick={handleVolver} styleType="outline" className="mt-4">
-              <StandardIcon><ArrowLeft /></StandardIcon>
+            <StandardButton onClick={handleVolver} styleType="outline" className="mt-4" leftIcon={ArrowLeft}>
               Volver a Dimensiones
             </StandardButton>
           </StandardCard>

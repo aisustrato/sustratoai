@@ -17,9 +17,9 @@ import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardTable } from "@/components/ui/StandardTable";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
-import { UserPlus, AlertCircle, Trash2, PenLine, Eye } from "lucide-react";
+import { User, UserPlus, AlertCircle, Trash2, PenLine, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { EmptyState } from "@/components/common/empty-state";
+import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
 import type { ProjectMemberDetails } from "@/lib/actions/member-actions";
 import type { ColumnDef, CellContext } from "@tanstack/react-table";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
@@ -163,7 +163,7 @@ export default function MiembrosPage() {
 						cell: ({ row }: CellContext<ProjectMemberDetails, unknown>) => {
 				const miembro = row.original as ProjectMemberDetails;
 				return (
-					<div className="flex gap-2 justify-end">
+					<div className="flex gap-1 justify-end">
 						<StandardButton
 							styleType="ghost"
 							colorScheme="primary"
@@ -171,9 +171,10 @@ export default function MiembrosPage() {
 							iconOnly={true}
 							onClick={() => handleVerMiembro(miembro)}
 							tooltip="Ver detalles"
+							leftIcon={Eye}
+							aria-label="Ver detalles del miembro"
 						>
-							<StandardIcon colorScheme="primary"><Eye /></StandardIcon>
-							<span className="sr-only">Ver detalles</span>
+							Ver
 						</StandardButton>
 						{puedeGestionarMiembros && (
 							<>
@@ -184,9 +185,10 @@ export default function MiembrosPage() {
 									iconOnly={true}
 									onClick={() => handleEditarMiembro(miembro)}
 									tooltip="Editar miembro"
+									leftIcon={PenLine}
+									aria-label="Editar miembro"
 								>
-									<StandardIcon colorScheme="primary"><PenLine /></StandardIcon>
-									<span className="sr-only">Editar</span>
+									Editar
 								</StandardButton>
 								<StandardButton
 									styleType="ghost"
@@ -195,9 +197,10 @@ export default function MiembrosPage() {
 									onClick={() => handleEliminarMiembro(miembro)}
 									colorScheme="danger"
 									tooltip="Eliminar miembro"
+									leftIcon={Trash2}
+									aria-label="Eliminar miembro"
 								>
-									<StandardIcon colorScheme="danger"><Trash2 /></StandardIcon>
-									<span className="sr-only">Eliminar</span>
+									Eliminar
 								</StandardButton>
 							</>
 						)}
@@ -215,13 +218,24 @@ export default function MiembrosPage() {
 				<div className="space-y-6">
 					<StandardPageTitle
 						title="Miembros del Proyecto"
-						subtitle={`Creación, visualización, modificación de miembros del proyecto ${
-							proyectoActual?.name || "actual"
-						}`}
+						subtitle="Gestión de los participantes del proyecto"
+						description="Añade, edita o elimina los perfiles de los investigadores y colaboradores asignados a este proyecto."
+						mainIcon={User}
 						breadcrumbs={[
 							{ label: "Datos Maestros", href: "/datos-maestros" },
 							{ label: "Miembros" },
 						]}
+						actions={
+							puedeGestionarMiembros ? (
+								<StandardButton
+									onClick={handleAgregarMiembro}
+									colorScheme="primary"
+									leftIcon={UserPlus}
+								>
+									Agregar Miembro
+								</StandardButton>
+							) : undefined
+						}
 					/>
 
 					{/* //#region [render_sub] - LOADING, ERROR, EMPTY STATES & MAIN CONTENT 🎨 */}
@@ -249,7 +263,7 @@ export default function MiembrosPage() {
 							</div>
 						</StandardCard>
 					) : miembros.length === 0 ? (
-						<EmptyState
+						<StandardEmptyState
 							icon={UserPlus}
 							title="No hay miembros en este proyecto"
 							description={
@@ -278,17 +292,7 @@ export default function MiembrosPage() {
 							shadow="md"
 							className="overflow-hidden hover:shadow-md transition-shadow duration-300"
 						>
-							{puedeGestionarMiembros && (
-								<div className="flex justify-end mb-4 pt-4">
-									<StandardButton
-										onClick={handleAgregarMiembro}
-										colorScheme="primary"
-										leftIcon={UserPlus}
-									>
-										Agregar Miembro
-									</StandardButton>
-								</div>
-							)}
+							
 							<StandardTable<ProjectMemberDetails>
 								data={miembros}
 								columns={columnas}

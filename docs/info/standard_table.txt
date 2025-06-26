@@ -1,0 +1,62 @@
+🌱 Semilla Fractal: Traspaso de Contexto (StandardTable v15.0 → v16.0)
+De: Un Contexto Co-Creador Gemini (Promoción "Anti-Bucles")
+Para: Futuro Contexto IA Encargado de Evolucionar StandardTable
+
+Propósito: Este documento sirve como la única fuente de verdad sobre el estado actual del componente StandardTable. Su objetivo es transferir el conocimiento acumulado, las decisiones de arquitectura y los aprendizajes clave de un intenso ciclo de depuración, para que el próximo ciclo de desarrollo comience con máxima coherencia y sinergia.
+
+I. Resumen del Contexto Actual (Estado de StandardTable v15.0)
+El componente StandardTable que heredas es una pieza de ingeniería robusta y probada en batalla. Ha superado múltiples "desafinaciones fértiles" para llegar a un estado de coherencia y estabilidad del que estamos orgullosos.
+
+Logros Clave Consolidados:
+Funcionalidades Base Operativas: El ordenamiento, filtrado global, coloreado condicional de filas y celdas (getRowStatus, cellVariant), y las filas expandibles (renderSubComponent) están implementados y funcionando correctamente.
+
+La "Soberanía del Componente" (Anclaje de Encabezado): La funcionalidad más compleja, el anclaje del encabezado (sticky header), ha sido resuelta a través de un profundo proceso de diagnóstico. La arquitectura final (v15.0) es la única validada y debe ser respetada. Sus principios son:
+
+Activación por Prop: Se controla mediante una prop booleana isStickyHeader.
+
+Cálculo Soberano de Altura: Cuando está anclada, la tabla ignora la prop maxTableHeight y calcula su propia altura para ocupar el espacio disponible, respetando el stickyOffset (la altura del navbar). height: calc(100vh - stickyOffset).
+
+Estabilidad del Layout: Utiliza la arquitectura del "Contenedor Fantasma" con una medición única (useLayoutEffect y useRef) para evitar los "saltos" de layout que plagaron versiones anteriores.
+
+Celda Inteligente: El subcomponente StandardTableCell es ahora lo suficientemente "inteligente" para renderizar componentes de React (como StandardBadge) directamente, o envolver contenido primitivo (texto, números) en un StandardText. Esto previene errores de hidratación y mantiene el DOM semánticamente correcto.
+
+En resumen, heredas una base sólida, con una API limpia y un comportamiento predecible, lista para ser extendida.
+
+II. Misiones Pendientes (Traspaso al Próximo Contexto)
+Tu misión, si decides aceptarla, es construir sobre esta base, añadiendo dos funcionalidades clave que mejorarán drásticamente la experiencia de usuario.
+
+Misión 1: Visibilidad Dinámica de Columnas
+Objetivo: Permitir al usuario final mostrar u ocultar columnas de la tabla a su voluntad.
+
+Propuesta de Implementación:
+
+UI de Control: Añadir un componente (un DropdownMenu con DropdownMenuCheckboxItem sería ideal) en la barra de herramientas de la tabla (StandardTableHeader).
+
+Lógica de Estado: TanStack Table ya provee las herramientas necesarias. Debes usar:
+
+table.getAllLeafColumns() para obtener una lista de todas las columnas.
+
+column.getIsVisible() para determinar el estado actual de cada checkbox.
+
+column.toggleVisibility(show) para ejecutar la acción de mostrar/ocultar.
+
+Consideraciones: Asegúrate de que las columnas fijas (expander, acciones) no puedan ser ocultadas para mantener la usabilidad.
+
+Misión 2: Manejo Avanzado de Truncamiento de Texto y Tooltips
+Objetivo: Gestionar elegantemente el texto largo dentro de las celdas, evitando que rompan el layout y ofreciendo una forma de ver el contenido completo.
+
+Propuesta de Implementación:
+
+Truncamiento CSS: Aplicar clases de Tailwind para truncar texto después de un número determinado de líneas (ej. 2 o 3). La utilidad line-clamp es perfecta para esto.
+
+.line-clamp-2 { -webkit-line-clamp: 2; ... }
+
+Integración con StandardTooltip: Envolver el contenido de las celdas de texto en el componente StandardTooltip que ya existe en nuestro ecosistema.
+
+El StandardTooltip ya está preparado para manejar contenido extenso y se activará solo cuando el texto realmente se trunque (on hover).
+
+Nueva Prop (Opcional): Considera añadir una prop a nivel de columna en la meta (ej. truncateLines?: number) para permitir que cada columna defina su propio límite de truncamiento.
+
+Este traspaso de contexto te dota de todo lo necesario para continuar la sinfonía sin perder el ritmo. Confía en la base construida, respeta la arquitectura soberana y, sobre todo, sigue escuchando a los "canarios en la mina".
+
+¡Éxito en tu co-creación!
