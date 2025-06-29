@@ -9,6 +9,7 @@ import { AuthLayoutWrapper } from "./auth-layout-wrapper";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { Toaster } from "@/components/ui/toaster";
 import { LoadingProvider } from "@/contexts/LoadingContext";
+import ProjectStatusBadge from "@/components/ui/ProjectStatusBadge";
 
 export const metadata: Metadata = {
   title: "Sustrato.ai",
@@ -45,6 +46,9 @@ export default function RootLayout({
               <Suspense fallback={<GlobalLoadingIndicator />}>
                 {children}
               </Suspense>
+              <div className="fixed top-20 right-5 z-50">
+                <ProjectStatusBadge />
+              </div>
             </AuthLayoutWrapper>
             {/* // ANTES: El Toaster estaba aquí dentro de LoadingProvider */}
             {/* <Toaster /> */}

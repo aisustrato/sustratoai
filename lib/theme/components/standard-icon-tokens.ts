@@ -10,7 +10,7 @@ import tinycolor from "tinycolor2";
 //#region [def] - 📦 TYPES 📦
 
 // ✅ CORRECCIÓN ARQUITECTÓNICA: El tipo de tamaño del icono se define y exporta desde aquí.
-export type StandardIconSize = Extract<StandardTextSize, "xs" | "sm" | "base" | "md" | "lg" | "xl" | "2xl">;
+export type StandardIconSize = StandardTextSize;
 
 export type StandardIconStyleType = "solid" | "outline" | "outlineGradient" | "inverseStroke";
 export type StandardIconColorShade = "pure" | "text" | "textShade" | "bg" | "contrastText" | "subtle";
@@ -19,6 +19,23 @@ export type StandardIconRecipe = {
 	fill: string;
 	stroke: string;
 	defs: string;
+};
+
+// ✅ NUEVO: Mapeo de tamaños de icono a valores rem para consistencia.
+export const standardIconSizeTokens: Record<StandardIconSize, string> = {
+	"4xs": "0.625rem", // 10px
+	"3xs": "0.75rem", // 12px
+	"2xs": "0.875rem", // 14px
+	xs: "1rem", // 16px
+	sm: "1.125rem", // 18px
+	base: "1.25rem", // 20px
+	md: "1.5rem", // 24px
+	lg: "1.75rem", // 28px
+	xl: "2rem", // 32px
+	"2xl": "2.5rem", // 40px
+	"3xl": "3rem", // 48px
+	"4xl": "3.5rem", // 56px
+	"5xl": "4rem", // 64px
 };
 //#endregion ![def]
 

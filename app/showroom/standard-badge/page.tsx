@@ -55,6 +55,7 @@ const styleTypes: NonNullable<StandardBadgeProps["styleType"]>[] = [
 	"outline",
 ];
 const sizes: NonNullable<StandardBadgeProps["size"]>[] = [
+	"2xs",
 	"xs",
 	"sm",
 	"md",

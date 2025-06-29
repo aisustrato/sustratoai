@@ -79,6 +79,7 @@ export function DarkModeSwitcher() {
 			</StandardIcon>
 			<motion.div whileTap={{ scale: 0.95 }}>
 				<StandardSwitch
+				colorScheme="tertiary"
 					checked={mode === "dark"}
 					onCheckedChange={toggleMode}
 					size="sm" // Un tamaño explícito es más predecible

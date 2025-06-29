@@ -3,12 +3,12 @@
 "use client";
 
 import { useTheme } from "@/app/theme-provider";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Palette } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRef, useState, useEffect, useMemo } from "react";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
-import { generateFontSelectorTokens } from "@/lib/theme/components/font-selector-tokens"; // Asumo que estos tokens también son útiles aquí o se pueden adaptar
+import { generateThemeSelectorTokens } from "@/lib/theme/components/theme-selector-tokens";
 
 // --- NUEVAS IMPORTACIONES ---
 import { useAuth } from "@/app/auth-provider";
@@ -28,11 +28,11 @@ export function ColorSchemeSwitcher() {
   
 
 
-  const navTokens = useMemo(() => {
-    return appColorTokens ? generateFontSelectorTokens(appColorTokens, mode) : null;
+  const themeSelectorTokens = useMemo(() => {
+    return appColorTokens ? generateThemeSelectorTokens(appColorTokens, mode) : null;
   }, [appColorTokens, mode]);
 
-  const hasTokens = !!navTokens;
+  const hasTokens = !!themeSelectorTokens;
 
 
   const handleColorSchemeChange = async (scheme: ColorSchemeId) => {
@@ -149,73 +149,90 @@ export function ColorSchemeSwitcher() {
   const defaultIconColor = "rgba(100, 100, 100, 0.7)";
 
   return (
-    <div className="relative flex items-center gap-1">
-      <StandardText preset="caption" colorScheme="neutral" colorShade="textShade" className="text-xs opacity-50 whitespace-nowrap">
-        Tema:
-      </StandardText>
-      
-      <motion.button
-        ref={buttonRef}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between rounded-full border px-2 py-1 text-xs transition-colors"
-        style={{
-          backgroundColor: hasTokens && navTokens 
-            ? `${navTokens.dropdown.backgroundColor}80` 
-            : defaultBackgroundColor,
-          borderColor: hasTokens && navTokens 
-            ? `${navTokens.dropdown.borderColor}30` 
-            : defaultBorderColor,
-          minWidth: "80px",
-          color: hasTokens && navTokens 
-            ? navTokens.closedLabelText.color 
-            : defaultTextColor,
-        }}
-        aria-label="Seleccionar tema de color"
-        aria-expanded={isOpen}
-        aria-haspopup="true"
+    <div className="relative flex items-center gap-2 w-full pl-2">
+      <StandardIcon 
+        styleType="outline"
+        colorScheme="neutral"
+        colorShade="textShade"
+        size="sm"
+        className="opacity-80 flex-shrink-0"
       >
-        <div className="flex items-center gap-1.5">
-                    <div
-            className="h-2.5 w-2.5 rounded-full"
+        <Palette className="w-5 h-5" />
+      </StandardIcon>
+      <div className="relative w-full">
+        <motion.button
+          ref={buttonRef}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setIsOpen(!isOpen)}
+          
+          className="flex items-center justify-between w-full rounded-full border px-2 py-0.5 text-xs transition-colors"
+          style={{
+            backgroundColor: hasTokens && themeSelectorTokens 
+              ? themeSelectorTokens.dropdown.backgroundColor
+              : defaultBackgroundColor,
+            borderColor: hasTokens && themeSelectorTokens 
+              ? themeSelectorTokens.dropdown.borderColor
+              : defaultBorderColor,
+            color: hasTokens && themeSelectorTokens 
+              ? themeSelectorTokens.closedLabelText.color
+              : defaultTextColor,
+            maxWidth: "150px"
+          }}
+          aria-label="Seleccionar tema de color"
+          aria-expanded={isOpen}
+          aria-haspopup="true"
+        >
+          <div className="flex items-center gap-2">
+            <div
+              className="h-2 w-2 rounded-full flex-shrink-0"
+              style={{
+                backgroundColor: appColorTokens
+                  ? appColorTokens.primary.pure
+                  : "#3D7DF6",
+              }}
+            />
+            <StandardText 
+              colorScheme="secondary" 
+              colorShade="text" 
+              preset="body" 
+              size ="2xs"
+              className="whitespace-nowrap overflow-hidden text-ellipsis opacity-90"
+              
+            >
+              {getCurrentColorSchemeName()}
+            </StandardText>
+          </div>
+          <ChevronDown
+            className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
             style={{
-              backgroundColor: appColorTokens
-                ? appColorTokens.primary.pure
-                : "#3D7DF6", // Fallback al azul por defecto si los tokens no están listos
+              color: hasTokens && themeSelectorTokens 
+                ? themeSelectorTokens.icon.color
+                : defaultIconColor,
+              width: "10px",
+              height: "10px",
+              flexShrink: 0
             }}
           />
-          <span style={{ fontSize: "0.75rem", opacity: 0.7, }}>
-            {getCurrentColorSchemeName()}
-          </span>
-        </div>
-        <ChevronDown
-          style={{
-            color: hasTokens && navTokens 
-              ? `${navTokens.icon.color}70` 
-              : defaultIconColor,
-            width: "12px", height: "12px", transition: "transform 0.2s",
-            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-          }}
-        />
-      </motion.button>
+        </motion.button>
+      </div>
       
       <AnimatePresence>
         {isOpen && (
           <motion.div
             ref={menuRef}
-            className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border"
+            className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border"
             style={{
-              backgroundColor: hasTokens && navTokens 
-                ? navTokens.dropdown.backgroundColor 
+              backgroundColor: hasTokens && themeSelectorTokens 
+                ? themeSelectorTokens.dropdown.backgroundColor 
                 : "#ffffff",
-              borderColor: hasTokens && navTokens 
-                ? `${navTokens.dropdown.borderColor}40` 
+              borderColor: hasTokens && themeSelectorTokens 
+                ? themeSelectorTokens.dropdown.borderColor
                 : defaultBorderColor,
-              boxShadow: hasTokens && navTokens 
-                ? navTokens.dropdown.boxShadow 
+              boxShadow: hasTokens && themeSelectorTokens 
+                ? themeSelectorTokens.dropdown.boxShadow 
                 : "0 4px 12px rgba(0, 0, 0, 0.1)",
-              padding: "0.5rem",
+              padding: themeSelectorTokens?.dropdown.padding || "0.5rem",
             }}
             variants={menuVariants} initial="hidden" animate="visible" exit="exit"
           >
@@ -226,11 +243,14 @@ export function ColorSchemeSwitcher() {
                   variants={itemVariants} initial="hidden" animate="visible" custom={index}
                   className="flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors"
                   style={{
-                    backgroundColor: colorScheme === schemeItem.id && hasTokens && navTokens
-                      ? `${navTokens.item.selected.backgroundColor}50` 
-                      : colorScheme === schemeItem.id
-                        ? "rgba(200, 200, 255, 0.25)" // Fallback si no hay tokens
-                        : "transparent",
+                    backgroundColor: colorScheme === schemeItem.id && hasTokens && themeSelectorTokens
+                      ? themeSelectorTokens.item.selected.backgroundColor
+                      : "transparent"
+                  }}
+                  whileHover={{
+                    backgroundColor: hasTokens && themeSelectorTokens
+                      ? themeSelectorTokens.item.hover.backgroundColor
+                      : "rgba(0, 0, 0, 0.05)"
                   }}
                   onClick={() => handleColorSchemeChange(schemeItem.id)}
                 >

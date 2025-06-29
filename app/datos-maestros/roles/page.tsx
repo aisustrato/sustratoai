@@ -154,7 +154,7 @@ export default function RolesPage() {
 		{
 			accessorKey: "role_name",
 			header: () => <StandardText weight="semibold">Nombre del Rol</StandardText>,
-			cell: (info) => <StandardBadge size="md" colorScheme="primary">{String(info.getValue())}</StandardBadge>,
+			cell: (info) => <StandardBadge size="sm" colorScheme="primary">{String(info.getValue())}</StandardBadge>,
 			meta: {
 				size: 200, // Ajustar ancho
 			},

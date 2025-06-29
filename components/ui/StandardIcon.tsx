@@ -5,12 +5,13 @@ import * as React from "react";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
-import { 
-    generateStandardIconTokens, 
-    type StandardIconStyleType, 
-    type StandardIconColorShade, 
-    type StandardIconRecipe,
-    type StandardIconSize as ImportedIconSize
+import {
+	generateStandardIconTokens,
+	standardIconSizeTokens,
+	type StandardIconStyleType,
+	type StandardIconColorShade,
+	type StandardIconRecipe,
+	type StandardIconSize as ImportedIconSize,
 } from "@/lib/theme/components/standard-icon-tokens";
 import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
 
@@ -28,13 +29,15 @@ export interface StandardIconProps extends React.SVGProps<SVGSVGElement> {
 export type { ImportedIconSize as StandardIconSize };
 
 export function StandardIcon({
-	children, className, size = "md", colorScheme = "neutral",
-	styleType = "outline", colorShade = "pure",
-    // ✅ Se recibe la nueva prop.
-    isSpinning = false, 
-    ...props
+	children,
+	className,
+	size = "md",
+	colorScheme = "neutral",
+	styleType = "outline",
+	colorShade = "pure",
+	isSpinning = false,
+	...props
 }: StandardIconProps) {
-	
 	const { appColorTokens, mode } = useTheme();
 
 	const recipe: StandardIconRecipe | null = useMemo(() => {
@@ -51,10 +54,8 @@ export function StandardIcon({
 		};
 	}, [recipe]);
 
-	const sizeClasses: Record<ImportedIconSize, string> = {
-		xs: "w-4 h-4", sm: "w-5 h-5", base: "w-6 h-6", md: "w-6 h-6",
-		lg: "w-8 h-8", xl: "w-10 h-10", "2xl": "w-12 h-12",
-	};
+	// ✅ Se obtienen los valores de tamaño desde los tokens centralizados.
+	const sizeValue = standardIconSizeTokens[size];
 
 	return (
 		<>
@@ -66,14 +67,17 @@ export function StandardIcon({
 			{React.Children.map(children, (child) => {
 				if (React.isValidElement(child)) {
 					return React.cloneElement(child as React.ReactElement<React.SVGProps<SVGSVGElement>>, {
-                        // ✅ Se aplica la clase 'animate-spin' si isSpinning es true.
-						className: cn(sizeClasses[size], { "animate-spin": isSpinning }, className),
+						// ✅ Se eliminan las clases de tamaño, ahora se manejan con estilos en línea.
+						className: cn({ "animate-spin": isSpinning }, className),
 						style: {
 							...cssVariables,
-							...(child.props.style || {}), 
-							fill: 'var(--si-fill)',
-							stroke: 'var(--si-stroke)',
-							strokeWidth: 'var(--si-stroke-width)',
+							// ✅ Se aplican los tamaños desde los tokens.
+							width: sizeValue,
+							height: sizeValue,
+							...(child.props.style || {}),
+							fill: "var(--si-fill)",
+							stroke: "var(--si-stroke)",
+							strokeWidth: "var(--si-stroke-width)",
 						},
 						...props,
 					});

@@ -1,55 +1,50 @@
-// StandardSphereGrid Componente v1.6 (Ajuste Fino de Tamaño y Scroll)
-
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { useTheme } from '@/app/theme-provider';
 import { type ColorSchemeVariant } from '@/lib/theme/ColorToken';
 import {
   StandardSphere,
-  StandardSphereProps,
-  StatusBadgeInfo
+  getSphereTotalHeight,
+  getBadgeSizeForSphere,
+  type StandardSphereProps, 
+  type StatusBadgeInfo 
 } from './StandardSphere';
-import { SphereSizeVariant } from '@/lib/theme/components/standard-sphere-tokens';
+import {
+  type SphereSizeVariant,
+  SPHERE_SIZE_DEFINITIONS,
+  SPHERE_GRID_GAP_TOKENS,
+} from '@/lib/theme/components/standard-sphere-tokens';
 import { StandardCard } from './StandardCard';
 import { StandardText } from './StandardText';
 import { SustratoLoadingLogo } from './sustrato-loading-logo';
 
 // #region [Types]
-export interface SphereItemData extends Omit<StandardSphereProps, 'size' | 'onClick' | 'className' | 'statusBadge'> {
-  id: string; 
-  onClick?: (id: string) => void; 
-  className?: string; 
+export interface SphereItemData
+  extends Omit<
+    StandardSphereProps,
+    'size' | 'onClick' | 'className' | 'statusBadge'
+  > {
+  id: string;
+  onClick?: (id: string) => void;
+  className?: string;
   statusBadge?: StatusBadgeInfo;
 }
 
+// 📌 CORRECCIÓN: Añadimos 'export' para que estos tipos sean públicos.
 export type SphereGridSortBy = 'value' | 'keyGroup' | 'none';
 export type SphereGridSortDirection = 'asc' | 'desc';
-export type SphereGridOverflowHandling = 'scroll' | 'shrink' | 'wrap';
 
 export interface StandardSphereGridProps {
   items: SphereItemData[];
-  keyGroupVisibility?: { [keyGroup: string]: boolean; };
+  containerWidth: number;
+  containerHeight: number;
+  keyGroupVisibility?: { [key: string]: boolean };
   sortBy?: SphereGridSortBy;
   sortDirection?: SphereGridSortDirection;
   groupByKeyGroup?: boolean;
-  maxRows?: number;
-  maxCols?: number;
-  overflowHandling?: SphereGridOverflowHandling;
-  
-  /**
-   * La anchura del contenedor disponible para el grid, en píxeles.
-   * El componente padre es responsable de medir y proveer este valor.
-   */
-  containerWidth: number;
-
-  /**
-   * La altura del contenedor disponible para el grid, en píxeles.
-   * El componente padre es responsable de medir y proveer este valor.
-   */
-  containerHeight: number;
-
+  fixedSize?: SphereSizeVariant;
+  itemsHaveBadges?: boolean;
   isLoading?: boolean;
   loadingMessage?: string;
   className?: string;
@@ -60,57 +55,55 @@ export interface StandardSphereGridProps {
 }
 // #endregion
 
-// #region [Constants]
-const SPHERE_PIXEL_SIZES: Record<SphereSizeVariant, number> = {
-  xs: 32, sm: 40, md: 48, lg: 56, xl: 64, '2xl': 72,
-};
-const SPHERE_COL_GAP_PX = 16; // 1rem
-const SPHERE_ROW_GAP_PX = 32; // 2rem
-// #endregion
-
 export const StandardSphereGrid = ({
   items,
+  containerWidth,
+  containerHeight,
   keyGroupVisibility,
   sortBy = 'none',
   sortDirection = 'asc',
   groupByKeyGroup = false,
-  maxRows,
-  maxCols,
-  overflowHandling = 'shrink',
-  containerWidth,
-  containerHeight,
-  isLoading = false,
-  loadingMessage = "Calculando la distribución óptima...",
+  fixedSize,
+  itemsHaveBadges = false,
+  isLoading: externalIsLoading = false,
+  loadingMessage = 'Calculando la distribución...',
   className,
   cardColorScheme = 'primary',
-  title = "Visualización de Esferas",
+  title = 'Visualización de Esferas',
   subtitle,
-  emptyStateText = "No hay ítems para mostrar en este momento.",
+  emptyStateText = 'No hay ítems para mostrar.',
 }: StandardSphereGridProps) => {
-  const { appColorTokens, mode } = useTheme();
-  const [currentSphereSizeVariant, setCurrentSphereSizeVariant] = useState<SphereSizeVariant>('2xl');
-  const [effectiveOverflow, setEffectiveOverflow] = useState(overflowHandling);
+  // I. ARQUITECTURA "EL PADRE MIDE, EL HIJO OBEDECE"
+  // Este componente ya no se mide a sí mismo. Recibe las dimensiones de su padre.
 
+  const [currentSphereSizeVariant, setCurrentSphereSizeVariant] =
+    useState<SphereSizeVariant>('2xl');
+  const [effectiveOverflow, setEffectiveOverflow] = useState<'shrink' | 'scroll'>(
+    'shrink'
+  );
+  const [calculatedCols, setCalculatedCols] = useState<number>(1);
+
+  const isLoading = externalIsLoading || !containerWidth || !containerHeight;
+
+  // Lógica de procesamiento de ítems (filtrado, ordenación)
   const processedItems = useMemo(() => {
     let filtered = items.filter(item => {
-      if (!keyGroupVisibility) return true;
-      if (!item.keyGroup) return true;
+      if (!keyGroupVisibility || !item.keyGroup) return true;
       return keyGroupVisibility[item.keyGroup] !== false;
     });
 
     if (sortBy !== 'none') {
       const compareValues = (a: any, b: any) => {
         if (typeof a === 'number' && typeof b === 'number') return a - b;
-        if (typeof a === 'string' && typeof b === 'string') return a.localeCompare(b);
+        if (typeof a === 'string' && typeof b === 'string')
+          return a.localeCompare(b);
         return 0;
       };
-
       filtered.sort((a, b) => {
         let comparison = 0;
         if (groupByKeyGroup && a.keyGroup && b.keyGroup) {
           comparison = a.keyGroup.localeCompare(b.keyGroup);
         }
-
         if (comparison === 0) {
           if (sortBy === 'keyGroup' && a.keyGroup && b.keyGroup) {
             comparison = a.keyGroup.localeCompare(b.keyGroup);
@@ -118,17 +111,24 @@ export const StandardSphereGrid = ({
             comparison = compareValues(a.value, b.value);
           }
         }
-
         return sortDirection === 'asc' ? comparison : -comparison;
       });
     }
-
     return filtered;
   }, [items, keyGroupVisibility, sortBy, sortDirection, groupByKeyGroup]);
-  
+
+  // Asignación de colores a los keyGroups
   const keyGroupColorMap = useMemo(() => {
-    const uniqueKeyGroups = [...new Set(processedItems.map(item => item.keyGroup).filter(Boolean))] as string[];
-    const colorSchemes: ColorSchemeVariant[] = ['secondary', 'tertiary', 'success', 'warning', 'danger', 'accent'];
+    const uniqueKeyGroups = [
+      ...new Set(processedItems.map(item => item.keyGroup).filter(Boolean)),
+    ] as string[];
+    const colorSchemes: ColorSchemeVariant[] = [
+      'primary',
+      'secondary',
+      'tertiary',
+      'accent',
+      'neutral',
+    ];
     const map: { [key: string]: ColorSchemeVariant } = {};
     uniqueKeyGroups.forEach((group, index) => {
       map[group] = colorSchemes[index % colorSchemes.length];
@@ -136,123 +136,148 @@ export const StandardSphereGrid = ({
     return map;
   }, [processedItems]);
 
+  // II. LÓGICA DE CÁLCULO DE LAYOUT
+  // Se dispara cuando cambia el tamaño del contenedor o los ítems.
   useEffect(() => {
-    console.log(`[SphereGrid Logic] useEffect triggered. Prop: ${overflowHandling}, H: ${containerHeight}, W: ${containerWidth}, Items: ${processedItems.length}`);
-    setEffectiveOverflow(overflowHandling);
+    if (isLoading) return;
 
-    if (overflowHandling === 'scroll') {
-      setCurrentSphereSizeVariant('2xl');
-      return;
-    }
+    const PADDING = 16; // p-4 = 1rem = 16px
+    const availableWidth = containerWidth - PADDING * 2;
+    const availableHeight = containerHeight - PADDING * 2;
 
-    if (overflowHandling === 'shrink') {
-      if (!containerWidth || !containerHeight || processedItems.length === 0) {
-        setCurrentSphereSizeVariant('2xl');
-        return;
-      }
-      console.log('[SphereGrid Logic] Entering SHRINK calculation...');
+    console.groupCollapsed(`[SphereGrid Brain] Recalculando Layout (${fixedSize ? 'Fijo' : 'Tetris'})`);
+    console.log(`Entrada: ${processedItems.length} ítems`);
+    console.log(`Medidas (WxH): ${containerWidth.toFixed(0)}x${containerHeight.toFixed(0)}px`);
+    console.log(`Área Útil (WxH): ${availableWidth.toFixed(0)}x${availableHeight.toFixed(0)}px`);
 
-      const availableSizes: SphereSizeVariant[] = ['2xl', 'xl', 'lg', 'md', 'sm'];
-      let bestFit: SphereSizeVariant = 'sm';
+    let finalSize: SphereSizeVariant;
+    let finalCols: number;
+    let finalOverflow: 'scroll' | 'shrink';
+
+    if (fixedSize) {
+      // Modo "Tamaño Fijo"
+      const spherePx = SPHERE_SIZE_DEFINITIONS[fixedSize].px;
+      const gap = SPHERE_GRID_GAP_TOKENS[fixedSize];
+      const rowItemHeight = getSphereTotalHeight(fixedSize, !!itemsHaveBadges);
+      const cols = Math.max(1, Math.floor((availableWidth + gap.col) / (spherePx + gap.col)));
+      const rows = Math.ceil(processedItems.length / cols);
+      const neededHeight = rows * (rowItemHeight + gap.row) - gap.row;
+
+      finalSize = fixedSize;
+      finalCols = cols;
+      finalOverflow = neededHeight > availableHeight ? 'scroll' : 'shrink';
+
+      console.log(`Modo Fijo ('${fixedSize}'):`);
+      console.log(`  -> Columnas: ${finalCols}, Filas: ${rows}`);
+      console.log(`  -> Altura Necesaria: ${neededHeight.toFixed(0)}px`);
+      console.log(`%c -> Decisión: ${finalOverflow === 'scroll' ? 'Activar Scroll' : 'Cabe sin Scroll'}`, 'font-weight: bold;');
+
+    } else {
+      // Modo "Tetris" (auto-ajuste)
+      const availableSizes = Object.keys(SPHERE_SIZE_DEFINITIONS).reverse() as SphereSizeVariant[];
+      let bestFitInfo: { size: SphereSizeVariant; cols: number } = { size: 'xs', cols: 1 };
       let foundFit = false;
 
-      // El contenedor tiene un padding de p-4 (1rem = 16px), por lo que restamos 32px a la anchura disponible.
-      const availableWidth = containerWidth - (16 * 2);
-
       for (const size of availableSizes) {
-        const spherePx = SPHERE_PIXEL_SIZES[size];
-        
-        const cols = Math.floor((availableWidth + SPHERE_COL_GAP_PX) / (spherePx + SPHERE_COL_GAP_PX));
+        const definition = SPHERE_SIZE_DEFINITIONS[size];
+        const gap = SPHERE_GRID_GAP_TOKENS[size];
+        const rowItemHeight = getSphereTotalHeight(size, itemsHaveBadges);
+
+        const cols = Math.floor(
+          (availableWidth + gap.col) / (definition.px + gap.col)
+        );
         if (cols === 0) continue;
 
         const rows = Math.ceil(processedItems.length / cols);
-        const neededHeight = rows * (spherePx + SPHERE_ROW_GAP_PX) - SPHERE_ROW_GAP_PX;
-        
-        console.log(` -> Trying size [${size}]: ${cols} cols, ${rows} rows. Needs ${neededHeight.toFixed(2)}px H. Available: ${containerHeight.toFixed(2)}px.`);
+        const neededHeight = rows * rowItemHeight + (rows - 1) * gap.row;
 
-        if (neededHeight <= containerHeight) {
-          console.log(` -> [${size}] SUCCEEDS. This is the best fit.`);
-          bestFit = size;
+        console.log(`  -> Probando '${size}': [${rows} filas] * ([altura item: ${rowItemHeight}px] + [gap: ${gap.row}px]) = ${Math.round(neededHeight)}px necesarios vs. ${Math.round(availableHeight)}px disponibles`);
+
+        if (neededHeight <= availableHeight) {
+          bestFitInfo = { size, cols };
           foundFit = true;
           break;
         }
       }
+      finalSize = bestFitInfo.size;
+      finalCols = bestFitInfo.cols;
+      finalOverflow = foundFit ? 'shrink' : 'scroll';
       
-      setCurrentSphereSizeVariant(bestFit);
-
-      if (!foundFit) {
-        console.log('[SphereGrid Logic] Shrink failed for all sizes. Forcing scroll mode.');
-        setEffectiveOverflow('scroll');
-        setCurrentSphereSizeVariant('md'); // Usar un tamaño razonable para el modo scroll
-      }
+      const rows = Math.ceil(processedItems.length / finalCols);
+      console.log(`Modo Tetris:`);
+      console.log(` -> Mejor Tamaño Encontrado: '${finalSize}'`);
+      console.log(` -> Columnas: ${finalCols}, Filas: ${rows}`);
+      console.log(`%c -> Decisión: ${finalOverflow === 'scroll' ? 'Activar Scroll (fallback)' : 'Cabe sin Scroll'}`, 'font-weight: bold;');
     }
-  }, [processedItems, containerWidth, containerHeight, overflowHandling]);
+    
+    console.groupEnd();
 
+    setCurrentSphereSizeVariant(finalSize);
+    setCalculatedCols(finalCols);
+    setEffectiveOverflow(finalOverflow);
+
+  }, [processedItems, containerWidth, containerHeight, fixedSize, itemsHaveBadges, isLoading]);
+
+  // III. RENDERIZADO DEL CONTENIDO DE LA RETÍCULA
   const renderGridContent = useMemo(() => {
-    if (isLoading) {
+    if (processedItems.length === 0 && !isLoading) {
       return (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-sm">
-          <SustratoLoadingLogo size={48} text={loadingMessage} showText={!!loadingMessage} />
-        </div>
-      );
-    }
-
-    if (processedItems.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center min-h-[150px] p-4 text-center">
-          <StandardText preset="body" size="md" colorScheme="neutral" colorShade="text" weight="medium">
+        <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+          <StandardText preset="body" size="md">
             {emptyStateText}
           </StandardText>
           {keyGroupVisibility && (
-            <StandardText size="sm" colorScheme="neutral" colorShade="textShade" className="mt-2">
-              (Verifica los filtros de visibilidad de los grupos si aplica)
+            <StandardText
+              size="sm"
+              colorScheme="neutral"
+              colorShade="textShade"
+              className="mt-2"
+            >
+              (Verifica los filtros de visibilidad)
             </StandardText>
           )}
         </div>
       );
     }
 
-    const spherePxSize = SPHERE_PIXEL_SIZES[currentSphereSizeVariant];
+    const currentGap = SPHERE_GRID_GAP_TOKENS[currentSphereSizeVariant];
     const gridStyles: React.CSSProperties = {
       display: 'grid',
-      gap: `${SPHERE_ROW_GAP_PX}px ${SPHERE_COL_GAP_PX}px`,
-      gridTemplateColumns: `repeat(auto-fit, minmax(${spherePxSize}px, 1fr))`,
+      gap: `${currentGap.row}px ${currentGap.col}px`,
+      gridTemplateColumns: `repeat(${calculatedCols}, minmax(0, 1fr))`,
       justifyItems: 'center',
-      alignItems: 'center',
+      alignItems: 'start',
     };
 
     return (
-      <div className={cn("w-full h-full p-4")} style={gridStyles}>
+      <div className="p-4" style={gridStyles}>
         {processedItems.map(item => {
-          const sphereColorScheme = item.colorScheme || (item.keyGroup ? keyGroupColorMap[item.keyGroup] : 'neutral');
+          const sphereColorScheme =
+            item.colorScheme ||
+            (item.keyGroup ? keyGroupColorMap[item.keyGroup] : 'primary');
           return (
             <StandardSphere
               key={item.id}
-              value={
-                <div className="flex flex-col items-center justify-center">
-                  <StandardText>{item.value}</StandardText>
-                  <StandardText size="xs" colorScheme="neutral" colorShade="textShade">({currentSphereSizeVariant})</StandardText>
-                </div>
-              }
-              keyGroup={item.keyGroup}
-              colorScheme={sphereColorScheme}
-              styleType={item.styleType}
+              {...item}
               size={currentSphereSizeVariant}
-              tooltip={item.tooltip ? `${item.tooltip} (Size: ${currentSphereSizeVariant})` : `Size: ${currentSphereSizeVariant}`}
-              statusBadge={item.statusBadge}
-              icon={item.icon}
-              onlyIcon={item.onlyIcon}
+              colorScheme={sphereColorScheme}
               onClick={() => item.onClick?.(item.id)}
-              disabled={item.disabled}
-              className={item.className}
-              dataTestId={item.dataTestId}
             />
           );
         })}
       </div>
     );
-  }, [isLoading, processedItems, emptyStateText, keyGroupVisibility, currentSphereSizeVariant, keyGroupColorMap, loadingMessage]);
+  }, [
+    processedItems,
+    emptyStateText,
+    keyGroupVisibility,
+    currentSphereSizeVariant,
+    keyGroupColorMap,
+    calculatedCols,
+    isLoading,
+  ]);
 
+  // IV. ESTRUCTURA JSX FINAL
   return (
     <StandardCard
       animateEntrance
@@ -260,21 +285,52 @@ export const StandardSphereGrid = ({
       accentPlacement="top"
       accentColorScheme={cardColorScheme}
       shadow="md"
-      className={cn("relative flex flex-col h-full overflow-hidden", className)}
+      className={cn('relative flex flex-col h-full', className)}
       styleType="subtle"
       hasOutline={false}
     >
       <StandardCard.Header>
-        <StandardText preset="subheading" weight="medium" colorScheme={cardColorScheme}>{title}</StandardText>
-        {subtitle && <StandardText size="sm" colorScheme="neutral" colorShade="textShade" className="mt-1">{subtitle}</StandardText>}
+        <StandardText
+          preset="subheading"
+          weight="medium"
+          colorScheme={cardColorScheme}
+        >
+          {title}
+        </StandardText>
+        {subtitle && (
+          <StandardText
+            size="sm"
+            colorScheme="neutral"
+            colorShade="textShade"
+            className="mt-1"
+          >
+            {subtitle}
+          </StandardText>
+        )}
       </StandardCard.Header>
-      <StandardCard.Content 
+      <StandardCard.Content
         className={cn(
-          "relative flex-grow flex !items-stretch p-0 min-h-0",
-          effectiveOverflow === 'scroll' && 'overflow-y-auto',
-          effectiveOverflow === 'shrink' && 'overflow-hidden'
-        )}>
-        {renderGridContent}
+          'relative flex flex-col flex-grow overflow-hidden' // Contenedor de contenido
+        )}
+      >
+        {isLoading ? (
+          <div className="flex h-full w-full items-center justify-center bg-background/20">
+            <SustratoLoadingLogo
+              size={48}
+              text={loadingMessage || 'Esperando dimensiones...'}
+              showText
+            />
+          </div>
+        ) : (
+          <div
+            className={cn(
+              'h-full w-full',
+              effectiveOverflow === 'scroll' && 'overflow-y-auto'
+            )}
+          >
+            {renderGridContent}
+          </div>
+        )}
       </StandardCard.Content>
     </StandardCard>
   );

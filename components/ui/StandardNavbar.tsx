@@ -188,7 +188,7 @@ const createMenuIcon = (Icon: React.ElementType, isActive = false) => (
   <StandardIcon
     colorScheme={isActive ? "primary" : "neutral"}
     styleType={isActive ? "inverseStroke" : "outlineGradient"}
-    className="mr-2"
+    className="mr-2 flex-shrink-0"
     size="sm"
   >
     <Icon />
@@ -462,11 +462,11 @@ const navItems: NavItem[] = useMemo(() => {
 													}
 													transition={{ duration: 0.2 }}>
 													<StandardIcon
-														className="ml-1 transition-transform duration-200 ease-in-out"
-														size="sm">
-														<StandardIcon
-															className="ml-1"
-															size="xs"
+															className={cn(
+																"ml-1 transition-transform duration-200 ease-in-out flex-shrink-0",
+																openSubmenu === item.label ? "rotate-180" : ""
+															)}
+															size="sm"
 															colorScheme={
 																pathname === item.href || isSubmenuActive(item)
 																	? "primary"
@@ -477,9 +477,8 @@ const navItems: NavItem[] = useMemo(() => {
 																	? "inverseStroke"
 																	: "outlineGradient"
 															}>
-															<ChevronDown />
+															<ChevronDown className="w-4 h-4" />
 														</StandardIcon>
-													</StandardIcon>
 												</motion.div>
 											</motion.button>
 											<AnimatePresence>
@@ -627,21 +626,7 @@ const navItems: NavItem[] = useMemo(() => {
 							<div className="hidden md:flex items-center gap-3 lg:gap-4">
 								<FontThemeSwitcher />
 								<ThemeSwitcher />
-								<div className="flex flex-col items-center gap-1">
-										<UserAvatar />
-						{proyectoActual?.name && (
-							<StandardText
-								weight="medium"
-								colorScheme="neutral"
-								colorShade="textShade"
-								className="text-center"
-								title={proyectoActual.name}
-								style={{ fontSize: '0.6rem', lineHeight: '1', maxWidth: '75px' }}
-							>
-								{proyectoActual.name}
-							</StandardText>
-						)}
-									</div>
+								<UserAvatar />
 							</div>
 
 							<div className="md:hidden ml-2">
@@ -920,7 +905,7 @@ const navItems: NavItem[] = useMemo(() => {
 									</motion.div>
 								))}
 								<div
-									className="pt-4 mt-2 border-t flex justify-center"
+									className="pt-4 mt-2 border-t w-full"
 									style={{
 										borderColor: currentNavTokens.submenu.border,
 										borderTopWidth: currentNavTokens.submenu.border
@@ -930,20 +915,8 @@ const navItems: NavItem[] = useMemo(() => {
 											? "solid"
 											: "none",
 									}}>
-									<div className="flex flex-col items-center gap-1">
+									<div className="w-full px-2 flex justify-center">
 										<UserAvatar />
-						{proyectoActual?.name && (
-							<StandardText
-								weight="medium"
-								colorScheme="neutral"
-								colorShade="textShade"
-								className="text-center"
-								title={proyectoActual.name}
-								style={{ fontSize: '0.6rem', lineHeight: '1', maxWidth: '75px' }}
-							>
-								{proyectoActual.name}
-							</StandardText>
-						)}
 									</div>
 								</div>
 							</div>

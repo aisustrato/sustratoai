@@ -184,7 +184,6 @@ export default function DimensionesPage() {
           subtitle="Estructura de clasificación"
           description="Define las dimensiones y categorías que se usarán para analizar y clasificar los artículos del proyecto."
           mainIcon={LayoutGrid}
-          mainleftIcon={Plus}
           actions={
             puedeGestionarDimensiones ? (
               <StandardButton
@@ -265,7 +264,7 @@ export default function DimensionesPage() {
 									<StandardButton
 										onClick={handleCrearDimension}
 										colorScheme="primary"
-										leftIcon={PlusCircle}>
+										leftIcon={Plus}>
 										Crear Primera Dimensión
 									</StandardButton>
 								) : undefined

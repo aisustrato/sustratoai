@@ -1,34 +1,52 @@
-//. 📍 lib/theme/components/standard-badge-tokens.ts (v2.0 - Canon StandardCard)
+import type { AppColorTokens, ColorSchemeVariant } from "../ColorToken";
+import { type StandardTextSize } from "@/components/ui/StandardText";
+import { type StandardIconSize } from "@/components/ui/StandardIcon";
 
-import type { AppColorTokens, ProCardVariant } from "../ColorToken";
-
+// 📌 1. ESTANDARIZACIÓN DE TAMAÑOS: 'xs' se añade para coherencia.
+export type StandardBadgeSize = '2xs' | 'xs' | 'sm' | 'md' | 'lg';
 export type StandardBadgeStyleType = 'solid' | 'subtle' | 'outline';
-export type StandardBadgeSize = 'sm' | 'md' | 'lg';
 
-// Define la estructura de un set de colores para un estilo específico
+// 📌 2. ÚNICA FUENTE DE VERDAD PARA TAMAÑOS
+// Este mapa define todo lo relacionado con el tamaño de cada variante del badge.
+export const BADGE_SIZE_DEFINITIONS: Record<StandardBadgeSize, {
+  heightPx: number;         // Altura en píxeles para cálculos de layout (como en el Grid)
+  padding: string;          // Clases de Tailwind para el padding
+  textSize: StandardTextSize; // Tamaño semántico para el componente StandardText
+  iconSize: StandardIconSize; // Tamaño semántico para el componente StandardIcon
+}> = {
+  '2xs': { heightPx: 16, padding: "px-1.5 py-px", textSize: '4xs',  iconSize: '3xs' },
+  xs: { heightPx: 20, padding: "px-2 py-0.5",  textSize: 'xs',   iconSize: 'xs' },
+  sm: { heightPx: 24, padding: "px-2.5 py-1",  textSize: 'sm',   iconSize: 'sm' },
+  md: { heightPx: 28, padding: "px-3 py-1.5",  textSize: 'sm',   iconSize: 'sm' },
+  lg: { heightPx: 32, padding: "px-3.5 py-2",  textSize: 'base', iconSize: 'base' },
+};
+
+// Helper derivado para que otros componentes (como Sphere) puedan usarlo fácilmente.
+export const BADGE_PIXEL_HEIGHTS = Object.fromEntries(
+  Object.entries(BADGE_SIZE_DEFINITIONS).map(([key, value]) => [key, value.heightPx])
+) as Record<StandardBadgeSize, number>;
+
+
+// --- Lógica de Generación de Color ---
 interface BadgeStyleTokenSet {
   bg: string;
   text: string;
   border: string;
 }
 
-// El objeto final anidado: ColorScheme -> StyleType -> TokenSet
-export type BadgeTokens = Record<ProCardVariant, Record<StandardBadgeStyleType, BadgeStyleTokenSet>>;
+// 📌 3. CORRECCIÓN DE TIPO: Usamos ColorSchemeVariant, no ProCardVariant.
+export type BadgeTokens = Record<ColorSchemeVariant, Record<StandardBadgeStyleType, BadgeStyleTokenSet>>;
 
-/**
- * Genera un "diccionario tonto" con todos los valores de color brutos
- * para todas las variantes y estilos posibles del Badge.
- */
 export function generateStandardBadgeTokens(appColorTokens: AppColorTokens): BadgeTokens {
   const tokens = {} as BadgeTokens;
 
-  // Iteramos sobre cada esquema de color definido en el tema principal
   for (const colorScheme in appColorTokens) {
-    const key = colorScheme as ProCardVariant;
+    const key = colorScheme as ColorSchemeVariant;
     const colorSet = appColorTokens[key];
 
-    if (colorSet) {
+    if (colorSet && colorSet.pure) {
       tokens[key] = {
+        // ✅ Usamos 'solid' como nos pediste, para mantener la jerga.
         solid: {
           bg: colorSet.pure,
           text: colorSet.contrastText,

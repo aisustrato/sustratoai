@@ -150,7 +150,7 @@ export default function MiembrosPage() {
 			accessorFn: (row: ProjectMemberDetails) =>
 				row.role_name || "Sin rol asignado",
 						cell: ({ getValue }: CellContext<ProjectMemberDetails, unknown>) => (
-				<StandardBadge size="md" colorScheme="primary" styleType="subtle">
+				<StandardBadge size="sm" colorScheme="primary" styleType="subtle">
 					{getValue() as string}
 				</StandardBadge>
 			),

@@ -58,14 +58,14 @@ export function FontThemeSwitcher() {
     }),
   };
   
-  const fontStyles = [ /* ... sin cambios ... */
-    { id: "sustrato", name: "Estilo Sustrato", headingStyle: { fontFamily: "var(--font-ubuntu), 'Ubuntu', sans-serif", fontWeight: "700" }, bodyStyle: { fontFamily: "var(--font-ubuntu), 'Ubuntu', sans-serif", fontWeight: "400" }},
-    { id: "classic", name: "Estilo Clásico", headingStyle: { fontFamily: fontThemeConfig.classic.heading, fontWeight: fontThemeConfig.classic.headingWeight }, bodyStyle: { fontFamily: fontThemeConfig.classic.body, fontWeight: fontThemeConfig.classic.bodyWeight }},
-    { id: "technical", name: "Estilo Técnico", headingStyle: { fontFamily: fontThemeConfig.technical.heading, fontWeight: fontThemeConfig.technical.headingWeight, letterSpacing: fontThemeConfig.technical.letterSpacingHeadings }, bodyStyle: { fontFamily: fontThemeConfig.technical.body, fontWeight: fontThemeConfig.technical.bodyWeight, letterSpacing: fontThemeConfig.technical.letterSpacingBody }},
-    { id: "creative", name: "Estilo Creativo", headingStyle: { fontFamily: fontThemeConfig.creative.heading, fontWeight: fontThemeConfig.creative.headingWeight, letterSpacing: fontThemeConfig.creative.letterSpacingHeadings }, bodyStyle: { fontFamily: fontThemeConfig.creative.body, fontWeight: fontThemeConfig.creative.bodyWeight, letterSpacing: fontThemeConfig.creative.letterSpacingBody }},
-    { id: "accessible", name: "Estilo Accesible", headingStyle: { fontFamily: fontThemeConfig.accessible.heading, fontWeight: fontThemeConfig.accessible.headingWeight, letterSpacing: fontThemeConfig.accessible.letterSpacingHeadings }, bodyStyle: { fontFamily: fontThemeConfig.accessible.body, fontWeight: fontThemeConfig.accessible.bodyWeight, letterSpacing: fontThemeConfig.accessible.letterSpacingBody }},
-    { id: "modern", name: "Estilo Moderno", headingStyle: { fontFamily: fontThemeConfig.modern.heading, fontWeight: fontThemeConfig.modern.headingWeight }, bodyStyle: { fontFamily: fontThemeConfig.modern.body, fontWeight: fontThemeConfig.modern.bodyWeight }},
-    { id: "minimalist", name: "Estilo Minimalista", headingStyle: { fontFamily: fontThemeConfig.minimalist.heading, fontWeight: fontThemeConfig.minimalist.headingWeight, letterSpacing: fontThemeConfig.minimalist.letterSpacingHeadings }, bodyStyle: { fontFamily: fontThemeConfig.minimalist.body, fontWeight: fontThemeConfig.minimalist.bodyWeight, letterSpacing: fontThemeConfig.minimalist.letterSpacingBody }},
+  const fontStyles = [
+    { id: "sustrato", name: "Fuente Sustrato", headingStyle: { fontFamily: "var(--font-ubuntu), 'Ubuntu', sans-serif", fontWeight: "700" }, bodyStyle: { fontFamily: "var(--font-ubuntu), 'Ubuntu', sans-serif", fontWeight: "400" }},
+    { id: "classic", name: "Fuente Clásica", headingStyle: { fontFamily: fontThemeConfig.classic.heading, fontWeight: fontThemeConfig.classic.headingWeight }, bodyStyle: { fontFamily: fontThemeConfig.classic.body, fontWeight: fontThemeConfig.classic.bodyWeight }},
+    { id: "technical", name: "Fuente Técnica", headingStyle: { fontFamily: fontThemeConfig.technical.heading, fontWeight: fontThemeConfig.technical.headingWeight, letterSpacing: fontThemeConfig.technical.letterSpacingHeadings }, bodyStyle: { fontFamily: fontThemeConfig.technical.body, fontWeight: fontThemeConfig.technical.bodyWeight, letterSpacing: fontThemeConfig.technical.letterSpacingBody }},
+    { id: "creative", name: "Fuente Creativa", headingStyle: { fontFamily: fontThemeConfig.creative.heading, fontWeight: fontThemeConfig.creative.headingWeight, letterSpacing: fontThemeConfig.creative.letterSpacingHeadings }, bodyStyle: { fontFamily: fontThemeConfig.creative.body, fontWeight: fontThemeConfig.creative.bodyWeight, letterSpacing: fontThemeConfig.creative.letterSpacingBody }},
+    { id: "accessible", name: "Fuente Accesible", headingStyle: { fontFamily: fontThemeConfig.accessible.heading, fontWeight: fontThemeConfig.accessible.headingWeight, letterSpacing: fontThemeConfig.accessible.letterSpacingHeadings }, bodyStyle: { fontFamily: fontThemeConfig.accessible.body, fontWeight: fontThemeConfig.accessible.bodyWeight, letterSpacing: fontThemeConfig.accessible.letterSpacingBody }},
+    { id: "modern", name: "Fuente Moderna", headingStyle: { fontFamily: fontThemeConfig.modern.heading, fontWeight: fontThemeConfig.modern.headingWeight }, bodyStyle: { fontFamily: fontThemeConfig.modern.body, fontWeight: fontThemeConfig.modern.bodyWeight }},
+    { id: "minimalist", name: "Fuente Minimalista", headingStyle: { fontFamily: fontThemeConfig.minimalist.heading, fontWeight: fontThemeConfig.minimalist.headingWeight, letterSpacing: fontThemeConfig.minimalist.letterSpacingHeadings }, bodyStyle: { fontFamily: fontThemeConfig.minimalist.body, fontWeight: fontThemeConfig.minimalist.bodyWeight, letterSpacing: fontThemeConfig.minimalist.letterSpacingBody }},
   ];
 
   const getCurrentFontPairName = () => {
@@ -128,32 +128,43 @@ export function FontThemeSwitcher() {
   };
 
   return (
-    <div className="relative flex items-center gap-2">
-      <StandardText preset="caption" colorScheme="neutral" colorShade="textShade" className="text-xs opacity-50 whitespace-nowrap">
-        Fuente:
-      </StandardText>
-      <motion.button
-        ref={buttonRef}
-        whileHover={{ scale: 1.02 }} // El estado de carga ya no afecta el hover/tap del botón principal
-        whileTap={{ scale: 0.98 }}
-        onClick={() => setIsOpen(!isOpen)} // El botón principal no se deshabilita
-        className="flex items-center justify-between rounded-full border px-2 py-1 text-xs transition-colors"
-        style={{
-          backgroundColor: `${appColorTokens.tertiary.bg}80`,
-          borderColor: `${fontTokens.closed.borderColor}30`,
-          minWidth: "100px",
-          color: fontTokens.closedLabelText.color,
-        }}
-        aria-label="Seleccionar fuente"
-        aria-expanded={isOpen}
-        aria-haspopup="true"
-      >
-        {/* No hay loader en el botón principal para la persistencia */}
-        <span style={{...getCurrentFontStyle(), fontSize: "0.75rem", opacity: 0.7, color: appColorTokens.neutral.text }}>
-          {getCurrentFontPairName()}
-        </span>
-        <ChevronDown style={{ color: `${fontTokens.icon.color}70`, width: "12px", height: "12px", transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", marginLeft: '4px' }} />
-      </motion.button>
+    <div className="relative flex flex-col gap-1 w-full pl-2">
+
+      <div className="relative w-full">
+        <motion.button
+          ref={buttonRef}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center justify-between w-full rounded-full border px-2 py-0.5 text-xs transition-colors"
+          style={{
+            backgroundColor: `${appColorTokens.tertiary.bg}80`,
+            borderColor: `${fontTokens.dropdown.borderColor}30`,
+            color: fontTokens.closedLabelText.color,
+            maxWidth: "135px"
+          }}
+          aria-label="Seleccionar fuente"
+          aria-expanded={isOpen}
+          aria-haspopup="true"
+        >
+          <span style={{
+            ...getCurrentFontStyle(), 
+            fontSize: "0.7rem", 
+            opacity: 0.8, 
+            color: appColorTokens.neutral.text
+          }}>
+            {getCurrentFontPairName()}
+          </span>
+          <ChevronDown style={{ 
+            color: `${fontTokens.icon.color}70`, 
+            width: "10px", 
+            height: "10px", 
+            transition: "transform 0.2s", 
+            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+            marginLeft: '4px' 
+          }} />
+        </motion.button>
+      </div>
 
       <AnimatePresence>
         {isOpen && ( // El menú se muestra/oculta normalmente
@@ -175,15 +186,34 @@ export function FontThemeSwitcher() {
                 <motion.button
                   key={font.id}
                   variants={itemVariants} initial="hidden" animate="visible" custom={index}
-                  className="w-full text-left cursor-pointer rounded-md p-2 transition-colors hover:bg-opacity-50" // No se deshabilita por persistencia
+                  className="w-full text-left cursor-pointer rounded-md p-2 transition-colors hover:bg-opacity-50"
                   style={{
-                    backgroundColor: fontTheme === font.id ? `${fontTokens.item.selected.backgroundColor}50` : "transparent",
+                    backgroundColor: fontTheme === font.id 
+                      ? `${appColorTokens.primary.pure}15` 
+                      : "transparent",
+                    border: fontTheme === font.id 
+                      ? `1px solid ${appColorTokens.primary.pure}30` 
+                      : '1px solid transparent',
                   }}
                   onClick={() => handleSelectFont(font.id)}
                 >
-                  <p style={{ ...font.headingStyle, color: fontTokens.itemParagraph.color, fontSize: "0.85rem", marginBottom: "0.25rem", fontWeight: fontTheme === font.id ? "600" : "400", opacity: fontTheme === font.id ? 0.9 : 0.7, }}>
+                  <p 
+                    style={{ 
+                      ...font.headingStyle, 
+                      color: fontTheme === font.id 
+                        ? appColorTokens.primary.pure 
+                        : fontTokens.itemParagraph.color, 
+                      fontSize: "0.8rem", 
+                      marginBottom: "0.2rem", 
+                      fontWeight: fontTheme === font.id ? "600" : "400",
+                    }}
+                  >
                     {font.name}
-                    {fontTheme === font.id && " ✓"}
+                    {fontTheme === font.id && (
+                      <span className="ml-1" style={{ color: appColorTokens.primary.pure }}>
+                        ✓
+                      </span>
+                    )}
                   </p>
                   <p style={{ ...font.bodyStyle, color: `${fontTokens.itemParagraph.color}AA`, fontSize: "0.75rem", lineHeight: "1.2" }}>
                     {sampleBodyText}

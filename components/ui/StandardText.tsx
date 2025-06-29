@@ -78,8 +78,8 @@ const StandardTextComponent = React.forwardRef(
                 case "title":	return { baseAsElement: "h3" as const, baseSize: "xl" as const, baseWeight: "semibold" as const, baseFontType: "heading" as const };
                 case "subtitle":	return { baseAsElement: "h4" as const, baseSize: "lg" as const, baseWeight: "medium" as const, baseColorScheme: "neutral" as const, baseFontType: "heading" as const };
                 case "body":	return { baseAsElement: "p" as const, baseSize: "base" as const, baseWeight: "normal" as const, baseFontType: "body" as const };
-                case "caption":	return { baseAsElement: "p" as const, baseSize: "xs" as const, baseWeight: "normal" as const, baseColorScheme: "neutral" as const, baseFontType: "body" as const };
-                default:	return { baseAsElement: "p" as const, baseSize: "base" as const, baseWeight: "normal" as const, baseFontType: "body" as const };
+                case "caption":	return { baseAsElement: "span" as const, baseSize: "xs" as const, baseWeight: "normal" as const, baseColorScheme: "neutral" as const, baseFontType: "body" as const };
+                default:	return { baseAsElement: "span" as const, baseSize: "base" as const, baseWeight: "normal" as const, baseFontType: "body" as const };
             }
         }, [preset]);
 
@@ -135,7 +135,7 @@ const StandardTextComponent = React.forwardRef(
 
         const typographyClasses = cn(
             { 'font-heading': finalFontType === 'heading', 'font-body': finalFontType === 'body' },
-            { "text-3xs": finalSize === "3xs", "text-2xs": finalSize === "2xs", "text-xs": finalSize === "xs", "text-sm": finalSize === "sm", "text-base": finalSize === "base", "text-lg": finalSize === "lg", "text-xl": finalSize === "xl", "text-2xl": finalSize === "2xl", "text-3xl": finalSize === "3xl", "text-4xl": finalSize === "4xl", "text-5xl": finalSize === "5xl" },
+            { "text-[10px]": finalSize === "4xs", "text-3xs": finalSize === "3xs", "text-2xs": finalSize === "2xs", "text-xs": finalSize === "xs", "text-sm": finalSize === "sm", "text-base": finalSize === "base", "text-lg": finalSize === "lg", "text-xl": finalSize === "xl", "text-2xl": finalSize === "2xl", "text-3xl": finalSize === "3xl", "text-4xl": finalSize === "4xl", "text-5xl": finalSize === "5xl" },
             { "font-normal": finalWeight === "normal", "font-medium": finalWeight === "medium", "font-semibold": finalWeight === "semibold", "font-bold": finalWeight === "bold" },
             { "text-left": align === "left", "text-center": align === "center", "text-right": align === "right", "text-justify": align === "justify" },
             finalFontType === "heading" && "tracking-tight",

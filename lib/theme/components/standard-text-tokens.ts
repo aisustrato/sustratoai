@@ -6,7 +6,7 @@ import tinycolor from "tinycolor2";
 //#region [def] - 📦 TYPES & INTERFACES 📦
 
 // ✅ CORRECCIÓN ARQUITECTÓNICA: Los tipos de props se definen y exportan desde aquí.
-export type StandardTextSize = "3xs" | "2xs" | "xs" | "sm" | "base" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
+export type StandardTextSize = "4xs" | "3xs" | "2xs" | "xs" | "sm" | "base" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
 export type StandardTextWeight = "normal" | "medium" | "semibold" | "bold";
 export type StandardTextAlign = "left" | "center" | "right" | "justify";
 export type StandardTextColorShade = "pure" | "text" | "textShade" | "contrastText" | "subtle";

@@ -1,5 +1,3 @@
-//. 📍 components/ui/StandardBadge.tsx (v2.2 - Patrón de Carga)
-
 "use client";
 
 import * as React from "react";
@@ -9,54 +7,38 @@ import { useTheme } from "@/app/theme-provider";
 import {
   generateStandardBadgeTokens,
   type StandardBadgeStyleType,
+  type StandardBadgeSize, // Importamos el tipo de tamaño unificado
+  BADGE_SIZE_DEFINITIONS,  // 📌 Importamos el nuevo mapa de tamaños
 } from "@/lib/theme/components/standard-badge-tokens";
 import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
-import { StandardText, type StandardTextSize, type StandardTextWeight } from "./StandardText";
+import { StandardText } from "./StandardText";
 import { StandardIcon } from "./StandardIcon";
 
-//#region [def] - 📦 VARIANTS & INTERFACES 📦
-
-const badgeVariants = cva(
-  "inline-flex items-center justify-center gap-x-1.5 rounded-full border font-medium",
-  {
-    variants: {
-      size: {
-        xs: "px-0.5 py-0", // Padding reducido, text-xs eliminado
-        sm: "px-1.5 py-px",
-        md: "px-2 py-0.5",
-        lg: "px-2.5 py-0.5",
-      },
-    },
-    defaultVariants: {
-      size: "md",
-    },
-  }
+// 📌 El 'cva' ahora solo se ocupa de la estructura base, no del tamaño.
+const badgeBaseVariants = cva(
+  "inline-flex items-center justify-center gap-x-1.5 rounded-full border font-medium"
 );
 
-export interface StandardBadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {
+export interface StandardBadgeProps extends React.HTMLAttributes<HTMLDivElement> {
   colorScheme?: ColorSchemeVariant;
   styleType?: StandardBadgeStyleType;
+  size?: StandardBadgeSize; // Usamos nuestro tipo de tamaño unificado
   leftIcon?: React.ComponentType<{ className?: string }>;
   rightIcon?: React.ComponentType<{ className?: string }>;
-  iconClassName?: string; // Permite sobreescribir estilos del ícono
+  iconClassName?: string;
   children: React.ReactNode;
 }
-//#endregion ![def]
 
-
-//#region [main] - 🧱 COMPONENT 🧱
 const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
   (
     {
       className,
       colorScheme = "primary",
       styleType = "subtle",
-      size = "md",
+      size = "md", // El default se mantiene
       leftIcon: LeftIcon,
       rightIcon: RightIcon,
-      iconClassName, // Se recibe la nueva prop
+      iconClassName,
       children,
       ...props
     },
@@ -64,96 +46,71 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
   ) => {
     const { appColorTokens, mode } = useTheme();
 
-    
-
-    // ✅ CORRECCIÓN: La lógica de cálculo de estilos solo se ejecuta si los tokens existen.
-    const cssVariables = React.useMemo(() => {
-      // Este hook ahora solo se ejecuta cuando appColorTokens y mode son válidos.
-      // La condición de guarda se mueve fuera.
-      if (!appColorTokens || !mode) return {};
-
-      const allTokens = generateStandardBadgeTokens(appColorTokens);
-      const styleSet = allTokens[colorScheme]?.[styleType] || allTokens.primary.subtle;
-
-      return {
-        '--badge-bg': styleSet.bg,
-        '--badge-text-color': styleSet.text,
-        '--badge-border-color': styleSet.border,
-      } as React.CSSProperties; // Se añade un cast para asegurar el tipo.
-
-    }, [appColorTokens, colorScheme, styleType, mode]);
-    
-    // ✅ CORRECCIÓN: Si el tema no ha cargado, renderizamos un fallback.
-    // Esto evita que el `useMemo` se ejecute con valores nulos y previene el error de tipado.
     if (!appColorTokens || !mode) {
-      // Fallback rendering (igual que antes)
+      // El fallback se simplifica, ya que los tamaños también están en los tokens
+      const fallbackSizeInfo = BADGE_SIZE_DEFINITIONS[size];
       return (
         <div
           ref={ref}
           className={cn(
-            badgeVariants({ size }),
-            "bg-gray-200 text-gray-800 border-transparent animate-pulse",
+            badgeBaseVariants(),
+            fallbackSizeInfo.padding,
+            "bg-gray-200 border-transparent animate-pulse",
             className
           )}
           {...props}
         >
-          <StandardText asElement="span" className="leading-none opacity-0">
-            {children}
-          </StandardText>
+          <span className="opacity-0">{children}</span>
         </div>
       );
     }
 
-    // Determinar textSize, textWeight, e iconSizeClass ANTES del return principal
-    let textSizeProp: StandardTextSize = 'xs';
-    let textWeightProp: StandardTextWeight = 'medium';
-    let iconClasses = "h-3.5 w-3.5"; // Default icon size
+    const cssVariables = React.useMemo(() => {
+      const allTokens = generateStandardBadgeTokens(appColorTokens);
+      // ✅ Usamos 'solid' como valor por defecto si el styleSet no se encuentra, alineado con la jerga.
+      const styleSet = allTokens[colorScheme]?.[styleType] || allTokens.primary.solid;
+      return {
+        '--badge-bg': styleSet.bg,
+        '--badge-text-color': styleSet.text,
+        '--badge-border-color': styleSet.border,
+      } as React.CSSProperties;
+    }, [appColorTokens, colorScheme, styleType]);
 
-    // Map Badge -> Text sizes con tamaños realmente soportados por StandardText
-    switch (size) {
-      case 'xs':
-        textSizeProp = 'xs'; // equivalente ~10-12px
-        textWeightProp = 'normal';
-        iconClasses = 'h-3 w-3';
-        break;
-      case 'sm':
-        textSizeProp = 'xs';
-        textWeightProp = 'medium';
-        iconClasses = 'h-3 w-3';
-        break;
-      case 'md':
-        textSizeProp = 'sm';
-        textWeightProp = 'medium';
-        // iconClasses default h-3.5 w-3.5
-        break;
-      case 'lg':
-        textSizeProp = 'base';
-        textWeightProp = 'medium';
-        // iconClasses default h-3.5 w-3.5
-        break;
-    }
+    // 📌 Se elimina el 'useMemo' con el 'switch'. Toda la info viene de un solo lugar.
+    const sizeInfo = BADGE_SIZE_DEFINITIONS[size];
 
     return (
       <div
         ref={ref}
         style={cssVariables}
         className={cn(
-          badgeVariants({ size }),
+          badgeBaseVariants(),
+          sizeInfo.padding, // Aplicamos el padding desde los tokens
           "bg-[var(--badge-bg)] border-[var(--badge-border-color)] text-[var(--badge-text-color)]",
           className
         )}
         {...props}
       >
         {LeftIcon && (
-          <StandardIcon colorScheme={colorScheme} className={cn("-ml-0.5", iconClasses, iconClassName)}>
+          <StandardIcon
+            size={sizeInfo.iconSize}
+            colorScheme={colorScheme}
+            colorShade={styleType === "solid" ? "contrastText" : "pure"}
+            className={cn("-ml-0.5", iconClassName)}
+          >
             <LeftIcon />
           </StandardIcon>
         )}
-        <StandardText asElement="span" size={textSizeProp} weight={textWeightProp} className="leading-none">
+        <StandardText asElement="span" size={sizeInfo.textSize} weight="medium" className="leading-none">
           {children}
         </StandardText>
         {RightIcon && (
-          <StandardIcon colorScheme={colorScheme} className={cn("-mr-0.5", iconClasses, iconClassName)}>
+          <StandardIcon
+            size={sizeInfo.iconSize}
+            colorScheme={colorScheme}
+            color={styleType === "solid" ? "contrastText" : "pure"}
+            className={cn("-mr-0.5", iconClassName)}
+          >
             <RightIcon />
           </StandardIcon>
         )}
@@ -163,5 +120,4 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
 );
 StandardBadge.displayName = "StandardBadge";
 
-export { StandardBadge, badgeVariants };
-//#endregion ![main]
+export { StandardBadge };

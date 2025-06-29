@@ -19,6 +19,9 @@ const config = {
       },
     },
     extend: {
+      fontSize: {
+        '2xs': ['0.625rem', { lineHeight: '1rem' }], // 10px
+      },
       fontFamily: {
         // La clase 'font-body' usará la variable --font-family-base
         body: ['var(--font-family-base)'],
