@@ -1,10 +1,10 @@
-//. 📍 components/ui/StandardCard.tsx (v1.3 - Ruta de Importación Corregida)
+// 📍 components/ui/StandardCard.tsx (v1.6 - Definitiva)
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 "use client";
 
 import * as React from "react";
-import { forwardRef, useMemo } from "react";
+import { forwardRef, useMemo, createContext, useContext } from "react";
 import { motion, AnimatePresence, type HTMLMotionProps, type Transition, type Variants } from "framer-motion";
 import { Check, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,8 +12,7 @@ import { useTheme } from "@/app/theme-provider";
 import type { ColorSchemeVariant as StandardCardColorScheme } from "@/lib/theme/ColorToken";
 import { generateStandardCardTokens, type StandardCardStyleType, type StandardCardAccentPlacement, type StandardCardShadow } from "@/lib/theme/components/standard-card-tokens";
 import { StandardText, type StandardTextSize, type StandardTextWeight, type StandardTextGradient, type StandardTextColorShade } from "@/components/ui/StandardText";
-// ✅ CORRECCIÓN: La ruta de importación ahora es la correcta.
-import { SustratoLoadingLogo, type SustratoLoadingLogoProps } from "@/components/ui/sustrato-loading-logo"; 
+import { SustratoLoadingLogo, type SustratoLoadingLogoProps } from "@/components/ui/sustrato-loading-logo";
 //#endregion ![head]
 
 //#region [def] - 📦 INTERFACES, TYPES & VARIANTS 📦
@@ -24,6 +23,7 @@ type CardTextGradient = StandardTextGradient;
 type CardTextColorShade = StandardTextColorShade;
 
 export interface StandardCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onAnimationStart" | "onDragStart" | "onDragEnd" | "onDrag"> {
+	contentCanScroll?: boolean;
 	colorScheme?: StandardCardColorScheme;
 	styleType?: StandardCardStyleType;
 	shadow?: StandardCardShadow;
@@ -53,19 +53,27 @@ interface StandardCardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
 interface StandardCardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> { className?: string; children?: React.ReactNode; size?: CardTextSize; colorScheme?: StandardCardColorScheme; colorShade?: CardTextColorShade; weight?: CardTextWeight; applyGradient?: CardTextGradient; truncate?: boolean; }
 interface StandardCardSubtitleProps extends React.HTMLAttributes<HTMLParagraphElement> { className?: string; children?: React.ReactNode; size?: CardTextSize; colorScheme?: StandardCardColorScheme; colorShade?: CardTextColorShade; weight?: CardTextWeight; applyGradient?: CardTextGradient; truncate?: boolean; }
 interface StandardCardMediaProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
+// 📌 CAMBIO 1: La prop `contentCanScroll` se pasa al contexto, por lo que ya no es necesaria aquí directamente.
 interface StandardCardContentProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
 interface StandardCardActionsProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
 interface StandardCardFooterProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
 
 interface StandardCardComposition extends React.ForwardRefExoticComponent<StandardCardProps & React.RefAttributes<HTMLDivElement>> {
-	Header: (props: StandardCardHeaderProps) => JSX.Element;
-	Title: (props: StandardCardTitleProps) => JSX.Element;
-	Subtitle: (props: StandardCardSubtitleProps) => JSX.Element;
-	Media: (props: StandardCardMediaProps) => JSX.Element;
+	Header: React.FC<StandardCardHeaderProps>;
+	Title: React.FC<StandardCardTitleProps>;
+	Subtitle: React.FC<StandardCardSubtitleProps>;
+	Media: React.FC<StandardCardMediaProps>;
 	Content: React.ForwardRefExoticComponent<StandardCardContentProps & React.RefAttributes<HTMLDivElement>>;
-	Actions: (props: StandardCardActionsProps) => JSX.Element;
-	Footer: (props: StandardCardFooterProps) => JSX.Element;
+	Actions: React.FC<StandardCardActionsProps>;
+	Footer: React.FC<StandardCardFooterProps>;
 }
+
+// 📌 CAMBIO 2: Creamos un contexto para comunicar la decisión del scroll a los hijos.
+const StandardCardContext = createContext<{
+  noPadding: boolean;
+  contentCanScroll: boolean;
+}>({ noPadding: false, contentCanScroll: false });
+
 
 const cardEntranceVariants: Variants = { hidden: { opacity: 0, y: 20, scale: 0.98 }, visible: { opacity: 1, y: 0, scale: 1 }, };
 const overlayVariants: Variants = { hidden: { opacity: 0 }, visible: { opacity: 1 }, exit: { opacity: 0 } };
@@ -82,12 +90,12 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 			shadow = "md",
 			disableShadowHover = true,
 			animateEntrance = true,
-            hasOutline = false,
+      hasOutline = false,
 			accentPlacement = "none",
 			outlineColorScheme,
 			accentColorScheme,
 			selected = false, loading = false, inactive = false,
-			className, children, noPadding = false,
+			className, children, noPadding = false, contentCanScroll = false,
 			showSelectionCheckbox = false, onSelectionChange, customTransition, style,
 			onCardClick, loaderSize = 32, loadingText, loadingVariant = "spin-pulse",
 			"data-testid": dataTestId, ...htmlProps
@@ -107,11 +115,9 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 			const vars: React.CSSProperties & { [key: `--${string}`]: string | number; } = {};
 			const styleTypeTokens = cardTokens.styleTypes[styleType]?.[currentCardScheme] || cardTokens.styleTypes[styleType]?.neutral;
 
-			// Background and text colors with fallbacks
 			vars["--sc-bg"] = styleTypeTokens?.background || "transparent";
 			vars["--sc-text-color"] = styleTypeTokens?.color || cardTokens.defaultTextColor || "currentColor";
 			
-			// Outline styles with fallbacks
 			const effectiveOutlineScheme = outlineColorScheme || currentCardScheme;
 			if (hasOutline) {
 				const outlineTokens = cardTokens.outline[effectiveOutlineScheme] || cardTokens.outline.neutral;
@@ -125,7 +131,6 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 				vars["--sc-outline-border-style"] = "none";
 			}
 
-			// Accent styles with fallbacks
 			const mainCardScheme = currentCardScheme;
 			const effectiveAccentColorScheme = accentColorScheme || mainCardScheme;
 			const accentTokenDefinitions = cardTokens.accents[accentPlacement]?.[effectiveAccentColorScheme];
@@ -135,8 +140,7 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 					if (mainCardScheme === "accent") {
 						vars["--sc-accent-bg"] = cardTokens.accents[accentPlacement]?.accent?.duotoneMagicBackground || "currentColor";
 					} else {
-						vars["--sc-accent-bg"] = cardTokens.accents[accentPlacement]?.[mainCardScheme]?.duotoneMagicBackground || 
-							accentTokenDefinitions.standardBackground || "currentColor";
+						vars["--sc-accent-bg"] = cardTokens.accents[accentPlacement]?.[mainCardScheme]?.duotoneMagicBackground || accentTokenDefinitions.standardBackground || "currentColor";
 					}
 				} else {
 					vars["--sc-accent-bg"] = accentTokenDefinitions.standardBackground || "currentColor";
@@ -148,7 +152,6 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 				vars["--sc-accent-bg"] = "transparent";
 			}
 			
-			// Selected state styles with fallbacks
 			if (selected && !inactive) {
 				const selectedTokens = cardTokens.selected[currentCardScheme] || cardTokens.selected.neutral;
 				if (selectedTokens) {
@@ -158,7 +161,6 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 				}
 			}
 
-			// Checkbox styles with fallbacks
 			const checkboxTokens = cardTokens.checkbox[currentCardScheme] || cardTokens.checkbox.neutral;
 			if (checkboxTokens) {
 				vars["--sc-checkbox-border-color"] = checkboxTokens.borderColor || "currentColor";
@@ -166,14 +168,12 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 				vars["--sc-checkbox-focus-ring-color"] = checkboxTokens.focusRingColor || "currentColor";
 			}
 			
-			// Overlay backgrounds with fallbacks
 			vars['--sc-inactive-overlay-bg'] = cardTokens.inactiveOverlayBackground || "rgba(255,255,255,0.7)";
 			vars['--sc-loading-overlay-bg'] = cardTokens.loadingOverlayBackground || "rgba(255,255,255,0.9)";
 
 			return vars;
 		}, [cardTokens, colorScheme, styleType, hasOutline, outlineColorScheme, accentPlacement, accentColorScheme, selected, inactive]);
 
-		const paddingClass = noPadding ? "" : (cardTokens?.padding || "p-4");
 		const shadowClass = cardTokens?.shadows[shadow] || "shadow-md";
 		const hoverEffectActive = !disableShadowHover && !inactive && !loading;
 		const hoverShadowClasses: Record<StandardCardShadow, string> = { none: "", sm: "hover:shadow-md", md: "hover:shadow-lg", lg: "hover:shadow-xl", xl: "hover:shadow-2xl" };
@@ -187,7 +187,16 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 		
 		const motionRootProps: HTMLMotionProps<"div"> & { "data-testid"?: string } = {
 			ref,
-			className: cn("relative rounded-lg overflow-hidden", "transition-shadow duration-200 ease-out", shadowClass, dynamicHoverShadowClass, { "cursor-not-allowed": isEffectivelyDisabled && !onCardClick, "cursor-pointer": onCardClick && !isEffectivelyDisabled, }, className),
+      // 📌 CAMBIO 3: La lógica del overflow raíz.
+			className: cn(
+        "relative rounded-lg flex flex-col", // La arquitectura flex raíz
+        "transition-shadow duration-200 ease-out", 
+        shadowClass, 
+        dynamicHoverShadowClass, 
+        !contentCanScroll && "overflow-hidden", // Se desactiva solo si es necesario
+        { "cursor-not-allowed": isEffectivelyDisabled && !onCardClick, "cursor-pointer": onCardClick && !isEffectivelyDisabled }, 
+        className
+      ),
 			style: { ...cssVariables, background: 'var(--sc-bg)', color: 'var(--sc-text-color)', borderColor: hasOutline ? 'var(--sc-outline-border-color)' : undefined, borderWidth: hasOutline ? 'var(--sc-outline-border-width)' : undefined, borderStyle: hasOutline ? 'var(--sc-outline-border-style)' : undefined, ...style } as React.CSSProperties,
 			initial: animateEntrance && !showLoadingIndicator ? "hidden" : false,
 			animate: animateEntrance && !showLoadingIndicator ? "visible" : false,
@@ -203,20 +212,6 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 		};
 		if (dataTestId) motionRootProps["data-testid"] = dataTestId;
 
-		const renderInnerContent = () => (
-			<div className={cn("relative z-[1]", paddingClass)}>
-				{showSelectionCheckbox && onSelectionChange && !showLoadingIndicator && (
-					<motion.button type="button" disabled={isEffectivelyDisabled} onClick={(e) => { e.stopPropagation(); onSelectionChange(!selected); }}
-						className={cn( "absolute top-3 right-3 z-20 p-0.5 rounded transition-colors", "bg-white/40 dark:bg-black/30 hover:bg-white/60 dark:hover:bg-black/40", "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--sc-checkbox-focus-ring-color)]", isEffectivelyDisabled && "opacity-50 cursor-not-allowed", )}
-						whileTap={{ scale: isEffectivelyDisabled ? 1 : 0.9 }} aria-pressed={selected} aria-label={selected ? "Deseleccionar tarjeta" : "Seleccionar tarjeta"}
-					>
-						{selected ? <Check size={18} className="text-[var(--sc-checkbox-icon-color)]" /> : <Square size={18} className="text-[var(--sc-checkbox-border-color)]" />}
-					</motion.button>
-				)}
-				{children}
-			</div>
-		);
-		
 		const renderAccent = () => {
 			const accentBgValue = cssVariables["--sc-accent-bg"];
 			if (accentPlacement === "none" || !cardTokens || !accentBgValue || String(accentBgValue).trim() === "transparent") { return null; }
@@ -253,11 +248,24 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 
 		return (
 			<MotionDiv {...motionRootProps}>
-				{renderAccent()}
-				{renderInnerContent()}
-				<AnimatePresence>{selected && !inactive && renderSelectedIndicator()}</AnimatePresence>
-				<AnimatePresence>{inactive && !showLoadingIndicator && renderInactiveOverlay()}</AnimatePresence>
-				<AnimatePresence>{showLoadingIndicator && renderLoadingState()}</AnimatePresence>
+        <StandardCardContext.Provider value={{ noPadding, contentCanScroll }}>
+          {renderAccent()}
+          {showSelectionCheckbox && onSelectionChange && !showLoadingIndicator && (
+            <motion.button type="button" disabled={isEffectivelyDisabled} onClick={(e) => { e.stopPropagation(); onSelectionChange(!selected); }}
+              className={cn( "absolute top-3 right-3 z-20 p-0.5 rounded transition-colors", "bg-white/40 dark:bg-black/30 hover:bg-white/60 dark:hover:bg-black/40", "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--sc-checkbox-focus-ring-color)]", isEffectivelyDisabled && "opacity-50 cursor-not-allowed", )}
+              whileTap={{ scale: isEffectivelyDisabled ? 1 : 0.9 }} aria-pressed={selected} aria-label={selected ? "Deseleccionar tarjeta" : "Seleccionar tarjeta"}
+            >
+              {selected ? <Check size={18} className="text-[var(--sc-checkbox-icon-color)]" /> : <Square size={18} className="text-[var(--sc-checkbox-border-color)]" />}
+            </motion.button>
+          )}
+          {/* 📌 CAMBIO 4: La estructura interna se simplifica. El div z-10 es ahora el contenedor flex principal de los children. */}
+          <div className="relative z-[1] flex flex-col flex-grow h-full w-full">
+            {children}
+          </div>
+          <AnimatePresence>{selected && !inactive && renderSelectedIndicator()}</AnimatePresence>
+          <AnimatePresence>{inactive && !showLoadingIndicator && renderInactiveOverlay()}</AnimatePresence>
+          <AnimatePresence>{showLoadingIndicator && renderLoadingState()}</AnimatePresence>
+        </StandardCardContext.Provider>
 			</MotionDiv>
 		);
 	},
@@ -265,58 +273,63 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 StandardCardRoot.displayName = "StandardCard";
 //#endregion ![main_root]
 
-
 //#region [main_subcomponents] -🧩 SUBCOMPONENTS (Header, Title, etc.) 🧩
 
-const Header = ({ className, children, ...props }: StandardCardHeaderProps): JSX.Element => (<div className={cn("mb-3", className)} {...props}>{children}</div>);
+const Header = ({ className, children, ...props }: StandardCardHeaderProps): JSX.Element => {
+  const { noPadding } = useContext(StandardCardContext);
+  return (<div className={cn("mb-3", !noPadding && "p-4 pb-0", className)} {...props}>{children}</div>);
+};
 Header.displayName = "StandardCard.Header";
 
 const Title = ({ children, className, size = "lg", colorScheme, colorShade, weight = "semibold", applyGradient, truncate, ...htmlProps }: StandardCardTitleProps): JSX.Element => (
-    <StandardText 
-        asElement="h3" 
-        size={size} 
-        colorScheme={colorScheme} 
-        colorShade={colorShade} 
-        weight={weight} 
-        applyGradient={applyGradient} 
-        truncate={truncate} 
-        className={cn(!colorScheme && !colorShade && "text-[var(--sc-text-color)]", className)} 
-        {...htmlProps}
-    >
-        {children}
+    <StandardText asElement="h3" size={size} colorScheme={colorScheme} colorShade={colorShade} weight={weight} applyGradient={applyGradient} truncate={truncate} className={cn(!colorScheme && !colorShade && "text-[var(--sc-text-color)]", className)} {...htmlProps}>
+      {children}
     </StandardText>
 );
 Title.displayName = "StandardCard.Title";
 
 const Subtitle = ({ children, className, size = "sm", colorScheme, colorShade, weight, applyGradient, truncate, ...htmlProps }: StandardCardSubtitleProps): JSX.Element => (
-    <StandardText 
-        asElement="p" 
-        size={size} 
-        colorScheme={colorScheme} 
-        colorShade={colorShade} 
-        weight={weight} 
-        applyGradient={applyGradient} 
-        truncate={truncate} 
-        className={cn("opacity-80", !colorScheme && !colorShade && "text-[var(--sc-text-color)]", className)} 
-        {...htmlProps}
-    >
-        {children}
+    <StandardText asElement="p" size={size} colorScheme={colorScheme} colorShade={colorShade} weight={weight} applyGradient={applyGradient} truncate={truncate} className={cn("opacity-80", !colorScheme && !colorShade && "text-[var(--sc-text-color)]", className)} {...htmlProps}>
+      {children}
     </StandardText>
 );
 Subtitle.displayName = "StandardCard.Subtitle";
 
 const Media = ({ className, children, ...props }: StandardCardMediaProps): JSX.Element => (<div className={cn("mb-3 overflow-hidden", className)} {...props}>{children}</div>);
 Media.displayName = "StandardCard.Media";
+
 const Content = React.forwardRef<HTMLDivElement, StandardCardContentProps>(
-    ({ className, children, ...props }, ref) => (
-        <div ref={ref} className={cn(className)} {...props}>
-            {children}
-        </div>
-    )
+  ({ className, children, ...props }, ref) => {
+    const { noPadding, contentCanScroll } = useContext(StandardCardContext);
+    const paddingClass = noPadding ? "" : "p-4";
+
+    return (
+      // 📌 CAMBIO 5: LA LÓGICA FINAL Y CORRECTA
+      <div 
+        ref={ref} 
+        className={cn(
+          "flex-1", // Crece para ocupar el espacio disponible.
+          contentCanScroll 
+            ? "min-h-0 overflow-y-auto" // Si puede hacer scroll, se le permite encogerse y mostrar la barra.
+            : "overflow-hidden",      // Si no, se corta como antes.
+          paddingClass,
+          className
+        )} 
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
 );
 Content.displayName = "StandardCard.Content";
-const Actions = ({ className, children, ...props }: StandardCardActionsProps): JSX.Element => (<div className={cn("mt-4 flex flex-wrap items-center gap-2", className)} {...props}>{children}</div>);
+
+const Actions = ({ className, children, ...props }: StandardCardActionsProps): JSX.Element => {
+  const { noPadding } = useContext(StandardCardContext);
+  return (<div className={cn("mt-4 flex flex-wrap items-center gap-2", !noPadding && "p-4 pt-0", className)} {...props}>{children}</div>);
+};
 Actions.displayName = "StandardCard.Actions";
+
 const Footer = ({ className, children, ...props }: StandardCardFooterProps): JSX.Element => (<div className={cn("mt-4 pt-3 text-sm opacity-70", "border-t border-[var(--sc-outline-border-color)]/30 dark:border-[var(--sc-outline-border-color)]/20", className)} {...props}>{children}</div>);
 Footer.displayName = "StandardCard.Footer";
 //#endregion ![main_subcomponents]

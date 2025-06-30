@@ -1,8 +1,9 @@
 import type { AppColorTokens, ColorSchemeVariant, Mode } from "../ColorToken";
 import tinycolor from 'tinycolor2';
+import type { StandardIconSize } from "./standard-icon-tokens";
 
 export type SphereSizeVariant = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-export type ImportedIconSize = "xs" | "sm" | "base" | "md" | "lg" | "xl" | "2xl";
+export type ImportedIconSize = StandardIconSize;
 export type SphereStyleType = 'filled' | 'subtle' | 'outline';
 
 // 📌 ÚNICA FUENTE DE VERDAD PARA LOS TAMAÑOS

@@ -1,50 +1,33 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { type ColorSchemeVariant } from '@/lib/theme/ColorToken';
-import {
-  StandardSphere,
-  getSphereTotalHeight,
-  getBadgeSizeForSphere,
-  type StandardSphereProps, 
-  type StatusBadgeInfo 
-} from './StandardSphere';
-import {
-  type SphereSizeVariant,
-  SPHERE_SIZE_DEFINITIONS,
-  SPHERE_GRID_GAP_TOKENS,
-} from '@/lib/theme/components/standard-sphere-tokens';
+import { StandardSphere, type SphereItemData } from './StandardSphere';
 import { StandardCard } from './StandardCard';
 import { StandardText } from './StandardText';
 import { SustratoLoadingLogo } from './sustrato-loading-logo';
 
-// #region [Types]
-export interface SphereItemData
-  extends Omit<
-    StandardSphereProps,
-    'size' | 'onClick' | 'className' | 'statusBadge'
-  > {
-  id: string;
-  onClick?: (id: string) => void;
-  className?: string;
-  statusBadge?: StatusBadgeInfo;
-}
+// #region [Grid Configuration & Constants]
+// -----------------------------------------------------------------------------
+const MINIMUM_SPHERE_DIAMETER = 32;
+const MAXIMUM_SPHERE_DIAMETER = 72;
+// #endregion
 
-// 📌 CORRECCIÓN: Añadimos 'export' para que estos tipos sean públicos.
+// #region [Component Types]
+// -----------------------------------------------------------------------------
 export type SphereGridSortBy = 'value' | 'keyGroup' | 'none';
 export type SphereGridSortDirection = 'asc' | 'desc';
 
 export interface StandardSphereGridProps {
-  items: SphereItemData[];
   containerWidth: number;
   containerHeight: number;
+  items: SphereItemData[];
   keyGroupVisibility?: { [key: string]: boolean };
   sortBy?: SphereGridSortBy;
   sortDirection?: SphereGridSortDirection;
   groupByKeyGroup?: boolean;
-  fixedSize?: SphereSizeVariant;
-  itemsHaveBadges?: boolean;
+  fixedSize?: number;
   isLoading?: boolean;
   loadingMessage?: string;
   className?: string;
@@ -55,16 +38,17 @@ export interface StandardSphereGridProps {
 }
 // #endregion
 
+// #region [Component Implementation]
+// -----------------------------------------------------------------------------
 export const StandardSphereGrid = ({
-  items,
   containerWidth,
   containerHeight,
+  items,
   keyGroupVisibility,
   sortBy = 'none',
   sortDirection = 'asc',
   groupByKeyGroup = false,
   fixedSize,
-  itemsHaveBadges = false,
   isLoading: externalIsLoading = false,
   loadingMessage = 'Calculando la distribución...',
   className,
@@ -73,19 +57,13 @@ export const StandardSphereGrid = ({
   subtitle,
   emptyStateText = 'No hay ítems para mostrar.',
 }: StandardSphereGridProps) => {
-  // I. ARQUITECTURA "EL PADRE MIDE, EL HIJO OBEDECE"
-  // Este componente ya no se mide a sí mismo. Recibe las dimensiones de su padre.
 
-  const [currentSphereSizeVariant, setCurrentSphereSizeVariant] =
-    useState<SphereSizeVariant>('2xl');
-  const [effectiveOverflow, setEffectiveOverflow] = useState<'shrink' | 'scroll'>(
-    'shrink'
-  );
+  const [calculatedSpherePx, setCalculatedSpherePx] = useState<number>(MINIMUM_SPHERE_DIAMETER);
+  const [effectiveOverflow, setEffectiveOverflow] = useState<'shrink' | 'scroll'>('shrink');
   const [calculatedCols, setCalculatedCols] = useState<number>(1);
-
+  
   const isLoading = externalIsLoading || !containerWidth || !containerHeight;
 
-  // Lógica de procesamiento de ítems (filtrado, ordenación)
   const processedItems = useMemo(() => {
     let filtered = items.filter(item => {
       if (!keyGroupVisibility || !item.keyGroup) return true;
@@ -95,8 +73,7 @@ export const StandardSphereGrid = ({
     if (sortBy !== 'none') {
       const compareValues = (a: any, b: any) => {
         if (typeof a === 'number' && typeof b === 'number') return a - b;
-        if (typeof a === 'string' && typeof b === 'string')
-          return a.localeCompare(b);
+        if (typeof a === 'string' && typeof b === 'string') return a.localeCompare(b);
         return 0;
       };
       filtered.sort((a, b) => {
@@ -117,18 +94,11 @@ export const StandardSphereGrid = ({
     return filtered;
   }, [items, keyGroupVisibility, sortBy, sortDirection, groupByKeyGroup]);
 
-  // Asignación de colores a los keyGroups
   const keyGroupColorMap = useMemo(() => {
     const uniqueKeyGroups = [
       ...new Set(processedItems.map(item => item.keyGroup).filter(Boolean)),
     ] as string[];
-    const colorSchemes: ColorSchemeVariant[] = [
-      'primary',
-      'secondary',
-      'tertiary',
-      'accent',
-      'neutral',
-    ];
+    const colorSchemes: ColorSchemeVariant[] = ['primary', 'secondary', 'tertiary', 'accent', 'neutral'];
     const map: { [key: string]: ColorSchemeVariant } = {};
     uniqueKeyGroups.forEach((group, index) => {
       map[group] = colorSchemes[index % colorSchemes.length];
@@ -136,103 +106,97 @@ export const StandardSphereGrid = ({
     return map;
   }, [processedItems]);
 
-  // II. LÓGICA DE CÁLCULO DE LAYOUT
-  // Se dispara cuando cambia el tamaño del contenedor o los ítems.
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || processedItems.length === 0) return;
 
-    const PADDING = 16; // p-4 = 1rem = 16px
-    const availableWidth = containerWidth - PADDING * 2;
-    const availableHeight = containerHeight - PADDING * 2;
+    console.groupCollapsed(`[SphereGrid Brain 🧠 - Búsqueda por TAMAÑO DE CELDA RECTANGULAR]`);
 
-    console.groupCollapsed(`[SphereGrid Brain] Recalculando Layout (${fixedSize ? 'Fijo' : 'Tetris'})`);
-    console.log(`Entrada: ${processedItems.length} ítems`);
-    console.log(`Medidas (WxH): ${containerWidth.toFixed(0)}x${containerHeight.toFixed(0)}px`);
-    console.log(`Área Útil (WxH): ${availableWidth.toFixed(0)}x${availableHeight.toFixed(0)}px`);
+    const HORIZONTAL_SAFETY_MARGIN = 20;
+    const VERTICAL_SAFETY_MARGIN = 100;
+    const PADDING = 16;
+    const RECTANGULAR_CELL_BADGE_SPACE = 32;
+    
+    const availableWidth = containerWidth - PADDING * 2 - HORIZONTAL_SAFETY_MARGIN;
+    const availableHeight = containerHeight - PADDING * 2 - VERTICAL_SAFETY_MARGIN;
+    const GAP = availableWidth > 600 ? 16 : 8;
 
-    let finalSize: SphereSizeVariant;
+    console.log(`Contexto -> Área útil: ${availableWidth.toFixed(0)}x${availableHeight.toFixed(0)} | Items: ${processedItems.length} | Espacio Badge Asumido: ${RECTANGULAR_CELL_BADGE_SPACE}px`);
+
+    let finalSizePx: number;
     let finalCols: number;
     let finalOverflow: 'scroll' | 'shrink';
-
-    if (fixedSize) {
-      // Modo "Tamaño Fijo"
-      const spherePx = SPHERE_SIZE_DEFINITIONS[fixedSize].px;
-      const gap = SPHERE_GRID_GAP_TOKENS[fixedSize];
-      const rowItemHeight = getSphereTotalHeight(fixedSize, !!itemsHaveBadges);
-      const cols = Math.max(1, Math.floor((availableWidth + gap.col) / (spherePx + gap.col)));
-      const rows = Math.ceil(processedItems.length / cols);
-      const neededHeight = rows * (rowItemHeight + gap.row) - gap.row;
-
-      finalSize = fixedSize;
-      finalCols = cols;
-      finalOverflow = neededHeight > availableHeight ? 'scroll' : 'shrink';
-
-      console.log(`Modo Fijo ('${fixedSize}'):`);
-      console.log(`  -> Columnas: ${finalCols}, Filas: ${rows}`);
-      console.log(`  -> Altura Necesaria: ${neededHeight.toFixed(0)}px`);
-      console.log(`%c -> Decisión: ${finalOverflow === 'scroll' ? 'Activar Scroll' : 'Cabe sin Scroll'}`, 'font-weight: bold;');
-
-    } else {
-      // Modo "Tetris" (auto-ajuste)
-      const availableSizes = Object.keys(SPHERE_SIZE_DEFINITIONS).reverse() as SphereSizeVariant[];
-      let bestFitInfo: { size: SphereSizeVariant; cols: number } = { size: 'xs', cols: 1 };
-      let foundFit = false;
-
-      for (const size of availableSizes) {
-        const definition = SPHERE_SIZE_DEFINITIONS[size];
-        const gap = SPHERE_GRID_GAP_TOKENS[size];
-        const rowItemHeight = getSphereTotalHeight(size, itemsHaveBadges);
-
-        const cols = Math.floor(
-          (availableWidth + gap.col) / (definition.px + gap.col)
-        );
-        if (cols === 0) continue;
-
-        const rows = Math.ceil(processedItems.length / cols);
-        const neededHeight = rows * rowItemHeight + (rows - 1) * gap.row;
-
-        console.log(`  -> Probando '${size}': [${rows} filas] * ([altura item: ${rowItemHeight}px] + [gap: ${gap.row}px]) = ${Math.round(neededHeight)}px necesarios vs. ${Math.round(availableHeight)}px disponibles`);
-
-        if (neededHeight <= availableHeight) {
-          bestFitInfo = { size, cols };
-          foundFit = true;
-          break;
-        }
-      }
-      finalSize = bestFitInfo.size;
-      finalCols = bestFitInfo.cols;
-      finalOverflow = foundFit ? 'shrink' : 'scroll';
-      
-      const rows = Math.ceil(processedItems.length / finalCols);
-      console.log(`Modo Tetris:`);
-      console.log(` -> Mejor Tamaño Encontrado: '${finalSize}'`);
-      console.log(` -> Columnas: ${finalCols}, Filas: ${rows}`);
-      console.log(`%c -> Decisión: ${finalOverflow === 'scroll' ? 'Activar Scroll (fallback)' : 'Cabe sin Scroll'}`, 'font-weight: bold;');
-    }
     
+    if (fixedSize) {
+        console.log(`MODO: Tamaño Fijo`);
+        finalSizePx = Math.max(MINIMUM_SPHERE_DIAMETER, Math.min(fixedSize, MAXIMUM_SPHERE_DIAMETER));
+        finalCols = Math.max(1, Math.floor((availableWidth + GAP) / (finalSizePx + GAP)));
+        const rows = Math.ceil(processedItems.length / finalCols);
+        const neededHeight = rows * (finalSizePx + RECTANGULAR_CELL_BADGE_SPACE + GAP) - GAP;
+        finalOverflow = neededHeight > availableHeight ? 'scroll' : 'shrink';
+    } else {
+        console.log(`MODO: Tetris Holístico (Búsqueda por Tamaño de Celda Rectangular)`);
+        
+        let bestFit = {
+            size: MINIMUM_SPHERE_DIAMETER,
+            cols: Math.max(1, Math.floor((availableWidth + GAP) / (MINIMUM_SPHERE_DIAMETER + GAP))),
+            overflow: 'scroll' as 'scroll' | 'shrink'
+        };
+
+        let low = MINIMUM_SPHERE_DIAMETER;
+        let high = MAXIMUM_SPHERE_DIAMETER;
+        console.log(`Definiendo terreno de búsqueda -> Ancho de esfera: de ${low.toFixed(2)}px a ${high.toFixed(2)}px`);
+
+        while (low <= high) {
+            const midSize = (low + high) / 2;
+            if (midSize <= 0) break;
+            
+            console.log(`-- Iteración: low=${low.toFixed(2)}, high=${high.toFixed(2)}. Probando ancho (G) = ${midSize.toFixed(2)}px.`);
+
+            const colsForSize = Math.floor((availableWidth + GAP) / (midSize + GAP));
+            if (colsForSize === 0) {
+                high = midSize - 0.1;
+                continue;
+            }
+            const rowsNeeded = Math.ceil(processedItems.length / colsForSize);
+            const totalHeightNeeded = rowsNeeded * (midSize + RECTANGULAR_CELL_BADGE_SPACE + GAP) - GAP;
+            
+            console.log(`   -> Con ancho ${midSize.toFixed(2)}px, caben ${colsForSize} columnas. Necesitaríamos ${rowsNeeded} filas.`);
+            console.log(`   -> Altura total necesaria (con Celdas Rectangulares): ${totalHeightNeeded.toFixed(2)}px vs. Disponible: ${availableHeight.toFixed(2)}px.`);
+
+            if (totalHeightNeeded <= availableHeight) {
+                console.log(`   ✅ CABE. Es una solución válida. Guardando y probando con tamaños MÁS GRANDES.`);
+                const realDiameter = (availableWidth - (GAP * (colsForSize - 1))) / colsForSize;
+                bestFit = { size: realDiameter, cols: colsForSize, overflow: 'shrink' };
+                low = midSize + 0.1;
+            } else {
+                console.log(`   ❌ NO CABE. Se necesitan esferas MÁS PEQUEÑAS.`);
+                high = midSize - 0.1;
+            }
+        }
+        finalSizePx = bestFit.size;
+        finalCols = bestFit.cols;
+        finalOverflow = bestFit.overflow;
+    }
+
+    console.log('%c -> Decisión Final del Grid:', 'font-weight: bold; color: #4caf50;');
+    console.log(`     Tamaño de Esfera (Ancho de Celda): ${finalSizePx.toFixed(2)}px`);
+    console.log(`     Columnas: ${finalCols}`);
+    console.log(`     Desbordamiento: '${finalOverflow}'`);
     console.groupEnd();
 
-    setCurrentSphereSizeVariant(finalSize);
+    setCalculatedSpherePx(finalSizePx);
     setCalculatedCols(finalCols);
     setEffectiveOverflow(finalOverflow);
 
-  }, [processedItems, containerWidth, containerHeight, fixedSize, itemsHaveBadges, isLoading]);
-
-  // III. RENDERIZADO DEL CONTENIDO DE LA RETÍCULA
+  }, [processedItems, containerWidth, containerHeight, fixedSize]);
+  
   const renderGridContent = useMemo(() => {
     if (processedItems.length === 0 && !isLoading) {
       return (
-        <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-          <StandardText preset="body" size="md">
-            {emptyStateText}
-          </StandardText>
+        <div className="flex flex-col items-center justify-center h-full text-center">
+          <StandardText preset="body" size="md">{emptyStateText}</StandardText>
           {keyGroupVisibility && (
-            <StandardText
-              size="sm"
-              colorScheme="neutral"
-              colorShade="textShade"
-              className="mt-2"
-            >
+            <StandardText size="sm" colorScheme="neutral" colorShade="textShade" className="mt-2">
               (Verifica los filtros de visibilidad)
             </StandardText>
           )}
@@ -240,98 +204,66 @@ export const StandardSphereGrid = ({
       );
     }
 
-    const currentGap = SPHERE_GRID_GAP_TOKENS[currentSphereSizeVariant];
     const gridStyles: React.CSSProperties = {
       display: 'grid',
-      gap: `${currentGap.row}px ${currentGap.col}px`,
-      gridTemplateColumns: `repeat(${calculatedCols}, minmax(0, 1fr))`,
+      gap: `${containerWidth > 600 ? 16 : 8}px`,
+      gridTemplateColumns: `repeat(${calculatedCols}, 1fr)`,
       justifyItems: 'center',
       alignItems: 'start',
     };
 
     return (
-      <div className="p-4" style={gridStyles}>
-        {processedItems.map(item => {
-          const sphereColorScheme =
-            item.colorScheme ||
-            (item.keyGroup ? keyGroupColorMap[item.keyGroup] : 'primary');
-          return (
-            <StandardSphere
-              key={item.id}
-              {...item}
-              size={currentSphereSizeVariant}
-              colorScheme={sphereColorScheme}
-              onClick={() => item.onClick?.(item.id)}
-            />
-          );
-        })}
+      <div style={gridStyles}>
+        {processedItems.map((item, index) => (
+          <StandardSphere
+            key={item.id}
+            {...item}
+            sizeInPx={calculatedSpherePx}
+            colorScheme={item.colorScheme || (item.keyGroup ? keyGroupColorMap[item.keyGroup] : 'primary')}
+            onClick={() => item.onClick?.(item.id)}
+            isLogSpokesperson={index === 0}
+          />
+        ))}
       </div>
     );
-  }, [
-    processedItems,
-    emptyStateText,
-    keyGroupVisibility,
-    currentSphereSizeVariant,
-    keyGroupColorMap,
-    calculatedCols,
-    isLoading,
-  ]);
+  }, [processedItems, emptyStateText, keyGroupVisibility, containerWidth, calculatedSpherePx, calculatedCols, keyGroupColorMap, isLoading]);
 
-  // IV. ESTRUCTURA JSX FINAL
   return (
+    // 📌 VICTORIA FINAL: Pasamos la decisión del cerebro a la nueva prop del StandardCard.
+    // Esto resuelve el conflicto CSS y permite que el scroll funcione como se espera.
     <StandardCard
       animateEntrance
       colorScheme={cardColorScheme}
       accentPlacement="top"
       accentColorScheme={cardColorScheme}
       shadow="md"
-      className={cn('relative flex flex-col h-full', className)}
+      className={cn('flex flex-col h-full', className)}
       styleType="subtle"
       hasOutline={false}
+      contentCanScroll={effectiveOverflow === 'scroll'}
     >
       <StandardCard.Header>
-        <StandardText
-          preset="subheading"
-          weight="medium"
-          colorScheme={cardColorScheme}
-        >
+        <StandardText preset="subheading" weight="medium" colorScheme={cardColorScheme}>
           {title}
         </StandardText>
         {subtitle && (
-          <StandardText
-            size="sm"
-            colorScheme="neutral"
-            colorShade="textShade"
-            className="mt-1"
-          >
+          <StandardText size="sm" colorScheme="neutral" colorShade="textShade" className="mt-1">
             {subtitle}
           </StandardText>
         )}
       </StandardCard.Header>
-      <StandardCard.Content
-        className={cn(
-          'relative flex flex-col flex-grow overflow-hidden' // Contenedor de contenido
-        )}
-      >
+      {/* 📌 SIMPLIFICACIÓN: Ya no necesitamos el div wrapper con lógica de scroll.
+          StandardCard.Content, con su padding, es ahora el contenedor directo. */}
+      <StandardCard.Content className='p-4'>
         {isLoading ? (
           <div className="flex h-full w-full items-center justify-center bg-background/20">
-            <SustratoLoadingLogo
-              size={48}
-              text={loadingMessage || 'Esperando dimensiones...'}
-              showText
-            />
+            <SustratoLoadingLogo size={48} text={loadingMessage} showText />
           </div>
         ) : (
-          <div
-            className={cn(
-              'h-full w-full',
-              effectiveOverflow === 'scroll' && 'overflow-y-auto'
-            )}
-          >
-            {renderGridContent}
-          </div>
+          renderGridContent
         )}
       </StandardCard.Content>
     </StandardCard>
   );
 };
+// #endregion
