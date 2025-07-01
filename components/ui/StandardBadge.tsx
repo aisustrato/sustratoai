@@ -44,7 +44,8 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
     },
     ref
   ) => {
-    const { appColorTokens } = useTheme();
+    const { appColorTokens, mode } = useTheme();
+    const hasTheme = appColorTokens && mode;
 
     const cssVariables = React.useMemo(() => {
       const allTokens = generateStandardBadgeTokens(appColorTokens);
@@ -72,9 +73,7 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
       );
     }
 
-    const { mode } = useTheme();
-
-    if (!appColorTokens || !mode) {
+    if (!hasTheme) {
       const fallbackSizeInfo = BADGE_SIZE_DEFINITIONS[size];
       return (
         <div
