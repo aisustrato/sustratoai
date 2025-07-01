@@ -5,8 +5,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/auth-provider';
-
-import { checkProjectHasArticles, createArticlesForProject, type Article } from '@/lib/actions/article-actions';
 import type { ResultadoOperacion } from '@/lib/actions/batch-actions';
 
 import ArticleUploaderPage from './components/ArticleUploaderPage';
@@ -16,6 +14,89 @@ import { StandardText } from '@/components/ui/StandardText';
 import { StandardIcon } from '@/components/ui/StandardIcon';
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
 import { FileUp, AlertTriangle, Info } from 'lucide-react';
+
+// Definición local del tipo Article
+type Article = {
+  'Publication Type': string;
+  'Authors': string;
+  'Author Full Names': string;
+  'Title': string;
+  'Jurnal': string;
+  'Abstract': string;
+  'ORCIDs': string;
+  'ISSN': string;
+  'eISSN': string;
+  'ISBN': string;
+  'Publication Date': string;
+  'Publication_Year': string;
+  'Volume': string;
+  'Issue': string;
+  'Special Issue': string;
+  'Start Page': string;
+  'End Page': string;
+  'Article Number': string;
+  'DOI': string;
+  'DOI Link': string;
+  'UT (Unique WOS ID)'?: string;
+};
+
+// Implementación local de las funciones necesarias
+const checkProjectHasArticles = async (projectId: string): Promise<ResultadoOperacion<{ hasArticles: boolean; count: number }>> => {
+  try {
+    const response = await fetch(`/api/projects/${projectId}/articles/count`);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return { success: false, error: data.error || 'Error al verificar artículos', errorCode: data.errorCode };
+    }
+    
+    return { 
+      success: true, 
+      data: { 
+        hasArticles: data.count > 0, 
+        count: data.count 
+      } 
+    };
+  } catch (error) {
+    console.error('Error al verificar artículos:', error);
+    return { 
+      success: false, 
+      error: 'Error al conectar con el servidor', 
+      errorCode: 'CONNECTION_ERROR' 
+    };
+  }
+};
+
+const createArticlesForProject = async (projectId: string, articles: Article[]): Promise<ResultadoOperacion<any>> => {
+  try {
+    const response = await fetch(`/api/projects/${projectId}/articles/batch`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ articles }),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return { 
+        success: false, 
+        error: data.error || 'Error al guardar artículos', 
+        errorCode: data.errorCode 
+      };
+    }
+    
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error al guardar artículos:', error);
+    return { 
+      success: false, 
+      error: 'Error al conectar con el servidor', 
+      errorCode: 'CONNECTION_ERROR' 
+    };
+  }
+};
 //#endregion
 
 //#region [main] - 🔧 COMPONENT 🔧
