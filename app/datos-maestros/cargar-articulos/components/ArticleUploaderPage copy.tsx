@@ -51,7 +51,7 @@ const columns: ColumnDef<Article>[] = [
     header: 'Abstract',
     size: 350,
     meta: {
-      truncateLines: 2,
+      isTruncatable: true,
       tooltipType: 'longText',
     },
   },

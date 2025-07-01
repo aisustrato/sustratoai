@@ -1,4 +1,3 @@
-//. 📍 app/datos-maestros/lote/components/ProjectBatchesDisplay.tsx
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
@@ -9,20 +8,19 @@ import { StandardButton } from "@/components/ui/StandardButton";
 import {
   AlertTriangle,
   Trash2,
-  Clock,
-  Zap,
-  CheckCircle,
-  AlertOctagon,
-  HelpCircle,
   Layers,
+  Boxes,
 } from "lucide-react";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import type { BatchStatusEnum } from "@/lib/database.types";
 import { toast as sonnerToast } from "sonner";
 import { StandardDialog } from "@/components/ui/StandardDialog";
-import { StandardSphereGrid, type SphereItemData } from "@/components/ui/StandardSphereGrid";
-import type { StatusBadgeInfo } from "@/components/ui/StandardSphere";
+import { StandardSphereGrid } from "@/components/ui/StandardSphereGrid";
+import type { SphereItemData, StatusBadgeInfo, StandardSphereProps } from "@/components/ui/StandardSphere";
+import type { SphereStyleType } from "@/lib/theme/components/standard-sphere-tokens";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { type ColorSchemeVariant } from "@/lib/theme/ColorToken";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES, INTERFACES & CONSTANTS 📦
@@ -47,6 +45,37 @@ interface ProjectBatchesDisplayProps {
   permisoParaResetearGeneral: boolean;
 }
 
+type SphereIconType = NonNullable<StandardSphereProps['icon']>;
+
+// 🧠 DICCIONARIOS DE ESTILO: Convierten el estado en una propiedad visual.
+const BATCH_STATUS_COLORS: Record<string, ColorSchemeVariant> = {
+  pending: 'neutral',
+  assigned: 'primary',
+  in_progress: 'tertiary',
+  completed: 'success',
+  paused: 'warning',
+  error: 'danger',
+};
+
+// ✨ Diccionarios para la nueva leyenda de emoticones
+const BATCH_STATUS_EMOTICONS: Record<string, string> = {
+    pending: '🕘',
+    assigned: '👤',
+    in_progress: '🚀',
+    completed: '✅',
+    paused: '⏸️',
+    error: '❌',
+};
+
+const BATCH_STATUS_LABELS: Record<string, string> = {
+    pending: 'Pendiente',
+    assigned: 'Asignado',
+    in_progress: 'En Progreso',
+    completed: 'Completado',
+    paused: 'Pausado',
+    error: 'Error',
+};
+
 
 //#endregion ![def]
 
@@ -69,7 +98,6 @@ export default function ProjectBatchesDisplay({
       if (entries[0]) {
         const { width, height } = entries[0].contentRect;
         setContainerSize({ width, height });
-        console.log(`[ProjectBatchesDisplay Sensor] Container measured: ${width.toFixed(2)}px W, ${height.toFixed(2)}px H`);
       }
     });
 
@@ -104,19 +132,31 @@ export default function ProjectBatchesDisplay({
   const sphereData: SphereItemData[] = useMemo(() => {
     if (!lotes) return [];
     return lotes.map((lote) => {
-      const tooltipContent = lote.name
-        ? `${lote.name} (Lote ${lote.batch_number})`
-        : `Lote ${lote.batch_number}`;
+      const colorScheme = BATCH_STATUS_COLORS[lote.status] || 'neutral';
+      const emoticon = BATCH_STATUS_EMOTICONS[lote.status] || '❔';
+      
+      let styleType: SphereStyleType = 'filled';
+      if (lote.status === 'pending') {
+        styleType = 'subtle';
+      } else if (['completed', 'error', 'paused'].includes(lote.status)) {
+        styleType = 'subtle';
+      }
+
+      // ✨ Tooltip mejorado con información más útil
+      const statusText = BATCH_STATUS_LABELS[lote.status] || 'Desconocido';
+      const assignedText = lote.assigned_to_member_name || 'Nadie';
+      const tooltipContent = `Estado: ${statusText} | Asignado a: ${assignedText}`;
 
       return {
         id: lote.id,
         value: lote.batch_number,
         keyGroup: lote.status,
-        colorScheme: "neutral", // Esferas siempre neutrales en este contexto
-        styleType: "filled",
+        colorScheme: colorScheme,
+        styleType: styleType,
+        emoticon: emoticon, // Usamos emoticones en lugar de iconos
         statusBadge: {
-          text: lote.status,
-          colorScheme: 'primary',
+          text: lote.assigned_to_member_name || lote.status,
+          colorScheme: colorScheme,
           styleType: 'subtle',
         },
         tooltip: tooltipContent,
@@ -148,9 +188,19 @@ export default function ProjectBatchesDisplay({
 
   return (
     <StandardPageBackground>
+       <StandardPageTitle
+        title="Lotes de Trabajo"
+        subtitle="Gestión de lotes"
+        description="Estos son los lotes creados, solo puedes eliminarlos si no hay ninguno comenzado."
+        mainIcon={Boxes}
+        breadcrumbs={[
+          { label: "Datos Maestros", href: "/datos-maestros" },
+          { label: "Lotes de Trabajo" },
+        ]}
+      />
       <div className="space-y-6">
         <StandardCard
-          colorScheme="neutral"
+          colorScheme="secondary"
           className="overflow-visible"
           styleType="subtle"
         >
@@ -190,13 +240,33 @@ export default function ProjectBatchesDisplay({
               </StandardDialog>
             )}
           </StandardCard.Header>
-          <StandardCard.Content ref={gridContainerRef} className="p-4 md:p-6 relative h-[400px]">
+          <StandardCard.Content ref={gridContainerRef} className="p-4 md:p-6 relative h-[50vh] min-h-[400px]">
               <StandardSphereGrid 
                 items={sphereData} 
                 containerWidth={containerSize.width}
                 containerHeight={containerSize.height}
+                isLoading={containerSize.width === 0}
+                loadingMessage="Calculando distribución de lotes..."
+              
+                emptyStateText="No hay lotes que cumplan los criterios."
+                sortBy="value"
               />
             </StandardCard.Content>
+
+            {/* ✨ LEYENDA DE ESTADOS Y EMOTICONES */}
+            <StandardCard.Footer>
+                <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
+                    <StandardText size="sm" weight="medium" className="pr-2">Leyenda:</StandardText>
+                    {Object.entries(BATCH_STATUS_LABELS).map(([statusKey, statusLabel]) => (
+                        <div key={statusKey} className="flex items-center gap-1.5">
+                            <StandardText size="sm">{BATCH_STATUS_EMOTICONS[statusKey]}</StandardText>
+                            <StandardText size="xs" colorScheme="neutral" colorShade="text">
+                                {statusLabel}
+                            </StandardText>
+                        </div>
+                    ))}
+                </div>
+            </StandardCard.Footer>
 
             {permisoParaResetearGeneral && !todosLosLotesEstanPendientes && lotes.length > 0 && (
               <div className="mt-6 p-3 bg-warning-50 dark:bg-warning-900/30 border-l-4 border-warning-500 dark:border-warning-400 rounded">
@@ -228,13 +298,3 @@ export default function ProjectBatchesDisplay({
   );
 }
 //#endregion ![main]
-
-//#region [foo] - 🔚 EXPORTS 🔚
-// Default export is part of the component declaration
-//#endregion ![foo]
-
-//#region [todo] - 👀 PENDIENTES 👀
-// Considerar la paginación o virtualización si el número de lotes es muy grande.
-// Mejorar la accesibilidad de los elementos interactivos (tooltips, botones).
-// Podría haber una opción para ver detalles de un lote específico.
-//#endregion ![todo]

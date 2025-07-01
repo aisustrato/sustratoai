@@ -100,3 +100,5 @@ export function createStandardIcon(
 	WrappedIcon.displayName = `StandardIcon(${IconComponent.displayName || "Icon"})`;
 	return WrappedIcon;
 }
+
+export { StandardIconColorShade };

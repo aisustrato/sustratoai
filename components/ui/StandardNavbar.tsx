@@ -292,41 +292,46 @@ const navItems: NavItem[] = useMemo(() => {
   return menuItems;
 }, [proyectoActual]);
 
-	if (!currentNavTokens) {
-		return null;
-	}
+	// Inicializar con valores por defecto para evitar null en los hooks
+	const defaultNavTokens = useMemo(() => {
+		return currentNavTokens || generateStandardNavbarTokens(
+			createAppColorTokens("blue", "light"),
+			"light"
+		);
+	}, [currentNavTokens]);
 
 	// Manejo de submenús
 	const toggleSubmenu = useCallback((label: string, e: React.MouseEvent) => {
 		e.preventDefault();
 		e.stopPropagation();
-		const rippleColor = currentNavTokens?.active?.bg || MENU_RIPPLE_COLOR;
+		const rippleColor = defaultNavTokens?.active?.bg || MENU_RIPPLE_COLOR;
 		ripple(e.nativeEvent, rippleColor, NAVBAR_RIPPLE_SCALE);
 		setOpenSubmenu((prev) => (prev === label ? null : label));
-	}, [currentNavTokens?.active?.bg, ripple]);
+	}, [defaultNavTokens?.active?.bg, ripple]);
 
 	// Verifica si un ítem de menú o sus subítems están activos
 	const isSubmenuActive = useCallback((item: NavItem): boolean => {
+		if (!pathname) return false;
 		if (pathname === item.href) return true;
 		if (!item.submenu) return false;
 
 		return item.submenu.some(
 			(subItem) =>
 				pathname === subItem.href ||
-				(subItem.href !== "/" && pathname?.startsWith(subItem.href))
+				(subItem.href !== "/" && pathname.startsWith(subItem.href))
 		);
 	}, [pathname]);
 
 	// Estilos dinámicos
 	const gradientBarStyle = useMemo(() => ({
-		background: currentNavTokens?.gradientBar
+		background: defaultNavTokens?.gradientBar
 			? `linear-gradient(to right, 
-          ${currentNavTokens.gradientBar.start}, 
-          ${currentNavTokens.gradientBar.middle}, 
-          ${currentNavTokens.gradientBar.end}
+          ${defaultNavTokens.gradientBar.start}, 
+          ${defaultNavTokens.gradientBar.middle}, 
+          ${defaultNavTokens.gradientBar.end}
         )`
 			: "linear-gradient(to right, #3b82f6, #8b5cf6, #ec4899)", // Valores por defecto
-	}), [currentNavTokens?.gradientBar]);
+	}), [defaultNavTokens?.gradientBar]);
 
 	const navBackgroundStyle = useMemo(() => {
 		const defaultBg = mode === "dark" ? "#1e1e2d" : "#ffffff";
@@ -334,10 +339,10 @@ const navItems: NavItem[] = useMemo(() => {
 
 		return {
 			backgroundColor: scrolled
-				? currentNavTokens?.background?.scrolled || defaultScrolledBg
-				: currentNavTokens?.background?.normal || defaultBg,
+				? defaultNavTokens?.background?.scrolled || defaultScrolledBg
+				: defaultNavTokens?.background?.normal || defaultBg,
 			boxShadow: scrolled
-				? currentNavTokens?.shadow || "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+				? defaultNavTokens?.shadow || "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
 				: "none",
 			borderBottom: scrolled
 				? `1px solid ${currentNavTokens?.submenu?.border || "rgba(0, 0, 0, 0.1)"}`

@@ -6,8 +6,6 @@ export type SphereSizeVariant = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 export type ImportedIconSize = StandardIconSize;
 export type SphereStyleType = 'filled' | 'subtle' | 'outline';
 
-// 📌 ÚNICA FUENTE DE VERDAD PARA LOS TAMAÑOS
-// Este objeto es ahora el "mapa maestro". Define todo lo que necesitamos saber sobre los tamaños.
 export const SPHERE_SIZE_DEFINITIONS: Record<SphereSizeVariant, { rem: string; px: number }> = {
   xs: { rem: '2rem', px: 32 },
   sm: { rem: '2.5rem', px: 40 },
@@ -17,7 +15,8 @@ export const SPHERE_SIZE_DEFINITIONS: Record<SphereSizeVariant, { rem: string; p
   '2xl': { rem: '4.5rem', px: 72 },
 };
 
-// El token de espaciado proporcional que define el "aire" correcto para cada tamaño de esfera en el grid.
+export const MINIMUM_SPHERE_DIAMETER_FOR_BADGE = 48;
+
 export const SPHERE_GRID_GAP_TOKENS: Record<SphereSizeVariant, { col: number; row: number }> = {
   xs: { col: 8,  row: 16 },
   sm: { col: 12, row: 24 },
@@ -28,7 +27,7 @@ export const SPHERE_GRID_GAP_TOKENS: Record<SphereSizeVariant, { col: number; ro
 };
 
 export interface SphereTokens {
-  size: Record<SphereSizeVariant, string>; // Sigue esperando los valores en 'rem'
+  size: Record<SphereSizeVariant, string>;
   styles: Record<SphereStyleType, {
     backgroundColor: string;
     foregroundColor: string;
@@ -58,7 +57,6 @@ export function generateSphereTokens(appColorTokens: AppColorTokens, mode: Mode)
   const isDark = mode === 'dark';
   const tokens = {} as Record<ColorSchemeVariant, SphereTokens>;
 
-  // Derivamos los tamaños en 'rem' desde nuestra nueva fuente de verdad.
   const sphereRemSizes = Object.fromEntries(
     Object.entries(SPHERE_SIZE_DEFINITIONS).map(([key, value]) => [key, value.rem])
   ) as Record<SphereSizeVariant, string>;
@@ -76,6 +74,9 @@ export function generateSphereTokens(appColorTokens: AppColorTokens, mode: Mode)
     const subtleTextColor = isDark ? palette.text : palette.textShade;
     const hoverBgColor = isDark ? tinycolor(mainColor).lighten(8).toHexString() : tinycolor(mainColor).darken(8).toHexString();
     const activeBgColor = isDark ? tinycolor(mainColor).lighten(12).toHexString() : tinycolor(mainColor).darken(12).toHexString();
+    
+    const subtleBaseBg = tinycolor.mix(palette.bg, mainColor, 12).toHexString();
+    const subtleHoverBg = tinycolor(subtleBaseBg).darken(5).saturate(5).toHexString();
 
     tokens[key] = {
       size: sphereRemSizes,
@@ -83,26 +84,26 @@ export function generateSphereTokens(appColorTokens: AppColorTokens, mode: Mode)
         filled: {
           backgroundColor: mainColor,
           foregroundColor: textColor,
-          borderColor: 'transparent',
+          borderColor: 'rgba(0,0,0,0)',
           gradient: createGradient(mainColor),
           hoverBackgroundColor: hoverBgColor,
           hoverForegroundColor: textColor,
           activeBorderColor: activeBgColor,
         },
         subtle: {
-          backgroundColor: tinycolor(mainColor).setAlpha(0.15).toHexString(),
+          backgroundColor: subtleBaseBg,
           foregroundColor: subtleTextColor,
-          borderColor: 'transparent',
-          gradient: `radial-gradient(circle at 30% 30%, ${tinycolor(mainColor).setAlpha(0.2)}, ${tinycolor(mainColor).setAlpha(0.1)})`,
-          hoverBackgroundColor: tinycolor(mainColor).setAlpha(0.25).toHexString(),
+          borderColor: mainColor, // ✅ Se define el color del borde como 'pure'
+          gradient: `radial-gradient(circle at 50% 0%, ${tinycolor(mainColor).setAlpha(0.2).toRgbString()}, ${tinycolor(mainColor).setAlpha(0).toRgbString()} 70%)`,
+          hoverBackgroundColor: subtleHoverBg,
           hoverForegroundColor: subtleTextColor,
-          activeBorderColor: 'transparent',
+          activeBorderColor: mainColor,
         },
         outline: {
-          backgroundColor: 'transparent',
+          backgroundColor: 'rgba(0,0,0,0)',
           foregroundColor: mainColor,
           borderColor: mainColor,
-          hoverBackgroundColor: tinycolor(mainColor).setAlpha(0.1).toHexString(),
+          hoverBackgroundColor: tinycolor(mainColor).setAlpha(0.1).toRgbString(),
           hoverForegroundColor: mainColor,
           activeBorderColor: mainColor,
         }

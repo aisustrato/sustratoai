@@ -25,6 +25,7 @@ export type ProCardVariant =
  * Estructura de los tokens de color simplificados que consumirán los componentes refactorizados.
  * Proporciona un acceso directo a las paletas principales del tema activo.
  */
+export type ColorShadeName = "pure" | "text" | "textShade" | "bg" | "contrastText" | "subtle";
 export type AppColorTokens = {
   // Paletas del tema principal (ej. azul, verde, naranja)
   primary: ColorShade;

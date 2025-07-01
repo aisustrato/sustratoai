@@ -157,16 +157,7 @@ export default function LotesOrquestadorPage() {
   //#region [render_sub] - MAIN CONTENT (SIMULATOR OR DISPLAY) 🎨
   return (
     <div className="container mx-auto py-8">
-      <StandardPageTitle
-        title="Lotes de Trabajo"
-        subtitle="Gestión y simulación de lotes"
-        description="Crea, simula y gestiona los lotes de trabajo que serán asignados a los miembros del equipo para la clasificación."
-        mainIcon={Boxes}
-        breadcrumbs={[
-          { label: "Datos Maestros", href: "/datos-maestros" },
-          { label: "Lotes de Trabajo" },
-        ]}
-      />
+     
 
       {!proyectoActual ? (
         <StandardCard

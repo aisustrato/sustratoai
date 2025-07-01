@@ -30,7 +30,7 @@ const usePagination = ({
 	siblings?: number;
 }) => {
 	const range = (start: number, end: number) => {
-		let length = end - start + 1;
+		const length = end - start + 1;
 		return Array.from({ length }, (_, idx) => idx + start);
 	};
 
@@ -51,19 +51,19 @@ const usePagination = ({
 		const lastPageIndex = totalPages;
 
 		if (!shouldShowLeftDots && shouldShowRightDots) {
-			let leftItemCount = 3 + 2 * siblings;
-			let leftRange = range(1, leftItemCount);
+			const leftItemCount = 3 + 2 * siblings;
+			const leftRange = range(1, leftItemCount);
 			return [...leftRange, "...", totalPages];
 		}
 
 		if (shouldShowLeftDots && !shouldShowRightDots) {
-			let rightItemCount = 3 + 2 * siblings;
-			let rightRange = range(totalPages - rightItemCount + 1, totalPages);
+			const rightItemCount = 3 + 2 * siblings;
+			const rightRange = range(totalPages - rightItemCount + 1, totalPages);
 			return [firstPageIndex, "...", ...rightRange];
 		}
 
 		if (shouldShowLeftDots && shouldShowRightDots) {
-			let middleRange = range(leftSiblingIndex, rightSiblingIndex);
+			const middleRange = range(leftSiblingIndex, rightSiblingIndex);
 			return [firstPageIndex, "...", ...middleRange, "...", lastPageIndex];
 		}
 
