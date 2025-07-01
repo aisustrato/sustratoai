@@ -31,7 +31,7 @@ export default function TruncateTest() {
             </StandardText>
           </div>
           <div className="mt-2 text-sm text-gray-500">
-            <p>Clase aplicada: <code>className="line-clamp-2"</code></p>
+            <p>Clase aplicada: <code>className=&quot;line-clamp-2&quot;</code></p>
             <p>Resultado esperado: El texto debe aparecer truncado a 2 líneas. No se usa tooltip aquí, solo se prueba el truncamiento visual.</p>
           </div>
         </div>

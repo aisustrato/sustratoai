@@ -138,7 +138,6 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 		handleSubmit,
 		watch,
 		formState: { errors, dirtyFields, isValid, isSubmitted, touchedFields },
-		getFieldState,
 	} = form;
 
 	const dimensionType = watch("type");
@@ -223,9 +222,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 		let hasError = false;
 
 		if (subFieldName && typeof index === "number") {
-			// @ts-ignore
+			// @ts-expect-error - Acceso seguro a campos anidados dinámicos
 			isTouched = touchedFields[fieldName]?.[index]?.[subFieldName];
-			// @ts-ignore
+			// @ts-expect-error - Acceso seguro a campos anidados dinámicos
 			hasError = !!errors[fieldName]?.[index]?.[subFieldName];
 		} else {
 			isTouched = !!touchedFields[fieldName];

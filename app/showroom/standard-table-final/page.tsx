@@ -7,7 +7,7 @@ import { StandardTable } from "@/components/ui/StandardTable";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardBadge } from "@/components/ui/StandardBadge";
 import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
-import { FileText, Link as LinkIcon, Star } from "lucide-react";
+import { FileText, Link as LinkIcon } from "lucide-react";
 
 // --- DATOS Y TIPOS (Sin cambios) ---
 type Publication = {
@@ -78,7 +78,7 @@ export default function StandardTableFinalShowcasePage() {
     
     const renderSubComponent = (row: Row<Publication>) => (
         <div className="p-4 bg-primary-bg/20">
-            <StandardText preset="subtitle" className="mb-2 flex items-center gap-2"><FileText size={16}/> Sub-publicaciones para: "{row.original.title}"</StandardText>
+            <StandardText preset="subtitle" className="mb-2 flex items-center gap-2"><FileText size={16}/> Sub-publicaciones para: &quot;{row.original.title}&quot;</StandardText>
             <ul className="list-disc pl-6 text-sm text-neutral-text">
                 {row.original.subRows?.map(sub => <li key={sub.id}>{sub.title} ({sub.citations} citaciones)</li>)}
             </ul>

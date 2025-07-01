@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { type ColorSchemeVariant } from '@/lib/theme/ColorToken';
-import { StandardSphere, type SphereItemData, type StandardSphereProps } from './StandardSphere';
+import { StandardSphere, type SphereItemData } from './StandardSphere';
 import { StandardCard } from './StandardCard';
 import { StandardText } from './StandardText';
 import { SustratoLoadingLogo } from './sustrato-loading-logo';
@@ -142,7 +142,7 @@ export const StandardSphereGrid = ({
   const isLoading = externalIsLoading || !containerWidth || !containerHeight;
 
   const processedItems = useMemo(() => {
-    let filtered = items.filter(item => {
+    const filtered = items.filter(item => {
       if (!keyGroupVisibility || !item.keyGroup) return true;
       return keyGroupVisibility[item.keyGroup] !== false;
     });

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
 import {
@@ -44,10 +44,37 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
     },
     ref
   ) => {
-    const { appColorTokens, mode } = useTheme();
+    const { appColorTokens } = useTheme();
+
+    const cssVariables = React.useMemo(() => {
+      const allTokens = generateStandardBadgeTokens(appColorTokens);
+      const styleSet = allTokens[colorScheme]?.[styleType] || allTokens.primary.solid;
+      return {
+        '--badge-bg': styleSet.bg,
+        '--badge-text-color': styleSet.text,
+        '--badge-border-color': styleSet.border,
+      } as React.CSSProperties;
+    }, [appColorTokens, colorScheme, styleType]);
+
+    if (!children) {
+      return (
+        <div
+          className={cn(
+            badgeBaseVariants({ className }),
+            "opacity-0",
+            className
+          )}
+          style={cssVariables}
+          {...props}
+        >
+          <span className="opacity-0">{children}</span>
+        </div>
+      );
+    }
+
+    const { mode } = useTheme();
 
     if (!appColorTokens || !mode) {
-      // El fallback se simplifica, ya que los tamaños también están en los tokens
       const fallbackSizeInfo = BADGE_SIZE_DEFINITIONS[size];
       return (
         <div
@@ -65,18 +92,6 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
       );
     }
 
-    const cssVariables = React.useMemo(() => {
-      const allTokens = generateStandardBadgeTokens(appColorTokens);
-      // ✅ Usamos 'solid' como valor por defecto si el styleSet no se encuentra, alineado con la jerga.
-      const styleSet = allTokens[colorScheme]?.[styleType] || allTokens.primary.solid;
-      return {
-        '--badge-bg': styleSet.bg,
-        '--badge-text-color': styleSet.text,
-        '--badge-border-color': styleSet.border,
-      } as React.CSSProperties;
-    }, [appColorTokens, colorScheme, styleType]);
-
-    // 📌 Se elimina el 'useMemo' con el 'switch'. Toda la info viene de un solo lugar.
     const sizeInfo = BADGE_SIZE_DEFINITIONS[size];
 
     return (

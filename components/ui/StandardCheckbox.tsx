@@ -3,7 +3,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 "use client";
 
-import React, { forwardRef, useState, useEffect, useRef } from "react";
+import React, { forwardRef, useState, useEffect, useRef, useImperativeHandle, useMemo, useId } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
@@ -58,16 +58,22 @@ const StandardCheckbox = forwardRef<HTMLInputElement, StandardCheckboxProps>(
 		const [isIndeterminate, setIsIndeterminate] = useState<boolean>(indeterminate);
 		
 		const internalInputRef = useRef<HTMLInputElement>(null);
-		React.useImperativeHandle(ref, () => internalInputRef.current as HTMLInputElement);
+		useImperativeHandle(ref, () => internalInputRef.current as HTMLInputElement);
 
-		const tokens: StandardCheckTokens | null = React.useMemo(() => {
+		// Generar ID temprano para mantener el orden de los hooks
+		const generatedId = useId();
+		const effectiveId = id || generatedId;
+
+		// Mover la lógica de tokens después de todos los hooks
+		const tokens = useMemo<StandardCheckTokens | null>(() => {
 			if (!appColorTokens) return null;
 			return generateStandardCheckTokens(
-				appColorTokens, size, error ? "danger" : variant, visualVariant
+				appColorTokens, 
+				size, 
+				error ? "danger" : variant, 
+				visualVariant
 			);
 		}, [appColorTokens, size, error, variant, visualVariant]);
-		
-		const effectiveId = id || React.useId();
 		//#endregion ![sub_init]
 
 		//#region [sub_effects] - 💡 EFFECTS 💡

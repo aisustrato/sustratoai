@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef } from 'react';
-import { StandardPageTitle } from '@/components/ui/StandardPageTitle';
+// StandardPageTitle eliminado por no usarse
 import { StandardWrapper } from '@/components/ui/StandardWrapper';
 import { StandardTable } from '@/components/ui/StandardTable';
 import { StandardPagination } from '@/components/ui/StandardPagination';
@@ -11,11 +11,11 @@ import type { ResultadoOperacion } from '@/lib/actions/batch-actions';
 import { StandardCard } from '@/components/ui/StandardCard';
 import { UploadCloud } from 'lucide-react';
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
-import Papa from 'papaparse';
+import { parse as parseCSV } from 'papaparse';
 import { StandardButton } from '@/components/ui/StandardButton';
 import { StandardAlert } from '@/components/ui/StandardAlert';
 import { StandardDialog } from '@/components/ui/StandardDialog';
-import { StandardText } from '@/components/ui/StandardText';
+// StandardText eliminado por no usarse
 
 // --- 1. Definición de Datos y Columnas ---
 
@@ -70,7 +70,7 @@ const columns: ColumnDef<Article>[] = [
 
 interface ArticleUploaderPageProps {
   projectName: string;
-  onSave: (articles: Article[]) => Promise<ResultadoOperacion<any>>;
+  onSave: (articles: Article[]) => Promise<ResultadoOperacion<Article[]>>;
 }
 
 // --- 2. Componente de la Página ---
@@ -94,12 +94,12 @@ export default function ArticleUploaderPage({ projectName, onSave }: ArticleUplo
     setAllArticles([]);
     setCurrentPage(1);
 
-    Papa.parse(file, {
+    parseCSV(file, {
       header: true,
       skipEmptyLines: true,
       delimiter: ';',
       complete: (results) => {
-        const rawData = results.data as any[];
+        const rawData = results.data as Article[];
         if (rawData.length === 0) {
           setError('El archivo CSV está vacío o no se pudo leer correctamente.');
           setLoading(false);
@@ -261,7 +261,7 @@ export default function ArticleUploaderPage({ projectName, onSave }: ArticleUplo
           </StandardDialog.Header>
           <StandardDialog.Body>
             <StandardDialog.Description>
-              Estás a punto de guardar <strong>{allArticles.length}</strong> artículos en el proyecto <strong>"{projectName}"</strong>. Esta acción no se puede deshacer.
+              Estás a punto de guardar <strong>{allArticles.length}</strong> artículos en el proyecto <strong>&quot;{projectName}&quot;</strong>. Esta acción no se puede deshacer.
             </StandardDialog.Description>
             {error && (
                <StandardAlert

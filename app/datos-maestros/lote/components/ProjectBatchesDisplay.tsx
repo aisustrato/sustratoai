@@ -2,7 +2,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { StandardCard, type StandardCardColorScheme } from "@/components/ui/StandardCard";
+import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
 import {
@@ -16,7 +16,7 @@ import type { BatchStatusEnum } from "@/lib/database.types";
 import { toast as sonnerToast } from "sonner";
 import { StandardDialog } from "@/components/ui/StandardDialog";
 import { StandardSphereGrid } from "@/components/ui/StandardSphereGrid";
-import type { SphereItemData, StatusBadgeInfo, StandardSphereProps } from "@/components/ui/StandardSphere";
+import type { SphereItemData, StandardSphereProps } from "@/components/ui/StandardSphere";
 import type { SphereStyleType } from "@/lib/theme/components/standard-sphere-tokens";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { type ColorSchemeVariant } from "@/lib/theme/ColorToken";
@@ -45,7 +45,7 @@ interface ProjectBatchesDisplayProps {
   permisoParaResetearGeneral: boolean;
 }
 
-type SphereIconType = NonNullable<StandardSphereProps['icon']>;
+// SphereIconType eliminado por no usarse
 
 // 🧠 DICCIONARIOS DE ESTILO: Convierten el estado en una propiedad visual.
 const BATCH_STATUS_COLORS: Record<string, ColorSchemeVariant> = {
@@ -286,7 +286,7 @@ export default function ProjectBatchesDisplay({
                     </p>
                     <p className="mt-1 text-sm text-warning-700 dark:text-warning-300">
                       Uno o más lotes ya han sido iniciados (no están en
-                      estado 'pending').
+                      estado &apos;pending&apos;).
                     </p>
                   </div>
                 </div>
