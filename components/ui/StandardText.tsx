@@ -36,7 +36,7 @@ interface StandardTextOwnProps extends StandardTextStyleProps {
 
 type PolymorphicComponentProps<
     C extends React.ElementType,
-    Props = {}
+    Props = object  // Cambiado de {} a object según la regla @typescript-eslint/no-empty-object-type
 > = React.PropsWithChildren<Props & { asElement?: C }> &
     Omit<React.ComponentPropsWithoutRef<C>, keyof (Props & { asElement?: C })>;
 
