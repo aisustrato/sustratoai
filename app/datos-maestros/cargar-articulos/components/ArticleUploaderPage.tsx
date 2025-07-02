@@ -8,8 +8,32 @@ import { StandardTable } from "@/components/ui/StandardTable";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
 import type { ResultadoOperacion } from '@/lib/actions/batch-actions';
-import type { Article } from '@/lib/actions/article-actions';
 
+// Definición local del tipo Article
+type Article = {
+  'Publication Type'?: string;
+  'Authors'?: string;
+  'Author Full Names'?: string;
+  'Title'?: string;
+  'Jurnal'?: string;
+  'Abstract'?: string;
+  'ORCIDs'?: string;
+  'ISSN'?: string;
+  'eISSN'?: string;
+  'ISBN'?: string;
+  'Publication Date'?: string;
+  'Publication_Year'?: string;
+  'Volume'?: string;
+  'Issue'?: string;
+  'Special Issue'?: string;
+  'Start Page'?: string;
+  'End Page'?: string;
+  'Article Number'?: string;
+  'DOI'?: string;
+  'DOI Link'?: string;
+  'UT (Unique WOS ID)'?: string;
+  [key: string]: any; // Para permitir propiedades adicionales
+};
 
 interface ArticleUploaderPageProps {
   projectName: string;
