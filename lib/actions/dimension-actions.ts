@@ -2,7 +2,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/server";
-import type { BatchStatusEnum, Database } from "@/lib/database.types";
+import type { Database } from "@/lib/database.types";
 
 // ========================================================================
 //  TYPE ALIASES FROM DATABASE SCHEMA
@@ -428,7 +428,7 @@ export async function deleteDimension(
     }
 
     // VERIFICACIÓN: No eliminar dimensión si el proyecto tiene lotes activos o en progreso.
-    const activeOrInProgressBatchStates: BatchStatusEnum[] = ['in_progress', 'ai_prefilled', 'discrepancies'];
+    const activeOrInProgressBatchStates: Database["public"]["Enums"]["batch_status"][] = ['in_progress', 'ai_prefilled', 'discrepancies'];
 
     const { count: activeProjectBatchesCount, error: checkBatchesError } = await supabase
       .from('article_batches') // Nombre correcto de la tabla de lotes

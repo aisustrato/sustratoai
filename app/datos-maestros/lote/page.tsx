@@ -2,10 +2,11 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import BatchSimulatorPage from './components/BatchSimulatorPage'; 
-import ProjectBatchesDisplay, { type DisplayableBatch } from './components/ProjectBatchesDisplay'; 
+import ProjectBatchesDisplay from "./components/ProjectBatchesDisplay";
+import type { BatchForDisplay } from '@/lib/actions/batch-actions'; 
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
 import { StandardText } from '@/components/ui/StandardText';
 import { StandardIcon } from '@/components/ui/StandardIcon';
@@ -18,9 +19,6 @@ import {
     resetProjectBatchesIfNotInitialized
 } from '@/lib/actions/batch-actions'; 
 
-// Para los tokens de color (SOLO para ProjectBatchesDisplay y la leyenda en Orquestador si es necesario)
-import { useTheme } from "@/app/theme-provider"; 
-import { generateBatchTokens, type BatchTokens, type BatchAuxColor } from "./components/batch-tokens";
 import { obtenerMiembrosConPerfilesYRolesDelProyecto, type ProjectMemberDetails } from "@/lib/actions/member-actions";
 //#endregion ![head]
 
@@ -34,31 +32,26 @@ export default function LotesOrquestadorPage() {
   const { proyectoActual, user } = useAuth();
   const [viewMode, setViewMode] = useState<'loading' | 'simulator' | 'displayBatches'>('loading');
   //#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HANDLERS 🧰
-  const [lotesExistentes, setLotesExistentes] = useState<DisplayableBatch[]>([]);
+  const [lotesExistentes, setLotesExistentes] = useState<BatchForDisplay[]>([]);
   const [isLoadingPageData, setIsLoadingPageData] = useState(true); 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const [projectMembers, setProjectMembers] = useState<ProjectMemberDetails[]>([]);
-  const { appColorTokens } = useTheme();
-
-  // Generar batchTokens y memberColorMap aquí, SOLO para pasarlos a ProjectBatchesDisplay
-  const batchTokens = useMemo<BatchTokens | null>(() => {
-    if (appColorTokens) {
-      return generateBatchTokens(appColorTokens);
-    }
-    return null; 
-  }, [appColorTokens]);
-
-  const memberColorMap = useMemo<Record<string, BatchAuxColor>>(() => {
-    if (!batchTokens || projectMembers.length === 0) return {};
-    const map: Record<string, BatchAuxColor> = {};
+  
+  // Mapa de colores simple para los miembros
+  const memberColorMap = useMemo<Record<string, string>>(() => {
+    if (projectMembers.length === 0) return {};
+    const colors = [
+      'blue', 'green', 'yellow', 'red', 'purple', 'pink', 'indigo', 'teal', 'orange'
+    ];
+    const map: Record<string, string> = {};
     projectMembers.forEach((member, idx) => {
-      if(member.user_id){
-         map[member.user_id] = batchTokens.auxiliaries[idx % batchTokens.auxiliaries.length];
+      if (member.user_id) {
+        map[member.user_id] = colors[idx % colors.length];
       }
     });
     return map;
-  }, [batchTokens, projectMembers]);
+  }, [projectMembers]);
 
   const permisoGestionGeneral = proyectoActual?.permissions?.can_create_batches || false;
 
@@ -136,11 +129,11 @@ export default function LotesOrquestadorPage() {
 
   //#region [render] - 🎨 RENDER SECTION 🎨
   //#region [render_sub] - LOADING STATE 🎨
-  if (isLoadingPageData || (!batchTokens && viewMode === 'displayBatches')) { // Loader si carga datos o si batchTokens no está listo para displayBatches
+  if (isLoadingPageData) { // Loader mientras se cargan los datos
     return (
       <div>
         <div className="flex items-center justify-center min-h-[70vh]">
-          <SustratoLoadingLogo text={!batchTokens ? "Cargando configuración de tema..." : "Cargando datos de gestión de lotes..."} />
+          <SustratoLoadingLogo text="Cargando datos de gestión de lotes..." />
         </div>
       </div>
     );

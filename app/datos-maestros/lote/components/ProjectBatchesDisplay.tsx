@@ -12,7 +12,8 @@ import {
   Boxes,
 } from "lucide-react";
 import { StandardIcon } from "@/components/ui/StandardIcon";
-import type { BatchStatusEnum } from "@/lib/database.types";
+import type { Database } from "@/lib/database.types";
+import type { BatchForDisplay } from '@/lib/actions/batch-actions';
 import { toast as sonnerToast } from "sonner";
 import { StandardDialog } from "@/components/ui/StandardDialog";
 import { StandardSphereGrid } from "@/components/ui/StandardSphereGrid";
@@ -24,19 +25,11 @@ import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES, INTERFACES & CONSTANTS 📦
-export interface DisplayableBatch {
-  id: string;
-  batch_number: number;
-  name: string | null;
-  status: BatchStatusEnum | string;
-  assigned_to_member_id?: string | null;
-  assigned_to_member_name?: string | null;
-  article_count?: number;
-}
+
 
 interface ProjectBatchesDisplayProps {
   projectId: string;
-  lotes: DisplayableBatch[];
+  lotes: BatchForDisplay[];
   onResetAllBatches: () => Promise<{
     success: boolean;
     message?: string;

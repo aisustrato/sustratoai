@@ -7,7 +7,7 @@ import { StandardSwitch } from "@/components/ui/StandardSwitch";
 import { Sun, Moon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/app/auth-provider";
-import { actualizarPreferenciasUI } from "@/app/actions/proyecto-actions";
+import { actualizarPreferenciasUI } from "@/lib/actions/project-dashboard-actions";
 import { toast } from "sonner";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 
@@ -53,7 +53,10 @@ function useDarkMode() {
 			}
 		} catch (error: unknown) {
 			console.error("Excepción en toggleMode:", error);
-			const errorMessage = error instanceof Error ? error.message : "Error inesperado al guardar tu preferencia de modo.";
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: "Error inesperado al guardar tu preferencia de modo.";
 			toast.error(errorMessage);
 			// Opcional: Revertir el cambio visual
 			// setMode(mode);
@@ -66,7 +69,6 @@ function useDarkMode() {
 	};
 }
 
-
 // --- 🖼️ Componente de Presentación ---
 // Ahora es un componente simple, legible y sin lógica de negocio.
 export function DarkModeSwitcher() {
@@ -74,12 +76,16 @@ export function DarkModeSwitcher() {
 
 	return (
 		<div className="flex items-center gap-1">
-			<StandardIcon styleType="outline" colorScheme="neutral" size="sm" colorShade="pure">
+			<StandardIcon
+				styleType="outline"
+				colorScheme="neutral"
+				size="sm"
+				colorShade="pure">
 				<Sun className="h-3 w-3" />
 			</StandardIcon>
 			<motion.div whileTap={{ scale: 0.95 }}>
 				<StandardSwitch
-				colorScheme="tertiary"
+					colorScheme="tertiary"
 					checked={mode === "dark"}
 					onCheckedChange={toggleMode}
 					size="sm" // Un tamaño explícito es más predecible
@@ -88,7 +94,11 @@ export function DarkModeSwitcher() {
 					}
 				/>
 			</motion.div>
-			<StandardIcon styleType="outline" size="sm" colorScheme="neutral" colorShade="pure">
+			<StandardIcon
+				styleType="outline"
+				size="sm"
+				colorScheme="neutral"
+				colorShade="pure">
 				<Moon className="h-3 w-3" />
 			</StandardIcon>
 		</div>

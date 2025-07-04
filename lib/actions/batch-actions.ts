@@ -3,9 +3,7 @@
 
 import { createSupabaseServerClient } from "@/lib/server"; 
 import type { 
-    Database,
-    BatchStatusEnum, 
-    BatchItemStatusEnum 
+    Database
 } from "@/lib/database.types"; 
 
 // ========================================================================
@@ -72,7 +70,7 @@ export interface BatchForDisplay {
   id: string; 
   batch_number: number; 
   name: string | null; 
-  status: string; 
+  status: Database["public"]["Enums"]["batch_status"]; 
   assigned_to_member_name: string | null; 
   article_count: number; 
 }
@@ -353,7 +351,7 @@ export async function createBatches(
       const { data: newBatch, error: batchInsertError } = await supabase
         .from('article_batches').insert({
           project_id: projectId, batch_number: assignedBatchNumber, name: batchName,
-          assigned_to: assignedMemberId, status: 'pending' as BatchStatusEnum, 
+          assigned_to: assignedMemberId, status: 'pending', 
         }).select('id').single();
 
       if (batchInsertError || !newBatch) {
@@ -366,7 +364,7 @@ export async function createBatches(
       const articlesForThisBatch = availableArticleIds.slice(currentArticlePoolIndex, currentArticlePoolIndex + articleCountForThisBatch);
       for (const articleId of articlesForThisBatch) {
         if (!articleId) { console.warn(`[${opId}] articleId nulo/undefined saltado.`); continue; }
-        itemsToInsert.push({ batch_id: newBatch.id, article_id: articleId, status: 'unreviewed' as BatchItemStatusEnum });
+        itemsToInsert.push({ batch_id: newBatch.id, article_id: articleId, status: 'unreviewed' });
       }
 
       if (itemsToInsert.length > 0) {
@@ -419,7 +417,7 @@ export async function resetProjectBatchesIfNotInitialized(
 
     const { count: initializedBatchesCount, error: checkError } = await supabase
       .from('article_batches').select('*', { count: 'exact', head: true })
-      .eq('project_id', projectId).neq('status', 'pending' as BatchStatusEnum); 
+      .eq('project_id', projectId).neq('status', 'pending'); 
 
     if (checkError) {
       return { success: false, error: `Error al verificar estado de los lotes: ${checkError.message}`, errorCode: "DB_CHECK_INIT_ERROR" };
@@ -432,7 +430,7 @@ export async function resetProjectBatchesIfNotInitialized(
     }
 
     const { data: pendingBatchIdsData, error: idsError } = await supabase
-        .from('article_batches').select('id').eq('project_id', projectId).eq('status', 'pending' as BatchStatusEnum);
+        .from('article_batches').select('id').eq('project_id', projectId).eq('status', 'pending');
     if (idsError || !pendingBatchIdsData) {
         return { success: false, error: "Error preparando borrado (obteniendo IDs).", errorCode: "DB_FETCH_PENDING_IDS_ERROR" };
     }
@@ -451,7 +449,7 @@ export async function resetProjectBatchesIfNotInitialized(
 
     const { count: batchesDeleted, error: deleteBatchesError } = await supabase
       .from('article_batches').delete({ count: 'exact' })
-      .eq('project_id', projectId).eq('status', 'pending' as BatchStatusEnum);
+      .eq('project_id', projectId).eq('status', 'pending');
     if (deleteBatchesError) {
       return { success: false, error: `Error al eliminar los lotes maestros: ${deleteBatchesError.message}`, errorCode: "DB_DELETE_BATCHES_ERROR" };
     }
@@ -500,7 +498,7 @@ export async function getProjectBatchesForDisplay(
       article_count: string | number;
     }
     const lotesTransformados: BatchForDisplay[] = rpcData.map((lote: RpcLoteData) => ({
-      id: lote.id, batch_number: lote.batch_number, name: lote.name, status: lote.status, 
+      id: String(lote.id), batch_number: Number(lote.batch_number), name: lote.name, status: lote.status as Database["public"]["Enums"]["batch_status"], 
       assigned_to_member_name: lote.assigned_to_member_name,
       article_count: Number(lote.article_count) 
     }));

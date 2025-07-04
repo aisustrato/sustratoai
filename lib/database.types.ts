@@ -1,5 +1,3 @@
-// lib/database.types.ts
-
 export type Json =
   | string
   | number
@@ -8,773 +6,813 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-// Definición de los Enums que existen en la base de datos
-export type BatchStatusEnum =
-  | "pending"
-  | "in_progress"
-  | "ai_prefilled"
-  | "discrepancies"
-  | "completed"
-  | "error";
-
-export type BatchItemStatusEnum =
-  | "unreviewed"
-  | "ai_preclassified"
-  | "human_preclassified"
-  | "disagreement"
-  | "reconciled"
-  | "error";
-
-// Nuevos Enums para Dimensiones (si los necesitas, de momento usamos 'text')
-// export type PreclassDimensionTypeEnum = "finite" | "open";
-
-
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      // =================================================================
-      // TABLAS DE USUARIOS Y PERFILES
-      // =================================================================
-      users_profiles: {
+      article_batch_items: {
         Row: {
-          user_id: string
-          first_name: string | null
-          last_name: string | null
-          public_display_name: string | null
-          public_contact_email: string | null
-          primary_institution: string | null
-          contact_phone: string | null
-          general_notes: string | null
-          preferred_language: string | null
-          pronouns: string | null
+          ai_label: string | null
+          article_id: string
+          batch_id: string
           created_at: string
+          human_label: string | null
+          id: string
+          preclassified_at: string | null
+          preclassified_by: string | null
+          status: Database["public"]["Enums"]["batch_item_status"]
+        }
+        Insert: {
+          ai_label?: string | null
+          article_id: string
+          batch_id: string
+          created_at?: string
+          human_label?: string | null
+          id?: string
+          preclassified_at?: string | null
+          preclassified_by?: string | null
+          status?: Database["public"]["Enums"]["batch_item_status"]
+        }
+        Update: {
+          ai_label?: string | null
+          article_id?: string
+          batch_id?: string
+          created_at?: string
+          human_label?: string | null
+          id?: string
+          preclassified_at?: string | null
+          preclassified_by?: string | null
+          status?: Database["public"]["Enums"]["batch_item_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_batch_items_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_batch_items_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_articles_for_batching_view"
+            referencedColumns: ["article_id"]
+          },
+          {
+            foreignKeyName: "article_batch_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "article_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      article_batches: {
+        Row: {
+          assigned_to: string | null
+          batch_number: number
+          completed_at: string | null
+          created_at: string
+          id: string
+          name: string | null
+          project_id: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["batch_status"]
+          translation_complete: boolean
+        }
+        Insert: {
+          assigned_to?: string | null
+          batch_number: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          name?: string | null
+          project_id: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["batch_status"]
+          translation_complete?: boolean
+        }
+        Update: {
+          assigned_to?: string | null
+          batch_number?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          name?: string | null
+          project_id?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["batch_status"]
+          translation_complete?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_batches_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      article_translations: {
+        Row: {
+          abstract: string | null
+          article_id: string
+          created_at: string
+          id: string
+          language: string
+          summary: string | null
+          title: string
+          translated_at: string
+          translated_by: string | null
+          translator_system: string | null
+        }
+        Insert: {
+          abstract?: string | null
+          article_id: string
+          created_at?: string
+          id?: string
+          language: string
+          summary?: string | null
+          title: string
+          translated_at?: string
+          translated_by?: string | null
+          translator_system?: string | null
+        }
+        Update: {
+          abstract?: string | null
+          article_id?: string
+          created_at?: string
+          id?: string
+          language?: string
+          summary?: string | null
+          title?: string
+          translated_at?: string
+          translated_by?: string | null
+          translator_system?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_translations_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_translations_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_articles_for_batching_view"
+            referencedColumns: ["article_id"]
+          },
+        ]
+      }
+      articles: {
+        Row: {
+          abstract: string | null
+          authors: string[] | null
+          correlativo: number
+          created_at: string
+          doi: string | null
+          id: string
+          journal: string | null
+          metadata: Json | null
+          project_id: string
+          publication_year: number | null
+          title: string | null
           updated_at: string
         }
         Insert: {
-          user_id: string
-          first_name?: string | null
-          last_name?: string | null
-          public_display_name?: string | null
-          public_contact_email?: string | null
-          primary_institution?: string | null
-          contact_phone?: string | null
-          general_notes?: string | null
-          preferred_language?: string | null
-          pronouns?: string | null
+          abstract?: string | null
+          authors?: string[] | null
+          correlativo: number
           created_at?: string
+          doi?: string | null
+          id?: string
+          journal?: string | null
+          metadata?: Json | null
+          project_id: string
+          publication_year?: number | null
+          title?: string | null
           updated_at?: string
         }
         Update: {
-          user_id?: string
-          first_name?: string | null
-          last_name?: string | null
-          public_display_name?: string | null
-          public_contact_email?: string | null
-          primary_institution?: string | null
-          contact_phone?: string | null
-          general_notes?: string | null
-          preferred_language?: string | null
-          pronouns?: string | null
+          abstract?: string | null
+          authors?: string[] | null
+          correlativo?: number
+          created_at?: string
+          doi?: string | null
+          id?: string
+          journal?: string | null
+          metadata?: Json | null
+          project_id?: string
+          publication_year?: number | null
+          title?: string | null
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "users_profiles_user_id_fkey"
-            columns: ["user_id"]
-            referencedRelation: "users"
+            foreignKeyName: "articles_normalized_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
-
-      // =================================================================
-      // TABLAS DE PROYECTOS, ROLES Y MIEMBROS
-      // =================================================================
-      projects: {
+      articles_legacy: {
         Row: {
+          Abstract: string | null
+          "Article Number": string | null
+          "Author Full Names": string | null
+          Authors: string | null
+          correlativo: number
+          DOI: string
+          "DOI Link": string | null
+          eISSN: string | null
+          "End Page": string | null
           id: string
-          name: string
-          code: string | null
-          description: string | null
-          institution_name: string | null
-          lead_researcher_user_id: string | null
-          status: string
-          module_bibliography: boolean
-          module_interviews: boolean
-          module_planning: boolean
-          created_at: string
-          updated_at: string
+          ISBN: string | null
+          ISSN: string | null
+          Issue: string | null
+          Journal: string | null
+          ORCIDs: string | null
+          project_id: string | null
+          "Publication Date": string | null
+          "Publication Type": string | null
+          Publication_Year: number | null
+          "Special Issue": string | null
+          "Start Page": string | null
+          Title: string | null
+          "UT (Unique WOS ID)": string | null
+          Volume: string | null
         }
         Insert: {
+          Abstract?: string | null
+          "Article Number"?: string | null
+          "Author Full Names"?: string | null
+          Authors?: string | null
+          correlativo: number
+          DOI: string
+          "DOI Link"?: string | null
+          eISSN?: string | null
+          "End Page"?: string | null
           id?: string
-          name: string
-          code?: string | null
-          description?: string | null
-          institution_name?: string | null
-          lead_researcher_user_id?: string | null
-          status?: string
-          module_bibliography?: boolean
-          module_interviews?: boolean
-          module_planning?: boolean
-          created_at?: string
-          updated_at?: string
+          ISBN?: string | null
+          ISSN?: string | null
+          Issue?: string | null
+          Journal?: string | null
+          ORCIDs?: string | null
+          project_id?: string | null
+          "Publication Date"?: string | null
+          "Publication Type"?: string | null
+          Publication_Year?: number | null
+          "Special Issue"?: string | null
+          "Start Page"?: string | null
+          Title?: string | null
+          "UT (Unique WOS ID)"?: string | null
+          Volume?: string | null
         }
         Update: {
+          Abstract?: string | null
+          "Article Number"?: string | null
+          "Author Full Names"?: string | null
+          Authors?: string | null
+          correlativo?: number
+          DOI?: string
+          "DOI Link"?: string | null
+          eISSN?: string | null
+          "End Page"?: string | null
+          id?: string
+          ISBN?: string | null
+          ISSN?: string | null
+          Issue?: string | null
+          Journal?: string | null
+          ORCIDs?: string | null
+          project_id?: string | null
+          "Publication Date"?: string | null
+          "Publication Type"?: string | null
+          Publication_Year?: number | null
+          "Special Issue"?: string | null
+          "Start Page"?: string | null
+          Title?: string | null
+          "UT (Unique WOS ID)"?: string | null
+          Volume?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "articles_project_fk"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preclass_dimension_examples: {
+        Row: {
+          dimension_id: string
+          example: string
+          id: string
+        }
+        Insert: {
+          dimension_id: string
+          example: string
+          id?: string
+        }
+        Update: {
+          dimension_id?: string
+          example?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preclass_dimension_examples_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "preclass_dimensions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preclass_dimension_options: {
+        Row: {
+          dimension_id: string
+          id: string
+          ordering: number
+          value: string
+        }
+        Insert: {
+          dimension_id: string
+          id?: string
+          ordering?: number
+          value: string
+        }
+        Update: {
+          dimension_id?: string
+          id?: string
+          ordering?: number
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preclass_dimension_options_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "preclass_dimensions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preclass_dimension_questions: {
+        Row: {
+          dimension_id: string
+          id: string
+          ordering: number
+          question: string
+        }
+        Insert: {
+          dimension_id: string
+          id?: string
+          ordering?: number
+          question: string
+        }
+        Update: {
+          dimension_id?: string
+          id?: string
+          ordering?: number
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preclass_dimension_questions_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "preclass_dimensions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preclass_dimensions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          ordering: number
+          project_id: string
+          type: Database["public"]["Enums"]["dimension_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          ordering?: number
+          project_id: string
+          type: Database["public"]["Enums"]["dimension_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
           id?: string
           name?: string
-          code?: string | null
-          description?: string | null
-          institution_name?: string | null
-          lead_researcher_user_id?: string | null
-          status?: string
-          module_bibliography?: boolean
-          module_interviews?: boolean
-          module_planning?: boolean
-          updated_at?: string
+          ordering?: number
+          project_id?: string
+          type?: Database["public"]["Enums"]["dimension_type"]
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "projects_lead_researcher_user_id_fkey"
-            columns: ["lead_researcher_user_id"]
-            referencedRelation: "users"
+            foreignKeyName: "preclass_dimensions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
-
+      project_members: {
+        Row: {
+          contact_email_for_project: string | null
+          contextual_notes: string | null
+          id: string
+          is_active_for_user: boolean
+          joined_at: string
+          project_id: string
+          project_role_id: string
+          ui_font_pair: string | null
+          ui_is_dark_mode: boolean
+          ui_theme: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contact_email_for_project?: string | null
+          contextual_notes?: string | null
+          id?: string
+          is_active_for_user?: boolean
+          joined_at?: string
+          project_id: string
+          project_role_id: string
+          ui_font_pair?: string | null
+          ui_is_dark_mode?: boolean
+          ui_theme?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contact_email_for_project?: string | null
+          contextual_notes?: string | null
+          id?: string
+          is_active_for_user?: boolean
+          joined_at?: string
+          project_id?: string
+          project_role_id?: string
+          ui_font_pair?: string | null
+          ui_is_dark_mode?: boolean
+          ui_theme?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_project_role_id_fkey"
+            columns: ["project_role_id"]
+            isOneToOne: false
+            referencedRelation: "project_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_roles: {
         Row: {
+          can_bulk_edit_master_data: boolean
+          can_create_batches: boolean
+          can_manage_master_data: boolean
+          can_upload_files: boolean
+          created_at: string
           id: string
           project_id: string
-          role_name: string
           role_description: string | null
-          can_manage_master_data: boolean
-          can_create_batches: boolean
-          can_upload_files: boolean
-          can_bulk_edit_master_data: boolean
-          created_at: string
+          role_name: string
           updated_at: string
         }
         Insert: {
+          can_bulk_edit_master_data?: boolean
+          can_create_batches?: boolean
+          can_manage_master_data?: boolean
+          can_upload_files?: boolean
+          created_at?: string
           id?: string
           project_id: string
-          role_name: string
           role_description?: string | null
-          can_manage_master_data?: boolean
-          can_create_batches?: boolean
-          can_upload_files?: boolean
-          can_bulk_edit_master_data?: boolean
-          created_at?: string
+          role_name: string
           updated_at?: string
         }
         Update: {
+          can_bulk_edit_master_data?: boolean
+          can_create_batches?: boolean
+          can_manage_master_data?: boolean
+          can_upload_files?: boolean
+          created_at?: string
           id?: string
           project_id?: string
-          role_name?: string
           role_description?: string | null
-          can_manage_master_data?: boolean
-          can_create_batches?: boolean
-          can_upload_files?: boolean
-          can_bulk_edit_master_data?: boolean
+          role_name?: string
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "project_roles_project_id_fkey"
             columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
-
-      project_members: {
+      project_roles_history: {
         Row: {
+          can_bulk_edit_master_data_new: boolean | null
+          can_bulk_edit_master_data_old: boolean | null
+          can_create_batches_new: boolean | null
+          can_create_batches_old: boolean | null
+          can_manage_master_data_new: boolean | null
+          can_manage_master_data_old: boolean | null
+          can_upload_files_new: boolean | null
+          can_upload_files_old: boolean | null
+          history_id: string
+          operated_by_user_id: string | null
+          operation_timestamp: string
+          operation_type: string
+          project_id: string | null
+          role_description_new: string | null
+          role_description_old: string | null
+          role_id: string
+          role_name_new: string | null
+          role_name_old: string | null
+          transaction_id: number | null
+        }
+        Insert: {
+          can_bulk_edit_master_data_new?: boolean | null
+          can_bulk_edit_master_data_old?: boolean | null
+          can_create_batches_new?: boolean | null
+          can_create_batches_old?: boolean | null
+          can_manage_master_data_new?: boolean | null
+          can_manage_master_data_old?: boolean | null
+          can_upload_files_new?: boolean | null
+          can_upload_files_old?: boolean | null
+          history_id?: string
+          operated_by_user_id?: string | null
+          operation_timestamp?: string
+          operation_type: string
+          project_id?: string | null
+          role_description_new?: string | null
+          role_description_old?: string | null
+          role_id: string
+          role_name_new?: string | null
+          role_name_old?: string | null
+          transaction_id?: number | null
+        }
+        Update: {
+          can_bulk_edit_master_data_new?: boolean | null
+          can_bulk_edit_master_data_old?: boolean | null
+          can_create_batches_new?: boolean | null
+          can_create_batches_old?: boolean | null
+          can_manage_master_data_new?: boolean | null
+          can_manage_master_data_old?: boolean | null
+          can_upload_files_new?: boolean | null
+          can_upload_files_old?: boolean | null
+          history_id?: string
+          operated_by_user_id?: string | null
+          operation_timestamp?: string
+          operation_type?: string
+          project_id?: string | null
+          role_description_new?: string | null
+          role_description_old?: string | null
+          role_id?: string
+          role_name_new?: string | null
+          role_name_old?: string | null
+          transaction_id?: number | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          code: string | null
+          created_at: string
+          description: string | null
           id: string
-          project_id: string
-          user_id: string
-          project_role_id: string
-          is_active_for_user: boolean
-          ui_theme: string | null
-          ui_font_pair: string | null
-          ui_is_dark_mode: boolean
-          contextual_notes: string | null
-          contact_email_for_project: string | null
-          joined_at: string
+          institution_name: string | null
+          lead_researcher_user_id: string | null
+          module_bibliography: boolean
+          module_interviews: boolean
+          module_planning: boolean
+          name: string
+          proposal: string | null
+          proposal_bibliography: string | null
+          proposal_interviews: string | null
+          status: string
           updated_at: string
         }
         Insert: {
+          code?: string | null
+          created_at?: string
+          description?: string | null
           id?: string
-          project_id: string
-          user_id: string
-          project_role_id: string
-          is_active_for_user?: boolean
-          ui_theme?: string | null
-          ui_font_pair?: string | null
-          ui_is_dark_mode?: boolean
-          contextual_notes?: string | null
-          contact_email_for_project?: string | null
-          joined_at?: string
+          institution_name?: string | null
+          lead_researcher_user_id?: string | null
+          module_bibliography?: boolean
+          module_interviews?: boolean
+          module_planning?: boolean
+          name: string
+          proposal?: string | null
+          proposal_bibliography?: string | null
+          proposal_interviews?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
+          code?: string | null
+          created_at?: string
+          description?: string | null
           id?: string
-          project_id?: string
-          user_id?: string
-          project_role_id?: string
-          is_active_for_user?: boolean
-          ui_theme?: string | null
-          ui_font_pair?: string | null
-          ui_is_dark_mode?: boolean
-          contextual_notes?: string | null
-          contact_email_for_project?: string | null
+          institution_name?: string | null
+          lead_researcher_user_id?: string | null
+          module_bibliography?: boolean
+          module_interviews?: boolean
+          module_planning?: boolean
+          name?: string
+          proposal?: string | null
+          proposal_bibliography?: string | null
+          proposal_interviews?: string | null
+          status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      users_profiles: {
+        Row: {
+          contact_phone: string | null
+          created_at: string
+          first_name: string | null
+          general_notes: string | null
+          last_name: string | null
+          preferred_language: string | null
+          primary_institution: string | null
+          pronouns: string | null
+          public_contact_email: string | null
+          public_display_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contact_phone?: string | null
+          created_at?: string
+          first_name?: string | null
+          general_notes?: string | null
+          last_name?: string | null
+          preferred_language?: string | null
+          primary_institution?: string | null
+          pronouns?: string | null
+          public_contact_email?: string | null
+          public_display_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contact_phone?: string | null
+          created_at?: string
+          first_name?: string | null
+          general_notes?: string | null
+          last_name?: string | null
+          preferred_language?: string | null
+          primary_institution?: string | null
+          pronouns?: string | null
+          public_contact_email?: string | null
+          public_display_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      detailed_project_members: {
+        Row: {
+          can_bulk_edit_master_data: boolean | null
+          can_create_batches: boolean | null
+          can_manage_master_data: boolean | null
+          can_upload_files: boolean | null
+          contact_email_for_project: string | null
+          contact_phone: string | null
+          contextual_notes: string | null
+          first_name: string | null
+          general_notes: string | null
+          is_active_for_user: boolean | null
+          joined_at: string | null
+          last_name: string | null
+          preferred_language: string | null
+          primary_institution: string | null
+          project_id: string | null
+          project_member_id: string | null
+          project_role_id: string | null
+          pronouns: string | null
+          public_contact_email: string | null
+          public_display_name: string | null
+          role_name: string | null
+          ui_font_pair: string | null
+          ui_is_dark_mode: boolean | null
+          ui_theme: string | null
+          user_id: string | null
         }
         Relationships: [
           {
             foreignKeyName: "project_members_project_id_fkey"
             columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_members_user_id_fkey"
-            columns: ["user_id"]
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "project_members_project_role_id_fkey"
             columns: ["project_role_id"]
+            isOneToOne: false
             referencedRelation: "project_roles"
             referencedColumns: ["id"]
-          }
-        ]
-      }
-
-      // =================================================================
-      // TABLAS DE ARTÍCULOS Y LOTES
-      // =================================================================
-      articles: {
-        Row: {
-          id: string
-          project_id: string | null // Mantengo como en tu original, aunque tu doc dice FK a projects(id) y no null
-          external_id: string | null
-          title: string | null
-          authors: string[] | null
-          journal: string | null
-          publication_year: number | null
-          language: string | null
-          abstract: string | null
-          metadata: Json | null
-          created_at: string
-          updated_at: string
-          correlativo: number
-          "Publication Type": string | null
-          "Author Full Names": string | null
-          Title2: string | null
-          ORCIDs: string | null
-          ISSN: string | null
-          eISSN: string | null
-          ISBN: string | null
-          "Publication Date": string | null
-          Volume: string | null
-          Issue: string | null
-          "Special Issue": string | null
-          "Start Page": string | null
-          "End Page": string | null
-          "Article Number": string | null
-          DOI: string | null
-          "DOI Link": string | null
-          "UT (Unique WOS ID)": string | null
-        }
-        Insert: {
-          id?: string
-          project_id?: string | null
-          external_id?: string | null
-          title?: string | null
-          authors?: string[] | null
-          journal?: string | null
-          publication_year?: number | null
-          language?: string | null
-          abstract?: string | null
-          metadata?: Json | null
-          created_at?: string
-          updated_at?: string
-          correlativo: number
-          "Publication Type"?: string | null
-          "Author Full Names"?: string | null
-          Title2?: string | null
-          ORCIDs?: string | null
-          ISSN?: string | null
-          eISSN?: string | null
-          ISBN?: string | null
-          "Publication Date"?: string | null
-          Volume?: string | null
-          Issue?: string | null
-          "Special Issue"?: string | null
-          "Start Page"?: string | null
-          "End Page"?: string | null
-          "Article Number"?: string | null
-          DOI?: string | null
-          "DOI Link"?: string | null
-          "UT (Unique WOS ID)"?: string | null
-        }
-        Update: {
-          id?: string
-          project_id?: string | null
-          external_id?: string | null
-          title?: string | null
-          authors?: string[] | null
-          journal?: string | null
-          publication_year?: number | null
-          language?: string | null
-          abstract?: string | null
-          metadata?: Json | null
-          updated_at?: string
-          correlativo?: number
-          "Publication Type"?: string | null
-          "Author Full Names"?: string | null
-          Title2?: string | null
-          ORCIDs?: string | null
-          ISSN?: string | null
-          eISSN?: string | null
-          ISBN?: string | null
-          "Publication Date"?: string | null
-          Volume?: string | null
-          Issue?: string | null
-          "Special Issue"?: string | null
-          "Start Page"?: string | null
-          "End Page"?: string | null
-          "Article Number"?: string | null
-          DOI?: string | null
-          "DOI Link"?: string | null
-          "UT (Unique WOS ID)"?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "articles_project_id_fkey"
-            columns: ["project_id"]
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-
-      article_batches: {
-        Row: {
-          id: string
-          project_id: string
-          batch_number: number
-          name: string | null
-          assigned_to: string | null
-          status: BatchStatusEnum
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          project_id: string
-          batch_number: number
-          name?: string | null
-          assigned_to?: string | null
-          status?: BatchStatusEnum
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          project_id?: string
-          batch_number?: number
-          name?: string | null
-          assigned_to?: string | null
-          status?: BatchStatusEnum
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "article_batches_project_id_fkey"
-            columns: ["project_id"]
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "article_batches_assigned_to_fkey"
-            columns: ["assigned_to"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
         ]
       }
-
-      article_batch_items: {
+      eligible_articles_for_batching_view: {
         Row: {
-          id: string
-          batch_id: string
-          article_id: string
-          ai_label: string | null
-          human_label: string | null
-          status: BatchItemStatusEnum
-          notes: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          batch_id: string
-          article_id: string
-          ai_label?: string | null
-          human_label?: string | null
-          status?: BatchItemStatusEnum
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          batch_id?: string
-          article_id?: string
-          ai_label?: string | null
-          human_label?: string | null
-          status?: BatchItemStatusEnum
-          notes?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "article_batch_items_batch_id_fkey"
-            columns: ["batch_id"]
-            referencedRelation: "article_batches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "article_batch_items_article_id_fkey"
-            columns: ["article_id"]
-            referencedRelation: "articles"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-
-      article_translations: {
-        Row: {
-          id: string
-          article_id: string
-          language_code: string
-          title: string
-          abstract: string
-          summary: string | null
-          translated_by_user_id: string | null
-          translator_system: string | null
-          translated_at: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          article_id: string
-          language_code: string
-          title: string
-          abstract: string
-          summary?: string | null
-          translated_by_user_id?: string | null
-          translator_system?: string | null
-          translated_at?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          article_id?: string
-          language_code?: string
-          title?: string
-          abstract?: string
-          summary?: string | null
-          translated_by_user_id?: string | null
-          translator_system?: string | null
-          translated_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "article_translations_article_id_fkey"
-            columns: ["article_id"]
-            referencedRelation: "articles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "article_translations_translated_by_user_id_fkey"
-            columns: ["translated_by_user_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-
-      // =================================================================
-      // TABLAS DE AUDITORÍA E HISTORIAL
-      // =================================================================
-      project_roles_history: {
-        Row: {
-          history_id: string
-          operation_type: "INSERT" | "UPDATE" | "DELETE"
-          operation_timestamp: string
-          operated_by_user_id: string | null
-          role_id: string
-          project_id: string
-          role_name_old: string | null
-          role_name_new: string | null
-          role_description_old: string | null
-          role_description_new: string | null
-          can_manage_master_data_old: boolean | null
-          can_manage_master_data_new: boolean | null
-          can_create_batches_old: boolean | null
-          can_create_batches_new: boolean | null
-          can_upload_files_old: boolean | null
-          can_upload_files_new: boolean | null
-          can_bulk_edit_master_data_old: boolean | null
-          can_bulk_edit_master_data_new: boolean | null
-        }
-        Insert: {
-          history_id?: string
-          operation_type: "INSERT" | "UPDATE" | "DELETE"
-          operation_timestamp?: string
-          operated_by_user_id?: string | null
-          role_id: string
-          project_id: string
-          role_name_old?: string | null
-          role_name_new?: string | null
-          role_description_old?: string | null
-          role_description_new?: string | null
-          can_manage_master_data_old?: boolean | null
-          can_manage_master_data_new?: boolean | null
-          can_create_batches_old?: boolean | null
-          can_create_batches_new?: boolean | null
-          can_upload_files_old?: boolean | null
-          can_upload_files_new?: boolean | null
-          can_bulk_edit_master_data_old?: boolean | null
-          can_bulk_edit_master_data_new?: boolean | null
-        }
-        Update: Record<string, never>
-        Relationships: [
-          {
-            foreignKeyName: "project_roles_history_operated_by_user_id_fkey"
-            columns: ["operated_by_user_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_roles_history_role_id_fkey"
-            columns: ["role_id"]
-            referencedRelation: "project_roles" // Asumiendo que el FK es a project_roles.id
-            referencedColumns: ["id"]
-          },
-           { // Asegúrate que este FK también esté bien definido.
-            foreignKeyName: "project_roles_history_project_id_fkey"
-            columns: ["project_id"]
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-
-      // =================================================================
-      // NUEVAS TABLAS: DIMENSIONES DE PRE-CLASIFICACIÓN
-      // =================================================================
-      preclass_dimensions: {
-        Row: {
-          id: string // uuid PK
-          project_id: string // uuid FK projects(id)
-          name: string // text
-          type: string // text ('finite' | 'open') - Usamos string aquí, se puede refinar con un Enum si se crea en DB
-          description: string | null // text
-          ordering: number // integer
-          created_at: string // timestamptz default now()
-          updated_at: string // timestamptz default now()
-        }
-        Insert: {
-          id?: string // uuid default gen_random_uuid()
-          project_id: string
-          name: string
-          type: string // 'finite' | 'open'
-          description?: string | null
-          ordering?: number
-          created_at?: string // timestamptz default now()
-          updated_at?: string // timestamptz default now()
-        }
-        Update: {
-          id?: string
-          project_id?: string
-          name?: string
-          type?: string // 'finite' | 'open'
-          description?: string | null
-          ordering?: number
-          updated_at?: string // timestamptz default now()
-        }
-        Relationships: [
-          {
-            foreignKeyName: "preclass_dimensions_project_id_fkey"
-            columns: ["project_id"]
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-
-      preclass_dimension_options: {
-        Row: {
-          id: string // uuid PK
-          dimension_id: string // uuid FK preclass_dimensions(id)
-          value: string // text
-          ordering: number // integer
-          created_at: string // timestamptz default now()
-          // updated_at no estaba en tu doc original para esta tabla, la omito por ahora
-        }
-        Insert: {
-          id?: string // uuid default gen_random_uuid()
-          dimension_id: string
-          value: string
-          ordering?: number
-          created_at?: string // timestamptz default now()
-        }
-        Update: {
-          id?: string
-          dimension_id?: string
-          value?: string
-          ordering?: number
-          // updated_at? : string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "preclass_dimension_options_dimension_id_fkey"
-            columns: ["dimension_id"]
-            referencedRelation: "preclass_dimensions"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-
-      preclass_dimension_questions: {
-        Row: {
-          id: string // uuid PK
-          dimension_id: string // uuid FK preclass_dimensions(id)
-          question: string // text
-          ordering: number // integer
-          created_at: string // timestamptz default now()
-          // updated_at no estaba en tu doc original para esta tabla
-        }
-        Insert: {
-          id?: string // uuid default gen_random_uuid()
-          dimension_id: string
-          question: string
-          ordering?: number
-          created_at?: string // timestamptz default now()
-        }
-        Update: {
-          id?: string
-          dimension_id?: string
-          question?: string
-          ordering?: number
-          // updated_at? : string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "preclass_dimension_questions_dimension_id_fkey"
-            columns: ["dimension_id"]
-            referencedRelation: "preclass_dimensions"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-
-      preclass_dimension_examples: {
-        Row: {
-          id: string // uuid PK
-          dimension_id: string // uuid FK preclass_dimensions(id)
-          example: string // text
-          created_at: string // timestamptz default now()
-          // updated_at no estaba en tu doc original para esta tabla
-        }
-        Insert: {
-          id?: string // uuid default gen_random_uuid()
-          dimension_id: string
-          example: string
-          created_at?: string // timestamptz default now()
-        }
-        Update: {
-          id?: string
-          dimension_id?: string
-          example?: string
-          // updated_at? : string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "preclass_dimension_examples_dimension_id_fkey"
-            columns: ["dimension_id"]
-            referencedRelation: "preclass_dimensions"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-
-    } // Fin de Tables
-    Views: {
-      detailed_project_members: {
-        Row: {
-          project_member_id: string | null
-          user_id: string | null
+          article_id: string | null
           project_id: string | null
-          project_role_id: string | null
-          joined_at: string | null
-          role_name: string | null
-          first_name: string | null
-          last_name: string | null
-          public_display_name: string | null
-          public_contact_email: string | null
-          primary_institution: string | null
-          contact_phone: string | null
-          general_notes: string | null
-          preferred_language: string | null
-          pronouns: string | null
-          ui_theme: string | null
-          ui_font_pair: string | null
-          ui_is_dark_mode: boolean | null
-          can_manage_master_data?: boolean | null
-          can_create_batches?: boolean | null
-          can_upload_files?: boolean | null
-          can_bulk_edit_master_data?: boolean | null
-          is_active_for_user?: boolean | null
-          contextual_notes?: string | null
-          contact_email_for_project?: string | null
         }
-        // Si la vista permite Insert/Update (generalmente no), se definirían aquí.
-        // Insert?: { ... }
-        // Update?: { ... }
+        Insert: {
+          article_id?: string | null
+          project_id?: string | null
+        }
+        Update: {
+          article_id?: string | null
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "articles_normalized_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      // Si existiera la vista eligible_articles_for_batching_view, se definiría aquí.
-      // Ejemplo:
-      // eligible_articles_for_batching_view: {
-      //   Row: {
-      //     article_id: string | null
-      //     project_id: string | null
-      //     title: string | null
-      //     // ... otros campos relevantes de la vista
-      //   }
-      // }
-    } // Fin de Views
+    }
     Functions: {
+      _dim_project_id: {
+        Args: { did: string }
+        Returns: string
+      }
+      _is_project_member: {
+        Args: { pid: string }
+        Returns: boolean
+      }
+      check_user_has_profile: {
+        Args: { uid: string; pid: string }
+        Returns: boolean
+      }
       get_current_auth_context: {
-        Args: Record<string, never>
+        Args: Record<PropertyKey, never>
+        Returns: Record<string, unknown>[]
+      }
+      get_project_batches_with_assignee_names: {
+        Args: { p_project_id: string }
         Returns: {
-          current_uid: string | null
-          current_role: string | null
+          id: string
+          batch_number: number
+          name: string
+          status: string
+          assigned_to_member_name: string
+          article_count: number
         }[]
       }
       get_user_by_email: {
-        Args: {
-          user_email: string
-        }
-        Returns: string | null
+        Args: { user_email: string }
+        Returns: string
+      }
+      get_user_project_ids: {
+        Args: { p_user_id: string }
+        Returns: string[]
       }
       has_permission_in_project: {
         Args: {
@@ -785,35 +823,154 @@ export interface Database {
         Returns: boolean
       }
       is_user_member_of_project: {
-        Args: {
-            p_user_id: string
-            p_project_id_to_check: string
-        }
+        Args: { p_user_id: string; p_project_id_to_check: string }
         Returns: boolean
       }
-      // Si existiera la función get_project_batches_with_assignee_names, se definiría aquí.
-      // Ejemplo:
-      // get_project_batches_with_assignee_names: {
-      //   Args: {
-      //     p_project_id: string
-      //   }
-      //   Returns: { // Este tipo de retorno debería coincidir con tu BatchForDisplay
-      //     id: string
-      //     batch_number: number
-      //     name: string | null
-      //     status: string // o BatchStatusEnum si la RPC lo devuelve así
-      //     assigned_to_member_name: string | null
-      //     article_count: number // o string si la RPC devuelve string y conviertes luego
-      //   }[]
-      // }
-    } // Fin de Functions
+    }
     Enums: {
-      batch_status: BatchStatusEnum
-      batch_item_status: BatchItemStatusEnum
-      // preclass_dimension_type: PreclassDimensionTypeEnum // Si creas el enum en la DB
-    } // Fin de Enums
+      batch_item_status:
+        | "unreviewed"
+        | "ai_preclassified"
+        | "human_preclassified"
+        | "disagreement"
+        | "reconciled"
+      batch_status:
+        | "pending"
+        | "in_progress"
+        | "ai_prefilled"
+        | "discrepancies"
+        | "completed"
+      dimension_type: "finite" | "open"
+    }
     CompositeTypes: {
       [_ in never]: never
     }
-  } // Fin de public
-} // Fin de Database
+  }
+}
+
+type DefaultSchema = Database[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      batch_item_status: [
+        "unreviewed",
+        "ai_preclassified",
+        "human_preclassified",
+        "disagreement",
+        "reconciled",
+      ],
+      batch_status: [
+        "pending",
+        "in_progress",
+        "ai_prefilled",
+        "discrepancies",
+        "completed",
+      ],
+      dimension_type: ["finite", "open"],
+    },
+  },
+} as const

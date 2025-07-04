@@ -1,0 +1,168 @@
+// EN: lib/actions/article-actions.ts (Versión Final Definitiva)
+
+"use server";
+
+import { createSupabaseServerClient } from "@/lib/server";
+import type { Database } from "@/lib/database.types";
+
+// ... (Interfaces y Tipos sin cambios)
+export type ResultadoOperacion<T> = | { success: true; data: T } | { success: false; error: string; errorCode?: string };
+export type ArticleFromCsv = { [key: string]: string | number | null; };
+export interface UploadArticlesPayload { projectId: string; articlesData: ArticleFromCsv[]; }
+
+const PERMISO_SUBIR_ARCHIVOS = "can_upload_files";
+const PERMISO_GESTIONAR_DATOS_MAESTROS = "can_manage_master_data";
+
+// ========================================================================
+//  ACCIÓN 1: uploadAndProcessArticles
+// ========================================================================
+export async function uploadAndProcessArticles(
+  payload: UploadArticlesPayload
+): Promise<ResultadoOperacion<{ insertedCount: number }>> {
+  const { projectId, articlesData } = payload;
+  if (!projectId || !articlesData || articlesData.length === 0) {
+    return { success: false, error: "Payload inválido.", errorCode: "INVALID_PAYLOAD" };
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  try {
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) {
+      return { success: false, error: "Usuario no autenticado.", errorCode: "UNAUTHENTICATED" };
+    }
+
+    const { data: tienePermiso, error: rpcError } = await supabase.rpc("has_permission_in_project", { p_user_id: currentUser.id, p_project_id: projectId, p_permission_column: PERMISO_SUBIR_ARCHIVOS });
+    if (rpcError || !tienePermiso) {
+      return { success: false, error: "No tienes permiso para subir archivos en este proyecto.", errorCode: "FORBIDDEN" };
+    }
+
+    const { data: lastCorrelativoData, error: correlativoError } = await supabase.from("articles").select("correlativo").eq("project_id", projectId).order("correlativo", { ascending: false }).limit(1).maybeSingle();
+    if (correlativoError) throw new Error(`Error al obtener el correlativo: ${correlativoError.message}`);
+
+    let nextCorrelativo = (lastCorrelativoData?.correlativo || 0) + 1;
+
+    const articlesToInsert: Database['public']['Tables']['articles']['Insert'][] = articlesData.map((rawArticle, index) => {
+      const mainData = {
+        title: rawArticle.Title as string | null,
+        authors: (rawArticle.Authors as string)?.split(';').map(name => name.trim()) || null,
+        journal: rawArticle.Journal as string | null,
+        publication_year: Number(rawArticle["Publication Year"]) || null,
+        abstract: rawArticle.Abstract as string | null,
+        doi: rawArticle.DOI as string | null,
+      };
+
+      const metadata: { [key: string]: any } = {};
+      const mainKeys = new Set(['Title', 'Authors', 'Journal', 'Publication Year', 'Abstract', 'DOI']);
+      for (const key in rawArticle) {
+        if (!mainKeys.has(key) && rawArticle[key] !== null && rawArticle[key] !== '') {
+          metadata[key] = rawArticle[key];
+        }
+      }
+
+      return {
+        project_id: projectId,
+        correlativo: nextCorrelativo + index,
+        ...mainData,
+        metadata: metadata,
+      };
+    });
+
+    const { error: insertError, count: insertedCount } = await supabase.from("articles").insert(articlesToInsert, { count: 'exact' });
+    if (insertError) throw new Error(`Error al guardar los artículos: ${insertError.message}`);
+
+    return { success: true, data: { insertedCount: insertedCount || 0 } };
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido.";
+    return { success: false, error: `Error interno del servidor: ${errorMessage}`, errorCode: "INTERNAL_SERVER_ERROR" };
+  }
+}
+
+// ... (Las funciones checkIfProjectHasArticles y deleteUploadedArticles permanecen igual, ya que solo necesitan el nombre de la tabla "articles" y sus tipos se actualizarán automáticamente)
+// ========================================================================
+//  ACCIÓN 2: checkIfProjectHasArticles
+// ========================================================================
+export async function checkIfProjectHasArticles(
+  projectId: string
+): Promise<ResultadoOperacion<{ hasArticles: boolean }>> {
+  if (!projectId) {
+    return { success: false, error: "Se requiere ID de proyecto.", errorCode: "INVALID_PROJECT_ID" };
+  }
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { count, error } = await supabase
+      .from("articles")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", projectId);
+    if (error) {
+      throw new Error(error.message);
+    }
+    return { success: true, data: { hasArticles: (count || 0) > 0 } };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido.";
+    return {
+      success: false,
+      error: `Error al verificar los artículos: ${errorMessage}`,
+      errorCode: "DB_CHECK_ERROR",
+    };
+  }
+}
+// ========================================================================
+//  ACCIÓN 3: deleteUploadedArticles
+// ========================================================================
+export async function deleteUploadedArticles(
+  projectId: string
+): Promise<ResultadoOperacion<{ deletedCount: number }>> {
+  if (!projectId) {
+    return { success: false, error: "Se requiere ID de proyecto.", errorCode: "INVALID_PROJECT_ID" };
+  }
+  const supabase = await createSupabaseServerClient();
+  try {
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) {
+      return { success: false, error: "Usuario no autenticado.", errorCode: "UNAUTHENTICATED" };
+    }
+    const { data: tienePermiso, error: rpcError } = await supabase.rpc(
+      "has_permission_in_project",
+      {
+        p_user_id: currentUser.id,
+        p_project_id: projectId,
+        p_permission_column: PERMISO_GESTIONAR_DATOS_MAESTROS,
+      }
+    );
+     if (rpcError || !tienePermiso) {
+      return { success: false, error: "No tienes permiso para eliminar datos maestros en este proyecto.", errorCode: "FORBIDDEN" };
+    }
+    const { count: activeBatchesCount, error: checkError } = await supabase
+      .from("article_batches")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", projectId)
+      .neq("status", "pending");
+    if (checkError) {
+        throw new Error(`Error al verificar estado de los lotes: ${checkError.message}`);
+    }
+    if ((activeBatchesCount || 0) > 0) {
+      return {
+        success: false,
+        error: `No se pueden eliminar los artículos porque ${activeBatchesCount} lote(s) ya han sido iniciados. Completa o reinicia esos lotes primero.`,
+        errorCode: "DELETE_BLOCKED_ACTIVE_BATCHES",
+      };
+    }
+    const { count: deletedCount, error: deleteError } = await supabase
+        .from("articles")
+        .delete({ count: "exact" })
+        .eq("project_id", projectId);
+    if (deleteError) {
+        throw new Error(`Error al eliminar los artículos: ${deleteError.message}`);
+    }
+    return { success: true, data: { deletedCount: deletedCount || 0 } };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido.";
+    return {
+      success: false,
+      error: `Error interno del servidor: ${errorMessage}`,
+      errorCode: "INTERNAL_SERVER_ERROR",
+    };
+  }
+}
