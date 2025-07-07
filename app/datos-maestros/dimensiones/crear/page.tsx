@@ -212,15 +212,15 @@ export default function CrearDimensionPage() {
       <div className="container mx-auto py-8">
         <div className="max-w-3xl mx-auto"> {/* Centrar y limitar ancho del contenido del formulario */}
           <StandardPageTitle
-            title="Crear Nueva Dimensión"
-            subtitle="Define una nueva dimensión para la pre-clasificación de artículos en tu proyecto."
+            title="Crear Dimensión"
+            subtitle="Agrega una nueva dimensión para clasificar los artículos"
             mainIcon={PlusCircle} // Icono para creación
+            showBackButton={{ href: "/datos-maestros/dimensiones" }}
             breadcrumbs={[
               { label: "Datos Maestros", href: "/datos-maestros" },
               { label: "Dimensiones", href: "/datos-maestros/dimensiones" },
-              { label: "Crear" },
+              { label: "Crear Dimensión" },
             ]}
-            showBackButton={{ href: "/datos-maestros/dimensiones" }}
           />
 
           <StandardCard

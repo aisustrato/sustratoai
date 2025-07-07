@@ -257,8 +257,8 @@ const navItems: NavItem[] = useMemo(() => {
     icon: (isActive) => createMenuIcon(Settings, isActive),
     submenu: [
       {
-        label: "Datos Básicos",
-        href: "/datos-maestros/datos-basicos",
+        label: "Proyecto",
+        href: "/datos-maestros/proyecto",
         icon: (isActive) => createMenuIcon(ClipboardList, isActive),
       },
       {

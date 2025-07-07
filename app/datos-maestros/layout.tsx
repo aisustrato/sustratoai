@@ -15,6 +15,7 @@ import {
 	LayoutGrid,
 	FileUp,
 	ChevronsLeft,
+	ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 //#endregion ![head]
@@ -26,6 +27,11 @@ import { cn } from "@/lib/utils";
 
 //#region [main] - 🔧 COMPONENT 🔧
 const sidebarNavItems = [
+	{
+		title: "Proyecto",
+		href: "/datos-maestros/proyecto",
+		icon: ClipboardList,
+	},
 	{
 		title: "Miembros",
 		href: "/datos-maestros/miembros",

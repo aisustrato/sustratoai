@@ -72,12 +72,12 @@ export default function VerDimensionPage() {
   return (
     <div className="container mx-auto py-8">
       <StandardPageTitle
-        title={`Dimensión: ${dimension.nombre}`}
-        subtitle={dimension.explicacion}
+        title={`Dimensión: ${dimension?.nombre || 'Cargando...'}`}
+        subtitle={dimension?.explicacion || ''}
         breadcrumbs={[
           { label: "Datos Maestros", href: "/datos-maestros" },
           { label: "Dimensiones de Preclasificación", href: "/datos-maestros/dimensiones-preclasificacion" },
-          { label: dimension.nombre }
+          { label: dimension?.nombre || 'Dimensión' },
         ]}
         showBackButton={{ href: "/datos-maestros/dimensiones-preclasificacion" }}
       />

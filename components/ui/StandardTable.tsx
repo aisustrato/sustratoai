@@ -1,3 +1,4 @@
+// StandardTable.tsx
 "use client";
 
 import React, { useMemo, useState, useRef, useEffect, Children, isValidElement, cloneElement, useLayoutEffect } from "react";
@@ -61,8 +62,6 @@ interface SubComponentProps<TData extends object> {
     [key: string]: unknown;
 }
 
-
-// --- ✅ NUEVO COMPONENTE SOBERANO PARA LA BARRA DE HERRAMIENTAS ---
 const StandardTableToolbar = <TData extends object>({ table, enableTruncation, onTruncateChange, truncateValue }: { table: Table<TData>, enableTruncation?: boolean, onTruncateChange?: (lines: number | null) => void, truncateValue?: number | null }) => {
     if (!table || onTruncateChange === undefined || enableTruncation === undefined) return null;
 
@@ -81,7 +80,14 @@ const StandardTableToolbar = <TData extends object>({ table, enableTruncation, o
                 <StandardInput placeholder={filterPlaceholder} value={globalFilter ?? ""} onChange={(e) => table.setGlobalFilter(e.target.value)} className="w-full max-w-xs" />
                 <StandardDropdownMenu>
                     <StandardDropdownMenu.Trigger asChild>
-                        <StandardButton styleType="outline" leftIcon={Columns} size="sm">Columnas</StandardButton>
+                        <StandardButton 
+                            styleType="outline" 
+                            leftIcon={Columns} 
+                            size="sm"
+                            tooltip="ocultar/mostrar columnas"
+                        >
+                            Columnas
+                        </StandardButton>
                     </StandardDropdownMenu.Trigger>
                     <StandardDropdownMenu.Content align="end">
                         <StandardDropdownMenu.Label>Mostrar/Ocultar Columnas</StandardDropdownMenu.Label>
@@ -89,17 +95,28 @@ const StandardTableToolbar = <TData extends object>({ table, enableTruncation, o
                         {allColumns.map(column => {
                             const canToggle = column.getCanHide() && !['expander', 'actions'].includes(column.id);
                             return (
-                                <StandardDropdownMenu.CheckboxItem key={column.id} className="capitalize" checked={column.getIsVisible()} onCheckedChange={(value: boolean) => column.toggleVisibility(!!value)} disabled={!canToggle}>
+                                <StandardDropdownMenu.CheckboxItem 
+                                    key={column.id} 
+                                    className="capitalize" 
+                                    checked={column.getIsVisible()} 
+                                    onCheckedChange={(value: boolean) => column.toggleVisibility(!!value)} 
+                                    disabled={!canToggle}
+                                >
                                     {typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id}
                                 </StandardDropdownMenu.CheckboxItem>
-                            )
+                            );
                         })}
                     </StandardDropdownMenu.Content>
                 </StandardDropdownMenu>
                 {enableTruncation && (
-                     <StandardDropdownMenu>
+                    <StandardDropdownMenu>
                         <StandardDropdownMenu.Trigger asChild>
-                            <StandardButton styleType="outline" leftIcon={Rows} size="sm">
+                            <StandardButton 
+                                styleType="outline" 
+                                leftIcon={Rows} 
+                                size="sm"
+                                tooltip="línea(s) de texto visibles en las filas"
+                            >
                                 {truncateValue ? `${truncateValue} línea(s)` : 'Ver todo'}
                             </StandardButton>
                         </StandardDropdownMenu.Trigger>
@@ -107,7 +124,10 @@ const StandardTableToolbar = <TData extends object>({ table, enableTruncation, o
                             <StandardDropdownMenu.Label>Máximo de líneas por fila</StandardDropdownMenu.Label>
                             <StandardDropdownMenu.Separator />
                             {truncateOptions.map(opt => (
-                                <StandardDropdownMenu.Item key={opt.label} onSelect={() => onTruncateChange(opt.value)}>
+                                <StandardDropdownMenu.Item 
+                                    key={opt.label} 
+                                    onSelect={() => onTruncateChange(opt.value)}
+                                >
                                     {opt.label}
                                 </StandardDropdownMenu.Item>
                             ))}
@@ -121,7 +141,6 @@ const StandardTableToolbar = <TData extends object>({ table, enableTruncation, o
 
 
 const StandardTableHeaderCell = <TData extends object, TValue>({ header }: { header: Header<TData, TValue> }) => {
-    // ... (Sin cambios)
     const { appColorTokens } = useTheme();
     const canSort = header.column.getCanSort();
     const meta = header.column.columnDef.meta;
@@ -149,7 +168,6 @@ const StandardTableHeaderCell = <TData extends object, TValue>({ header }: { hea
     );
 };
 
-// --- ✅ HEADER SIMPLIFICADO: Solo se ocupa de los títulos de las columnas ---
 const StandardTableHeader = <TData extends object>({ table }: { table: Table<TData> }) => {
     return (
         <thead className="sticky top-0 z-20 bg-[var(--table-row-default-backgroundColor)]">
@@ -164,7 +182,6 @@ const StandardTableHeader = <TData extends object>({ table }: { table: Table<TDa
 
 
 const ExpandIcon = <TData extends object>({ isExpanded }: { isExpanded: boolean }) => {
-    // ... (Sin cambios)
     return (
     <div className="flex items-center justify-center h-full w-full">
         <div className={cn("flex items-center justify-center h-6 w-6 rounded-full border transition-colors", isExpanded ? "bg-[var(--table-expander-expandedCircleBackground)]" : "bg-[var(--table-expander-circleBackground)]", "border-[var(--table-expander-circleBorderColor)]")}>
@@ -175,13 +192,12 @@ const ExpandIcon = <TData extends object>({ isExpanded }: { isExpanded: boolean 
 };
 
 const StandardTableCell = <TData extends object, TValue>({ cell }: { cell: Cell<TData, TValue> }) => {
-    // ... (Sin cambios)
     const meta = cell.column.columnDef.meta;
     const align = meta?.align || 'left';
     const isSticky = meta?.isSticky;
     const isTruncatable = meta?.isTruncatable || false;
     const cellVariant = meta?.cellVariant ? meta.cellVariant(cell.getContext()) : undefined;
-    const tooltipType = meta?.tooltipType || 'standard'; 
+    const tooltipType = meta?.tooltipType || 'standard';
 
     const cellClasses = cn(
         "px-4 py-3 align-top border-b border-r transition-colors", { 'text-left': align === 'left', 'text-center': align === 'center', 'text-right': align === 'right' }, { "sticky z-10": isSticky, "left-0": isSticky === 'left', "right-0": isSticky === 'right' }, { "bg-[var(--table-cell-highlight-backgroundColor)] text-[var(--table-cell-highlight-textColor)]": cellVariant === 'highlight', },
@@ -247,7 +263,11 @@ const StandardTableRow = <TData extends object>({ row, getRowStatus, renderSubCo
     getRowStatus?: (original: TData) => Exclude<ColorSchemeVariant, 'neutral' | 'white' | 'default' | 'info'> | null,
     renderSubComponent?: (row: Row<TData>) => React.ReactNode 
 }) => {
-    // ... (Sin cambios)
+    // ✅ SI LA FILA ES UN FANTASMA, NO LA RENDERIZAMOS.
+    if ((row.original as any)?.__isGhost) {
+        return null;
+    }
+
     const status = getRowStatus ? getRowStatus(row.original) : null;
     return (
         <React.Fragment>
@@ -365,7 +385,6 @@ function StandardTableRoot<TData extends object>({
         return vars;
     }, [appColorTokens, mode]);
     
-    // ✅ CLONE ELEMENT SIMPLIFICADO: solo necesita pasar la instancia de la tabla
     const childrenWithProps = Children.map(children, child => {
         if (isValidElement(child) && (child.type as { displayName?: string }).displayName === "StandardTable.Table") {
             return cloneElement(child as React.ReactElement<SubComponentProps<TData>>, { table });
@@ -373,7 +392,6 @@ function StandardTableRoot<TData extends object>({
         return null;
     });
     
-    // --- ✅ NUEVA ESTRUCTURA DE RENDERIZADO ---
     const renderContent = () => (
         <div className="flex flex-col h-full">
             <StandardTableToolbar 

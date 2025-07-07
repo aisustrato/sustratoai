@@ -31,14 +31,15 @@ export default function DatosMaestrosHome() {
         title="Datos Maestros"
         description="Administra la información estructural clave de tu proyecto: datos básicos, artículos, dimensiones, lotes, miembros y roles."
         breadcrumbs={[{ label: "Datos Maestros" }]}
+        showBackButton={{ href: "/" }}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {[ 
           {
-            href: "/datos-maestros/datos-basicos",
+            href: "/datos-maestros/proyecto",
             icon: ClipboardList,
-            title: "Datos Básicos",
-            description: "Configura la información esencial y los parámetros iniciales que definen tu proyecto."
+            title: "Proyecto",
+            description: "Gestiona el nombre, descripción y módulos activos de tu proyecto."
           },
           {
             href: "/datos-maestros/cargar-articulos",

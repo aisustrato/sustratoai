@@ -154,7 +154,7 @@ export default function RolesPage() {
 		{
 			accessorKey: "role_name",
 			header: () => <StandardText weight="semibold">Nombre del Rol</StandardText>,
-			cell: (info) => <StandardBadge size="sm" colorScheme="primary">{String(info.getValue())}</StandardBadge>,
+			cell: (info) => <StandardBadge size="xs" colorScheme="primary">{String(info.getValue())}</StandardBadge>,
 			meta: {
 				size: 200, // Ajustar ancho
 			},
@@ -275,12 +275,13 @@ export default function RolesPage() {
 				<div className="space-y-6">
 					<StandardPageTitle
 						title="Roles y Permisos"
-						subtitle="Definición de permisos y capacidades"
-						description="Crea y gestiona los roles que determinan qué acciones pueden realizar los miembros dentro del proyecto."
+						subtitle="Gestión de roles"
+						description="Administra los roles y permisos de los miembros del proyecto."
 						mainIcon={Shield}
+						showBackButton={{ href: "/datos-maestros" }}
 						breadcrumbs={[
 							{ label: "Datos Maestros", href: "/datos-maestros" },
-							{ label: "Roles" },
+							{ label: "Roles y Permisos" },
 						]}
 						actions={
 							puedeGestionarRoles ? (
@@ -314,7 +315,7 @@ export default function RolesPage() {
 							accentPlacement="top"
 							accentColorScheme="primary"
 							shadow="md"
-							className="overflow-hidden hover:shadow-md transition-shadow duration-300"
+							
 						>
 							<StandardCard
 								styleType="subtle"
@@ -374,13 +375,15 @@ export default function RolesPage() {
 						>
 							<StandardCard
 								styleType="subtle"
-								className="overflow-x-auto"
+								
 								colorScheme="primary"
 								accentPlacement="none"
 								hasOutline={false}
 								shadow="none"
 								disableShadowHover={true}
+								
 							>
+								<StandardCard.Content>
 								<StandardTable<ProjectRoleRow>
 									data={roles}
 									columns={columnas}
@@ -388,6 +391,7 @@ export default function RolesPage() {
 								>
 									<StandardTable.Table />
 								</StandardTable>
+								</StandardCard.Content>
 							</StandardCard>
 						</StandardCard>
 					)}

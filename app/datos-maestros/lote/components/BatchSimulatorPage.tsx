@@ -18,12 +18,14 @@ import {
   type ProjectMemberDetails,
 } from "@/lib/actions/member-actions";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import { AlertTriangle, CheckCircle, Layers, Settings } from "lucide-react";
+import { AlertTriangle, CheckCircle, Boxes, Settings, FileText } from "lucide-react";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast as sonnerToast } from "sonner";
+import { checkIfProjectHasArticles } from "@/lib/actions/article-actions";
 import { StandardProgressBar } from "@/components/ui/StandardProgressBar";
 import { StandardSphereGrid } from "@/components/ui/StandardSphereGrid";
 import { type SphereItemData, type StandardSphereProps } from "@/components/ui/StandardSphere";
@@ -48,6 +50,7 @@ export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: Bat
   const [isCreating, setIsCreating] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
   const [creationStatusMessage, setCreationStatusMessage] = useState("");
+  const [hasArticles, setHasArticles] = useState<boolean>(false);
   
   const gridContainerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -62,6 +65,27 @@ export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: Bat
     return map;
   }, [projectMembers]);
 
+  // Verificar si hay artículos cargados cuando el proyecto cambia
+  useEffect(() => {
+    const checkArticles = async () => {
+      if (!proyectoActual?.id) return;
+      
+      try {
+        const result = await checkIfProjectHasArticles(proyectoActual.id);
+        if (result.success) {
+          setHasArticles(result.data.hasArticles);
+        } else {
+          setUiError(result.error || 'No se pudo verificar el estado de los artículos.');
+        }
+      } catch (err) {
+        setUiError('Error de red al verificar los artículos.');
+      }
+    };
+    
+    checkArticles();
+  }, [proyectoActual]);
+
+  // Cargar miembros del proyecto
   useEffect(() => {
     if (proyectoActual?.id) {
       setIsLoadingInitialData(true);
@@ -253,26 +277,66 @@ export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: Bat
     );
   }
 
-  if (projectMembers.length === 0) {
-     return (
+  if (!hasArticles && !isLoadingInitialData) {
+    return (
       <StandardPageBackground variant="gradient">
         <div style={{display: "flex", alignItems: "center", justifyContent: "center", minHeight: "80vh" }}>
-            <StandardCard
-                animateEntrance
-                colorScheme="primary"
-                className="text-center max-w-lg p-8"
-                styleType="subtle"
-                hasOutline={false}
-                accentPlacement="none"
-            >
+          <StandardCard
+            animateEntrance
+            colorScheme="primary"
+            className="text-center max-w-lg p-8"
+            styleType="subtle"
+            hasOutline={false}
+            accentPlacement="none"
+          >
             <StandardCard.Header className="items-center flex flex-col">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-info-100 mb-4">
-                    <AlertTriangle className="h-6 w-6 text-info-600" />
-                </div>
-                <StandardText preset="subheading" weight="bold" colorScheme="neutral">Sin Miembros en el Proyecto</StandardText>
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-info-100 mb-4">
+                <FileText className="h-6 w-6 text-info-600" />
+              </div>
+              <StandardText preset="subheading" weight="bold" colorScheme="neutral">No hay artículos cargados</StandardText>
             </StandardCard.Header>
-            <StandardCard.Content><StandardText>Este proyecto no tiene miembros asignados. Dirígete a la sección de gestión de miembros para agregar participantes antes de crear lotes.</StandardText></StandardCard.Content>
-            </StandardCard>
+            <StandardCard.Content>
+              <StandardText className="mb-4">
+                Antes de crear lotes, es necesario cargar artículos al proyecto. Dirígete a la sección de "Cargar Artículos" para subir los artículos que deseas incluir en los lotes.
+              </StandardText>
+              <StandardButton
+                asChild
+                colorScheme="primary"
+                className="mt-4"
+              >
+                <Link href="/datos-maestros/cargar-articulos">
+                  Ir a Cargar Artículos
+                </Link>
+              </StandardButton>
+            </StandardCard.Content>
+          </StandardCard>
+        </div>
+      </StandardPageBackground>
+    );
+  }
+
+  if (projectMembers.length === 0) {
+    return (
+      <StandardPageBackground variant="gradient">
+        <div style={{display: "flex", alignItems: "center", justifyContent: "center", minHeight: "80vh" }}>
+          <StandardCard
+            animateEntrance
+            colorScheme="primary"
+            className="text-center max-w-lg p-8"
+            styleType="subtle"
+            hasOutline={false}
+            accentPlacement="none"
+          >
+            <StandardCard.Header className="items-center flex flex-col">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-info-100 mb-4">
+                <AlertTriangle className="h-6 w-6 text-info-600" />
+              </div>
+              <StandardText preset="subheading" weight="bold" colorScheme="neutral">Sin Miembros en el Proyecto</StandardText>
+            </StandardCard.Header>
+            <StandardCard.Content>
+              <StandardText>Este proyecto no tiene miembros asignados. Dirígete a la sección de gestión de miembros para agregar participantes antes de crear lotes.</StandardText>
+            </StandardCard.Content>
+          </StandardCard>
         </div>
       </StandardPageBackground>
     );
@@ -284,7 +348,8 @@ export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: Bat
             <StandardPageTitle
                 title="Simulador de Creación de Lotes"
                 subtitle={`Define los parámetros para distribuir los artículos del proyecto "${proyectoActual.name}" en lotes de trabajo.`}
-                mainIcon={Layers}
+                mainIcon={Boxes}
+                showBackButton={{ href: "/datos-maestros/lote" }}
                 breadcrumbs={[
                     { label: "Datos maestros", href: "/datos-maestros" },
                     { label: "Lotes", href: "/datos-maestros/lote" },

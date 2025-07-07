@@ -147,12 +147,12 @@ export default function VerRolPage() {
               title={`Detalle del Rol: ${rolVisualizado.role_name}`}
               subtitle={`Visualizando los permisos asignados a este rol en el proyecto "${proyectoActual.name}"`}
               mainIcon={ShieldCheck}
+              showBackButton={{ href: "/datos-maestros/roles" }}
               breadcrumbs={[
                 { label: "Datos Maestros", href: "/datos-maestros" },
                 { label: "Roles", href: "/datos-maestros/roles" },
                 { label: rolVisualizado.role_name } 
               ]}
-              showBackButton={{ href: "/datos-maestros/roles" }}
             />
         <StandardCard
             colorScheme="secondary" // Rule: Main form card colorScheme is secondary

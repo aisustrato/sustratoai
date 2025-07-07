@@ -7,11 +7,15 @@ import { StandardText } from '@/components/ui/StandardText';
 export default function DatosBasicosPage() {
   return (
     <div>
-      <StandardPageTitle 
-        title="Datos Básicos"
-        subtitle="Información del proyecto"
-        description="Gestión de la información fundamental del proyecto, como el nombre, descripción y otros metadatos clave."
+      <StandardPageTitle
+        title="Datos Básicos del Proyecto"
+        subtitle="Configura la información básica de tu proyecto de revisión sistemática"
         mainIcon={ClipboardList}
+        showBackButton={{ href: "/datos-maestros" }}
+        breadcrumbs={[
+          { label: "Datos Maestros", href: "/datos-maestros" },
+          { label: "Datos Básicos" },
+        ]}
       />
       <div className="mt-8">
         <StandardText>Contenido de la página de datos básicos...</StandardText>

@@ -179,22 +179,16 @@ export default function DimensionesPage() {
 
 	return (
 		<div className="container mx-auto py-8">
-				<StandardPageTitle
+				        <StandardPageTitle
           title="Dimensiones"
-          subtitle="Estructura de clasificación"
-          description="Define las dimensiones y categorías que se usarán para analizar y clasificar los artículos del proyecto."
+          subtitle="Gestión de dimensiones"
+          description="Crea y gestiona las dimensiones para clasificar los artículos en tu revisión sistemática."
           mainIcon={LayoutGrid}
-          actions={
-            puedeGestionarDimensiones ? (
-              <StandardButton
-                onClick={handleCrearDimension}
-                colorScheme="primary"
-                leftIcon={Plus}
-              >
-                Crear Dimensión
-              </StandardButton>
-            ) : null
-          }
+          showBackButton={{ href: "/datos-maestros" }}
+          breadcrumbs={[
+            { label: "Datos Maestros", href: "/datos-maestros" },
+            { label: "Dimensiones" },
+          ]}
         />
 
 				{error && (

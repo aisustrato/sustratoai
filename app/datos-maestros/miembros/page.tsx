@@ -150,7 +150,7 @@ export default function MiembrosPage() {
 			accessorFn: (row: ProjectMemberDetails) =>
 				row.role_name || "Sin rol asignado",
 						cell: ({ getValue }: CellContext<ProjectMemberDetails, unknown>) => (
-				<StandardBadge size="sm" colorScheme="primary" styleType="subtle">
+				<StandardBadge size="xs" colorScheme="primary" styleType="subtle">
 					{getValue() as string}
 				</StandardBadge>
 			),
@@ -221,6 +221,7 @@ export default function MiembrosPage() {
 						subtitle="Gestión de los participantes del proyecto"
 						description="Añade, edita o elimina los perfiles de los investigadores y colaboradores asignados a este proyecto."
 						mainIcon={User}
+						showBackButton={{ href: "/datos-maestros" }}
 						breadcrumbs={[
 							{ label: "Datos Maestros", href: "/datos-maestros" },
 							{ label: "Miembros" },
@@ -290,9 +291,9 @@ export default function MiembrosPage() {
 							colorScheme="primary"
 							accentPlacement="top"
 							shadow="md"
-							className="overflow-hidden hover:shadow-md transition-shadow duration-300"
-						>
 							
+						>
+							<StandardCard.Content>
 							<StandardTable<ProjectMemberDetails>
 								data={miembros}
 								columns={columnas}
@@ -300,6 +301,7 @@ export default function MiembrosPage() {
 							>
 								<StandardTable.Table />
 							</StandardTable>
+						</StandardCard.Content>
 						</StandardCard>
 					)}
 				</div>

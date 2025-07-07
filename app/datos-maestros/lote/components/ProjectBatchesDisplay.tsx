@@ -8,7 +8,7 @@ import { StandardButton } from "@/components/ui/StandardButton";
 import {
   AlertTriangle,
   Trash2,
-  Layers,
+  
   Boxes,
 } from "lucide-react";
 import { StandardIcon } from "@/components/ui/StandardIcon";
@@ -166,7 +166,7 @@ export default function ProjectBatchesDisplay({
             colorScheme="neutral"
             className="mx-auto text-gray-400"
           >
-            <Layers />
+            <Boxes />
           </StandardIcon>
           <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
             No hay lotes
@@ -186,6 +186,7 @@ export default function ProjectBatchesDisplay({
         subtitle="Gestión de lotes"
         description="Estos son los lotes creados, solo puedes eliminarlos si no hay ninguno comenzado."
         mainIcon={Boxes}
+        showBackButton={{ href: "/datos-maestros/lote" }}
         breadcrumbs={[
           { label: "Datos Maestros", href: "/datos-maestros" },
           { label: "Lotes de Trabajo" },
