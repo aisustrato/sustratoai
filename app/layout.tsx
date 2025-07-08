@@ -10,6 +10,8 @@ import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { Toaster } from "@/components/ui/toaster";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import ProjectStatusBadge from "@/components/ui/ProjectStatusBadge";
+import { JobManagerProvider } from '@/app/contexts/JobManagerContext';
+import { JobManager } from '@/app/components/ui/JobManager';
 
 export const metadata: Metadata = {
   title: "Sustrato.ai",
@@ -41,19 +43,22 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning className={fontVariables}>
       <body className="h-full bg-background text-foreground antialiased">
         <Providers> {/* Tu provider de tema y otros globales */}
-          <LoadingProvider> {/* <--- ENVUELVE CON LOADINGPROVIDER */}
-            <AuthLayoutWrapper>
-              <Suspense fallback={<GlobalLoadingIndicator />}>
-                {children}
-              </Suspense>
-              <div className="fixed top-20 right-5 z-50">
-                <ProjectStatusBadge />
-              </div>
-            </AuthLayoutWrapper>
-            {/* // ANTES: El Toaster estaba aquí dentro de LoadingProvider */}
-            {/* <Toaster /> */}
-          </LoadingProvider> {/* <--- CIERRA LOADINGPROVIDER */}
-          <Toaster /> {/* // DESPUÉS: El Toaster ahora está aquí, fuera de LoadingProvider pero dentro de Providers */}
+          <JobManagerProvider>
+            <LoadingProvider> {/* <--- ENVUELVE CON LOADINGPROVIDER */}
+              <AuthLayoutWrapper>
+                <Suspense fallback={<GlobalLoadingIndicator />}>
+                  {children}
+                </Suspense>
+                <div className="fixed top-20 right-5 z-50">
+                  <ProjectStatusBadge />
+                </div>
+              </AuthLayoutWrapper>
+              {/* // ANTES: El Toaster estaba aquí dentro de LoadingProvider */}
+              {/* <Toaster /> */}
+            </LoadingProvider> {/* <--- CIERRA LOADINGPROVIDER */}
+            <JobManager />
+            <Toaster /> {/* // DESPUÉS: El Toaster ahora está aquí, fuera de LoadingProvider pero dentro de Providers */}
+          </JobManagerProvider>
         </Providers>
       </body>
     </html>

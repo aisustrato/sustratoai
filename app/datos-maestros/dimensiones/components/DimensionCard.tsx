@@ -111,7 +111,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 								{dimension.name}
 							</StandardText>
 							<StandardBadge
-								size="md"
+								size="xs"
 								colorScheme={dynamicColorScheme}
 								className="mt-1 self-start"> {/* Añadido margen superior */}
 								{tipoLabel}
@@ -119,7 +119,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 						{canManage && (
 							<div className="flex justify-end gap-1 mt-1">
 								<StandardButton
-										size="sm"
+										size="xs"
 										styleType="ghost"
 										onClick={(e) => { e.stopPropagation(); onEdit(); }}
 										disabled={isBeingDeleted}
@@ -171,15 +171,15 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 									) => (
 										<StandardBadge
 											key={opt.id}
-											size="md"
-											colorScheme="primary"
+											size="xs"
+											colorScheme="neutral"
 											styleType="subtle">
 											{opt.value}
 										</StandardBadge>
 									)
 								)}
 								{dimension.options.length > 4 && (
-									<StandardBadge size="md" colorScheme="primary" styleType="subtle">
+									<StandardBadge size="xs" colorScheme="neutral" styleType="subtle">
 										+{dimension.options.length - 4} más
 									</StandardBadge>
 								)}

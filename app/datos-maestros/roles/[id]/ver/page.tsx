@@ -170,7 +170,7 @@ export default function VerRolPage() {
               valoresIniciales={rolVisualizado}
             />
           </StandardCard.Content>
-          <StandardCard.Footer className="flex flex-col sm:flex-row justify-end items-center gap-3 pt-6">
+          <StandardCard.Footer>
             {puedeGestionarRoles && ( //> 📝 Botones de acción solo si tiene permisos
               <>
                 <StandardButton 

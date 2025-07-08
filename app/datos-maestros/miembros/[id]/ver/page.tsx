@@ -260,7 +260,19 @@ export default function VerMiembroPage() {
 						]}
 						showBackButton={{ href: "/datos-maestros/miembros" }}
 					/>
-
+{puedeGestionarMiembros && (
+              <div className="flex justify-end pt-3">
+							<StandardButton
+									onClick={handleEditar}
+									colorScheme="primary"
+                
+								leftIcon={PenLine}
+								>
+								
+									Editar Miembro
+								</StandardButton>
+              </div>
+						)}
 					<StandardCard
             disableShadowHover={true}
             styleType="subtle"
@@ -269,17 +281,7 @@ export default function VerMiembroPage() {
             accentColorScheme="primary"
             shadow="md"
           >
-						{puedeGestionarMiembros && (
-              <div className="flex justify-end pt-3">
-							<StandardButton
-									onClick={handleEditar}
-									colorScheme="primary"
-                className="w-full text-right-0 py=3">
-									<StandardIcon><PenLine className="h-4 w-4" /></StandardIcon>
-									Editar Miembro
-								</StandardButton>
-              </div>
-						)}
+						
 				
 
 					<MiembroForm

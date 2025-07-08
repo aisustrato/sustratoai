@@ -2,7 +2,6 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
@@ -22,7 +21,6 @@ import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { MiembroForm, MiembroFormValues } from "@/app/datos-maestros/miembros/components/MiembroForm";
 import { toast } from "sonner";
 import { ArrowLeft, User } from "lucide-react";
-import { useLoading } from "@/contexts/LoadingContext";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardCard } from "@/components/ui/StandardCard";
 //#endregion ![head]
@@ -41,7 +39,6 @@ export default function ModificarMiembroPage() {
   const params = useParams();
   const memberId = params?.id ? String(params.id) : "";
   const { proyectoActual } = useAuth();
-  const { showLoading, hideLoading } = useLoading();
 
   const [isButtonSubmitting, setIsButtonSubmitting] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -50,83 +47,76 @@ export default function ModificarMiembroPage() {
   const [error, setError] = useState<string | null>(null);
 
   const cargarDatos = useCallback(async () => {
-    console.log("[Page] cargarDatos: Iniciando carga de datos de página...");
-    setIsPageLoading(true);
+    // No es necesario llamar a setIsPageLoading(true) aquí, porque el estado inicial ya es true.
+    // Limpiamos los estados antes de cada carga.
     setError(null);
     setMiembro(null);
 
     if (!proyectoActual?.id) {
-      console.log("[Page] cargarDatos: No hay proyecto actual ID.");
       setError("No hay un proyecto activo seleccionado. Por favor, seleccione uno.");
-      setIsPageLoading(false);
+      setIsPageLoading(false); // Detenemos la carga si no hay datos para proceder.
       return;
     }
     if (!memberId) {
-      console.log("[Page] cargarDatos: No hay memberId.");
       setError("ID de miembro no especificado en la URL.");
-      setIsPageLoading(false);
+      setIsPageLoading(false); // Detenemos la carga.
       return;
     }
 
     try {
-      console.log(`[Page] cargarDatos: Cargando roles para proyecto ID: ${proyectoActual.id}`);
-      const resultadoRoles = await obtenerRolesDisponiblesProyecto(proyectoActual.id);
-      if (!resultadoRoles.success) {
-        console.error("[Page] cargarDatos: Error al cargar roles:", resultadoRoles.error);
-        setError(resultadoRoles.error || "Error al cargar los roles disponibles.");
-        setIsPageLoading(false);
-        return;
-      }
-      const opcionesRoles = resultadoRoles.data.map((rol: ProjectRoleInfo) => ({
-        value: rol.id,
-        label: rol.role_name,
-      }));
-      setRoles(opcionesRoles);
-      console.log("[Page] cargarDatos: Roles cargados:", opcionesRoles.length);
+      // Obtenemos roles y detalles del miembro en paralelo para más eficiencia.
+      const [resultadoRoles, resultadoMiembro] = await Promise.all([
+        obtenerRolesDisponiblesProyecto(proyectoActual.id),
+        obtenerDetallesMiembroProyecto(memberId, proyectoActual.id),
+      ]);
 
-      console.log(`[Page] cargarDatos: Cargando detalles para miembro ID: ${memberId} en proyecto ID: ${proyectoActual.id}`);
-      const resultadoMiembro = await obtenerDetallesMiembroProyecto(memberId, proyectoActual.id);
+      // Procesamos el resultado de los roles.
+      if (!resultadoRoles.success) {
+        // Si falla, establecemos un error pero no bloqueamos la renderización del resto.
+        console.error("Error al cargar roles:", resultadoRoles.error);
+        setError(resultadoRoles.error || "No se pudieron cargar los roles disponibles.");
+      } else if (resultadoRoles.data) {
+        const opcionesRoles = resultadoRoles.data.map((rol: ProjectRoleInfo) => ({
+          value: rol.id,
+          label: rol.role_name,
+        }));
+        setRoles(opcionesRoles);
+      }
+
+      // Procesamos el resultado del miembro.
       if (!resultadoMiembro.success) {
-        console.error("[Page] cargarDatos: Error al cargar datos del miembro:", resultadoMiembro.error);
-        setError(resultadoMiembro.error || "Error al cargar la información del miembro.");
-        setIsPageLoading(false);
-        return;
-      }
-      if (!resultadoMiembro.data) {
-        console.warn("[Page] cargarDatos: No se encontraron datos para el miembro.");
+        // Si el miembro no se encuentra, es un error que debe detener el flujo.
+        setError(resultadoMiembro.error || "El miembro especificado no fue encontrado.");
+        setMiembro(null); // Aseguramos que no haya datos de miembro.
+      } else if (resultadoMiembro.data) {
+        setMiembro(resultadoMiembro.data);
+      } else {
+        // Si la operación fue exitosa pero no hay datos, significa que no se encontró.
         setError("El miembro especificado no fue encontrado.");
-        setIsPageLoading(false);
-        return;
+        setMiembro(null);
       }
-      setMiembro(resultadoMiembro.data);
-      console.log("[Page] cargarDatos: Datos del miembro cargados.");
     } catch (err) {
       console.error("[Page] cargarDatos: Excepción:", err);
       setError(`Error inesperado al cargar datos: ${(err as Error).message}`);
     } finally {
-      console.log("[Page] cargarDatos: Finalizando, setIsPageLoading(false)");
+      // Independientemente del resultado, la carga de la página ha finalizado.
       setIsPageLoading(false);
     }
   }, [proyectoActual?.id, memberId]);
 
   useEffect(() => {
-    console.log("[Page] useEffect principal. proyectoActual?.id:", proyectoActual?.id, "memberId:", memberId);
-    if (proyectoActual?.id && memberId) {
-      cargarDatos();
-    } else if (!proyectoActual?.id && !isPageLoading) {
-      setError("Esperando selección de proyecto activo...");
-    } else if (!memberId && proyectoActual?.id && !isPageLoading) {
-      setError("ID de miembro no especificado.");
-    }
-  }, [proyectoActual?.id, memberId, cargarDatos, isPageLoading]);
+    // Este efecto se ejecuta una vez cuando el componente se monta
+    // o cuando cambian las dependencias (id de proyecto o miembro).
+    cargarDatos();
+  }, [cargarDatos]);
 
   const onSubmit = async (data: MiembroFormValues) => {
-    console.log('[Page] onSubmit - Datos del formulario:', data);
     if (!proyectoActual?.id || !memberId || !miembro) {
-      toast.error("Error de Aplicación: Faltan datos esenciales.");
+      toast.error("Error de Aplicación: Faltan datos esenciales para la actualización.");
       return;
     }
 
+    // 1. Determinar qué ha cambiado
     const profileUpdates: Partial<Omit<MemberProfileData, "user_id" | "public_contact_email">> = {};
     if (data.firstName !== (miembro.profile?.first_name || "")) profileUpdates.first_name = data.firstName;
     if (data.lastName !== (miembro.profile?.last_name || "")) profileUpdates.last_name = data.lastName;
@@ -143,14 +133,12 @@ export default function ModificarMiembroPage() {
     }
 
     if (Object.keys(profileUpdates).length === 0 && Object.keys(memberUpdatesForAction).length === 0) {
-      console.log("[Page] onSubmit: No se detectaron cambios.");
-      toast("Sin Cambios", { description: "No se detectaron modificaciones." });
+      toast("Sin Cambios", { description: "No se detectaron modificaciones para guardar." });
       return;
     }
 
+    // 2. Iniciar el estado de envío y construir el payload
     setIsButtonSubmitting(true);
-    showLoading("Actualizando información del miembro...");
-
     const payloadFinal: Parameters<typeof modificarDetallesMiembroEnProyecto>[0] = {
       proyectoId: proyectoActual.id,
       projectMemberId: memberId,
@@ -158,50 +146,31 @@ export default function ModificarMiembroPage() {
     if (Object.keys(profileUpdates).length > 0) payloadFinal.profileUpdates = profileUpdates;
     if (Object.keys(memberUpdatesForAction).length > 0) payloadFinal.memberUpdates = memberUpdatesForAction;
 
-    let resultado: ResultadoOperacion<null> | null = null;
-
+    // 3. Ejecutar la acción del servidor en un bloque try/catch/finally
     try {
-      console.log('[Page] onSubmit: Enviando actualización con payload:', JSON.stringify(payloadFinal, null, 2));
-      resultado = await modificarDetallesMiembroEnProyecto(payloadFinal);
-      console.log('[Page] onSubmit: Resultado de modificarDetallesMiembroEnProyecto:', resultado);
+      const resultado = await modificarDetallesMiembroEnProyecto(payloadFinal);
+
+      if (resultado.success) {
+        toast.success("Miembro Actualizado", {
+          description: "La información ha sido guardada exitosamente.",
+          duration: 2000,
+        });
+        // Retrasamos la redirección para que el usuario pueda ver el toast.
+        setTimeout(() => router.push("/datos-maestros/miembros"), 1500);
+      } else {
+        toast.error("Error al Actualizar", {
+          description: resultado.error || "Ocurrió un error desconocido.",
+        });
+      }
     } catch (err) {
       console.error("[Page] onSubmit: Excepción al llamar a la Server Action:", err);
-      hideLoading();
+      toast.error("Error de Comunicación", {
+        description: `No se pudo procesar la solicitud: ${(err as Error).message}`,
+      });
+    } finally {
+      // 4. Finalizar el estado de envío, sin importar el resultado.
       setIsButtonSubmitting(false);
-      toast.error("Error Inesperado en Comunicación", {
-        description: `Ocurrió un error al procesar la solicitud: ${(err as Error).message}`,
-      });
-      return;
     }
-
-    if (resultado?.success) {
-      hideLoading();
-      const toastDuration = 3000; // El toast se mostrará por 3 segundos
-      toast.success("Miembro Actualizado", {
-        description: "La información del miembro ha sido actualizada exitosamente.",
-        duration: toastDuration,
-      });
-
-      // CAMBIO: Reducir el delay para la redirección
-      const redirectDelay = 1500; // Redirigir después de 1.5 segundos
-
-      console.log(`[Page] onSubmit: Toast de éxito mostrado. Redirección programada en ${redirectDelay}ms.`);
-      setTimeout(() => {
-        try {
-          console.log("[Page] onSubmit: Ejecutando redirección ahora.");
-          router.push("/datos-maestros/miembros");
-        } catch (e) {
-          console.error("[Page] onSubmit: Error en router.push:", e);
-          window.location.href = "/datos-maestros/miembros";
-        }
-      }, redirectDelay); // Usar el nuevo redirectDelay
-    } else if (resultado) {
-      hideLoading();
-      toast.error("Error al Actualizar", {
-        description: resultado.error || "Ocurrió un error desconocido durante la actualización.",
-      });
-    }
-    setIsButtonSubmitting(false);
   };
 
   const handleCancel = () => {
@@ -217,7 +186,7 @@ export default function ModificarMiembroPage() {
   };
 
   const valoresIniciales: MiembroFormValues | undefined = miembro ? {
-    emailUsuario: miembro.profile?.public_contact_email || (miembro.user_id ? `Usuario ID: ${miembro.user_id.substring(0,8)}... (email no en perfil)` : "Email no disponible"),
+    emailUsuario: miembro.profile?.public_contact_email || (miembro.user_id ? `Usuario ID: ${miembro.user_id.substring(0,8)}...` : "Email no disponible"),
     rolId: miembro.project_role_id || "",
     firstName: miembro.profile?.first_name || "",
     lastName: miembro.profile?.last_name || "",
@@ -246,79 +215,67 @@ export default function ModificarMiembroPage() {
 
   if (error && !miembro) {
     return (
-      <div>
-        <div className="container mx-auto py-6">
-          <div className="space-y-6">
-            <PageHeader
-              title="Error al Cargar Datos"
-              description={error}
-              actions={
-                <StandardButton
-                  onClick={handleCancel}
-                  styleType="outline"
-                >
-                  <StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
-                  Volver a Miembros
-                </StandardButton>
-              }
-            />
-          </div>
+      <div className="container mx-auto py-6">
+        <div className="space-y-6">
+          <PageHeader
+            title="Error al Cargar Datos"
+            description={error}
+            actions={
+              <StandardButton onClick={handleCancel} styleType="outline">
+                <StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
+                Volver a Miembros
+              </StandardButton>
+            }
+          />
         </div>
       </div>
     );
   }
-
-  if (!miembro && !isPageLoading) {
+  
+  if (!miembro) {
+    // Este caso cubre cuando la carga terminó (isPageLoading=false) pero no hay miembro y no necesariamente un error.
     return (
-      <div>
-        <div className="container mx-auto py-6">
-          <div className="space-y-6">
-            <PageHeader
-              title="Miembro no Encontrado"
-              description="No se pudieron cargar los datos del miembro o el miembro no existe."
-              actions={
-                <StandardButton
-                  onClick={handleCancel}
-                  styleType="outline"
-                >
-                  <StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
-                  Volver a Miembros
-                </StandardButton>
-              }
-            />
-          </div>
+       <div className="container mx-auto py-6">
+        <div className="space-y-6">
+          <PageHeader
+            title="Miembro no Encontrado"
+            description="No se pudo cargar la información del miembro o el miembro no existe."
+            actions={
+              <StandardButton onClick={handleCancel} styleType="outline">
+                <StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
+                Volver a Miembros
+              </StandardButton>
+            }
+          />
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="container mx-auto py-6">
-        <div className="space-y-6">
-          <StandardPageTitle 
-            title={`Editar Miembro: ${getNombreMiembro()}`}
-            subtitle="Actualiza la información del miembro en el proyecto"
-            mainIcon={User}
-            breadcrumbs={[
-              { label: "Datos Maestros", href: "/datos-maestros" },
-              { label: "Miembros ", href: "/datos-maestros/miembros" },
-              { label: "Modificar Miembro" }
-            ]}
-            showBackButton={{ href: "/datos-maestros/miembros" }}
-          />
-          
-
-          {valoresIniciales && roles.length > 0 && (
-            <StandardCard
-              disableShadowHover={true}
-              styleType="subtle"
-              colorScheme="primary" // Rule: Main form card colorScheme is secondary
-              accentPlacement="top" // Rule: Main form card accentPlacement is top
-              accentColorScheme="primary" // Rule: Main form card accent for create/edit is primary
-              shadow="md" // Rule: Main form card shadow is md by default
-              // styleType and hasOutline removed
-            >
+    <div className="container mx-auto py-6">
+      <div className="space-y-6">
+        <StandardPageTitle 
+          title={`Editar Miembro: ${getNombreMiembro()}`}
+          subtitle="Actualiza la información del miembro en el proyecto"
+          mainIcon={User}
+          breadcrumbs={[
+            { label: "Datos Maestros", href: "/datos-maestros" },
+            { label: "Miembros ", href: "/datos-maestros/miembros" },
+            { label: "Modificar Miembro" }
+          ]}
+          showBackButton={{ href: "/datos-maestros/miembros" }}
+        />
+        
+        {valoresIniciales && roles.length > 0 ? (
+          <StandardCard
+            disableShadowHover={true}
+            styleType="subtle"
+            colorScheme="primary"
+            accentPlacement="top"
+            accentColorScheme="primary"
+            shadow="md"
+          >
             <MiembroForm
               modo="editar"
               valoresIniciales={valoresIniciales}
@@ -326,9 +283,13 @@ export default function ModificarMiembroPage() {
               loading={isButtonSubmitting}
               onSubmit={onSubmit}
             />
-            </StandardCard>
-          )}
-        </div>
+          </StandardCard>
+        ) : (
+          // Renderiza un mensaje si los roles no se pudieron cargar pero el miembro sí
+          <StandardCard>
+             <p>No se pueden editar los roles en este momento. Por favor, intente más tarde.</p>
+          </StandardCard>
+        )}
       </div>
     </div>
   );
@@ -341,7 +302,5 @@ export default function ModificarMiembroPage() {
 //#endregion ![foo]
 
 //#region [todo] - 👀 PENDIENTES 👀
-// TODO: Review and potentially simplify the loading state management (isGlobalLoading, isPageLoading, isButtonSubmitting).
-// TODO: Ensure error messages are user-friendly and provide clear guidance.
 // TODO: Consider abstracting data fetching logic if it becomes too complex or repetitive across pages.
 //#endregion ![todo]

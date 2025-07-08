@@ -111,30 +111,28 @@ export default function EliminarMiembroPage() {
   if (error) {
     return (
       <StandardPageBackground variant="gradient">
-        <div className="max-w-4xl mx-auto p-6">
-          <div className="mb-6">
+        <StandardCard
+          className="max-w-4xl mx-auto my-6"
+          colorScheme="danger"
+          styleType="subtle"
+          hasOutline={false}
+          accentPlacement="none"
+        >
+          <StandardCard.Header>
             <StandardButton
               styleType="outline"
               onClick={() => router.back()}
               leftIcon={ArrowLeft}
+              className="mb-4"
             >
               Volver
             </StandardButton>
-          </div>
-          <StandardCard
-            disableShadowHover={true}
-            className="border-destructive bg-destructive/5"
-            colorScheme="danger" // Assuming intent from className
-            styleType="subtle"
-            hasOutline={false} // Defaulting as no border prop was specified
-            accentPlacement="none" // Defaulting
-          >
             <div className="flex items-center gap-3">
-              <StandardIcon><AlertTriangle className="h-6 w-6 text-destructive" /></StandardIcon>
+              <StandardIcon><AlertTriangle className="h-6 w-6" /></StandardIcon>
               <StandardText>Error: {error}</StandardText>
             </div>
-          </StandardCard>
-        </div>
+          </StandardCard.Header>
+        </StandardCard>
       </StandardPageBackground>
     );
   }
@@ -142,74 +140,89 @@ export default function EliminarMiembroPage() {
   if (!miembro) {
     return (
       <StandardPageBackground variant="gradient">
-        <div className="max-w-4xl mx-auto p-6">
-          <StandardCard
-            disableShadowHover={true}
-            className="border-info bg-info/5"
-            colorScheme="neutral"
-            styleType="subtle"
-            hasOutline={false}
-            accentPlacement="none"
-          >
-            <div className="flex items-center gap-3">
-              <StandardIcon><AlertTriangle className="h-6 w-6 text-info" /></StandardIcon>
-              <StandardText>No se encontró información para este miembro.</StandardText>
-              <div>
-                <StandardText weight="bold" size="lg" colorScheme="warning">No se encontró el miembro</StandardText>
-                <StandardText colorScheme="warning">El miembro solicitado no existe o no tienes permisos para verlo.</StandardText>
+        <StandardCard
+          className="max-w-4xl mx-auto my-6"
+          colorScheme="neutral"
+          styleType="subtle"
+          hasOutline={false}
+          accentPlacement="none"
+        >
+          <StandardCard.Content>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <StandardIcon><AlertTriangle className="h-6 w-6" /></StandardIcon>
+                <StandardText>No se encontró información para este miembro.</StandardText>
+              </div>
+              <div className="ml-9 space-y-1">
+                <StandardText weight="bold" size="lg">No se encontró el miembro</StandardText>
+                <StandardText>El miembro solicitado no existe o no tienes permisos para verlo.</StandardText>
               </div>
             </div>
-          </StandardCard>
-        </div>
+          </StandardCard.Content>
+        </StandardCard>
       </StandardPageBackground>
     );
   }
 
   return (
     <StandardPageBackground variant="gradient">
-      <div className="max-w-4xl mx-auto p-6">
-       
+      <StandardPageTitle 
+        title={`Eliminar Miembro: ${miembro?.profile?.public_display_name || miembro?.profile?.first_name || 'Sin nombre'}`}
+        subtitle="Confirme la eliminación de este miembro del proyecto."
+        mainIcon={User}
+        breadcrumbs={[
+          { label: 'Datos Maestros', href: '/datos-maestros' },
+          { label: 'Miembros', href: '/datos-maestros/miembros' },
+          { label: 'Eliminar Miembro' }
+        ]}
+        showBackButton={{ href: "/datos-maestros/miembros" }}
+        className="max-w-4xl mx-auto mt-6 mb-4 px-6"
+      />
 
-        <StandardPageTitle 
-          title={`Eliminar Miembro: ${miembro?.profile?.public_display_name || miembro?.profile?.first_name || 'Sin nombre'}`}
-          subtitle="Confirme la eliminación de este miembro del proyecto."
-          mainIcon={User}
-          breadcrumbs={[
-            { label: 'Datos Maestros', href: '/datos-maestros' },
-            { label: 'Miembros', href: '/datos-maestros/miembros' },
-            { label: 'Eliminar Miembro' }
-          ]}
-          showBackButton={{ href: "/datos-maestros/miembros" }}
-          className="mb-6"
-        />
-
-        <StandardCard
-          disableShadowHover={true}
-          accentPlacement="top"
-          colorScheme="primary"
-          accentColorScheme="primary" // Derived from colorScheme as borderVariant wasn't specified
-          className="mb-6"
-          styleType="subtle"
-          hasOutline={false} // border="top" implies no full outline
-        >
-          <div className="space-y-4">
+      <StandardCard
+        className="max-w-4xl mx-auto mb-6 px-6"
+        accentPlacement="top"
+        colorScheme="primary"
+        styleType="subtle"
+        hasOutline={false}
+      >
+        <StandardCard.Content>
+          <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-medium">¿Está seguro que desea eliminar a este miembro?</h3>
-              <p className="text-muted-foreground">
-                Esta acción no se puede deshacer. El miembro perderá el acceso al proyecto.
-              </p>
-            </div>
-            
-            <div className="rounded-lg border p-4">
-              <h4 className="font-medium mb-2">Detalles del miembro</h4>
-              <div className="grid gap-2">
-                <p><span className="font-medium">Nombre:</span> {miembro.profile?.public_display_name || 'No especificado'}</p>
-                <p><span className="font-medium">Email:</span> {miembro.profile?.public_contact_email || 'No especificado'}</p>
-                <p><span className="font-medium">Rol:</span> {miembro.role_name || 'No especificado'}</p>
+              <StandardText size="lg" weight="semibold" className="mb-4">
+                ¿Está seguro que desea eliminar a este miembro?
+              </StandardText>
+              <div className="space-y-2 mb-6">
+                <StandardText colorScheme="neutral">
+                  Esta acción no se puede deshacer.
+                </StandardText>
+                <StandardText colorScheme="neutral">
+                  El miembro perderá el acceso al proyecto.
+                </StandardText>
               </div>
             </div>
+            
+            <StandardCard colorScheme="neutral" styleType="subtle" hasOutline={true} className="mb-6">
+              <StandardCard.Content>
+                <StandardText weight="medium" className="mb-4">Detalles del miembro</StandardText>
+                <div className="space-y-3 pt-4">
+                  <div>
+                    <StandardText weight="medium" colorScheme="neutral">Nombre:</StandardText>
+                    <StandardText>{miembro.profile?.public_display_name || 'No especificado'}</StandardText>
+                  </div>
+                  <div>
+                    <StandardText weight="medium" colorScheme="neutral">Email:</StandardText>
+                    <StandardText>{miembro.profile?.public_contact_email || 'No especificado'}</StandardText>
+                  </div>
+                  <div>
+                    <StandardText weight="medium" colorScheme="neutral">Rol:</StandardText>
+                    <StandardText>{miembro.role_name || 'No especificado'}</StandardText>
+                  </div>
+                </div>
+              </StandardCard.Content>
+            </StandardCard>
 
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex justify-end space-x-3 pt-2">
               <StandardButton
                 styleType="outline"
                 onClick={() => router.back()}
@@ -223,14 +236,15 @@ export default function EliminarMiembroPage() {
                 onClick={() => setShowDeleteDialog(true)}
                 disabled={isDeleting}
                 loading={isDeleting}
+                leftIcon={Trash2}
               >
-                <StandardIcon><Trash2 className="h-4 w-4 mr-2" /></StandardIcon>
+                
                 {isDeleting ? 'Eliminando...' : 'Eliminar miembro'}
               </StandardButton>
             </div>
           </div>
-        </StandardCard>
-      </div>
+        </StandardCard.Content>
+      </StandardCard>
 
       {/* Dialogo de confirmación */}
       <StandardDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

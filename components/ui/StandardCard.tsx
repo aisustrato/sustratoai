@@ -330,7 +330,19 @@ const Actions = ({ className, children, ...props }: StandardCardActionsProps): J
 };
 Actions.displayName = "StandardCard.Actions";
 
-const Footer = ({ className, children, ...props }: StandardCardFooterProps): JSX.Element => (<div className={cn("mt-4 pt-3 text-sm opacity-70", "border-t border-[var(--sc-outline-border-color)]/30 dark:border-[var(--sc-outline-border-color)]/20", className)} {...props}>{children}</div>);
+const Footer = ({ className, children, ...props }: StandardCardFooterProps): JSX.Element => (
+  <div 
+    className={cn(
+      "mt-4 pt-4 px-4 pb-2",
+      "border-t border-[var(--sc-outline-border-color)]/30 dark:border-[var(--sc-outline-border-color)]/20",
+      "flex items-center justify-end gap-3",
+      className
+    )} 
+    {...props}
+  >
+    {children}
+  </div>
+);
 Footer.displayName = "StandardCard.Footer";
 //#endregion ![main_subcomponents]
 
