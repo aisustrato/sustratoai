@@ -1,3 +1,4 @@
+//📍 app/api/gemini/route.ts
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -23,10 +24,10 @@ export async function POST(req: NextRequest) {
     const genAI = new GoogleGenAI({ apiKey });
 
     const generationConfig = {
-      temperature: 0.7,
+      temperature: 0.2,
       topK: 1,
       topP: 1,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 8192, // Aumentado para permitir respuestas JSON más largas y completas
     };
 
     const safetySettings = [
@@ -36,26 +37,16 @@ export async function POST(req: NextRequest) {
       { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
     ];
 
-    let prompt = '';
-    if (action === 'translate') {
-      prompt = `Translate the following text to Spanish professionally and accurately:\n\n"${text}"`;
-    } else if (action === 'summarize') {
-      prompt = `Summarize the following scientific article abstract into 3 concise key points, in Spanish:\n\n"${text}"`;
-    } else {
-      return NextResponse.json({ error: 'Invalid action. Use "translate" or "summarize"' }, { status: 400 });
-    }
-
-    // Patrón definitivo basado en la inspección del código fuente del SDK (`.d.ts`)
+    // El `text` que llega del frontend ya es el prompt completo y correcto.
+    // La API solo debe actuar como un proxy, sin modificarlo.
     const result = await genAI.models.generateContent({
       model: model,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      // El nombre correcto del parámetro de configuración es `config`.
-      config: generationConfig, 
-      // `safetySettings` no es un parámetro válido en este método para esta versión del SDK.
+      contents: [{ role: 'user', parts: [{ text: text }] }],
+      config: generationConfig,
     });
 
-    // El objeto `result` ES la respuesta. Accedemos a `candidates` directamente.
-    const textResult = result.candidates?.[0]?.content?.parts?.[0]?.text ?? "No se pudo obtener una respuesta.";
+    // La propiedad `candidates` está directamente en el objeto `result`.
+    const textResult = result.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 
     return NextResponse.json({ result: textResult });
 

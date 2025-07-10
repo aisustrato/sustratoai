@@ -11,6 +11,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import ProjectStatusBadge from "@/components/ui/ProjectStatusBadge";
 import { JobManagerProvider } from '@/app/contexts/JobManagerContext';
+import { DialogProvider } from '@/app/contexts/DialogContext';
 import { JobManager } from '@/app/components/ui/JobManager';
 
 export const metadata: Metadata = {
@@ -44,7 +45,8 @@ export default function RootLayout({
       <body className="h-full bg-background text-foreground antialiased">
         <Providers> {/* Tu provider de tema y otros globales */}
           <JobManagerProvider>
-            <LoadingProvider> {/* <--- ENVUELVE CON LOADINGPROVIDER */}
+            <DialogProvider>
+              <LoadingProvider> {/* <--- ENVUELVE CON LOADINGPROVIDER */}
               <AuthLayoutWrapper>
                 <Suspense fallback={<GlobalLoadingIndicator />}>
                   {children}
@@ -56,6 +58,7 @@ export default function RootLayout({
               {/* // ANTES: El Toaster estaba aquí dentro de LoadingProvider */}
               {/* <Toaster /> */}
             </LoadingProvider> {/* <--- CIERRA LOADINGPROVIDER */}
+            </DialogProvider>
             <JobManager />
             <Toaster /> {/* // DESPUÉS: El Toaster ahora está aquí, fuera de LoadingProvider pero dentro de Providers */}
           </JobManagerProvider>

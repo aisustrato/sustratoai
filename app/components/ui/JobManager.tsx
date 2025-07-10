@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useJobManager } from '@/app/contexts/JobManagerContext';
+import { useJobManager, type Job } from '@/app/contexts/JobManagerContext';
+import { TranslationJobHandler } from '@/components/jobs/TranslationJobHandler';
 import { StandardCard } from '@/components/ui/StandardCard';
 import { StandardText } from '@/components/ui/StandardText';
 import { StandardButton } from '@/components/ui/StandardButton';
@@ -9,7 +10,16 @@ import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const JobManager = () => {
-  const { isJobManagerVisible, hideJobManager } = useJobManager();
+  const { jobs, isJobManagerVisible, hideJobManager } = useJobManager();
+
+  const renderJob = (job: Job) => {
+    switch (job.type) {
+      case 'TRANSLATE_BATCH':
+        return <TranslationJobHandler key={job.id} job={job} />;
+      default:
+        return <div key={job.id}>Trabajo desconocido: {job.title}</div>;
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -23,26 +33,30 @@ export const JobManager = () => {
         >
           <StandardCard 
             colorScheme="accent"
-            className="shadow-2xl w-96 h-24 flex flex-col justify-between"
+            className="shadow-2xl w-96 max-h-[400px] flex flex-col"
           >
-            <div className="p-4">
+            <div className="p-3 border-b flex justify-between items-center">
               <StandardText as="h3" fontSize="lg" fontWeight="bold">
-                Job Manager
+                Gestor de Tareas
               </StandardText>
-              <StandardText fontSize="sm">
-                Procesando tareas en segundo plano...
-              </StandardText>
+              <StandardButton
+                  size="sm"
+                  iconOnly
+                  onClick={hideJobManager}
+                  styleType="ghost"
+                  colorScheme="neutral"
+              >
+                  <X className="h-4 w-4" />
+              </StandardButton>
             </div>
-            <div className="absolute top-2 right-2">
-                <StandardButton
-                    size="sm"
-                    iconOnly
-                    onClick={hideJobManager}
-                    styleType="ghost"
-                    colorScheme="neutral"
-                >
-                    <X className="h-4 w-4" />
-                </StandardButton>
+            <div className="flex-grow overflow-y-auto">
+              {jobs.length > 0 ? (
+                jobs.map(renderJob)
+              ) : (
+                <div className="p-4 text-center">
+                  <StandardText>No hay trabajos activos.</StandardText>
+                </div>
+              )}
             </div>
           </StandardCard>
         </motion.div>

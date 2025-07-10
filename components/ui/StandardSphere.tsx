@@ -84,7 +84,7 @@ export interface StandardSphereProps {
   keyGroup?: string;
   colorScheme?: ColorSchemeVariant;
   styleType?: 'filled' | 'subtle' | 'outline';
-  tooltip?: string;
+  tooltip?: React.ReactNode;
   statusBadge?: StatusBadgeInfo;
   icon?: React.ElementType<React.SVGProps<SVGSVGElement>>;
   onlyIcon?: boolean;
@@ -263,7 +263,7 @@ export const StandardSphere = React.forwardRef<
     );
 
     if (tooltip) {
-      return ( <StandardTooltip trigger={sphereContainer} styleType="solid" colorScheme={colorScheme} >{tooltip}</StandardTooltip> );
+      return ( <StandardTooltip trigger={sphereContainer} styleType="solid" colorScheme={colorScheme} content={tooltip} /> );
     }
 
     return sphereContainer;

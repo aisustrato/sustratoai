@@ -22,7 +22,8 @@ type CardTextWeight = StandardTextWeight;
 type CardTextGradient = StandardTextGradient;
 type CardTextColorShade = StandardTextColorShade;
 
-export interface StandardCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onAnimationStart" | "onDragStart" | "onDragEnd" | "onDrag"> {
+export interface StandardCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onAnimationStart" | "onDragStart" | "onDragEnd" | "onDrag" | "title"> {
+	title?: React.ReactNode;
 	contentCanScroll?: boolean;
 	colorScheme?: StandardCardColorScheme;
 	styleType?: StandardCardStyleType;
@@ -98,7 +99,7 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 			className, children, noPadding = false, contentCanScroll = false,
 			showSelectionCheckbox = false, onSelectionChange, customTransition, style,
 			onCardClick, loaderSize = 32, loadingText, loadingVariant = "spin-pulse",
-			"data-testid": dataTestId, ...htmlProps
+			"data-testid": dataTestId, title, ...htmlProps
 		},
 		ref,
 	) => {
@@ -260,6 +261,13 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
           )}
           {/* 📌 CAMBIO 4: La estructura interna se simplifica. El div z-10 es ahora el contenedor flex principal de los children. */}
           <div className="relative z-[1] flex flex-col flex-grow h-full w-full">
+            {title && (
+              <Header>
+                <Title colorScheme='primary' weight='semibold'>
+                  {title}
+                </Title>
+              </Header>
+            )}
             {children}
           </div>
           <AnimatePresence>{selected && !inactive && renderSelectedIndicator()}</AnimatePresence>

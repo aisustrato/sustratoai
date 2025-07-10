@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_job_history: {
+        Row: {
+          ai_model: string | null
+          completed_at: string | null
+          description: string | null
+          error_message: string | null
+          id: string
+          input_tokens: number | null
+          job_type: Database["public"]["Enums"]["job_type"]
+          output_tokens: number | null
+          project_id: string
+          started_at: string
+          status: Database["public"]["Enums"]["job_status"]
+          user_id: string
+        }
+        Insert: {
+          ai_model?: string | null
+          completed_at?: string | null
+          description?: string | null
+          error_message?: string | null
+          id?: string
+          input_tokens?: number | null
+          job_type: Database["public"]["Enums"]["job_type"]
+          output_tokens?: number | null
+          project_id: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["job_status"]
+          user_id: string
+        }
+        Update: {
+          ai_model?: string | null
+          completed_at?: string | null
+          description?: string | null
+          error_message?: string | null
+          id?: string
+          input_tokens?: number | null
+          job_type?: Database["public"]["Enums"]["job_type"]
+          output_tokens?: number | null
+          project_id?: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["job_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_job_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_batch_items: {
         Row: {
           ai_keywords: string[] | null
@@ -883,6 +936,10 @@ export type Database = {
           article_count: number
         }[]
       }
+      get_project_id_from_article: {
+        Args: { p_article_id: string }
+        Returns: string
+      }
       get_project_id_from_batch_item: {
         Args: { item_id: string }
         Returns: string
@@ -946,6 +1003,8 @@ export type Database = {
         | "agreed"
         | "reconciled"
         | "disputed"
+      job_status: "running" | "completed" | "failed"
+      job_type: "TRANSLATION" | "PRECLASSIFICATION"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1104,6 +1163,8 @@ export const Constants = {
         "reconciled",
         "disputed",
       ],
+      job_status: ["running", "completed", "failed"],
+      job_type: ["TRANSLATION", "PRECLASSIFICATION"],
     },
   },
 } as const

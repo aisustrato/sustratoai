@@ -14,8 +14,8 @@ import { type ColorSchemeVariant } from "@/lib/theme/ColorToken";
 //#region [def] - 📦 INTERFACES, TYPES & VARIANTS 📦
 
 export interface StandardTooltipProps
-    extends React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> {
-    children: React.ReactNode;
+    extends Omit<React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>, 'content'> {
+    content: React.ReactNode;
     trigger: React.ReactElement;
     colorScheme?: ColorSchemeVariant;
     styleType?: StandardTooltipStyleType;
@@ -31,8 +31,30 @@ export interface StandardTooltipProps
 //#endregion ![def]
 
 //#region [main] - 🧱 ROOT TOOLTIP COMPONENT 🧱
+const renderContent = (content: React.ReactNode) => {
+  if (typeof content === 'string') {
+    const lines = content.split('\n').map((line, index, arr) => {
+      const parts = line.split(/(\*.*?\*)/g).map((part, partIndex) => {
+        if (part.startsWith('*') && part.endsWith('*')) {
+          return <strong key={partIndex}>{part.slice(1, -1)}</strong>;
+        }
+        return part;
+      });
+
+      return (
+        <React.Fragment key={index}>
+          {parts}
+          {index < arr.length - 1 && <br />}
+        </React.Fragment>
+      );
+    });
+    return <div>{lines}</div>;
+  }
+  return content;
+};
+
 const StandardTooltip = ({
-    children,
+    content,
     trigger,
     colorScheme = "neutral",
     styleType = "solid",
@@ -130,10 +152,10 @@ const StandardTooltip = ({
                     >
                         {isLongText ? (
                             <div className="w-full h-full p-0" style={{ overflowY: "auto", overflowX: "hidden" }}>
-                                {children}
+                                {renderContent(content)}
                             </div>
                         ) : (
-                            children
+                            renderContent(content)
                         )}
 
                         {!effectiveHideArrow && (

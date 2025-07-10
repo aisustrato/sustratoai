@@ -226,6 +226,103 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
 //  ACCIONES DE MODIFICACIÓN (WRITE)
 // ========================================================================
 
+export interface TranslatedArticlePayload {
+  articleId: string;
+  title: string;
+  abstract: string;
+  summary?: string;
+  translated_by?: string;
+  translator_system?: string;
+}
+
+export async function saveBatchTranslations(
+  batchId: string,
+  articles: TranslatedArticlePayload[]
+): Promise<ResultadoOperacion<{ upsertedCount: number }>> {
+  if (!batchId || !articles || articles.length === 0) {
+    return { success: false, error: "Se requiere ID de lote y un array de artículos." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  try {
+    const translationsToUpsert = articles.map(article => ({
+      article_id: article.articleId,
+      language: 'es',
+      title: article.title,
+      abstract: article.abstract,
+      summary: article.summary,
+      translated_at: new Date().toISOString(),
+      translated_by: article.translated_by || null,
+      translator_system: article.translator_system || null,
+    }));
+
+    const { count, error: upsertError } = await supabase
+      .from('article_translations')
+      .upsert(translationsToUpsert, { onConflict: 'article_id, language', count: 'exact' });
+
+    if (upsertError) throw new Error(`Error guardando las traducciones: ${upsertError.message}`);
+
+    const { error: batchUpdateError } = await supabase
+      .from('article_batches')
+      .update({ status: 'translated' })
+      .eq('id', batchId);
+
+    if (batchUpdateError) throw new Error(`Traducciones guardadas, pero falló al actualizar el estado del lote: ${batchUpdateError.message}`);
+    
+    return { success: true, data: { upsertedCount: count || 0 } };
+
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Error desconocido.";
+    return { success: false, error: `Error en saveBatchTranslations: ${msg}` };
+  }
+}
+
+
+/**
+ * Guarda el título y abstract traducidos de un artículo y actualiza su estado.
+ */
+export async function saveTranslatedArticle(
+  articleId: string, 
+  translatedTitle: string, 
+  translatedAbstract: string
+): Promise<ResultadoOperacion<{ updated: boolean }>> {
+  if (!articleId || !translatedTitle || !translatedAbstract) {
+    return { success: false, error: "Se requieren ID de artículo, título y abstract traducidos." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    // 1. Actualizar la tabla de artículos con el contenido traducido en el campo metadata
+    const { error: articleUpdateError } = await supabase
+      .from('articles')
+      .update({
+        metadata: {
+          translatedTitle: translatedTitle,
+          translatedAbstract: translatedAbstract,
+        }
+      })
+      .eq('id', articleId);
+
+    if (articleUpdateError) throw new Error(`Error actualizando el artículo: ${articleUpdateError.message}`);
+
+    // 2. Actualizar el estado del ítem a 'pending_review' para que entre en la cola de revisión humana
+    const { error: itemUpdateError } = await supabase
+      .from('article_batch_items')
+      .update({ status_preclasificacion: 'pending_review' })
+      .eq('article_id', articleId);
+
+    if (itemUpdateError) throw new Error(`Error actualizando el estado del ítem del lote: ${itemUpdateError.message}`);
+
+    return { success: true, data: { updated: true } };
+
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Error desconocido.";
+    return { success: false, error: `Error interno al guardar la traducción: ${msg}` };
+  }
+}
+
 /**
  * Orquesta la traducción de artículos de un lote y actualiza su estado.
  */

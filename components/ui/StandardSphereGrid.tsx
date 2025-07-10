@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { type ColorSchemeVariant } from '@/lib/theme/ColorToken';
 import { StandardSphere, type SphereItemData } from './StandardSphere';
+export type { SphereItemData };
 import { StandardCard } from './StandardCard';
 import { StandardText } from './StandardText';
 import { SustratoLoadingLogo } from './sustrato-loading-logo';
