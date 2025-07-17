@@ -15,7 +15,8 @@ import { type ColorSchemeVariant } from "@/lib/theme/ColorToken";
 
 export interface StandardTooltipProps
     extends Omit<React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>, 'content'> {
-    content: React.ReactNode;
+    content?: React.ReactNode; // Hecho opcional para retrocompatibilidad
+    children?: React.ReactNode; // Para el contenido pasado como hijo
     trigger: React.ReactElement;
     colorScheme?: ColorSchemeVariant;
     styleType?: StandardTooltipStyleType;
@@ -54,7 +55,8 @@ const renderContent = (content: React.ReactNode) => {
 };
 
 const StandardTooltip = ({
-    content,
+    content, // Prop explícita para el contenido
+    children, // Contenido pasado como hijo (para retrocompatibilidad)
     trigger,
     colorScheme = "neutral",
     styleType = "solid",
@@ -70,6 +72,9 @@ const StandardTooltip = ({
 }: StandardTooltipProps) => {
     //#region [sub_init] - 🪝 HOOKS, STATE, MEMOS 🪝
     const { appColorTokens, mode } = useTheme();
+
+    // Lógica de retrocompatibilidad: usa 'content' si existe, si no, usa 'children'.
+    const finalContent = content ?? children;
 
     const tooltipTokens = React.useMemo(() => {
         if (!appColorTokens || !mode) return null;
@@ -152,10 +157,10 @@ const StandardTooltip = ({
                     >
                         {isLongText ? (
                             <div className="w-full h-full p-0" style={{ overflowY: "auto", overflowX: "hidden" }}>
-                                {renderContent(content)}
+                                {renderContent(finalContent)}
                             </div>
                         ) : (
-                            renderContent(content)
+                            renderContent(finalContent)
                         )}
 
                         {!effectiveHideArrow && (

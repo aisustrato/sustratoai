@@ -1,0 +1,5 @@
+id,project_id,user_id,job_type,status,description,ai_model,started_at,completed_at,input_tokens,output_tokens,error_message
+492e62a1-aacb-48e0-b50e-eced7dfe5338,61918743-16a4-4ab5-8378-83fb42e99a61,0a895c53-cb8f-493a-9f1e-ee2c28a8b533,TRANSLATION,completed,Traduciendo Lote #97,gemini-2.5-flash,2025-07-10 22:27:33.182313+00,2025-07-10 22:31:56.948+00,6836,7827,
+49e50711-1419-4d6e-b471-603530a952e3,61918743-16a4-4ab5-8378-83fb42e99a61,0a895c53-cb8f-493a-9f1e-ee2c28a8b533,TRANSLATION,completed,Traduciendo Lote #98,gemini-2.5-flash,2025-07-10 23:03:55.464659+00,2025-07-10 23:08:12.86+00,6877,7741,
+4b76d0d4-ef52-4fdb-a216-b62e5df08f74,61918743-16a4-4ab5-8378-83fb42e99a61,0a895c53-cb8f-493a-9f1e-ee2c28a8b533,TRANSLATION,failed,Traduciendo Lote #98,gemini-2.5-flash,2025-07-10 23:03:54.7587+00,2025-07-10 23:06:45.512+00,,,Error processing the request.
+6134ddc0-63b4-4cce-8051-62b4ac1be482,61918743-16a4-4ab5-8378-83fb42e99a61,0a895c53-cb8f-493a-9f1e-ee2c28a8b533,TRANSLATION,completed,Traduciendo Lote #97,gemini-2.5-flash,2025-07-10 22:27:32.931779+00,2025-07-10 22:31:49.235+00,6836,7840,

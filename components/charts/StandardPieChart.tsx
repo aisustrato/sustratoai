@@ -12,30 +12,33 @@ export interface PieChartData {
   id: string;      // ej: 'pendientesRevision'
   value: number;
   label: string;   // ej: 'Pend. Revisión'
+  emoticon?: string; // ej: '🔍'
 }
 
 export interface StandardPieChartProps {
   data: PieChartData[];
   onColorMapGenerated?: (colorMap: Record<string, string>) => void;
+  totalValue?: number;
 }
 
-const CustomArcLabel = ({ datum, label, style }: any) => {
+const CenteredMetric = ({ dataWithArc, centerX, centerY, totalValue }: any) => {
+  const total = totalValue ?? dataWithArc.reduce((acc: number, datum: any) => acc + datum.value, 0);
   return (
-    <g transform={style.transform} style={{ pointerEvents: 'none' }}>
-      <StandardText
-        asElement="text"
-        weight="bold"
-        align="center"
-        style={{ fill: datum.color }}
-        dominantBaseline="central"
-      >
-        {label}
-      </StandardText>
-    </g>
+    <StandardText
+      asElement="text"
+      x={centerX}
+      y={centerY}
+      textAnchor="middle"
+      dominantBaseline="central"
+      className="text-2xl font-bold"
+    >
+      {total}
+    </StandardText>
   );
 };
 
-export function StandardPieChart({ data, onColorMapGenerated }: StandardPieChartProps) {
+export function StandardPieChart({ data, onColorMapGenerated, totalValue }: StandardPieChartProps) {
+  const totalForPercentage = totalValue ?? data.reduce((acc, item) => acc + item.value, 0);
   const { appColorTokens, mode } = useTheme();
 
   const { theme, colorMap } = useMemo(() => {
@@ -60,9 +63,8 @@ export function StandardPieChart({ data, onColorMapGenerated }: StandardPieChart
       <ResponsivePie
         data={data}
         theme={theme}
-        arcLabelsComponent={CustomArcLabel}
         colors={getSliceColor}
-        margin={{ top: 20, right: 80, bottom: 80, left: 80 }}
+        margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
         innerRadius={0.5}
         padAngle={1}
         cornerRadius={3}
@@ -73,8 +75,15 @@ export function StandardPieChart({ data, onColorMapGenerated }: StandardPieChart
         arcLinkLabelsTextColor={appColorTokens.neutral.text}
         arcLinkLabelsThickness={2}
         arcLinkLabelsColor={{ from: 'color' }}
-        arcLabelsSkipAngle={10}
+        arcLabelsSkipAngle={15}
         arcLabelsTextColor={{ from: 'color', modifiers: [['darker', 2]] }}
+        // @ts-ignore
+        arcLinkLabel={(datum) => {
+          if (totalForPercentage === 0) return `${datum.value}`;
+          const percentage = ((datum.value / totalForPercentage) * 100).toFixed(1);
+          return `${datum.data.emoticon || ''} ${datum.value} (${percentage}%)`;
+        }}
+        layers={['arcs', 'arcLabels', 'arcLinkLabels', 'legends', (props) => <CenteredMetric {...props} totalValue={totalValue} />]}
       />
     </div>
   );

@@ -309,23 +309,52 @@ Media.displayName = "StandardCard.Media";
 const Content = React.forwardRef<HTMLDivElement, StandardCardContentProps>(
   ({ className, children, ...props }, ref) => {
     const { noPadding, contentCanScroll } = useContext(StandardCardContext);
+    const [showScrollHint, setShowScrollHint] = React.useState(false);
     const paddingClass = noPadding ? "" : "p-4";
 
+    React.useEffect(() => {
+      let timer: NodeJS.Timeout;
+      if (contentCanScroll) {
+        setShowScrollHint(true);
+        timer = setTimeout(() => {
+          setShowScrollHint(false);
+        }, 3500);
+      } else {
+        setShowScrollHint(false);
+      }
+
+      return () => {
+        if (timer) clearTimeout(timer);
+      };
+    }, [contentCanScroll]);
+
     return (
-      // 📌 CAMBIO 5: LA LÓGICA FINAL Y CORRECTA
-      <div 
-        ref={ref} 
+      <div
+        ref={ref}
         className={cn(
-          "flex-1", // Crece para ocupar el espacio disponible.
-          contentCanScroll 
-            ? "min-h-0 overflow-y-auto" // Si puede hacer scroll, se le permite encogerse y mostrar la barra.
-            : "overflow-hidden",      // Si no, se corta como antes.
+          "relative flex-1",
+          contentCanScroll
+            ? "min-h-0 overflow-y-auto custom-scrollbar"
+            : "overflow-hidden",
           paddingClass,
           className
-        )} 
+        )}
         {...props}
       >
         {children}
+        <AnimatePresence>
+          {showScrollHint && (
+            <motion.div
+              className="absolute top-2 right-2 z-10 bg-neutral-800/60 dark:bg-black/50 text-white text-xs font-medium px-2.5 py-1 rounded-full backdrop-blur-sm shadow-lg"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10, transition: { duration: 0.2 } }}
+              transition={{ type: 'spring', stiffness: 150, damping: 20 }}
+            >
+              Scroll
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }

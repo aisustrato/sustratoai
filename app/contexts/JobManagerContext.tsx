@@ -11,7 +11,11 @@ export interface Job {
   title: string;
   status: 'queued' | 'running' | 'completed' | 'error';
   progress: number;
-  payload: { batchId: string; userId: string; };
+  payload: { 
+    batchId: string; 
+    userId: string; 
+    projectId: string; 
+  };
   errorMessage?: string;
 }
 

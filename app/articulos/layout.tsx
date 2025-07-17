@@ -3,12 +3,14 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { FileText, FileUp, LayoutGrid, ChevronsLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LayoutProvider } from "@/app/contexts/layout-context";
 //#endregion ![head]
 
 //#region [main] - 🔧 COMPONENT 🔧
@@ -37,6 +39,12 @@ export default function ArticulosLayout({
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
+  const [layoutGap, setLayoutGap] = useState(40); // Default to large gap
+  const [globalXPadding, setGlobalXPadding] = useState(64); // Default to large padding
+
+  const SIDEBAR_EXPANDED_WIDTH = 240;
+  const SIDEBAR_COLLAPSED_WIDTH = 80;
+  const sidebarWidth = isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH;
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 768px)");
@@ -45,6 +53,24 @@ export default function ArticulosLayout({
       setIsDesktop(isDesktopQuery);
       if (!isDesktopQuery) {
         setIsCollapsed(true);
+      }
+
+      // Update layout gap based on window width
+      if (window.innerWidth >= 1024) {
+        setLayoutGap(40); // lg:gap-10 -> 2.5rem
+      } else if (window.innerWidth >= 768) {
+        setLayoutGap(24); // md:gap-6 -> 1.5rem
+      } else {
+        setLayoutGap(0); // No grid gap on small screens
+      }
+
+      // Update global X padding based on window width (from Navbar container)
+      if (window.innerWidth >= 1024) { // lg
+        setGlobalXPadding(64); // lg:px-8 -> 2rem * 2 = 64px
+      } else if (window.innerWidth >= 640) { // sm
+        setGlobalXPadding(48); // sm:px-6 -> 1.5rem * 2 = 48px
+      } else {
+        setGlobalXPadding(32); // px-4 -> 1rem * 2 = 32px
       }
     };
     handleResize();
@@ -59,20 +85,25 @@ export default function ArticulosLayout({
         className={cn(
           "flex-1 items-start md:grid md:gap-6 lg:gap-10 transition-all duration-500 ease-in-out",
           isCollapsed
-            ? "md:grid-cols-[80px_1fr] pl-4"
-            : "md:grid-cols-[240px_1fr] container"
+            ? "md:grid-cols-[80px_1fr] px-4"
+            : "md:grid-cols-[240px_1fr] px-4"
         )}
       >
-        <aside className="fixed top-14 z-30 hidden h-[calc(100vh-3.5rem)] w-full shrink-0 md:sticky md:block">
+        <motion.aside
+          initial={false}
+          animate={{ width: isCollapsed ? 80 : 240 }}
+          transition={{ duration: 0.35, ease: "easeInOut" }}
+          className="fixed top-14 z-30 hidden h-[calc(100vh-3.5rem)] shrink-0 md:sticky md:block overflow-hidden"
+        >
           <div className="relative h-full py-6 lg:py-8 flex flex-col">
             <div
               className={cn(
-                "flex flex-col mb-8 transition-all duration-300 ease-in-out pl-8 pr-10",
-                isCollapsed ? "px-2" : ""
+                "flex flex-col mb-8 transition-all duration-300 ease-in-out",
+                isCollapsed ? "px-2 items-center" : "px-4"
               )}
             >
               {isDesktop && (
-                <div className="flex w-full justify-end mb-2">
+                <div className="flex w-full justify-end mb-2 pr-4">
                   <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
                     className="p-1.5 rounded-full bg-background-paper border border-border-neutral shadow-md hover:bg-accent-bg transition-colors flex-shrink-0"
@@ -86,7 +117,7 @@ export default function ArticulosLayout({
                   </button>
                 </div>
               )}
-              <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+              <div className="flex items-center gap-2 min-w-0 pl-4">
                 <StandardIcon
                   colorScheme="primary"
                   colorShade="pure"
@@ -94,34 +125,44 @@ export default function ArticulosLayout({
                 >
                   <FileText className="h-5 w-5 flex-shrink-0" />
                 </StandardIcon>
-                <StandardText
-                  asElement="h3"
-                  size="lg"
-                  weight="semibold"
-                  colorScheme="primary"
-                  colorShade="pure"
-                  className={cn(
-                    "transition-all duration-500 text-left w-full",
-                    isCollapsed ? "opacity-0 w-0 -ml-2" : "opacity-100 w-auto ml-0"
+                <AnimatePresence>
+                  {!isCollapsed && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -10, width: 0 }}
+                      animate={{ opacity: 1, x: 0, width: "auto", transition: { delay: 0.1, duration: 0.2 } }}
+                      exit={{ opacity: 0, x: -10, width: 0, transition: { duration: 0.15 } }}
+                      className="overflow-hidden"
+                    >
+                      <StandardText
+                        asElement="h3"
+                        size="lg"
+                        weight="semibold"
+                        colorScheme="primary"
+                        colorShade="pure"
+                        className="whitespace-nowrap"
+                      >
+                        Artículos
+                      </StandardText>
+                    </motion.div>
                   )}
-                >
-                  Artículos
-                </StandardText>
+                </AnimatePresence>
               </div>
             </div>
             <div className="flex-grow">
               <SidebarNav items={sidebarNavItems} isCollapsed={isCollapsed} />
             </div>
           </div>
-        </aside>
-        <StandardPageBackground
-          variant="gradient"
-          className="flex w-full flex-col overflow-hidden"
-        >
-          <main className="py-6 lg:py-8">
-            {children}
-          </main>
-        </StandardPageBackground>
+        </motion.aside>
+        <LayoutProvider isSidebarCollapsed={isCollapsed} sidebarWidth={sidebarWidth} layoutGap={layoutGap} globalXPadding={globalXPadding}>
+          <StandardPageBackground
+            variant="gradient"
+            className="flex w-full flex-col overflow-hidden"
+          >
+            <main className="py-6 lg:py-8">
+              {children}
+            </main>
+          </StandardPageBackground>
+        </LayoutProvider>
       </div>
     </div>
   );

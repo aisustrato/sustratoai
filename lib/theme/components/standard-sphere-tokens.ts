@@ -46,13 +46,6 @@ export interface SphereTokens {
   activeTransform: string;
 }
 
-function createGradient(color: string): string {
-  const lighter = tinycolor(color).lighten(12).toHexString();
-  const base = color;
-  const darker = tinycolor(color).darken(15).toHexString();
-  return `radial-gradient(circle at 30% 30%, ${lighter}, ${base} 50%, ${darker})`;
-}
-
 export function generateSphereTokens(appColorTokens: AppColorTokens, mode: Mode): Record<ColorSchemeVariant, SphereTokens> {
   const isDark = mode === 'dark';
   const tokens = {} as Record<ColorSchemeVariant, SphereTokens>;
@@ -70,12 +63,40 @@ export function generateSphereTokens(appColorTokens: AppColorTokens, mode: Mode)
     }
     
     const mainColor = palette.pure;
-    const textColor = palette.contrastText;
+
+    // --- 🎨 Laboratorio de Gradientes 3D --- //
+
+    // Gradiente para el estilo 'filled'
+    const filledBase = tinycolor(mainColor);
+    const filledHighlight = filledBase.clone().lighten(20).saturate(15).toRgbString();
+    const filledShadow = filledBase.clone().darken(20).desaturate(15).toRgbString();
+    const filledGlint = tinycolor('white').setAlpha(isDark ? 0.2 : 0.4).toRgbString();
+    const filledBodyGradient = `radial-gradient(circle at 35% 35%, ${filledHighlight}, ${filledBase.toRgbString()} 80%, ${filledShadow})`;
+    const filledGlintGradient = `radial-gradient(circle at 50% 25%, ${filledGlint}, transparent 35%)`;
+    const finalFilledGradient = `${filledGlintGradient}, ${filledBodyGradient}`;
+
+    // Gradiente para el estilo 'subtle'
+    const subtleBaseBg = tinycolor.mix(palette.bg, mainColor, 12);
+    const subtleHighlight = subtleBaseBg.clone().lighten(isDark ? 8 : 5).saturate(5).toRgbString();
+    const subtleShadow = subtleBaseBg.clone().darken(isDark ? 8 : 5).toRgbString();
+    const subtleGlint = tinycolor(isDark ? 'white' : 'black').setAlpha(0.07).toRgbString();
+    const subtleBodyGradient = `radial-gradient(circle at 40% 40%, ${subtleHighlight}, ${subtleBaseBg.toRgbString()} 85%, ${subtleShadow})`;
+    const subtleGlintGradient = `radial-gradient(circle at 50% 30%, ${subtleGlint}, transparent 35%)`;
+    const finalSubtleGradient = `${subtleGlintGradient}, ${subtleBodyGradient}`;
+
+    // --- Fin del Laboratorio ---
+
+    const candidates = [
+      palette.contrastText,
+      isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+      isDark ? '#FFFFFF' : '#000000'
+    ];
+    const bestTextColor = tinycolor.mostReadable(mainColor, candidates, { includeFallbackColors: true, level: "AA", size: "small" }).toRgbString();
+
     const subtleTextColor = isDark ? palette.text : palette.textShade;
     const hoverBgColor = isDark ? tinycolor(mainColor).lighten(8).toHexString() : tinycolor(mainColor).darken(8).toHexString();
     const activeBgColor = isDark ? tinycolor(mainColor).lighten(12).toHexString() : tinycolor(mainColor).darken(12).toHexString();
     
-    const subtleBaseBg = tinycolor.mix(palette.bg, mainColor, 12).toHexString();
     const subtleHoverBg = tinycolor(subtleBaseBg).darken(5).saturate(5).toHexString();
 
     tokens[key] = {
@@ -83,18 +104,18 @@ export function generateSphereTokens(appColorTokens: AppColorTokens, mode: Mode)
       styles: {
         filled: {
           backgroundColor: mainColor,
-          foregroundColor: textColor,
+          foregroundColor: bestTextColor,
           borderColor: 'rgba(0,0,0,0)',
-          gradient: createGradient(mainColor),
+          gradient: finalFilledGradient,
           hoverBackgroundColor: hoverBgColor,
-          hoverForegroundColor: textColor,
+          hoverForegroundColor: bestTextColor,
           activeBorderColor: activeBgColor,
         },
         subtle: {
-          backgroundColor: subtleBaseBg,
+          backgroundColor: subtleBaseBg.toHexString(),
           foregroundColor: subtleTextColor,
-          borderColor: mainColor, // ✅ Se define el color del borde como 'pure'
-          gradient: `radial-gradient(circle at 50% 0%, ${tinycolor(mainColor).setAlpha(0.2).toRgbString()}, ${tinycolor(mainColor).setAlpha(0).toRgbString()} 70%)`,
+          borderColor: mainColor,
+          gradient: finalSubtleGradient,
           hoverBackgroundColor: subtleHoverBg,
           hoverForegroundColor: subtleTextColor,
           activeBorderColor: mainColor,

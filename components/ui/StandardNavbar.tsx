@@ -400,7 +400,8 @@ const navItems: NavItem[] = useMemo(() => {
 							</Link>
 						</motion.div>
 
-						<div className="hidden md:flex items-center space-x-3 lg:space-x-5">
+						<div className="hidden min-[1200px]:flex flex-1 min-w-0 items-center justify-center">
+							<div className="flex flex-wrap items-baseline justify-center gap-x-4 gap-y-2">
 							{navItems.map((item, index) => (
 								<motion.div
 									key={item.href || item.label}
@@ -625,16 +626,17 @@ const navItems: NavItem[] = useMemo(() => {
 									)}
 								</motion.div>
 							))}
+							</div>
 						</div>
 
 						<div className="flex items-center flex-shrink-0">
-							<div className="hidden md:flex items-center gap-3 lg:gap-4">
+							<div className="hidden min-[1200px]:flex items-center gap-3 lg:gap-4">
 								<FontThemeSwitcher />
 								<ThemeSwitcher />
 								<UserAvatar />
 							</div>
 
-							<div className="md:hidden ml-2">
+							<div className="min-[1200px]:hidden ml-2">
 								<motion.div whileTap={{ scale: 0.9 }}>
 									<StandardButton
 										styleType="ghost"
@@ -671,7 +673,7 @@ const navItems: NavItem[] = useMemo(() => {
 				<AnimatePresence>
 					{mobileMenuOpen && (
 						<motion.div
-							className="md:hidden border-b"
+							className="min-[1200px]:hidden border-b"
 							style={{
 								backgroundColor: scrolled
 									? currentNavTokens?.background?.scrolled || (mode === "dark" ? "#1a1a27" : "#f8f9fa")

@@ -47,8 +47,10 @@ export async function POST(req: NextRequest) {
 
     // La propiedad `candidates` está directamente en el objeto `result`.
     const textResult = result.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const usageMetadata = result.usageMetadata; // ✅ Obtener los metadatos de uso
 
-    return NextResponse.json({ result: textResult });
+    // Devolver tanto el resultado del texto como los metadatos de uso
+    return NextResponse.json({ result: textResult, usage: usageMetadata });
 
   } catch (error: any) {
     console.error('Error in Gemini API call:', error);

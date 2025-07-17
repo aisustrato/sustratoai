@@ -13,7 +13,7 @@ import React, {
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
-	createBrowserSupabaseClient,
+	supabase, // ✅ Importar la instancia Singleton
 	signInWithEmail as clientSignIn,
 	signUp as clientSignUp,
 	signOut as clientSignOut,
@@ -21,7 +21,7 @@ import {
 import {
 	type Session,
 	type User,
-	type SupabaseClient,
+	type SupabaseClient, // Se mantiene por si se usa como tipo en otro lado
 } from "@supabase/supabase-js";
 
 import {
@@ -79,9 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const router = useRouter();
 	const pathname = usePathname();
 
-	const [supabase] = useState<SupabaseClient>(() =>
-		createBrowserSupabaseClient()
-	);
+	// ✅ Ya no se crea un cliente local, se usa el singleton importado.
 
 	const [user, setUser] = useState<User | null>(null);
 	const [session, setSession] = useState<Session | null>(null);
@@ -127,6 +125,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		aplicarModoRef.current = setMode;
 	}, [setMode]);
+
+	// ========================================================================
+	// ✅ EFECTO PRINCIPAL: SUSCRIPCIÓN AL ESTADO DE AUTENTICACIÓN
+	// Este es el corazón del provider. Escucha los cambios en Supabase
+	// y actualiza el estado de la aplicación de forma reactiva.
+	// ========================================================================
+	useEffect(() => {
+		console.log(`${LOG_PREFIX} Montando listener de onAuthStateChange...`);
+
+		// Inmediatamente obtenemos la sesión actual para evitar parpadeos
+		supabase.auth.getSession().then(({ data: { session } }) => {
+			setSession(session);
+			setUser(session?.user ?? null);
+			setAuthInitialized(true);
+			setAuthLoading(false);
+			console.log(`${LOG_PREFIX} Sesión inicial cargada.`);
+		});
+
+		const { data: authListener } = supabase.auth.onAuthStateChange(
+			(event, session) => {
+				console.log(`${LOG_PREFIX} Evento de Auth recibido:`, event);
+				setSession(session);
+				setUser(session?.user ?? null);
+				setAuthInitialized(true);
+				setAuthLoading(false);
+
+				if (event === "SIGNED_OUT") {
+					// Limpiar todo el estado local al cerrar sesión
+					setProyectoActual(null);
+					setProyectosDisponibles([]);
+					router.push("/login");
+				}
+			}
+		);
+
+		// Cleanup: Desuscribirse cuando el componente se desmonte
+		return () => {
+			console.log(`${LOG_PREFIX} Desmontando listener de onAuthStateChange.`);
+			authListener?.subscription.unsubscribe();
+		};
+	}, [router]); // Dependencia de router para la redirección
 
 	useEffect(() => {
 		userRef.current = user;

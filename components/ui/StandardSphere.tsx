@@ -231,7 +231,7 @@ export const StandardSphere = React.forwardRef<
         sphereInnerContent = (
             <>
                 <StandardText size={decisions.textSemanticSize} weight="medium" className="text-center -mb-0.5">{value}</StandardText>
-                <StandardText size="sm">{emoticon}</StandardText>
+                <StandardText size={decisions.iconSemanticSize} className="mt-0.5">{emoticon}</StandardText>
             </>
         );
     } else if (value) {
@@ -248,13 +248,39 @@ export const StandardSphere = React.forwardRef<
     };
 
     const sphereContainer = (
-      <div ref={ref} className={cn('flex flex-col items-center justify-center w-full', className)} style={sphereContainerStyles} data-test-id={dataTestId} >
-        <div className={cn('rounded-full overflow-hidden', disabled && 'pointer-events-none')} style={sphereCircleStyles} onMouseEnter={() => !disabled && setIsHovered(true)} onMouseLeave={() => { if (!disabled) { setIsHovered(false); setIsActive(false); } }} onMouseDown={() => !disabled && setIsActive(true)} onMouseUp={() => !disabled && setIsActive(false)} onClick={!disabled ? onClick : undefined} >
-          {sphereInnerContent}
+      <div ref={ref} className={cn('flex flex-col items-center justify-center w-full', className)} style={sphereContainerStyles} data-test-id={dataTestId}>
+        <div className={cn('relative', !disabled && 'group')}>
+          {/* Esfera */}
+          <div
+            className={cn(
+              'rounded-full overflow-hidden flex items-center justify-center flex-col',
+              'transition-all duration-300 ease-out',
+              !disabled && 'group-hover:-translate-y-1.5 group-hover:shadow-xl',
+              disabled && 'pointer-events-none'
+            )}
+            style={sphereCircleStyles}
+            onMouseEnter={() => !disabled && setIsHovered(true)}
+            onMouseLeave={() => { if (!disabled) { setIsHovered(false); setIsActive(false); } }}
+            onMouseDown={() => !disabled && setIsActive(true)}
+            onMouseUp={() => !disabled && setIsActive(false)}
+            onClick={!disabled ? onClick : undefined}
+          >
+            {sphereInnerContent}
+          </div>
+          {/* Sombra en el suelo */}
+          {!disabled && (
+            <div
+              className="absolute bottom-0 left-1/2 -z-10 h-1.5 bg-black/10 dark:bg-black/20 rounded-full blur-md transition-all duration-300 ease-out group-hover:scale-75 group-hover:blur-lg group-hover:bottom-[-4px]"
+              style={{
+                width: `${decisions.finalSphereDiameter * 0.75}px`,
+                transform: `translateX(-50%)`,
+              }}
+            />
+          )}
         </div>
         {decisions.canShowBadge && statusBadge && (
-          <div className="pt-0.5">
-            <StandardBadge size={decisions.badgeSemanticSize} colorScheme={statusBadge.colorScheme || 'primary'} styleType={statusBadge.styleType || 'subtle'} leftIcon={statusBadge.icon} iconClassName={statusBadge.iconClassName} >
+          <div className="pt-2.5"> {/* Aumentado el padding para que no choque con la sombra */}
+            <StandardBadge size={decisions.badgeSemanticSize} colorScheme={statusBadge.colorScheme || 'primary'} styleType={statusBadge.styleType || 'subtle'} leftIcon={statusBadge.icon} iconClassName={statusBadge.iconClassName}>
               {statusBadge.text}
             </StandardBadge>
           </div>

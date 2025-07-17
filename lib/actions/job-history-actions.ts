@@ -15,6 +15,7 @@ export type ResultadoOperacion<T> =
 
 export interface StartJobPayload {
   projectId: string;
+  userId: string; // ✅ REQUERIDO: El ID del usuario que ejecuta el trabajo.
   jobType: Database["public"]["Enums"]["job_type"];
   description?: string;
   aiModel?: string;
@@ -50,16 +51,19 @@ type JobHistoryRow = Database['public']['Tables']['ai_job_history']['Row'];
  * @returns El ID del nuevo registro de trabajo creado.
  */
 export async function startJobLog(payload: StartJobPayload): Promise<ResultadoOperacion<{ jobId: string }>> {
+  // El userId ahora viene directamente del payload, no de la sesión.
+  // Esto hace la función más predecible y desacoplada de la sesión activa.
+  if (!payload.userId) {
+    return { success: false, error: "El ID de usuario es requerido para iniciar un trabajo." };
+  }
+
   const supabase = await createSupabaseServerClient();
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Usuario no autenticado.", errorCode: "UNAUTHENTICATED" };
-
     const { data: newJob, error } = await supabase
       .from('ai_job_history')
       .insert({
         project_id: payload.projectId,
-        user_id: user.id,
+        user_id: payload.userId, // ✅ USAR EL ID DEL PAYLOAD
         job_type: payload.jobType,
         description: payload.description,
         ai_model: payload.aiModel,
@@ -72,6 +76,7 @@ export async function startJobLog(payload: StartJobPayload): Promise<ResultadoOp
     return { success: true, data: { jobId: newJob.id } };
 
   } catch (error) {
+    console.error("Error detallado en startJobLog:", error); // ✅ LOGGING MEJORADO
     const msg = error instanceof Error ? error.message : "Error desconocido.";
     return { success: false, error: `No se pudo iniciar el log del trabajo: ${msg}` };
   }

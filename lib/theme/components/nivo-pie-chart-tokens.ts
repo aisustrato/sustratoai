@@ -6,12 +6,12 @@ import type { AppColorTokens, Mode } from "../ColorToken";
 // Mapeo de nuestros IDs de estado a los 'colorScheme' del tema
 const STATUS_TO_COLOR_SCHEME_MAP: Record<string, keyof AppColorTokens> = {
   pendientesRevision: 'neutral',
+  pendientesRevisionTraducido: 'tertiary', // ✅ Añadido el nuevo estado
   pendientesReconciliacion: 'secondary',
-  reconciliados: 'warning',
+  reconciliados: 'success',
   enDisputa: 'danger',
-  // Puedes añadir más estados aquí si es necesario
-  acordados: 'success', 
-  validados: 'success', 
+  acordados: 'accent',
+  validados: 'warning', 
 };
 
 export function generateNivoTheme(appColorTokens: AppColorTokens, mode: Mode) {

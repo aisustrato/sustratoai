@@ -130,6 +130,7 @@ export default function RolesPage() {
 			delayDuration={100}
 			side="top"
 			className="text-xs max-w-xs"
+			content={tooltipText}
 			trigger={
 				<span className="flex justify-center items-center w-full">
 					{value ? (
