@@ -1,0 +1,187 @@
+/* StandardNote.module.css - Estilos específicos para el componente StandardNote */
+
+.noteContainer {
+  position: relative;
+  overflow: hidden;
+}
+
+.rawTextarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Estilos específicos para @uiw/react-md-editor - Solo afectar el contenedor principal */
+.noteContainer :global(.w-md-editor) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Corregir elemento negro a la izquierda del editor */
+.noteContainer :global(.w-md-editor-text-container) {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.noteContainer :global(.w-md-editor-text) {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.noteContainer :global(.w-md-editor-text-container::before),
+.noteContainer :global(.w-md-editor-text-container::after) {
+  display: none !important;
+  content: none !important;
+}
+
+/* Eliminar cualquier borde lateral del editor */
+.noteContainer :global(.w-md-editor-text-container > *) {
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: none !important;
+}
+
+/* Estilos más agresivos para eliminar artefactos visuales */
+.noteContainer :global(.w-md-editor *) {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.noteContainer :global(.w-md-editor::before),
+.noteContainer :global(.w-md-editor::after),
+.noteContainer :global(.w-md-editor *::before),
+.noteContainer :global(.w-md-editor *::after) {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* Eliminar cualquier separador o divisor visual */
+.noteContainer :global(.w-md-editor-text-container),
+.noteContainer :global(.w-md-editor-preview) {
+  border-left: none !important;
+  border-right: none !important;
+  position: relative;
+}
+
+/* Asegurar que no hay elementos flotantes o posicionados que creen artefactos */
+.noteContainer :global(.w-md-editor-text-container::before),
+.noteContainer :global(.w-md-editor-preview::before) {
+  display: none !important;
+}
+
+/* Mantener estilos de preview intactos para renderizado correcto de Markdown */
+.noteContainer :global(.w-md-editor-preview) {
+  /* Permitir que el preview mantenga sus estilos nativos */
+  background: inherit;
+}
+
+/* Estilos específicos y forzados para listas en el preview */
+.noteContainer :global(.w-md-editor-preview ol) {
+  margin: 1em 0 !important;
+  padding-left: 2em !important;
+  list-style-type: decimal !important;
+  counter-reset: list-counter !important;
+}
+
+.noteContainer :global(.w-md-editor-preview ul) {
+  margin: 1em 0 !important;
+  padding-left: 2em !important;
+  list-style-type: disc !important;
+}
+
+/* Soporte para highlight (==texto==) - renderizar como <mark> */
+.noteContainer :global(.w-md-editor-preview mark) {
+  background-color: #ffeb3b !important;
+  color: #000 !important;
+  padding: 2px 4px !important;
+  border-radius: 2px !important;
+}
+
+/* Fallback: si el markdown no se convierte a <mark>, usar una clase personalizada */
+.noteContainer :global(.w-md-editor-preview .highlight) {
+  background-color: #ffeb3b !important;
+  color: #000 !important;
+  padding: 2px 4px !important;
+  border-radius: 2px !important;
+}
+
+.noteContainer :global(.w-md-editor-preview ol li) {
+  margin: 0.5em 0 !important;
+  list-style-type: decimal !important;
+  display: list-item !important;
+  padding-left: 0.5em !important;
+}
+
+.noteContainer :global(.w-md-editor-preview ul li) {
+  margin: 0.5em 0 !important;
+  list-style-type: disc !important;
+  display: list-item !important;
+  padding-left: 0.5em !important;
+}
+
+.noteContainer :global(.mdxeditor-root-contenteditable) {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-right: none !important;
+  border-left: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  min-height: 180px !important;
+}
+
+/* Eliminar cualquier borde o línea de todos los elementos internos */
+.noteContainer :global(.mdxeditor *) {
+  border-right: none !important;
+  border-left: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Asegurar que el contenido editable sea completamente transparente */
+.noteContainer :global(.mdxeditor-root-contenteditable *) {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* Eliminar cualquier pseudo-elemento que pueda crear líneas */
+.noteContainer :global(.mdxeditor::before),
+.noteContainer :global(.mdxeditor::after),
+.noteContainer :global(.mdxeditor *::before),
+.noteContainer :global(.mdxeditor *::after) {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  background: none !important;
+}
+
+/* Estilos para el modo raw (textarea) */
+.rawTextarea {
+  resize: none;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.rawTextarea:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}

@@ -48,6 +48,7 @@ import {
 } from "@/lib/theme/components/standard-nav-tokens";
 import { StandardIcon } from "@/components/ui/StandardIcon"; // Replaced Icon with StandardIcon
 import { useAuth } from "@/app/auth-provider"; // Added import
+import { useWindowSize } from "@/lib/hooks/useWindowSize"; // Added for responsive logic
 
 // --- START: Constantes de Configuración ---
 
@@ -90,6 +91,28 @@ const SUBMENU_TEXT_VARIANT_ACTIVE = MENU_TEXT_STYLES.submenu.active.colorShade;
 const SUBMENU_TEXT_VARIANT_INACTIVE = MENU_TEXT_STYLES.submenu.inactive.colorShade;
 
 // --- END: Constantes de Configuración ---
+
+// --- START: Constantes Responsivas ---
+
+// Breakpoints para los cinco estadios responsivos (ajustados según análisis real)
+const RESPONSIVE_BREAKPOINTS = {
+	STAGE_1: 1500, // Navbar completo normal
+	STAGE_2: 1350, // Solo selector de fuente se mueve al UserAvatar (antes del solapamiento)
+	STAGE_3: 1250, // Selector de fuente + tema se mueven al UserAvatar
+	STAGE_4: 1120, // Solo logo/nombre + UserAvatar (todos los controles en avatar)
+	STAGE_5: 1050, // Menú hamburguesa móvil
+} as const;
+
+// Tamaños de texto para cada estadio
+const TEXT_SIZES_BY_STAGE = {
+	STAGE_1: 'sm' as const,
+	STAGE_2: 'xs' as const,
+	STAGE_3: 'xs' as const,
+	STAGE_4: '3xs' as const,
+	STAGE_5: 'sm' as const, // En móvil vuelve a tamaño normal
+} as const;
+
+// --- END: Constantes Responsivas ---
 
 const menuItemVariants = {
 	hidden: { opacity: 0, y: -5 },
@@ -143,6 +166,57 @@ export function StandardNavbar() {
 	const ripple = useRipple();
 	const { mode, appColorTokens } = useTheme();
 	const { proyectoActual } = useAuth();
+	const { width: windowWidth } = useWindowSize();
+
+	// Determinar el estadio responsivo actual
+	const currentStage = useMemo(() => {
+		// Si windowWidth es undefined, usar un valor por defecto (desktop)
+		if (!windowWidth) {
+			console.log('🔍 [NAVBAR DEBUG] windowWidth is undefined, defaulting to STAGE_1');
+			return 'STAGE_1';
+		}
+		
+		let stage;
+		if (windowWidth >= RESPONSIVE_BREAKPOINTS.STAGE_1) stage = 'STAGE_1';
+		else if (windowWidth >= RESPONSIVE_BREAKPOINTS.STAGE_2) stage = 'STAGE_2';
+		else if (windowWidth >= RESPONSIVE_BREAKPOINTS.STAGE_3) stage = 'STAGE_3';
+		else if (windowWidth >= RESPONSIVE_BREAKPOINTS.STAGE_4) stage = 'STAGE_4';
+		else stage = 'STAGE_5';
+		
+		console.log(`🔍 [NAVBAR DEBUG] windowWidth: ${windowWidth}px -> ${stage}`, {
+			breakpoints: RESPONSIVE_BREAKPOINTS,
+			currentWidth: windowWidth,
+			selectedStage: stage
+		});
+		
+		return stage;
+	}, [windowWidth]);
+
+	// Configuración de elementos según el estadio
+	const stageConfig = useMemo(() => {
+		const config = {
+			// STAGE_1: Navbar completo normal
+			showThemeControlsInNavbar: currentStage === 'STAGE_1',
+			showFontSwitcherInNavbar: currentStage === 'STAGE_1',
+			showDarkModeSwitchInNavbar: currentStage === 'STAGE_1' || currentStage === 'STAGE_2',
+			// STAGE_4: Solo logo/nombre + UserAvatar + botón hamburguesa (ocultar menús principales)
+			showMainMenus: currentStage !== 'STAGE_4' && currentStage !== 'STAGE_5',
+			textSize: TEXT_SIZES_BY_STAGE[currentStage as keyof typeof TEXT_SIZES_BY_STAGE],
+			// Mostrar botón hamburguesa en STAGE_4 y STAGE_5
+			useMobileMenu: currentStage === 'STAGE_4' || currentStage === 'STAGE_5',
+		};
+		
+		console.log(`🎯 [NAVBAR DEBUG] Stage Config for ${currentStage}:`, {
+			currentStage,
+			showMainMenus: config.showMainMenus,
+			useMobileMenu: config.useMobileMenu,
+			showThemeControlsInNavbar: config.showThemeControlsInNavbar,
+			showFontSwitcherInNavbar: config.showFontSwitcherInNavbar,
+			showDarkModeSwitchInNavbar: config.showDarkModeSwitchInNavbar
+		});
+		
+		return config;
+	}, [currentStage]);
 
 	const currentNavTokens: StandardNavbarTokens | null = useMemo(() => {
 		if (!appColorTokens) {
@@ -289,6 +363,26 @@ const navItems: NavItem[] = useMemo(() => {
     ],
   });
 
+  // Menú Personal siempre está disponible si hay un proyecto
+  menuItems.push({
+    id: "personal",
+    label: "Personal",
+    href: "/personal",
+    icon: (isActive) => createMenuIcon(User, isActive),
+    submenu: [
+      {
+        label: "Historial",
+        href: "/personal/historial",
+        icon: (isActive) => createMenuIcon(ClipboardList, isActive),
+      },
+      {
+        label: "Consumo AI",
+        href: "/personal/consumo-ai",
+        icon: (isActive) => createMenuIcon(LayoutDashboard, isActive),
+      },
+    ],
+  });
+
   return menuItems;
 }, [proyectoActual]);
 
@@ -390,19 +484,20 @@ const navItems: NavItem[] = useMemo(() => {
 										</span>
 									</div>
 									<StandardText
-										size="sm"
+										size={currentStage === 'STAGE_4' ? '2xs' : 'sm'}
 										colorScheme="neutral"
 										colorShade="pure"
-										className="mt-0.5">
+										className={currentStage === 'STAGE_4' ? 'mt-0 leading-tight' : 'mt-0.5'}>
 										cultivando sinergias humano·AI
 									</StandardText>
 								</div>
 							</Link>
 						</motion.div>
 
-						<div className="hidden min-[1200px]:flex flex-1 min-w-0 items-center justify-center">
-							<div className="flex flex-wrap items-baseline justify-center gap-x-4 gap-y-2">
-							{navItems.map((item, index) => (
+						{stageConfig.showMainMenus && (
+							<div className={`${stageConfig.useMobileMenu ? 'hidden' : 'flex'} flex-1 min-w-0 items-center justify-center`}>
+								<div className="flex flex-wrap items-baseline justify-center gap-x-4 gap-y-2">
+								{navItems.map((item, index) => (
 								<motion.div
 									key={item.href || item.label}
 									className="relative"
@@ -556,7 +651,7 @@ const navItems: NavItem[] = useMemo(() => {
 																					? "medium"
 																					: "normal"
 																			}
-																			size="sm">
+																			size={stageConfig.textSize}>
 																			{subitem.label}
 																		</StandardText>
 																	</Link>
@@ -628,15 +723,19 @@ const navItems: NavItem[] = useMemo(() => {
 							))}
 							</div>
 						</div>
+					)}
 
 						<div className="flex items-center flex-shrink-0">
-							<div className="hidden min-[1200px]:flex items-center gap-3 lg:gap-4">
-								<FontThemeSwitcher />
-								<ThemeSwitcher />
-								<UserAvatar />
-							</div>
+						<div className={`${stageConfig.useMobileMenu ? 'hidden' : 'flex'} items-center gap-3 lg:gap-4`}>
+							{stageConfig.showFontSwitcherInNavbar && <FontThemeSwitcher />}
+							{stageConfig.showDarkModeSwitchInNavbar && <ThemeSwitcher />}
+							<UserAvatar 
+								showFontSwitcher={!stageConfig.showFontSwitcherInNavbar}
+								showThemeSwitcher={!stageConfig.showDarkModeSwitchInNavbar}
+							/>
+						</div>
 
-							<div className="min-[1200px]:hidden ml-2">
+							<div className={`${stageConfig.useMobileMenu ? 'block' : 'hidden'} ml-2`}>
 								<motion.div whileTap={{ scale: 0.9 }}>
 									<StandardButton
 										styleType="ghost"
@@ -702,9 +801,9 @@ const navItems: NavItem[] = useMemo(() => {
 									}}>
 									<FontThemeSwitcher />
 									<ThemeSwitcher />
-								</div>
+							</div>
 
-								{navItems.map((item, index) => (
+							{stageConfig.showMainMenus && navItems.map((item, index) => (
 									<motion.div
 										key={item.href || item.label}
 										initial={{ opacity: 0, x: -10 }}
@@ -752,7 +851,7 @@ const navItems: NavItem[] = useMemo(() => {
 																	: MENU_HEADER_TEXT_VARIANT_INACTIVE
 															}
 															weight="medium"
-															size="sm">
+															size={stageConfig.textSize}>
 															{item.label}
 														</StandardText>
 													</span>
@@ -839,7 +938,7 @@ const navItems: NavItem[] = useMemo(() => {
 																					? "medium"
 																					: "normal"
 																			}
-																			size="sm">
+																			size={stageConfig.textSize}>
 																			{subitem.label}
 																		</StandardText>
 																	</Link>
@@ -898,7 +997,7 @@ const navItems: NavItem[] = useMemo(() => {
 																: MENU_HEADER_TEXT_VARIANT_INACTIVE
 														}
 														weight="medium"
-														size="sm">
+														size={stageConfig.textSize}>
 														{item.label}
 													</StandardText>
 													{item.disabled && (

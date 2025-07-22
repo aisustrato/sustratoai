@@ -10,6 +10,7 @@ import React, {
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { supabase } from "@/app/auth/client";
 import { useAuth } from "@/app/auth-provider";
+import { useRouter } from "next/navigation";
 import {
 	getProjectBatchesForUser,
 	type BatchWithCounts,
@@ -86,6 +87,7 @@ const getVisualsForStatus = (
 
 const PreclassificationPage = () => {
 	const auth = useAuth();
+	const router = useRouter();
 	const [batches, setBatches] = useState<BatchWithCounts[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -236,37 +238,44 @@ const PreclassificationPage = () => {
 		};
 	}, [fetchBatches]);
 
-	const handleSphereClick = (batchId: string, batchNumber: number) => {
-		showDialog({
-			title: `Confirmar Traducción de Lote`,
-			content: `¿Estás seguro de que quieres iniciar la traducción para todos los artículos del lote ${batchNumber}? Esta acción procesará los artículos en segundo plano y no se puede deshacer.`,
-			confirmText: "Sí, Iniciar Traducción",
-			cancelText: "No, cancelar",
-			colorScheme: "primary",
-			onConfirm: () => {
-				if (!auth.proyectoActual?.id) {
-					showDialog({
-						title: "Error: Proyecto No Seleccionado",
-						content:
-							"No se puede iniciar un trabajo sin un proyecto activo. Por favor, asegúrate de tener un proyecto seleccionado.",
-						confirmText: "Entendido",
-						colorScheme: "danger",
-						onConfirm: () => {},
+	const handleSphereClick = (batch: BatchWithCounts) => {
+		// Comprobar el estado del lote
+		if (batch.status === 'pending') {
+			// Si está 'pending', ejecutar la lógica de INICIAR TRADUCCIÓN
+			console.log(`Activando flujo de traducción para el lote: ${batch.id}`);
+			showDialog({
+				title: 'Confirmar Traducción',
+				content: `¿Deseas enviar a traducir el Lote #${batch.batch_number}?`,
+				confirmText: "Sí, Iniciar Traducción",
+				cancelText: "No, cancelar",
+				colorScheme: "primary",
+				onConfirm: () => {
+					if (!auth.proyectoActual?.id) {
+						showDialog({
+							title: "Error: Proyecto No Seleccionado",
+							content: "No se puede iniciar un trabajo sin un proyecto activo. Por favor, asegúrate de tener un proyecto seleccionado.",
+							confirmText: "Entendido",
+							colorScheme: "danger",
+							onConfirm: () => {},
+						});
+						return;
+					}
+					startJob({
+						type: 'TRANSLATE_BATCH',
+						title: `Traduciendo Lote #${batch.batch_number}`,
+						payload: { 
+							batchId: batch.id, 
+							userId: auth.user?.id || 'unknown_user',
+							projectId: auth.proyectoActual.id, // Proyecto activo
+						},
 					});
-					return;
-				}
-
-				startJob({
-					type: "TRANSLATE_BATCH",
-					title: `Traduciendo Lote #${batchNumber}`,
-					payload: {
-						batchId,
-						userId: auth.user?.id || "unknown_user",
-						projectId: auth.proyectoActual.id, // ✅ Inyectar el ID del proyecto activo
-					},
-				});
-			},
-		});
+				},
+			});
+		} else {
+			// Para cualquier otro estado, ejecutar la lógica de NAVEGACIÓN
+			console.log(`Navegando al detalle del lote: ${batch.id}`);
+			router.push(`/articulos/preclasificacion/${batch.id}`);
+		}
 	};
 
 	const sphereData: SphereItemData[] = useMemo(() => {
@@ -286,7 +295,7 @@ const PreclassificationPage = () => {
 				emoticon: visuals.emoticon,
 				value: batch.batch_number,
 				colorScheme: visuals.colorScheme,
-				onClick: () => handleSphereClick(batch.id, batch.batch_number),
+				onClick: () => handleSphereClick(batch),
 				tooltip: [
 					`*Lote:* ${batch.batch_number} - *Total:* ${totalArticles}`,
 					"---",

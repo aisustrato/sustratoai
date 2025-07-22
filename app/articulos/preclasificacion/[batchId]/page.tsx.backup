@@ -1,0 +1,752 @@
+"use client";
+
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams } from "next/navigation";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { supabase } from "@/app/auth/client";
+import { useAuth } from "@/app/auth-provider";
+import { getBatchDetailsForReview } from "@/lib/actions/preclassification-actions";
+import type { BatchDetails, ArticleForReview } from "@/lib/actions/preclassification-actions";
+import { 
+	getNotes, 
+	createArticleNote, 
+	updateArticleNote, 
+	deleteArticleNote,
+	type DetailedNote,
+	type CreateNotePayload,
+	type UpdateNotePayload
+} from "@/lib/actions/article-notes-actions";
+
+// Tipo para los datos de la tabla
+interface TableRowData {
+	id: string;
+	title: string;
+	abstract: string;
+	ai_summary: string;
+	year: string;
+	journal: string;
+	secondaryTitle: string | null;
+	secondaryAbstract: string | null;
+	originalArticle: ArticleForReview;
+	subRows?: { __isGhost: true }[];
+}
+
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
+import { StandardTable } from "@/components/ui/StandardTable";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardText } from "@/components/ui/StandardText";
+import { StandardCard } from "@/components/ui/StandardCard";
+import { StandardPopupWindow } from "@/components/ui/StandardPopupWindow";
+import { StandardNote } from "@/components/ui/StandardNote";
+import { StandardInput } from "@/components/ui/StandardInput";
+import { StandardSelect } from "@/components/ui/StandardSelect";
+import { StandardDialog } from "@/components/ui/StandardDialog";
+import { toast } from "sonner";
+import { ColumnDef } from "@tanstack/react-table";
+import { 
+	ClipboardList, 
+	Link, 
+	ThumbsDown, 
+	CheckCircle,
+	RotateCcw,
+	StickyNote
+} from "lucide-react";
+
+const BatchDetailPage = () => {
+	const params = useParams();
+	const auth = useAuth();
+	const batchId = params.batchId as string;
+	
+	const [batchDetails, setBatchDetails] = useState<BatchDetails | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+	const [showOriginalAsPrimary, setShowOriginalAsPrimary] = useState(false);
+	const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+	const [currentNote, setCurrentNote] = useState("");
+	const [currentNoteTitle, setCurrentNoteTitle] = useState("");
+	const [currentNoteVisibility, setCurrentNoteVisibility] = useState<'public' | 'private'>('private');
+	const [currentArticle, setCurrentArticle] = useState<ArticleForReview | null>(null);
+	const [existingNote, setExistingNote] = useState<DetailedNote | null>(null);
+	const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+	const [isSaving, setIsSaving] = useState(false);
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+
+	// Función para cargar los detalles del lote
+	const loadBatchDetails = useCallback(async () => {
+		if (!batchId) return;
+		
+		setIsLoading(true);
+		setError(null);
+		
+		try {
+			const result = await getBatchDetailsForReview(batchId);
+			
+			if (result.success) {
+				setBatchDetails(result.data);
+			} else {
+				setError(result.error);
+			}
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Error desconocido");
+		} finally {
+			setIsLoading(false);
+		}
+	}, [batchId]);
+
+	// Cargar datos iniciales
+	useEffect(() => {
+		loadBatchDetails();
+	}, [loadBatchDetails]);
+
+	// Suscripción a cambios en tiempo real
+	useEffect(() => {
+		if (!batchId) return;
+
+		const subscription = supabase
+			.channel(`batch-${batchId}`)
+			.on(
+				"postgres_changes",
+				{
+					event: "*",
+					schema: "public",
+					table: "article_batches",
+					filter: `id=eq.${batchId}`,
+				},
+				(payload: RealtimePostgresChangesPayload<any>) => {
+					console.log("Cambio detectado en el lote:", payload);
+					loadBatchDetails();
+				}
+			)
+			.subscribe();
+
+		return () => {
+			subscription.unsubscribe();
+		};
+	}, [batchId, loadBatchDetails]);
+
+	// Funciones de manejo de acciones
+	const handleOpenDOI = (article: ArticleForReview) => {
+		// En V1, usamos el campo journal que puede contener el DOI o URL
+		if (article.article_data.journal) {
+			const url = article.article_data.journal.startsWith('http') 
+				? article.article_data.journal 
+				: `https://doi.org/${article.article_data.journal}`;
+			window.open(url, '_blank');
+		} else {
+			console.log('No DOI disponible para este artículo');
+		}
+	};
+
+	const handleDisagree = (article: ArticleForReview) => {
+		console.log('Desacuerdo marcado para:', article.item_id);
+		// TODO: Implementar lógica de desacuerdo en futuras versiones
+	};
+
+	const handleValidate = (article: ArticleForReview) => {
+		console.log('Validación marcada para:', article.item_id);
+		// TODO: Implementar lógica de validación en futuras versiones
+	};
+
+	// Función para cargar nota existente
+	const loadExistingNote = async (articleId: string) => {
+		try {
+			const result = await getNotes({ articleId, authorId: auth.user?.id });
+			if (result.success && result.data.length > 0) {
+				const note = result.data[0]; // Tomar la primera nota (más reciente)
+				setExistingNote(note);
+				setCurrentNote(note.note_content || '');
+				setCurrentNoteTitle(note.title || '');
+				setCurrentNoteVisibility(note.visibility as 'public' | 'private');
+				return note;
+			} else {
+				// No existe nota previa
+				setExistingNote(null);
+				setCurrentNote('');
+				setCurrentNoteTitle('');
+				setCurrentNoteVisibility('private');
+				return null;
+			}
+		} catch (error) {
+			console.error('Error al cargar nota existente:', error);
+			setExistingNote(null);
+			setCurrentNote('');
+			setCurrentNoteTitle('');
+			setCurrentNoteVisibility('private');
+			return null;
+		}
+	};
+
+	const handleOpenNotes = async (article: ArticleForReview) => {
+		setCurrentArticle(article);
+		setHasUnsavedChanges(false);
+		
+		// Cargar nota existente si existe
+		await loadExistingNote(article.item_id);
+		
+		setNoteDialogOpen(true);
+	};
+
+	const handleNoteContentChange = (noteContent: string) => {
+		setCurrentNote(noteContent);
+		setHasUnsavedChanges(true);
+	};
+
+	const handleNoteTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		setCurrentNoteTitle(event.target.value);
+		setHasUnsavedChanges(true);
+	};
+
+	const handleNoteVisibilityChange = (value: string | string[] | undefined) => {
+		if (typeof value === 'string' && (value === 'public' || value === 'private')) {
+			setCurrentNoteVisibility(value);
+			setHasUnsavedChanges(true);
+		}
+	};
+
+	const handleSaveNote = async () => {
+		if (!currentArticle || !auth.user?.id || !auth.proyectoActual?.id) {
+			toast.error('Faltan datos necesarios para guardar la nota');
+			return;
+		}
+		
+		setIsSaving(true);
+		try {
+			const noteTitle = currentNoteTitle.trim() || 'sin título';
+			
+			if (existingNote) {
+				if (!existingNote.id) {
+					console.error('❌ Error: La nota existente no tiene ID para actualizar.');
+					return;
+				}
+				// Actualizar nota existente
+				const updatePayload: UpdateNotePayload = {
+					noteId: existingNote.id,
+					title: noteTitle,
+					noteContent: currentNote,
+					visibility: currentNoteVisibility
+				};
+				
+				const result = await updateArticleNote(updatePayload);
+				if (result.success) {
+					setExistingNote(result.data);
+					setHasUnsavedChanges(false);
+					console.log('✅ Nota actualizada exitosamente');
+				} else {
+					console.error('❌ Error al actualizar nota:', result.error);
+				}
+			} else {
+				// Crear nueva nota
+				const createPayload: CreateNotePayload = {
+					projectId: auth.proyectoActual.id,
+					articleId: currentArticle.item_id,
+					title: noteTitle,
+					noteContent: currentNote,
+					visibility: currentNoteVisibility
+				};
+				
+				const result = await createArticleNote(createPayload);
+				if (result.success) {
+					setExistingNote(result.data);
+					setHasUnsavedChanges(false);
+					console.log('✅ Nota creada exitosamente');
+				} else {
+					console.error('❌ Error al crear nota:', result.error);
+				}
+			}
+		} catch (error) {
+			console.error('❌ Error al guardar nota:', error);
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
+	const handleDeleteNote = async () => {
+		if (!existingNote || !existingNote.id) {
+			console.error('❌ Error: No se puede eliminar una nota sin ID.');
+			return;
+		}
+		
+		try {
+			const result = await deleteArticleNote(existingNote.id);
+			if (result.success) {
+				// Resetear estado después de eliminar
+				setExistingNote(null);
+				setCurrentNote('');
+				setCurrentNoteTitle('');
+				setCurrentNoteVisibility('private');
+				setHasUnsavedChanges(false);
+				setShowDeleteConfirm(false);
+				setNoteDialogOpen(false);
+				console.log('✅ Nota eliminada exitosamente');
+			} else {
+				console.error('❌ Error al eliminar nota:', result.error);
+			}
+		} catch (error) {
+			console.error('❌ Error al eliminar nota:', error);
+		}
+	};
+
+	const handleCloseNotes = () => {
+		if (hasUnsavedChanges) {
+			setShowCloseConfirm(true);
+		} else {
+			setNoteDialogOpen(false);
+		}
+	};
+
+	const confirmClose = () => {
+		setNoteDialogOpen(false);
+		setShowCloseConfirm(false);
+	};
+
+	// Configuración de columnas para la tabla
+	const tableColumns: ColumnDef<TableRowData>[] = [
+		// Columna expander (primera columna sticky)
+		{ 
+			id: 'expander', 
+			header: () => null, 
+			cell: ({ row }) => row.getCanExpand() ? '' : null, 
+			meta: { isSticky: 'left' as const }, 
+			size: 40, 
+			enableHiding: false 
+		},
+		{
+			id: "title",
+			accessorKey: "title",
+			header: showOriginalAsPrimary ? "Título Original" : "Título Traducido",
+			size: 250,
+			meta: { isTruncatable: true },
+		},
+		{
+			id: "abstract",
+			accessorKey: "abstract",
+			header: showOriginalAsPrimary ? "Abstract Original" : "Abstract Traducido",
+			size: 300,
+			meta: { isTruncatable: true, tooltipType: "longText" as const },
+		},
+		{
+			id: "ai_summary",
+			accessorKey: "ai_summary",
+			header: "Resumen del Abstract",
+			size: 250,
+			meta: { isTruncatable: true, tooltipType: "longText" as const },
+		},
+		{
+			id: "year",
+			accessorKey: "year",
+			header: "Año",
+			size: 80,
+			meta: { align: "center" as const },
+		},
+		{
+			id: "journal",
+			accessorKey: "journal",
+			header: "Revista",
+			size: 150,
+			meta: { isTruncatable: true },
+		},
+		{
+			id: "actions",
+			header: "Acciones",
+			size: 150,
+			meta: { isSticky: "right" as const },
+			cell: ({ row }) => {
+				const article = row.original.originalArticle;
+				return (
+					<div className="flex gap-2">
+						<StandardButton
+							styleType="outline"
+							iconOnly={true}
+							onClick={() => handleOpenDOI(article)}
+							tooltip="Abrir DOI"
+						>
+							<Link size={16} />
+						</StandardButton>
+						<StandardButton
+							styleType="outline"
+							iconOnly={true}
+							onClick={() => handleOpenNotes(article)}
+							tooltip="Abrir Notas"
+						>
+							<StickyNote size={16} />
+						</StandardButton>
+						<StandardButton
+							styleType="outline"
+							iconOnly={true}
+							onClick={() => handleDisagree(article)}
+							tooltip="Marcar desacuerdo"
+						>
+							<ThumbsDown size={16} />
+						</StandardButton>
+						<StandardButton
+							styleType="outline"
+							iconOnly={true}
+							onClick={() => handleValidate(article)}
+							tooltip="Validar"
+						>
+							<CheckCircle size={16} />
+						</StandardButton>
+					</div>
+				);
+			},
+		},
+	];
+
+	// Transformar datos para la tabla
+	const tableData = batchDetails?.rows.map((article) => {
+		const primaryTitle = showOriginalAsPrimary 
+			? article.article_data.original_title 
+			: article.article_data.translated_title;
+		const primaryAbstract = showOriginalAsPrimary 
+			? article.article_data.original_abstract 
+			: article.article_data.translated_abstract;
+		
+		const secondaryTitle = showOriginalAsPrimary 
+			? article.article_data.translated_title 
+			: article.article_data.original_title;
+		const secondaryAbstract = showOriginalAsPrimary 
+			? article.article_data.translated_abstract 
+			: article.article_data.original_abstract;
+
+		// Verificar si hay contenido secundario para mostrar el expander
+		const hasSecondaryContent = secondaryTitle || secondaryAbstract;
+
+		const rowData: TableRowData = {
+			id: article.item_id,
+			title: primaryTitle || "Sin título",
+			abstract: primaryAbstract || "Sin abstract",
+			ai_summary: article.article_data.translation_summary || "Sin resumen",
+			year: article.article_data.publication_year?.toString() || "N/A",
+			journal: article.article_data.journal || "N/A",
+			// Datos adicionales para el sub-componente
+			secondaryTitle,
+			secondaryAbstract,
+			// Referencia al artículo original para las acciones
+			originalArticle: article,
+		};
+
+		// Agregar subRows si hay contenido secundario (para habilitar expander)
+		if (hasSecondaryContent) {
+			rowData.subRows = [{ __isGhost: true }];
+		}
+
+		return rowData;
+	}) || [];
+
+	// Función para renderizar el sub-componente expandible
+	const renderSubComponent = (row: any) => {
+		const { secondaryTitle, secondaryAbstract } = row.original;
+		
+		if (!secondaryTitle && !secondaryAbstract) {
+			return null;
+		}
+
+		return (
+			<div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+				<div className="space-y-3">
+					{secondaryTitle && (
+						<div>
+							<StandardText size="sm" className="font-medium text-gray-600 dark:text-gray-400">
+								{showOriginalAsPrimary ? "Título Traducido:" : "Título Original:"}
+							</StandardText>
+							<StandardText size="sm" className="mt-1">
+								{secondaryTitle}
+							</StandardText>
+						</div>
+					)}
+					{secondaryAbstract && (
+						<div>
+							<StandardText size="sm" className="font-medium text-gray-600 dark:text-gray-400">
+								{showOriginalAsPrimary ? "Abstract Traducido:" : "Abstract Original:"}
+							</StandardText>
+							<StandardText size="sm" className="mt-1">
+								{secondaryAbstract}
+							</StandardText>
+						</div>
+					)}
+				</div>
+			</div>
+		);
+	};
+
+	if (isLoading) {
+		return (
+			<div className="w-full h-full p-4 sm:p-6 flex flex-col">
+				<StandardPageTitle
+					title="Detalle de Lote"
+					mainIcon={ClipboardList}
+					subtitle="Cargando detalles del lote..."
+					showBackButton={{ href: "/articulos/preclasificacion" }}
+					breadcrumbs={[
+						{ label: "Artículos", href: "/articulos" },
+						{ label: "Preclasificación", href: "/articulos/preclasificacion" },
+						{ label: "Detalle de Lote" },
+					]}
+				/>
+				<div className="mt-6 flex-grow flex items-center justify-center">
+					<StandardText>Cargando detalles del lote...</StandardText>
+				</div>
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="w-full h-full p-4 sm:p-6 flex flex-col">
+				<StandardPageTitle
+					title="Error"
+					mainIcon={ClipboardList}
+					subtitle="Error al cargar el lote"
+					showBackButton={{ href: "/articulos/preclasificacion" }}
+					breadcrumbs={[
+						{ label: "Artículos", href: "/articulos" },
+						{ label: "Preclasificación", href: "/articulos/preclasificacion" },
+						{ label: "Error" },
+					]}
+				/>
+				<div className="mt-6 flex-grow flex items-center justify-center">
+					<StandardCard title="Error">
+						<StandardCard.Content>
+							<StandardText colorScheme="danger">{error}</StandardText>
+						</StandardCard.Content>
+					</StandardCard>
+				</div>
+			</div>
+		);
+	}
+
+	if (!batchDetails || batchDetails.rows.length === 0) {
+		return (
+			<div className="w-full h-full p-4 sm:p-6 flex flex-col">
+				<StandardPageTitle
+					title="Detalle de Lote"
+					mainIcon={ClipboardList}
+					subtitle="No hay artículos en este lote"
+					showBackButton={{ href: "/articulos/preclasificacion" }}
+					breadcrumbs={[
+						{ label: "Artículos", href: "/articulos" },
+						{ label: "Preclasificación", href: "/articulos/preclasificacion" },
+						{ label: "Detalle de Lote" },
+					]}
+				/>
+				<div className="mt-6 flex-grow flex items-center justify-center">
+					<StandardText>No hay artículos para mostrar en este lote.</StandardText>
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className="w-full h-full p-4 sm:p-6 flex flex-col">
+			<StandardPageTitle
+				title="Detalle de Lote"
+				mainIcon={ClipboardList}
+				subtitle={`Revisión de ${batchDetails.rows.length} artículo${batchDetails.rows.length !== 1 ? 's' : ''}`}
+				showBackButton={{ href: "/articulos/preclasificacion" }}
+				breadcrumbs={[
+					{ label: "Artículos", href: "/articulos" },
+					{ label: "Preclasificación", href: "/articulos/preclasificacion" },
+					{ label: "Detalle de Lote" },
+				]}
+			/>
+			
+			<div className="mt-6 flex-grow flex flex-col gap-4">
+				{/* Botón de inversión de vista */}
+				<div className="flex justify-end">
+					<StandardButton
+						styleType="outline"
+						onClick={() => setShowOriginalAsPrimary(!showOriginalAsPrimary)}
+						className="flex items-center gap-2"
+					>
+						<RotateCcw size={16} />
+						{showOriginalAsPrimary ? "Mostrar Traducciones" : "Mostrar Originales"}
+					</StandardButton>
+				</div>
+
+				{/* Tabla principal */}
+				<div className="flex-grow">
+					<StandardTable
+						data={tableData}
+						columns={tableColumns}
+						renderSubComponent={renderSubComponent}
+						isStickyHeader={true}
+						enableTruncation={true}
+						filterPlaceholder="Buscar artículos..."
+					>
+						<StandardTable.Table />
+					</StandardTable>
+				</div>
+			</div>
+
+			{/* Popup Window de Notas */}
+			<StandardPopupWindow open={noteDialogOpen} onOpenChange={handleCloseNotes}>
+				<StandardPopupWindow.Content size="lg" colorScheme="primary">
+					<StandardPopupWindow.Header>
+						<StandardPopupWindow.Title>
+							{existingNote ? 'Editar Nota del Artículo' : 'Nueva Nota del Artículo'}
+						</StandardPopupWindow.Title>
+						<StandardPopupWindow.Description>
+							{currentArticle && (
+								<span className="text-sm">
+									{showOriginalAsPrimary 
+										? currentArticle.article_data.original_title 
+										: (currentArticle.article_data.translated_title || currentArticle.article_data.original_title)
+									}
+								</span>
+							)}
+						</StandardPopupWindow.Description>
+					</StandardPopupWindow.Header>
+
+					<StandardPopupWindow.Body>
+						{/* Controles de la nota */}
+						<div className="space-y-4 mb-4">
+							{/* Título de la nota */}
+							<div>
+								<StandardText size="sm" className="mb-2 font-medium">
+									Título de la nota (opcional)
+								</StandardText>
+								<StandardInput
+									value={currentNoteTitle}
+									onChange={handleNoteTitleChange}
+									placeholder="Título de la nota (se guardará como 'sin título' si se deja vacío)"
+									colorScheme="primary"
+									size="md"
+								/>
+							</div>
+
+							{/* Visibilidad de la nota */}
+							<div>
+								<StandardText size="sm" className="mb-2 font-medium">
+									Visibilidad de la nota
+								</StandardText>
+								<StandardSelect
+									value={currentNoteVisibility}
+									onChange={handleNoteVisibilityChange}
+									colorScheme="primary"
+									placeholder="Seleccionar visibilidad"
+									options={[
+										{ value: 'private', label: '🔒 Privada (solo yo puedo verla)' },
+										{ value: 'public', label: '🌐 Pública (visible para el equipo)' }
+									]}
+									clearable={false}
+								/>
+							</div>
+						</div>
+
+						{/* Editor de notas */}
+						<StandardNote
+							value={currentNote}
+							onChange={handleNoteContentChange}
+							placeholder="Escribe tus notas sobre este artículo..."
+							colorScheme="primary"
+							size="lg"
+							minimalToolbar={true}
+							viewMode="divided"
+							showToolbar={true}
+							livePreview={true}
+							previewDebounceMs={300}
+							minHeight="400px"
+						/>
+					</StandardPopupWindow.Body>
+
+					<StandardPopupWindow.Footer>
+						<div className="flex justify-between w-full">
+							{/* Botón eliminar (solo si existe nota) */}
+							<div>
+								{existingNote && (
+									<StandardButton
+										styleType="outline"
+										colorScheme="danger"
+										onClick={() => setShowDeleteConfirm(true)}
+									>
+										Eliminar Nota
+									</StandardButton>
+								)}
+							</div>
+
+							{/* Botones principales */}
+							<div className="flex gap-2">
+								<StandardButton
+									styleType="outline"
+									onClick={handleCloseNotes}
+								>
+									Cerrar
+								</StandardButton>
+								<StandardButton
+									styleType="solid"
+									colorScheme="primary"
+									onClick={handleSaveNote}
+									disabled={isSaving}
+								>
+									{isSaving ? 'Guardando...' : (existingNote ? 'Actualizar Nota' : 'Guardar Nota')}
+								</StandardButton>
+							</div>
+						</div>
+					</StandardPopupWindow.Footer>
+				</StandardPopupWindow.Content>
+			</StandardPopupWindow>
+
+			{/* Dialog de confirmación para eliminar */}
+			<StandardDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+				<StandardDialog.Content size="md">
+					<StandardDialog.Header>
+						<StandardDialog.Title>
+							Confirmar Eliminación
+						</StandardDialog.Title>
+						<StandardDialog.Description>
+							¿Estás seguro de que quieres eliminar esta nota? Esta acción no puede ser revertida.
+						</StandardDialog.Description>
+					</StandardDialog.Header>
+
+					<StandardDialog.Footer>
+						<StandardButton
+							styleType="outline"
+							onClick={() => setShowDeleteConfirm(false)}
+						>
+							Cancelar
+						</StandardButton>
+						<StandardButton
+							styleType="solid"
+							colorScheme="danger"
+							onClick={handleDeleteNote}
+						>
+							Eliminar Definitivamente
+						</StandardButton>
+					</StandardDialog.Footer>
+				</StandardDialog.Content>
+			</StandardDialog>
+
+			{/* Dialog de confirmación para cerrar con cambios sin guardar */}
+			<StandardDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+				<StandardDialog.Content size="md">
+					<StandardDialog.Header>
+						<StandardDialog.Title>
+							Cambios sin Guardar
+						</StandardDialog.Title>
+						<StandardDialog.Description>
+							Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar?
+						</StandardDialog.Description>
+					</StandardDialog.Header>
+					<StandardDialog.Footer>
+						<StandardButton
+							styleType="outline"
+							onClick={() => setShowCloseConfirm(false)}
+						>
+							Cancelar
+						</StandardButton>
+						<StandardButton
+							styleType="solid"
+							colorScheme="primary"
+							onClick={confirmClose}
+						>
+							Cerrar sin Guardar
+						</StandardButton>
+					</StandardDialog.Footer>
+				</StandardDialog.Content>
+			</StandardDialog>
+		</div>
+	);
+};
+
+export default BatchDetailPage;

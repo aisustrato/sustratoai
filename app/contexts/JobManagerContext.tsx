@@ -17,14 +17,19 @@ export interface Job {
     projectId: string; 
   };
   errorMessage?: string;
+  completedAt?: Date;
+  startedAt?: Date;
 }
 
 interface JobManagerContextType {
   jobs: Job[];
-  isJobManagerVisible: boolean;
-  showJobManager: () => void;
-  hideJobManager: () => void;
-  startJob: (jobData: Omit<Job, 'id' | 'status' | 'progress' | 'errorMessage'>) => void;
+  recentCompletedJobs: Job[];
+  isJobManagerExpanded: boolean;
+  hasActiveJobs: boolean;
+  toggleJobManager: () => void;
+  expandJobManager: () => void;
+  minimizeJobManager: () => void;
+  startJob: (jobData: Omit<Job, 'id' | 'status' | 'progress' | 'errorMessage' | 'completedAt' | 'startedAt'>) => void;
   updateJobProgress: (jobId: string, progress: number) => void;
   completeJob: (jobId: string) => void;
   failJob: (jobId: string, message?: string) => void;
@@ -35,24 +40,31 @@ const JobManagerContext = createContext<JobManagerContextType | undefined>(undef
 
 export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [isJobManagerVisible, setJobManagerVisible] = useState(false);
+  const [recentCompletedJobs, setRecentCompletedJobs] = useState<Job[]>([]);
+  const [isJobManagerExpanded, setJobManagerExpanded] = useState(false);
 
-  const showJobManager = () => setJobManagerVisible(true);
-  const hideJobManager = () => setJobManagerVisible(false);
+  // Calcular si hay trabajos activos
+  const hasActiveJobs = jobs.some(job => job.status === 'queued' || job.status === 'running');
 
-  const startJob = useCallback((jobData: Omit<Job, 'id' | 'status' | 'progress' | 'errorMessage'>) => {
+  const toggleJobManager = () => setJobManagerExpanded(prev => !prev);
+  const expandJobManager = () => setJobManagerExpanded(true);
+  const minimizeJobManager = () => setJobManagerExpanded(false);
+
+  const startJob = useCallback((jobData: Omit<Job, 'id' | 'status' | 'progress' | 'errorMessage' | 'completedAt' | 'startedAt'>) => {
     const newJob: Job = {
       id: uuidv4(),
       ...jobData,
       status: 'queued',
       progress: 0,
+      startedAt: new Date(),
     };
     setJobs(prevJobs => [...prevJobs, newJob]);
-    if (!isJobManagerVisible) {
-        showJobManager();
+    // Auto-expandir cuando se inicia un nuevo trabajo
+    if (!isJobManagerExpanded) {
+        expandJobManager();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isJobManagerExpanded]);
 
   const updateJobProgress = useCallback((jobId: string, progress: number) => {
     setJobs(prevJobs =>
@@ -63,21 +75,43 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const completeJob = useCallback((jobId: string) => {
-    setJobs(prevJobs =>
-        prevJobs.map(job =>
-          job.id === jobId ? { ...job, status: 'completed', progress: 100 } : job
-        )
+    setJobs(prevJobs => {
+      const updatedJobs = prevJobs.map(job =>
+        job.id === jobId ? { ...job, status: 'completed' as const, progress: 100, completedAt: new Date() } : job
       );
+      
+      // Mover el trabajo completado a la lista de recientes
+      const completedJob = updatedJobs.find(job => job.id === jobId);
+      if (completedJob) {
+        setRecentCompletedJobs(prev => {
+          const newRecent = [completedJob, ...prev.filter(j => j.id !== jobId)];
+          return newRecent.slice(0, 3); // Mantener solo los últimos 3
+        });
+      }
+      
+      return updatedJobs;
+    });
   }, []);
 
   const failJob = useCallback((jobId: string, message?: string) => {
-    setJobs(prevJobs =>
-      prevJobs.map(job =>
+    setJobs(prevJobs => {
+      const updatedJobs = prevJobs.map(job =>
         job.id === jobId
-          ? { ...job, status: 'error', progress: 100, errorMessage: message }
+          ? { ...job, status: 'error' as const, progress: 100, errorMessage: message, completedAt: new Date() }
           : job
-      )
-    );
+      );
+      
+      // Mover el trabajo fallido a la lista de recientes
+      const failedJob = updatedJobs.find(job => job.id === jobId);
+      if (failedJob) {
+        setRecentCompletedJobs(prev => {
+          const newRecent = [failedJob, ...prev.filter(j => j.id !== jobId)];
+          return newRecent.slice(0, 3); // Mantener solo los últimos 3
+        });
+      }
+      
+      return updatedJobs;
+    });
   }, []);
 
   const removeJob = useCallback((jobId: string) => {
@@ -88,9 +122,12 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
     <JobManagerContext.Provider
       value={{
         jobs,
-        isJobManagerVisible,
-        showJobManager,
-        hideJobManager,
+        recentCompletedJobs,
+        isJobManagerExpanded,
+        hasActiveJobs,
+        toggleJobManager,
+        expandJobManager,
+        minimizeJobManager,
         startJob,
         updateJobProgress,
         completeJob,

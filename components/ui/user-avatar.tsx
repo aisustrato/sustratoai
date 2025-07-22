@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/StandardSelect"; // Assuming SelectOption type is compatible or similar
 import { generateUserAvatarTokens } from "@/lib/theme/components/user-avatar-tokens";
 import { actualizarProyectoActivo } from "@/lib/actions/project-dashboard-actions"; // Importar server action y tipo
+import { ThemeSwitcher } from "@/components/ui/theme-switcher";
+import { FontThemeSwitcher } from "@/components/ui/font-theme-switcher";
 
 // Traducciones amigables para los nombres de permisos (sin cambios)
 const permissionTranslations = {
@@ -25,7 +27,15 @@ const permissionTranslations = {
 	can_bulk_edit_master_data: "Edición masiva de datos",
 };
 
-export function UserAvatar() {
+interface UserAvatarProps {
+	showFontSwitcher?: boolean;
+	showThemeSwitcher?: boolean;
+}
+
+export function UserAvatar({ 
+	showFontSwitcher = false, 
+	showThemeSwitcher = false 
+}: UserAvatarProps = {}) {
 	const {
 		user,
 		logout,
@@ -471,6 +481,44 @@ export function UserAvatar() {
 											? avatarTokens.menuDivider.margin
 											: undefined,
 								}}></div>
+
+							{/* Controles de tema cuando se requieren en el avatar */}
+							{(showFontSwitcher || showThemeSwitcher) && (
+								<div className="px-2 py-2 space-y-3">
+									{showFontSwitcher && (
+										<div className="flex items-center justify-between">
+											<StandardText size="sm" colorScheme="neutral">
+												Fuente
+											</StandardText>
+											<FontThemeSwitcher />
+										</div>
+									)}
+									{showThemeSwitcher && (
+										<div className="flex items-center justify-between">
+											<StandardText size="sm" colorScheme="neutral">
+												Tema
+											</StandardText>
+											<ThemeSwitcher />
+										</div>
+									)}
+								</div>
+							)}
+
+							{/* Separador adicional si hay controles de tema */}
+							{(showFontSwitcher || showThemeSwitcher) && (
+								<div
+									className="h-px w-full bg-gray-200 dark:bg-gray-700 my-2"
+									style={{
+										backgroundColor:
+											hasTokens && avatarTokens
+												? avatarTokens.menuDivider.color
+												: undefined,
+										margin:
+											hasTokens && avatarTokens
+												? avatarTokens.menuDivider.margin
+												: undefined,
+									}}></div>
+							)}
 
 							<div className="grid gap-1 mt-2">
 								<motion.button

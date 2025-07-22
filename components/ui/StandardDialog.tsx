@@ -25,7 +25,7 @@ const StandardDialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "dialog-overlay fixed inset-0 z-[3000] bg-black/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 pointer-events-auto",
       className
     )}
     {...props}
@@ -80,7 +80,8 @@ const StandardDialogContent = React.forwardRef<
             }
         }}
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-0 border p-0 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg",
+          "dialog-modal fixed left-1/2 top-1/2 z-[3010] w-auto h-auto min-w-[320px] max-w-md max-h-[80vh] -translate-x-1/2 -translate-y-1/2 border-0 p-0 shadow-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg overflow-hidden",
+          "grid grid-rows-[auto_1fr_auto]", // Grid que se contrae automáticamente
           { "max-w-sm": size === 'sm', "max-w-md": size === 'md', "max-w-lg": size === 'lg', "max-w-xl": size === 'xl' },
           "bg-[var(--dialog-bg)] border-[var(--dialog-border)] shadow-[var(--dialog-shadow)] rounded-[var(--dialog-radius)]",
           className

@@ -58,6 +58,10 @@ export interface ArticleForReview {
 export interface BatchDetails {
   columns: { id: string; name: string; type: string; options: any[] }[];
   rows: ArticleForReview[];
+  batch_number: number;
+  id: string;
+  name: string | null;
+  status: Database["public"]["Enums"]["batch_preclass_status"];
 }
 
 export interface SubmitHumanReviewPayload {
@@ -154,67 +158,99 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
         // --- FIN DE CONSULTA CORREGIDA ---
         
         if (itemsError) throw new Error(`Error obteniendo ítems del lote: ${itemsError.message}`);
-        if (!batchItems) return { success: true, data: { columns: [], rows: [] } };
+        if (!batchItems) return { 
+            success: true, 
+            data: { 
+                columns: [], 
+                rows: [],
+                batch_number: 0, // Valor por defecto
+                id: batchId,
+                name: null,
+                status: 'pending' as const
+            } 
+        };
 
         const itemIds = batchItems.map(item => item.id);
-        const { data: allReviews, error: reviewsError } = await supabase
+        const { data: allReviews = [], error: reviewsError } = await supabase
             .from("article_dimension_reviews")
             .select("*")
             .in("article_batch_item_id", itemIds);
             
         if(reviewsError) throw new Error(`Error obteniendo revisiones: ${reviewsError.message}`);
+        
+        // Obtener información adicional del lote
+        const { data: batchInfo, error: batchInfoError } = await supabase
+            .from("article_batches")
+            .select("batch_number, name, status")
+            .eq("id", batchId)
+            .single();
+            
+        if (batchInfoError) throw new Error(`Error obteniendo información del lote: ${batchInfoError.message}`);
 
         const rows: ArticleForReview[] = batchItems.map(item => {
-            const itemReviews = allReviews?.filter(r => r.article_batch_item_id === item.id) || [];
+            const safeReviews = allReviews || [];
+            const itemReviews = safeReviews.filter(r => r.article_batch_item_id === item.id);
             const classifications: Record<string, ClassificationReview[]> = {};
 
-            for (const dim of dimensions) {
-                const reviewsForDim = itemReviews
-                    .filter(r => r.dimension_id === dim.id)
-                    .sort((a, b) => a.iteration - b.iteration)
-                    .map(r => ({
-                        reviewer_type: r.reviewer_type as 'ai' | 'human',
-                        reviewer_id: r.reviewer_id,
-                        iteration: r.iteration,
-                        value: r.classification_value,
-                        confidence: r.confidence_score,
-                        rationale: r.rationale,
-                    }));
-                classifications[dim.name] = reviewsForDim;
-            }
-
-            // --- ACCESO A DATOS CORREGIDO ---
-            const translations = item.articles?.article_translations || [];
-
+            const articleStatus = item.status_preclasificacion || 'pending';
+            const validStatuses = ['pending', 'agreed', 'reconciled', 'disputed', 'reconciliation_pending'] as const;
+            const safeStatus = validStatuses.includes(articleStatus as any) 
+                ? articleStatus as typeof validStatuses[number] 
+                : 'pending';
+            
             return {
                 item_id: item.id,
-                article_status: item.status_preclasificacion as any,
+                article_status: safeStatus,
                 article_data: {
                     publication_year: item.articles?.publication_year || null,
                     journal: item.articles?.journal || null,
                     original_title: item.articles?.title || null,
                     original_abstract: item.articles?.abstract || null,
-                    translated_title: translations[0]?.title || null,
-                    translated_abstract: translations[0]?.abstract || null,
-                    translation_summary: translations[0]?.summary || null,
+                    translated_title: item.articles?.article_translations?.[0]?.title || null,
+                    translated_abstract: item.articles?.article_translations?.[0]?.abstract || null,
+                    translation_summary: item.articles?.article_translations?.[0]?.summary || null,
                 },
                 ai_summary: {
                     keywords: item.ai_keywords,
-                    process_opinion: item.ai_process_opinion,
+                    process_opinion: item.ai_process_opinion
                 },
-                requires_adjudication: item.requires_adjudication || false,
-                classifications,
-            };
+                classifications: dimensions.reduce((acc, dim) => {
+                    const reviews = safeReviews.filter((r: any) => 
+                        r.article_batch_item_id === item.id && 
+                        r.dimension_id === dim.id
+                    );
+                    
+                    if (reviews.length > 0) {
+                        acc[dim.id] = reviews.map((r: any) => ({
+                            reviewer_type: 'human' as const,
+                            reviewer_id: r.reviewer_id,
+                            iteration: r.iteration,
+                            value: r.classification_value,
+                            confidence: r.confidence_score,
+                            rationale: r.rationale
+                        }));
+                    }
+                    return acc;
+                }, {} as Record<string, ClassificationReview[]>)
+            } as ArticleForReview;
         });
 
-        const columns = dimensions.map(d => ({
-            id: d.id,
-            name: d.name,
-            type: d.type,
-            options: d.preclass_dimension_options.map(opt => opt.value)
-        }));
-
-        return { success: true, data: { columns, rows } };
+        return {
+            success: true,
+            data: {
+                columns: dimensions.map(d => ({
+                    id: d.id,
+                    name: d.name,
+                    type: d.type,
+                    options: d.preclass_dimension_options?.map(o => o.value) || []
+                })),
+                rows,
+                batch_number: batchInfo?.batch_number || 0,
+                id: batchId,
+                name: batchInfo?.name || null,
+                status: (batchInfo?.status as Database["public"]["Enums"]["batch_preclass_status"]) || 'pending'
+            }
+        };
 
     } catch (error) {
         const msg = error instanceof Error ? error.message : "Error desconocido.";
@@ -457,4 +493,40 @@ export async function finalizeBatch(batchId: string): Promise<ResultadoOperacion
         const msg = error instanceof Error ? error.message : "Error desconocido.";
         return { success: false, error: `Error finalizando el lote: ${msg}` };
     }
+}
+
+/**
+ * Obtiene el ID del artículo ('articles') a partir del ID de un ítem de lote ('article_batch_items').
+ * @param batchItemId El ID de la fila en la tabla 'article_batch_items'.
+ * @returns El 'article_id' correspondiente o un error si no se encuentra.
+ */
+export async function getArticleIdFromBatchItemId(
+  batchItemId: string
+): Promise<ResultadoOperacion<{ articleId: string }>> {
+  if (!batchItemId) {
+    return { success: false, error: "Se requiere el ID del ítem del lote." };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from('article_batch_items')
+      .select('article_id')
+      .eq('id', batchItemId)
+      .single();
+
+    if (error) {
+      throw new Error(`No se encontró el ítem del lote o el usuario no tiene permisos: ${error.message}`);
+    }
+
+    if (!data) {
+      return { success: false, error: "Ítem de lote no encontrado." };
+    }
+
+    return { success: true, data: { articleId: data.article_id } };
+
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Error desconocido.";
+    return { success: false, error: `Error interno: ${msg}` };
+  }
 }

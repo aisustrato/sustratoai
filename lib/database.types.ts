@@ -1,3 +1,6 @@
+Need to install the following packages:
+supabase@2.31.8
+Ok to proceed? (y) 
 export type Json =
   | string
   | number
@@ -240,6 +243,154 @@ export type Database = {
             columns: ["dimension_id"]
             isOneToOne: false
             referencedRelation: "preclass_dimensions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      article_group_items: {
+        Row: {
+          added_at: string
+          article_id: string
+          description: string | null
+          group_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          article_id: string
+          description?: string | null
+          group_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          article_id?: string
+          description?: string | null
+          group_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_group_items_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_group_items_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_articles_for_batching_view"
+            referencedColumns: ["article_id"]
+          },
+          {
+            foreignKeyName: "article_group_items_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "article_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      article_groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          project_id: string
+          updated_at: string
+          user_id: string
+          visibility: Database["public"]["Enums"]["group_visibility"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          project_id: string
+          updated_at?: string
+          user_id: string
+          visibility?: Database["public"]["Enums"]["group_visibility"]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+          visibility?: Database["public"]["Enums"]["group_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_groups_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      article_notes: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          note_content: string | null
+          project_id: string
+          title: string | null
+          updated_at: string
+          user_id: string
+          visibility: Database["public"]["Enums"]["note_visibility"]
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          note_content?: string | null
+          project_id: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          visibility?: Database["public"]["Enums"]["note_visibility"]
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          note_content?: string | null
+          project_id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          visibility?: Database["public"]["Enums"]["note_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_notes_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_notes_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_articles_for_batching_view"
+            referencedColumns: ["article_id"]
+          },
+          {
+            foreignKeyName: "article_notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -839,6 +990,43 @@ export type Database = {
       }
     }
     Views: {
+      detailed_article_notes: {
+        Row: {
+          article_id: string | null
+          author_name: string | null
+          created_at: string | null
+          id: string | null
+          note_content: string | null
+          project_id: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+          visibility: Database["public"]["Enums"]["note_visibility"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_notes_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_notes_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_articles_for_batching_view"
+            referencedColumns: ["article_id"]
+          },
+          {
+            foreignKeyName: "article_notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       detailed_project_members: {
         Row: {
           can_bulk_edit_master_data: boolean | null
@@ -997,6 +1185,7 @@ export type Database = {
         | "discrepancies"
         | "completed"
       dimension_type: "finite" | "open"
+      group_visibility: "public" | "private"
       item_preclass_status:
         | "pending_review"
         | "reconciliation_pending"
@@ -1005,6 +1194,7 @@ export type Database = {
         | "disputed"
       job_status: "running" | "completed" | "failed"
       job_type: "TRANSLATION" | "PRECLASSIFICATION"
+      note_visibility: "public" | "private"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1156,6 +1346,7 @@ export const Constants = {
         "completed",
       ],
       dimension_type: ["finite", "open"],
+      group_visibility: ["public", "private"],
       item_preclass_status: [
         "pending_review",
         "reconciliation_pending",
@@ -1165,6 +1356,7 @@ export const Constants = {
       ],
       job_status: ["running", "completed", "failed"],
       job_type: ["TRANSLATION", "PRECLASSIFICATION"],
+      note_visibility: ["public", "private"],
     },
   },
 } as const

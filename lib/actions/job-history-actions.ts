@@ -38,7 +38,7 @@ export interface GetMyRecentJobsPayload {
   limit?: number;
 }
 
-type JobHistoryRow = Database['public']['Tables']['ai_job_history']['Row'];
+export type JobHistoryRow = Database['public']['Tables']['ai_job_history']['Row'];
 
 
 // ========================================================================

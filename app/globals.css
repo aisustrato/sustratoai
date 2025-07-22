@@ -48,12 +48,19 @@
   /* globals.css o tu archivo CSS principal */
 html,
 body,
-body > div:first-child, /* A menudo el div#__next de Next.js */
-div#__next,
-div#__next > div { /* Para cubrir el wrapper de FontThemeProvider y Providers si usan divs */
+body > div:first-child:not([data-radix-portal]), /* A menudo el div#__next de Next.js */
+div#__next:not([data-radix-portal]),
+div#__next > div:not([data-radix-portal]):not(.dialog-modal):not(.popup-window) { /* Para cubrir el wrapper de FontThemeProvider y Providers si usan divs, pero excluir modales */
   height: 100%; /* O min-height: 100% para permitir crecer más */
   margin: 0;
   padding: 0;
+}
+
+/* Asegurar que los portales de modales nunca hereden height: 100% */
+[data-radix-portal],
+.dialog-modal,
+.popup-window {
+  height: auto !important;
 }
 /* globals.css o similar */
 input:is(:-webkit-autofill, :autofill),

@@ -362,7 +362,8 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 					top: `${top}px`,
 					left: `${rect.left}px`,
 					width: `${rect.width}px`,
-					zIndex: 1300,
+					// Z-index alto para estar por encima de popups (2010) y dialogs (3000)
+					zIndex: 4000,
 				});
 			};
 

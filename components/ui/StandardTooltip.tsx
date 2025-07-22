@@ -97,8 +97,9 @@ const StandardTooltip = ({
         };
     }, [currentStyleTokens]);
 
-    const longTextClasses = isLongText ?
-        "z-[1000]" : "";
+    // Z-index alto para asegurar visibilidad sobre diálogos y popups
+    const tooltipZIndexClasses = isLongText ?
+        "z-[5000]" : "z-[3500]"; // 3500 está por encima de StandardPopupWindow (2000s) y StandardDialog (3000s)
 
     const longTextContentStyles: React.CSSProperties = isLongText ? {
         position: "fixed",
@@ -142,7 +143,7 @@ const StandardTooltip = ({
                             !isLongText && "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
                             !isLongText && "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
                             className,
-                            longTextClasses
+                            tooltipZIndexClasses
                         )}
                         style={{
                             ...cssVariables,

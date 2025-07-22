@@ -428,7 +428,15 @@ export async function deleteDimension(
     }
 
     // VERIFICACIÓN: No eliminar dimensión si el proyecto tiene lotes activos o en progreso.
-    const activeOrInProgressBatchStates: Database["public"]["Enums"]["batch_status"][] = ['in_progress', 'ai_prefilled', 'discrepancies'];
+    // Estados que se consideran activos y previenen la eliminación
+    const activeOrInProgressBatchStates: Database["public"]["Enums"]["batch_preclass_status"][] = [
+      'pending',
+      'translated',
+      'review_pending',
+      'reconciliation_pending',
+      'disputed'
+    ];
+    // Nota: 'validated' y 'reconciled' no se incluyen ya que son estados finales
 
     const { count: activeProjectBatchesCount, error: checkBatchesError } = await supabase
       .from('article_batches') // Nombre correcto de la tabla de lotes
