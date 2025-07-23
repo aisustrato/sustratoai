@@ -11,7 +11,13 @@ import { Check } from 'lucide-react';
 const DropdownMenuCssVariablesContext = createContext<React.CSSProperties>({});
 
 // --- Componente Raíz y Proveedor de Estilos ---
-const StandardDropdownMenuRoot = ({ children }: { children: React.ReactNode }) => {
+interface StandardDropdownMenuRootProps {
+    children: React.ReactNode;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+}
+
+const StandardDropdownMenuRoot = ({ children, open, onOpenChange }: StandardDropdownMenuRootProps) => {
     const { appColorTokens, mode } = useTheme();
     
     const cssVariables = useMemo<React.CSSProperties>(() => {
@@ -29,7 +35,7 @@ const StandardDropdownMenuRoot = ({ children }: { children: React.ReactNode }) =
 
     return (
         <DropdownMenuCssVariablesContext.Provider value={cssVariables}>
-            <DropdownMenuPrimitive.Root>
+            <DropdownMenuPrimitive.Root open={open} onOpenChange={onOpenChange}>
                 {children}
             </DropdownMenuPrimitive.Root>
         </DropdownMenuCssVariablesContext.Provider>
@@ -146,6 +152,66 @@ const StandardDropdownMenuLabel = React.forwardRef<
 StandardDropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
 
 
+// --- Componentes de Submenú ---
+const StandardDropdownMenuSub = DropdownMenuPrimitive.Sub;
+
+const StandardDropdownMenuSubTrigger = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & { inset?: boolean }
+>(({ className, inset, children, ...props }, ref) => (
+    <DropdownMenuPrimitive.SubTrigger
+        ref={ref}
+        className={cn(
+            "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
+            "focus:bg-[var(--dropdown-item-hoverBackgroundColor)] data-[state=open]:bg-[var(--dropdown-item-hoverBackgroundColor)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            inset && "pl-8"
+        )}
+        style={{ 
+            color: 'var(--dropdown-item-foregroundColor)',
+            backgroundColor: 'var(--dropdown-item-backgroundColor)',
+        }}
+        {...props}
+    >
+        {children}
+        <svg
+            className="ml-auto h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+    </DropdownMenuPrimitive.SubTrigger>
+));
+StandardDropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName;
+
+const StandardDropdownMenuSubContent = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
+>(({ className, ...props }, ref) => {
+    const cssVariables = useContext(DropdownMenuCssVariablesContext);
+    return (
+        <DropdownMenuPrimitive.SubContent
+            ref={ref}
+            className={cn(
+                "z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md",
+                "animate-in data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
+                "data-[side=right]:slide-in-from-left-2 data-[side=left]:slide-in-from-right-2"
+            )}
+            style={{
+                ...cssVariables,
+                backgroundColor: 'var(--dropdown-content-backgroundColor)',
+                borderColor: 'var(--dropdown-content-borderColor)',
+                boxShadow: 'var(--dropdown-content-boxShadow)',
+            }}
+            {...props}
+        />
+    );
+});
+StandardDropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayName;
+
+
 // --- Exportación compuesta ---
 export const StandardDropdownMenu = Object.assign(StandardDropdownMenuRoot, {
     Trigger: StandardDropdownMenuTrigger,
@@ -154,4 +220,7 @@ export const StandardDropdownMenu = Object.assign(StandardDropdownMenuRoot, {
     CheckboxItem: StandardDropdownMenuCheckboxItem,
     Separator: StandardDropdownMenuSeparator,
     Label: StandardDropdownMenuLabel,
+    Sub: StandardDropdownMenuSub,
+    SubTrigger: StandardDropdownMenuSubTrigger,
+    SubContent: StandardDropdownMenuSubContent,
 });

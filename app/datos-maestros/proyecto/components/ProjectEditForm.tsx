@@ -18,6 +18,7 @@ import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardFormField } from "@/components/ui/StandardFormField";
 import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardTextarea } from "@/components/ui/StandardTextarea";
+import { StandardNote } from "@/components/ui/StandardNote";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { Save } from "lucide-react";
@@ -65,6 +66,10 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleNoteChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -216,12 +221,18 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
               hint="La propuesta central o el marco teórico de la investigación."
               htmlFor="proposal"
             >
-              <StandardTextarea
-                name="proposal"
+              <StandardNote
                 value={formData.proposal}
-                onChange={handleInputChange}
+                onChange={(value) => handleNoteChange('proposal', value)}
                 placeholder="Detalla la propuesta general..."
-                rows={6}
+                colorScheme="primary"
+                size="lg"
+                minimalToolbar={true}
+                viewMode="divided"
+                showToolbar={true}
+                livePreview={true}
+                previewDebounceMs={300}
+                minHeight="400px"
                 disabled={isReadOnly}
               />
             </StandardFormField>
@@ -232,12 +243,18 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
                 hint="El enfoque y las fuentes principales para la revisión de literatura."
                 htmlFor="proposal_bibliography"
               >
-                <StandardTextarea
-                  name="proposal_bibliography"
+                <StandardNote
                   value={formData.proposal_bibliography}
-                  onChange={handleInputChange}
+                  onChange={(value) => handleNoteChange('proposal_bibliography', value)}
                   placeholder="Detalla la propuesta bibliográfica..."
-                  rows={6}
+                  colorScheme="primary"
+                  size="lg"
+                  minimalToolbar={true}
+                  viewMode="divided"
+                  showToolbar={true}
+                  livePreview={true}
+                  previewDebounceMs={300}
+                  minHeight="400px"
                   disabled={isReadOnly}
                 />
               </StandardFormField>
@@ -249,12 +266,18 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
                 hint="La metodología y los objetivos para las entrevistas a realizar."
                 htmlFor="proposal_interviews"
               >
-                <StandardTextarea
-                  name="proposal_interviews"
+                <StandardNote
                   value={formData.proposal_interviews}
-                  onChange={handleInputChange}
+                  onChange={(value) => handleNoteChange('proposal_interviews', value)}
                   placeholder="Detalla la propuesta de entrevistas..."
-                  rows={6}
+                  colorScheme="primary"
+                  size="lg"
+                  minimalToolbar={true}
+                  viewMode="divided"
+                  showToolbar={true}
+                  livePreview={true}
+                  previewDebounceMs={300}
+                  minHeight="400px"
                   disabled={isReadOnly}
                 />
               </StandardFormField>

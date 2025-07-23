@@ -29,6 +29,7 @@ import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { NoteEditor } from "./components/NoteEditor";
+import { ArticleGroupManager } from "./components/ArticleGroupManager";
 import { toast } from "sonner";
 import { ColumnDef } from "@tanstack/react-table";
 import { 
@@ -192,12 +193,12 @@ const BatchDetailPage = () => {
 		{
 			id: "actions",
 			header: "Acciones",
-			size: 150,
+			size: 200,
 			meta: { isSticky: "right" as const },
 			cell: ({ row }) => {
 				const article = row.original.originalArticle;
 				return (
-					<div className="flex gap-2">
+					<div className="flex gap-1">
 						<StandardButton
 							styleType="outline"
 							iconOnly={true}
@@ -214,6 +215,10 @@ const BatchDetailPage = () => {
 						>
 							<StickyNote size={16} />
 						</StandardButton>
+						<ArticleGroupManager
+							article={article}
+							project={auth.proyectoActual ? { id: auth.proyectoActual.id, name: auth.proyectoActual.name } : null}
+						/>
 						<StandardButton
 							styleType="outline"
 							iconOnly={true}
