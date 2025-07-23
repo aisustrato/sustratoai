@@ -10,6 +10,7 @@ import type { BatchDetails, ArticleForReview } from "@/lib/actions/preclassifica
 import type { Database } from "@/lib/database.types";
 
 type ArticleBatch = Database['public']['Tables']['article_batches']['Row'];
+type ArticleBatchItem = Database['public']['Tables']['article_batch_items']['Row'];
 
 // Las funciones de notas ahora se manejan en NoteEditor
 
@@ -34,14 +35,16 @@ import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { NoteEditor } from "./components/NoteEditor";
 import { ArticleGroupManager } from "./components/ArticleGroupManager";
-import { ColumnDef } from "@tanstack/react-table";
+import { toast } from "sonner";
+import { ColumnDef, RowData } from "@tanstack/react-table";
 import { 
 	ClipboardList, 
 	Link, 
 	ThumbsDown, 
 	CheckCircle,
 	RotateCcw,
-	StickyNote
+	StickyNote,
+  ArrowRight
 } from "lucide-react";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 
@@ -294,8 +297,8 @@ const BatchDetailPage = () => {
 		return {
 		  ...rowData,
 		  original: rowData,
-		  getValue: (key: string) => (rowData as unknown as Record<string, unknown>)[key],
-		  renderValue: (key: string) => (rowData as unknown as Record<string, unknown>)[key]
+		  getValue: (key: string) => (rowData as any)[key],
+		  renderValue: (key: string) => (rowData as any)[key]
 		} as TableRow;
 	}) || [];
 
@@ -303,12 +306,12 @@ const BatchDetailPage = () => {
 	interface TableRow extends TableRowData {
 	  // Propiedades adicionales requeridas por tanstack/table
 	  original: TableRowData;
-	  getValue: (key: string) => unknown;
-	  renderValue: (key: string) => unknown;
+	  getValue: (key: string) => any;
+	  renderValue: (key: string) => any;
 	  // Hacer que la interfaz sea compatible con RowData
-	  [key: string]: unknown;
-	  [key: number]: unknown;
-	  [key: symbol]: unknown;
+	  [key: string]: any;
+	  [key: number]: any;
+	  [key: symbol]: any;
 	}
 
 	// Función para renderizar el sub-componente expandible

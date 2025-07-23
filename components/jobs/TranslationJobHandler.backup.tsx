@@ -32,7 +32,7 @@ Abstract: ${abstract}
 // Tipos para el manejo de errores
 interface FailedArticle {
   index: number;
-  article: unknown;
+  article: any;
   error: string;
   rawResponse?: string;
   retryCount: number;
@@ -116,8 +116,7 @@ export function TranslationJobHandler({ job }: { job: Job }) {
           if (!parsedResult.translatedTitle || !parsedResult.translatedAbstract) {
             throw new Error("El JSON de respuesta no contiene las claves esperadas.");
           }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (_) {
+        } catch (e) {
           console.error("Respuesta cruda de la API que no pudo ser parseada:", data.result);
           
           // Verificar cuántos reintentos ha tenido este artículo
@@ -174,18 +173,17 @@ export function TranslationJobHandler({ job }: { job: Job }) {
       setStatusMessage('¡Traducción completada!');
       completeJob(job.id);
 
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      console.error(`Fallo el trabajo de traducción: ${errorMessage}`);
+    } catch (error: any) {
+      console.error(`Fallo el trabajo de traducción: ${error.message}`);
       // ✅ 5. SI ALGO FALLA, ACTUALIZA EL LOG COMO FALLIDO
       await updateJobAsFailed({
         jobId: historyJobId,
-        errorMessage,
+        errorMessage: error.message,
       });
-      setStatusMessage(`Error: ${errorMessage}`);
-      failJob(job.id, errorMessage);
+      setStatusMessage(`Error: ${error.message}`);
+      failJob(job.id, error.message);
     }
-  }, [job, completeJob, failJob, updateJobProgress, articleRetries]);
+  }, [job, completeJob, failJob, updateJobProgress]);
 
   useEffect(() => {
     // El patrón de guardia con useRef asegura que runJob() se ejecute solo una vez,
@@ -271,7 +269,7 @@ export function TranslationJobHandler({ job }: { job: Job }) {
               <div>
                 <StandardText weight="medium" className="mb-2">Artículo:</StandardText>
                 <StandardText size="sm" className="text-muted-foreground">
-                  {(errorDialog.failedArticle?.article && typeof errorDialog.failedArticle.article === 'object' && 'title' in errorDialog.failedArticle.article ? (errorDialog.failedArticle.article as { title: string }).title : null) || 'Sin título'}
+                  {errorDialog.failedArticle?.article.title || 'Sin título'}
                 </StandardText>
               </div>
               

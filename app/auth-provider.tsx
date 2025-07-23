@@ -18,9 +18,10 @@ import {
 	signUp as clientSignUp,
 	signOut as clientSignOut,
 } from "@/app/auth/client";
+import { User, Session } from "@supabase/supabase-js";
+import { type FontTheme } from "@/lib/fonts";
+import { type ColorScheme } from "@/lib/theme/ColorToken";
 import {
-	type Session,
-	type User,
 	type SupabaseClient, // Se mantiene por si se usa como tipo en otro lado
 } from "@supabase/supabase-js";
 
@@ -429,13 +430,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			// Sincronizar Fuente
 			if (typeof proyectoActual.ui_font_pair === "string") {
 				console.log(`  -> Aplicando fuente: ${proyectoActual.ui_font_pair}`);
-				aplicarFuenteRef.current(proyectoActual.ui_font_pair as unknown);
+				aplicarFuenteRef.current(proyectoActual.ui_font_pair as FontTheme);
 			}
 
 			// Sincronizar Esquema de Color (ui_theme)
 			if (typeof proyectoActual.ui_theme === "string") {
 				console.log(`  -> Aplicando tema: ${proyectoActual.ui_theme}`);
-				aplicarTemaRef.current(proyectoActual.ui_theme as unknown);
+				aplicarTemaRef.current(proyectoActual.ui_theme as ColorScheme);
 			}
 
 			// Sincronizar Modo Oscuro/Claro (ui_is_dark_mode)

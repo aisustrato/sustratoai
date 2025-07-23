@@ -407,11 +407,29 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 			className
 		);
 		
+		const finalTriggerClasses = cn("flex-1", "truncate", "text-left");
+
 		const getIconLeftPosition = () => {
 			switch (size) {
 				case "sm": return "left-2.5";
 				case "lg": return "left-3.5";
 				default: return "left-3";
+			}
+		};
+
+		const getChevronRightPosition = () => {
+			switch (size) {
+				case "sm": return "right-2";
+				case "lg": return "right-3";
+				default: return "right-2.5";
+			}
+		};
+
+		const getClearButtonRightPosition = () => {
+			switch (size) {
+				case "sm": return "right-7";
+				case "lg": return "right-9";
+				default: return "right-8";
 			}
 		};
 

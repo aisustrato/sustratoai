@@ -6,7 +6,8 @@ import {
     type ColumnDef, flexRender, getCoreRowModel, useReactTable,
     getFilteredRowModel, getSortedRowModel, getExpandedRowModel,
     type Cell, type Header, type Row, type SortingState, type Table,
-    type CellContext
+    type CellContext, type VisibilityState, type ColumnMeta as TanStackColumnMeta,
+    type TableMeta as TanStackTableMeta
 } from "@tanstack/react-table";
 
 // Definir nuestras propias interfaces de metadatos sin extender las existentes
