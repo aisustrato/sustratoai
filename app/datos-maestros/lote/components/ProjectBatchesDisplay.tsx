@@ -7,7 +7,7 @@ import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { AlertTriangle, Trash2, Boxes } from "lucide-react";
 import { StandardIcon } from "@/components/ui/StandardIcon";
-import type { Database } from "@/lib/database.types";
+
 import type { BatchForDisplay } from "@/lib/actions/batch-actions";
 import { toast as sonnerToast } from "sonner";
 import { StandardDialog } from "@/components/ui/StandardDialog";
@@ -15,7 +15,7 @@ import { BatchVisualization } from "./BatchVisualization";
 import type { SphereItemData } from "@/components/ui/StandardSphereGrid";
 import type { SphereStyleType } from "@/lib/theme/components/standard-sphere-tokens";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
-import { type ColorSchemeVariant } from "@/lib/theme/ColorToken";
+
 import { getVisualsForBatchStatus } from "@/lib/utils/visual-utils";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 //#endregion ![head]

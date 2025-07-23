@@ -80,12 +80,12 @@ export async function createServerClient() {
         get(name: string) {
           return cookieStore.get(name)?.value
         },
-        set(name: string, value: string, options: unknown) {
+        set(name: string, value: string, options: any) {
           try {
             cookieStore.set({ 
               name, 
               value, 
-              ...(options && typeof options === 'object' ? options as Record<string, unknown> : {}),
+              ...options,
               domain,
               path: '/',
               sameSite: 'lax',
@@ -96,12 +96,12 @@ export async function createServerClient() {
             console.error('Error setting cookie:', error)
           }
         },
-        remove(name: string, options: unknown) {
+        remove(name: string, options: any) {
           try {
             cookieStore.set({ 
               name, 
               value: '', 
-              ...(options && typeof options === 'object' ? options as Record<string, unknown> : {}), 
+              ...options, 
               domain,
               path: '/',
               sameSite: 'lax',
@@ -173,13 +173,13 @@ export const mockSupabase = {
           return {
             order() {
               return {
-                then: (callback: (result: { data: unknown; error: Error | null }) => void) => {
+                then: (callback: (result: { data: any; error: Error | null }) => void) => {
                   callback({ data: mockFundaciones, error: null });
                   return { data: mockFundaciones, error: null };
                 },
               };
             },
-            eq(column: string, value: unknown) {
+            eq(column: string, value: any) {
               return {
                 maybeSingle() {
                   const found = mockFundaciones.find(
@@ -191,21 +191,13 @@ export const mockSupabase = {
             },
           };
         },
-        insert(rows: unknown[]) {
+        insert(rows: any[]) {
           return {
             select() {
               return {
                 single() {
                   const newId = mockFundaciones.length + 1;
-                  const rowData = rows[0] && typeof rows[0] === 'object' ? rows[0] as Record<string, unknown> : {};
-                  // Aseguramos que los valores sean del tipo correcto
-                  const newRow = { 
-                    id: newId, 
-                    codigo: typeof rowData.codigo === 'string' ? rowData.codigo : `F${newId.toString().padStart(3, '0')}`, 
-                    nombre: typeof rowData.nombre === 'string' ? rowData.nombre : 'Nueva Fundación', 
-                    descripcion: typeof rowData.descripcion === 'string' ? rowData.descripcion : 'Sin descripción',
-                    ...rowData 
-                  } as const;
+                  const newRow = { id: newId, ...rows[0] };
                   mockFundaciones.push(newRow);
                   return { data: newRow, error: null };
                 },

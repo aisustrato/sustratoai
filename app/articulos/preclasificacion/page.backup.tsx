@@ -4,6 +4,7 @@ import React, {
 	useState,
 	useEffect,
 	useMemo,
+	useRef,
 	useCallback,
 } from "react";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
@@ -12,8 +13,8 @@ import { useAuth } from "@/app/auth-provider";
 import { useRouter } from "next/navigation";
 import {
 	getProjectBatchesForUser,
+	type BatchWithCounts,
 } from "@/lib/actions/preclassification-actions";
-import { type BatchWithCounts } from "@/lib/types/preclassification-types";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { ClipboardList } from "lucide-react";
 import { StandardCard } from "@/components/ui/StandardCard";
@@ -177,7 +178,7 @@ const PreclassificationPage = () => {
 
 		return data;
 	}, [resumenGeneral]);
-	const { width: windowWidth } = useWindowSize();
+	const { width: windowWidth, height: windowHeight } = useWindowSize();
 	const { sidebarWidth, layoutGap, globalXPadding } = useLayout();
 
 	// Calcula el ancho disponible restando el sidebar y un padding general
@@ -218,12 +219,11 @@ const PreclassificationPage = () => {
 		if (!supabase) return;
 
 		const channel = supabase.channel("realtime-lotes-de-trabajo");
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const _ = channel
+		const subscription = channel
 			.on(
 				"postgres_changes",
 				{ event: "UPDATE", schema: "public", table: "article_batches" },
-				(payload: RealtimePostgresChangesPayload<{ [key: string]: unknown }>) => {
+				(payload: RealtimePostgresChangesPayload<{ [key: string]: any }>) => {
 					console.log(
 						"✅ Cambio detectado en un lote, recargando datos:",
 						payload
@@ -238,7 +238,7 @@ const PreclassificationPage = () => {
 		};
 	}, [fetchBatches]);
 
-	const handleSphereClick = useCallback((batch: BatchWithCounts) => {
+	const handleSphereClick = (batch: BatchWithCounts) => {
 		// Comprobar el estado del lote
 		if (batch.status === 'pending') {
 			// Si está 'pending', ejecutar la lógica de INICIAR TRADUCCIÓN
@@ -276,7 +276,7 @@ const PreclassificationPage = () => {
 			console.log(`Navegando al detalle del lote: ${batch.id}`);
 			router.push(`/articulos/preclasificacion/${batch.id}`);
 		}
-	}, [auth.proyectoActual?.id, auth.user?.id, router, showDialog, startJob]);
+	};
 
 	const sphereData: SphereItemData[] = useMemo(() => {
 		return batches.map((batch) => {
@@ -314,7 +314,7 @@ const PreclassificationPage = () => {
 					: undefined,
 			};
 		});
-	}, [batches, handleSphereClick]);
+	}, [batches]);
 
 	return (
 		<div className="w-full h-full p-4 sm:p-6 flex flex-col">

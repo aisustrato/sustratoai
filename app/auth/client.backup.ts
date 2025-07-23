@@ -101,7 +101,7 @@ export async function signUp(email: string, password: string): Promise<AuthRespo
 
     if (error) {
       console.error(`${LOG_PREFIX_CLIENT} Error en signUp:`, error.message);
-      return { data: null, error: { message: error.message, status: (error && typeof error === 'object' && 'status' in error ? (error as { status: number }).status : null) || 400 } };
+      return { data: null, error: { message: error.message, status: (error as any).status || 400 } };
     }
 
     console.log(`${LOG_PREFIX_CLIENT} Éxito en signUp.`);

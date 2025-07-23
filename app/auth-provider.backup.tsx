@@ -53,11 +53,11 @@ interface AuthContextType {
 	signIn: (
 		email: string,
 		password: string
-	) => Promise<{ error: unknown | null; success: boolean }>;
+	) => Promise<{ error: any | null; success: boolean }>;
 	signUp: (
 		email: string,
 		password: string
-	) => Promise<{ error: unknown | null; success: boolean }>;
+	) => Promise<{ error: any | null; success: boolean }>;
 	logout: () => Promise<void>;
 	setProyectoActivoLocal: (proyecto: UserProjectSetting | null) => void;
 	setUiThemeLocal: (theme: string | null) => void;
@@ -297,7 +297,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				setAuthLoading(false);
 			}
 		})();
-	}, [cargarProyectosUsuario, authLoading]);
+	}, [supabase, cargarProyectosUsuario, authLoading]);
 
 	useEffect(() => {
 		// onAuthStateChangeEffect
@@ -416,7 +416,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		return () => {
 			subscription?.unsubscribe();
 		};
-	}, [cargarProyectosUsuario, authLoading]);
+	}, [supabase, cargarProyectosUsuario, authLoading]);
 
 	// --- USEEFFECT DE SINCRONIZACIÓN DE UI CON DEPENDENCIAS ESTRICTAS ---
 	useEffect(() => {
@@ -429,13 +429,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			// Sincronizar Fuente
 			if (typeof proyectoActual.ui_font_pair === "string") {
 				console.log(`  -> Aplicando fuente: ${proyectoActual.ui_font_pair}`);
-				aplicarFuenteRef.current(proyectoActual.ui_font_pair as unknown);
+				aplicarFuenteRef.current(proyectoActual.ui_font_pair as any);
 			}
 
 			// Sincronizar Esquema de Color (ui_theme)
 			if (typeof proyectoActual.ui_theme === "string") {
 				console.log(`  -> Aplicando tema: ${proyectoActual.ui_theme}`);
-				aplicarTemaRef.current(proyectoActual.ui_theme as unknown);
+				aplicarTemaRef.current(proyectoActual.ui_theme as any);
 			}
 
 			// Sincronizar Modo Oscuro/Claro (ui_is_dark_mode)
@@ -492,7 +492,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const handleSignIn = async (
 		email: string,
 		password: string
-	): Promise<{ error: unknown | null; success: boolean }> => {
+	): Promise<{ error: any | null; success: boolean }> => {
 		/* ... sin cambios ... */
 		console.log(
 			`${LOG_PREFIX} handleSignIn: Iniciado. Contador actual: ${authLoadingGlobalActivationAttemptRef.current}`
@@ -533,7 +533,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const handleSignUp = async (
 		email: string,
 		password: string
-	): Promise<{ error: unknown | null; success: boolean }> => {
+	): Promise<{ error: any | null; success: boolean }> => {
 		/* ... sin cambios ... */
 		console.log(`${LOG_PREFIX} signUp iniciado`);
 		setAuthLoading(true);

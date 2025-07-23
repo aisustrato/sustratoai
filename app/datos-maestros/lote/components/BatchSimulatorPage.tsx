@@ -28,7 +28,7 @@ import { toast as sonnerToast } from "sonner";
 import { checkIfProjectHasArticles } from "@/lib/actions/article-actions";
 import { StandardProgressBar } from "@/components/ui/StandardProgressBar";
 import { StandardSphereGrid } from "@/components/ui/StandardSphereGrid";
-import { type SphereItemData, type StandardSphereProps } from "@/components/ui/StandardSphere";
+import { type SphereItemData } from "@/components/ui/StandardSphere";
 import { type ColorSchemeVariant } from "@/lib/theme/ColorToken";
 
 interface BatchSimulatorPageProps {
@@ -77,7 +77,8 @@ export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: Bat
         } else {
           setUiError(result.error || 'No se pudo verificar el estado de los artículos.');
         }
-      } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_) {
         setUiError('Error de red al verificar los artículos.');
       }
     };
@@ -297,7 +298,7 @@ export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: Bat
             </StandardCard.Header>
             <StandardCard.Content>
               <StandardText className="mb-4">
-                Antes de crear lotes, es necesario cargar artículos al proyecto. Dirígete a la sección de "Cargar Artículos" para subir los artículos que deseas incluir en los lotes.
+                Antes de crear lotes, es necesario cargar artículos al proyecto. Dirígete a la sección de &ldquo;Cargar Artículos&rdquo; para subir los artículos que deseas incluir en los lotes.
               </StandardText>
               <StandardButton
                 asChild

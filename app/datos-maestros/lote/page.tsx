@@ -2,7 +2,7 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import BatchSimulatorPage from './components/BatchSimulatorPage'; 
 import ProjectBatchesDisplay from "./components/ProjectBatchesDisplay";
@@ -35,7 +35,8 @@ export default function LotesOrquestadorPage() {
   const [isLoadingPageData, setIsLoadingPageData] = useState(true); 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  const [projectMembers, setProjectMembers] = useState<ProjectMemberDetails[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [projectMembers, setProjectMembers] = useState<ProjectMemberDetails[]>([]); // Usado en línea 67
   
   // Mapa de colores simple para los miembros (comentado ya que no se está utilizando actualmente)
   // const memberColorMap = useMemo<Record<string, string>>(() => {
