@@ -17,26 +17,6 @@ type ProjectMemberUpdate =
 	Database["public"]["Tables"]["project_members"]["Update"];
 
 // Tipos para los datos que vienen de la base de datos
-type MiembroData = {
-  user_id: string;
-  project_member_id: string;
-  project_id: string;
-  project_role_id: string;
-  role_name: string;
-  first_name?: string | null;
-  last_name?: string | null;
-  public_display_name?: string | null;
-  public_contact_email?: string | null;
-  primary_institution?: string | null;
-  contact_phone?: string | null;
-  general_notes?: string | null;
-  preferred_language?: string | null;
-  pronouns?: string | null;
-  joined_at?: string | null;
-  ui_theme?: string | null;
-  ui_font_pair?: string | null;
-  ui_is_dark_mode?: boolean | null;
-};
 
 type RoleDataFromRpc = {
   id: string;
@@ -167,31 +147,41 @@ export async function obtenerMiembrosConPerfilesYRolesDelProyecto(
 		if (!miembrosData) {
 			return { success: true, data: [] };
 		}
-		const miembrosDetallados: ProjectMemberDetails[] = miembrosData.map(
-			(m: MiembroData) => ({
-				project_member_id: m.project_member_id,
-				user_id: m.user_id,
-				project_id: m.project_id,
-				project_role_id: m.project_role_id,
-				role_name: m.role_name ?? "Rol no definido",
-				profile: {
-					user_id: m.user_id,
-					first_name: m.first_name ?? null,
-					last_name: m.last_name ?? null,
-					public_display_name: m.public_display_name ?? null,
-					public_contact_email: m.public_contact_email ?? null,
-					primary_institution: m.primary_institution ?? null,
-					contact_phone: m.contact_phone ?? null,
-					general_notes: m.general_notes ?? null,
-					preferred_language: m.preferred_language ?? null,
-					pronouns: m.pronouns ?? null,
-				},
-				joined_at: m.joined_at ?? null,
-				ui_theme: m.ui_theme ?? null,
-				ui_font_pair: m.ui_font_pair ?? null,
-				ui_is_dark_mode: m.ui_is_dark_mode ?? null,
-			})
-		);
+		// Asegurarse de que los datos tengan el tipo correcto
+		const miembrosDetallados: ProjectMemberDetails[] = miembrosData.map((m) => {
+			const member = m as unknown as Database['public']['Views']['detailed_project_members']['Row'] & {
+				can_bulk_edit_master_data?: boolean | null;
+				can_create_batches?: boolean | null;
+				can_manage_master_data?: boolean | null;
+				can_upload_files?: boolean | null;
+				contact_email_for_project?: string | null;
+				contextual_notes?: string | null;
+			};
+
+			return {
+				project_member_id: member.project_member_id || '',
+				user_id: member.user_id || '',
+				project_id: member.project_id || '',
+				project_role_id: member.project_role_id || '',
+				role_name: member.role_name || "Rol no definido",
+				profile: member.user_id ? {
+					user_id: member.user_id,
+					first_name: member.first_name ?? null,
+					last_name: member.last_name ?? null,
+					public_display_name: member.public_display_name ?? null,
+					public_contact_email: member.public_contact_email ?? null,
+					primary_institution: member.primary_institution ?? null,
+					contact_phone: member.contact_phone ?? null,
+					general_notes: member.general_notes ?? null,
+					preferred_language: member.preferred_language ?? null,
+					pronouns: member.pronouns ?? null,
+				} : null,
+				joined_at: member.joined_at ?? null,
+				ui_theme: member.ui_theme ?? null,
+				ui_font_pair: member.ui_font_pair ?? null,
+				ui_is_dark_mode: member.ui_is_dark_mode ?? null,
+			};
+		});
 		console.log(
 			`🎉 [${opId}] ÉXITO: ${miembrosDetallados.length} miembros obtenidos (VIEW).`
 		);
@@ -690,7 +680,7 @@ export async function modificarDetallesMiembroEnProyecto(
 			const cleanProfileUpdates: Partial<UserProfileUpdate> = {};
 			Object.entries(profileUpdates).forEach(([key, value]) => {
 				if (value !== undefined) {
-					(cleanProfileUpdates as any)[key] = value;
+					(cleanProfileUpdates as Record<string, unknown>)[key] = value;
 				}
 			});
 

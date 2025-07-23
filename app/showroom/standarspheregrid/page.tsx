@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { StandardPageBackground } from '@/components/ui/StandardPageBackground';
 import { StandardPageTitle } from '@/components/ui/StandardPageTitle';
-import { Layers, CheckCircle, AlertTriangle, Info, CircleDot, Scaling, SortAsc, SortDesc, TestTube, Paintbrush, Smile } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Info, CircleDot, Scaling, SortAsc, SortDesc, TestTube, Paintbrush } from 'lucide-react';
 import { StandardSlider } from '@/components/ui/StandardSlider';
 import {
   StandardSphereGrid,

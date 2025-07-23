@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useMemo } from 'react';
+import { createContext, forwardRef, useContext, useMemo } from 'react';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
@@ -20,10 +20,10 @@ interface StandardDropdownMenuRootProps {
 const StandardDropdownMenuRoot = ({ children, open, onOpenChange }: StandardDropdownMenuRootProps) => {
     const { appColorTokens, mode } = useTheme();
     
-    const cssVariables = useMemo<React.CSSProperties>(() => {
+    const cssVariables = useMemo<React.CSSProperties & { [key: `--${string}`]: string | number }>(() => {
         if (!appColorTokens || !mode) return {};
         const tokens = generateDropdownMenuTokens(appColorTokens, mode);
-        const vars: React.CSSProperties & { [key: `--${string}`]: string | number; } = {};
+        const vars: { [key: `--${string}`]: string | number } = {};
 
         Object.entries(tokens.content).forEach(([key, value]) => { vars[`--dropdown-content-${key}`] = value; });
         Object.entries(tokens.item).forEach(([key, value]) => { vars[`--dropdown-item-${key}`] = value; });
@@ -46,10 +46,10 @@ const StandardDropdownMenuRoot = ({ children, open, onOpenChange }: StandardDrop
 
 const StandardDropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 
-const StandardDropdownMenuContent = React.forwardRef<
+const StandardDropdownMenuContent = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.Content>,
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => {
+>(({ sideOffset = 4, ...props }, ref) => {
     const cssVariables = useContext(DropdownMenuCssVariablesContext);
     return (
         <DropdownMenuPrimitive.Portal>
@@ -75,10 +75,10 @@ const StandardDropdownMenuContent = React.forwardRef<
 StandardDropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
 
-const StandardDropdownMenuItem = React.forwardRef<
+const StandardDropdownMenuItem = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.Item>,
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & { inset?: boolean }
->(({ className, inset, ...props }, ref) => (
+>(({ inset, ...props }, ref) => (
     <DropdownMenuPrimitive.Item
         ref={ref}
         className={cn(
@@ -96,10 +96,10 @@ const StandardDropdownMenuItem = React.forwardRef<
 StandardDropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
 
-const StandardDropdownMenuCheckboxItem = React.forwardRef<
+const StandardDropdownMenuCheckboxItem = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
->(({ className, children, checked, ...props }, ref) => (
+>(({ children, checked, ...props }, ref) => (
     <DropdownMenuPrimitive.CheckboxItem
         ref={ref}
         className={cn(
@@ -121,7 +121,7 @@ const StandardDropdownMenuCheckboxItem = React.forwardRef<
 StandardDropdownMenuCheckboxItem.displayName = DropdownMenuPrimitive.CheckboxItem.displayName;
 
 
-const StandardDropdownMenuSeparator = React.forwardRef<
+const StandardDropdownMenuSeparator = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
 >(({ className, ...props }, ref) => (
@@ -135,15 +135,16 @@ const StandardDropdownMenuSeparator = React.forwardRef<
 StandardDropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 
 
-const StandardDropdownMenuLabel = React.forwardRef<
+const StandardDropdownMenuLabel = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.Label>,
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & { inset?: boolean }
->(({ className, inset, ...props }, ref) => (
+>(({ inset, className, ...props }, ref) => (
     <DropdownMenuPrimitive.Label
         ref={ref}
         className={cn(
             "px-2 py-1.5 text-sm font-semibold", 
-            inset && "pl-8"
+            inset && "pl-8",
+            className
         )}
         style={{ color: 'var(--dropdown-item-disabledForegroundColor)'}}
         {...props}
@@ -155,16 +156,17 @@ StandardDropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
 // --- Componentes de Submenú ---
 const StandardDropdownMenuSub = DropdownMenuPrimitive.Sub;
 
-const StandardDropdownMenuSubTrigger = React.forwardRef<
+const StandardDropdownMenuSubTrigger = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & { inset?: boolean }
->(({ className, inset, children, ...props }, ref) => (
+>(({ inset, children, className, ...props }, ref) => (
     <DropdownMenuPrimitive.SubTrigger
         ref={ref}
         className={cn(
             "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
             "focus:bg-[var(--dropdown-item-hoverBackgroundColor)] data-[state=open]:bg-[var(--dropdown-item-hoverBackgroundColor)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-            inset && "pl-8"
+            inset && "pl-8",
+            className
         )}
         style={{ 
             color: 'var(--dropdown-item-foregroundColor)',
@@ -186,7 +188,7 @@ const StandardDropdownMenuSubTrigger = React.forwardRef<
 ));
 StandardDropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName;
 
-const StandardDropdownMenuSubContent = React.forwardRef<
+const StandardDropdownMenuSubContent = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
 >(({ className, ...props }, ref) => {
@@ -197,7 +199,8 @@ const StandardDropdownMenuSubContent = React.forwardRef<
             className={cn(
                 "z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md",
                 "animate-in data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
-                "data-[side=right]:slide-in-from-left-2 data-[side=left]:slide-in-from-right-2"
+                "data-[side=right]:slide-in-from-left-2 data-[side=left]:slide-in-from-right-2",
+                className
             )}
             style={{
                 ...cssVariables,

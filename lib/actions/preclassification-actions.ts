@@ -4,78 +4,17 @@
 
 import { createSupabaseServerClient } from "@/lib/server";
 import type { Database } from "@/lib/database.types";
+import type {
+  ResultadoOperacion,
+  BatchWithCounts,
+  ArticleForReview,
+  BatchDetails,
+  SubmitHumanReviewPayload,
+  TranslatedArticlePayload,
+  ClassificationReview
+} from "@/lib/types/preclassification-types";
 
-// ========================================================================
-//  INTERFACES Y TIPOS
-// ========================================================================
-
-export type ResultadoOperacion<T> =
-  | { success: true; data: T }
-  | { success: false; error: string; errorCode?: string };
-
-export interface BatchWithCounts {
-  id: string;
-  batch_number: number;
-  name: string | null;
-  status: Database["public"]["Enums"]["batch_preclass_status"];
-  article_counts: {
-    pending_review?: number;
-    reconciliation_pending?: number;
-    agreed?: number;
-    reconciled?: number;
-    disputed?: number;
-  } | null;
-}
-
-export interface ClassificationReview {
-  reviewer_type: 'ai' | 'human';
-  reviewer_id: string;
-  iteration: number;
-  value: string | null;
-  confidence: number | null;
-  rationale: string | null;
-}
-
-export interface ArticleForReview {
-  item_id: string;
-  article_status: Database["public"]["Enums"]["item_preclass_status"];
-  article_data: {
-    publication_year: number | null;
-    journal: string | null;
-    original_title: string | null;
-    original_abstract: string | null;
-    translated_title: string | null;
-    translated_abstract: string | null;
-    translation_summary: string | null;
-  };
-  ai_summary: {
-    keywords: string[] | null;
-    process_opinion: string | null;
-  };
-  classifications: Record<string, ClassificationReview[]>;
-}
-
-export interface BatchDetails {
-  columns: { id: string; name: string; type: string; options: any[] }[];
-  rows: ArticleForReview[];
-  batch_number: number;
-  id: string;
-  name: string | null;
-  status: Database["public"]["Enums"]["batch_preclass_status"];
-}
-
-export interface SubmitHumanReviewPayload {
-    article_batch_item_id: string;
-    dimension_id: string;
-    human_value: string;
-    human_rationale: string;
-    human_confidence: number;
-}
-
-// Constantes de permisos
-const PERMISO_GESTIONAR_PRECLASIFICACION = "can_create_batches";
-const PERMISO_GESTIONAR_DATOS_MAESTROS = "can_manage_master_data";
-
+export type { ArticleForReview, BatchDetails };
 
 // ========================================================================
 //  ACCIONES DE LECTURA (GET)
@@ -189,13 +128,17 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
 
         const rows: ArticleForReview[] = batchItems.map(item => {
             const safeReviews = allReviews || [];
-            const itemReviews = safeReviews.filter(r => r.article_batch_item_id === item.id);
-            const classifications: Record<string, ClassificationReview[]> = {};
+            // Comentario sobre las variables no utilizadas que podrían ser útiles en el futuro
+            // const itemReviews = safeReviews.filter(r => r.article_batch_item_id === item.id);
+            // const classifications: Record<string, ClassificationReview[]> = {};
 
             const articleStatus = item.status_preclasificacion || 'pending';
             const validStatuses = ['pending', 'agreed', 'reconciled', 'disputed', 'reconciliation_pending'] as const;
-            const safeStatus = validStatuses.includes(articleStatus as any) 
-                ? articleStatus as typeof validStatuses[number] 
+            // Convertir el estado del artículo a minúsculas para hacer la comparación insensible a mayúsculas
+            const normalizedStatus = articleStatus?.toLowerCase() as Database["public"]["Enums"]["item_preclass_status"];
+            // Usar aserción de tipo para validar el estado
+            const safeStatus = (validStatuses as readonly string[]).includes(normalizedStatus.toLowerCase())
+                ? normalizedStatus as typeof validStatuses[number]
                 : 'pending';
             
             return {
@@ -215,13 +158,13 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
                     process_opinion: item.ai_process_opinion
                 },
                 classifications: dimensions.reduce((acc, dim) => {
-                    const reviews = safeReviews.filter((r: any) => 
+                    const reviews = safeReviews.filter((r: { article_batch_item_id: string; dimension_id: string }) => 
                         r.article_batch_item_id === item.id && 
                         r.dimension_id === dim.id
                     );
                     
                     if (reviews.length > 0) {
-                        acc[dim.id] = reviews.map((r: any) => ({
+                        acc[dim.id] = reviews.map((r: { reviewer_id: string; iteration: number; classification_value: string | null; confidence_score: number | null; rationale: string | null }) => ({
                             reviewer_type: 'human' as const,
                             reviewer_id: r.reviewer_id,
                             iteration: r.iteration,
@@ -261,15 +204,6 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
 // ========================================================================
 //  ACCIONES DE MODIFICACIÓN (WRITE)
 // ========================================================================
-
-export interface TranslatedArticlePayload {
-  articleId: string;
-  title: string;
-  abstract: string;
-  summary?: string;
-  translated_by?: string;
-  translator_system?: string;
-}
 
 export async function saveBatchTranslations(
   batchId: string,

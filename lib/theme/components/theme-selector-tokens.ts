@@ -38,18 +38,15 @@ export function generateThemeSelectorTokens(
   appColorTokens: AppColorTokens,
   mode: Mode
 ): ThemeSelectorTokens {
-  const { primary, tertiary, neutral, white } = appColorTokens;
+  const { primary, tertiary, neutral } = appColorTokens;
 
   // Determine appropriate colors based on mode
   const isDark = mode === "dark";
-  const surfaceColor = isDark ? neutral.bg : white.bg;
   const outlineColor = neutral.pure;
   const onSurfaceVariantColor = neutral.textShade;
-  const onSurfaceColor = neutral.text;
 
   // Create semi-transparent colors
   const primaryA10 = tinycolor(primary.pure).setAlpha(0.1).toRgbString();
-  const primaryA20 = tinycolor(primary.pure).setAlpha(0.2).toRgbString();
   const tertiaryBg = isDark 
     ? tinycolor(tertiary.bg).darken(10).toString() 
     : tinycolor(tertiary.bg).lighten(5).toString();
@@ -93,28 +90,18 @@ export function generateThemeSelectorTokens(
 // Helper function to get token value
 type NestedStringObject = {
   [key: string]: string | NestedStringObject | undefined;
-} & object;
-
-/**
- * Type guard to check if a value is a NestedStringObject
- */
-function isNestedStringObject(value: unknown): value is NestedStringObject {
-  return (
-    typeof value === 'object' && value !== null && !Array.isArray(value) &&
-    Object.values(value).every(v => typeof v === 'string' || isNestedStringObject(v))
-  );
-}
+};
 
 export function getThemeSelectorTokenValue(
-  tokens: ThemeSelectorTokens,
+  tokens: NestedStringObject,
   path: string
 ): string | undefined {
   const parts = path.split('.');
-  let current: any = tokens;
+  let current: unknown = tokens;
 
   for (const part of parts) {
-    if (current === undefined || current === null) return undefined;
-    current = current[part];
+    if (current === undefined || current === null || typeof current !== 'object') return undefined;
+    current = (current as NestedStringObject)[part];
   }
 
   return typeof current === 'string' ? current : undefined;

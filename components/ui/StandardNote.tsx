@@ -24,8 +24,6 @@ import {
 	Heading2,
 	Heading3,
 	Highlighter,
-	Eye,
-	FileText,
 	Link,
 	Copy,
 	Download,
@@ -60,8 +58,7 @@ export interface StandardNoteProps {
 	onViewModeChange?: (mode: ViewMode) => void; // Callback para cambio de modo
 }
 
-type EditorMode = "edit" | "preview";
-type ViewMode = "divided" | "editor" | "preview"; // Nuevos modos de visualización
+type ViewMode = "divided" | "editor" | "preview"; // Modos de visualización
 //#endregion ![def]
 
 //#region [main] - 🔧 COMPONENT 🔧
@@ -71,16 +68,15 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 		onChange, 
 		placeholder = "Escribe tu nota aquí...",
 		colorScheme = "neutral", 
-		size = "md", 
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		size, // Disponible para uso futuro - parte de la interfaz pública
 		disabled = false, 
 		readOnly = false, 
-		className, 
+		// className no se utiliza actualmente
 		id, 
 		name, 
 		showToolbar = true,
 		showPreview = true,
-		initialMode = "edit",
-		minHeight,
 		livePreview = false,
 		previewDebounceMs = 500,
 		minimalToolbar = false,
@@ -100,7 +96,7 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 		const { appColorTokens, mode } = useTheme();
 		const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 		const previewRef = React.useRef<HTMLDivElement>(null);
-		const [currentMode, setCurrentMode] = React.useState<EditorMode>(initialMode);
+
 		const [internalValue, setInternalValue] = React.useState(value);
 		const [debouncedValue, setDebouncedValue] = React.useState(value);
 		// Estado interno para viewMode - funciona como fallback si no se proporciona desde el padre
@@ -172,9 +168,7 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 			onChange?.(newValue);
 		}, [onChange]);
 
-		const handleModeToggle = React.useCallback(() => {
-			setCurrentMode(prev => prev === "edit" ? "preview" : "edit");
-		}, []);
+
 
 		// Función para validar si aplicar un formato generaría markup inválido
 		const isValidMarkup = React.useCallback((text: string, before: string, after: string): boolean => {
@@ -273,9 +267,6 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 				const textToWrap = selectedText || placeholder;
 				const contextStart = Math.max(0, start - 20);
 				const contextEnd = Math.min(internalValue.length, end + 20);
-				const contextText = internalValue.substring(contextStart, contextEnd);
-				
-				// Simular el resultado en contexto
 				const beforeContext = internalValue.substring(contextStart, start);
 				const afterContext = internalValue.substring(end, contextEnd);
 				const simulatedContext = beforeContext + before + textToWrap + after + afterContext;
@@ -524,61 +515,10 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 		//#endregion ![sub_handlers]
 
 		//#region [sub_render_helpers] - 🎨 RENDER HELPERS 🎨
-		// Función simple para renderizar markdown básico
-		const renderMarkdown = React.useCallback((text: string): string => {
-			let html = text
-				// Títulos
-				.replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mb-2 mt-4">$1</h3>')
-				.replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mb-3 mt-4">$1</h2>')
-				.replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mb-4 mt-4">$1</h1>')
-				// Negrita e itálica
-				.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
-				.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-				// Resaltado
-				.replace(/<mark>(.*?)<\/mark>/g, '<span class="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">$1</span>')
-				// Links
-				.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>')
-				// Listas no ordenadas
-				.replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc list-inside">$1</li>')
-				.replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc list-inside">$1</li>')
-				// Listas ordenadas
-				.replace(/^\d+\. (.*$)/gim, '<li class="ml-4 list-decimal list-inside">$1</li>')
-				// Saltos de línea
-				.replace(/\n/g, '<br>');
 
-			// Envolver listas consecutivas en ul/ol
-			html = html.replace(/(<li class="ml-4 list-disc[^>]*>.*?<\/li>(?:<br>)*)+/g, '<ul class="mb-4">$&</ul>');
-			html = html.replace(/(<li class="ml-4 list-decimal[^>]*>.*?<\/li>(?:<br>)*)+/g, '<ol class="mb-4">$&</ol>');
-			
-			return html;
-		}, []);
 
-		const sizeTokens = {
-			sm: "text-sm px-3 py-2",
-			md: "text-base px-3 py-3",
-			lg: "text-lg px-4 py-4"
-		}[size] || "text-base px-3 py-3";
 
-		const heightTokens = {
-			sm: "min-h-[120px]",
-			md: "min-h-[200px]",
-			lg: "min-h-[250px]"
-		};
 
-		const sizeConfig = {
-			fontSize: sizeTokens.split(' ')[0],
-			paddingX: sizeTokens.split(' ')[1],
-			paddingY: sizeTokens.split(' ')[2],
-			minHeight: heightTokens[size] || "min-h-[200px]"
-		};
-
-		const baseClasses = [
-			"w-full", "rounded-md", "transition-all", "border", "resize-none",
-			sizeConfig.fontSize, sizeConfig.paddingX, sizeConfig.paddingY,
-			minHeight || sizeConfig.minHeight,
-			"placeholder:text-[var(--note-placeholder)]",
-			"text-[var(--note-text)]"
-		];
 
 		const stateClasses: string[] = [];
 		if (disabled) {
@@ -586,8 +526,7 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 				"border-[var(--note-disabled-border)]",
 				"bg-[var(--note-disabled-bg)]",
 				"text-[var(--note-disabled-text)]",
-				"cursor-not-allowed",
-				"opacity-70"
+				"cursor-not-allowed"
 			);
 		} else if (readOnly) {
 			stateClasses.push(
@@ -599,20 +538,17 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 		} else {
 			stateClasses.push(
 				"border-[var(--note-border)]",
-				"bg-[var(--note-bg)]"
-			);
-		}
-
-		const focusClasses: string[] = [];
-		if (!disabled && !readOnly) {
-			focusClasses.push(
-				"focus:outline-none",
+				"bg-[var(--note-bg)]",
+				"text-[var(--note-text)]",
+				"hover:border-[var(--note-hover-border)]",
 				"focus:border-[var(--note-focus-border)]",
-				"focus:shadow-[0_0_0_3px_var(--note-focus-ring)]"
+				"focus:ring-2",
+				"focus:ring-[var(--note-focus-ring)]",
+				"outline-none"
 			);
 		}
 
-		const textareaClasses = cn(...baseClasses, ...stateClasses, ...focusClasses, className);
+
 		//#endregion ![sub_render_helpers]
 
 		//#region [render] - 🎨 RENDER 🎨

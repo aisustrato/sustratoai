@@ -1,5 +1,4 @@
 import type { AppColorTokens, Mode } from "../ColorToken";
-import tinycolor from "tinycolor2";
 
 export type DropdownMenuTokens = {
     content: {

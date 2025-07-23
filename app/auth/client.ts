@@ -56,8 +56,9 @@ export async function signInWithEmail(email: string, password: string): Promise<
     console.log(`${LOG_PREFIX_CLIENT} Éxito en signInWithPassword.`);
     return { data, error: null };
 
-  } catch (error: any) {
-    console.error(`${LOG_PREFIX_CLIENT} Error inesperado en signInWithEmail:`, error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    console.error(`${LOG_PREFIX_CLIENT} Error inesperado en signInWithEmail:`, errorMessage);
     return { data: null, error: { message: 'Error inesperado al iniciar sesión', status: 500 } };
   }
 }
@@ -70,14 +71,18 @@ export async function signOut(): Promise<SignOutResponse> {
     
     if (error) {
       console.error(`${LOG_PREFIX_CLIENT} Error en signOut:`, error.message);
-      return { error: { message: error.message, status: (error as any).status || 400 } };
+      const status = error && typeof error === 'object' && 'status' in error 
+        ? (error as { status: number }).status 
+        : 400;
+      return { error: { message: error.message, status } };
     }
     
     console.log(`${LOG_PREFIX_CLIENT} Éxito en signOut.`);
     return { error: null };
 
-  } catch (error: any) {
-    console.error(`${LOG_PREFIX_CLIENT} Error inesperado en signOut:`, error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    console.error(`${LOG_PREFIX_CLIENT} Error inesperado en signOut:`, errorMessage);
     return { error: { message: 'Error al cerrar sesión', status: 500 } };
   }
 }
@@ -102,14 +107,20 @@ export async function signUp(email: string, password: string): Promise<AuthRespo
     console.log(`${LOG_PREFIX_CLIENT} Éxito en signUp.`);
     return { data, error: null };
 
-  } catch (error: any) {
-    console.error(`${LOG_PREFIX_CLIENT} Error inesperado en signUp:`, error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    console.error(`${LOG_PREFIX_CLIENT} Error inesperado en signUp:`, errorMessage);
     return { data: null, error: { message: 'Error inesperado al registrar usuario', status: 500 } };
   }
 }
 
 // Obtener la sesión actual (getSession)
-export async function getSession(): Promise<{ session: Session | null; error: any | null; }> {
+interface SessionError {
+  message: string;
+  status?: number;
+}
+
+export async function getSession(): Promise<{ session: Session | null; error: SessionError | null }> {
   // Esta función ahora utiliza la instancia 'supabase' exportada (singleton)
   const { data: { session }, error } = await supabase.auth.getSession();
   

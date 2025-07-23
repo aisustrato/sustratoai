@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StandardDropdownMenu } from '@/components/ui/StandardDropdownMenu';
 import { StandardButton } from '@/components/ui/StandardButton';
 import { StandardDialog } from '@/components/ui/StandardDialog';
@@ -24,7 +24,7 @@ import {
 } from '@/lib/actions/article-group-actions';
 import { getArticleIdFromBatchItemId, type ArticleForReview } from '@/lib/actions/preclassification-actions';
 import { useAuth } from '@/app/auth-provider';
-import { Plus, Lock, Globe, ArrowRight, FolderPlus, CheckCircle } from 'lucide-react';
+import { Plus, Users, Lock, Globe, ArrowRight, FolderPlus, CheckCircle } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
 
@@ -298,7 +298,18 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
     }
   };
 
+  // Confirmar visibilidad pública
+  const confirmPublicVisibility = () => {
+    setShowPublicWarning(false);
+    setNewGroupIsPublic(true);
+    setHasUnsavedChanges(true);
+  };
 
+  // Cancelar visibilidad pública
+  const cancelPublicVisibility = () => {
+    setShowPublicWarning(false);
+    // No cambiamos el estado, se mantiene como estaba
+  };
 
   // Manejar cierre del formulario de crear grupo
   const handleCloseCreateGroup = () => {
@@ -329,7 +340,10 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
     setShowCreateGroup(false);
   };
 
-
+  // Manejar apertura del formulario de crear grupo
+  const handleCreateNewGroup = () => {
+    setShowCreateGroup(true);
+  };
 
   // Configuración de columnas para la tabla de artículos del grupo
   const groupArticlesColumns: ColumnDef<GroupArticleData>[] = [
@@ -503,7 +517,7 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
           <StandardDialog.Header>
             <StandardDialog.Title>Confirmar Adición al Grupo</StandardDialog.Title>
             <StandardDialog.Description>
-              ¿Estás seguro de que quieres agregar este artículo al grupo &ldquo;{selectedGroupForAdd?.name}&rdquo;?
+              ¿Estás seguro de que quieres agregar este artículo al grupo "{selectedGroupForAdd?.name}"?
             </StandardDialog.Description>
           </StandardDialog.Header>
           <StandardDialog.Body>
@@ -517,7 +531,7 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
                   {selectedGroupForAdd?.visibility === 'public' ? <Globe /> : <Lock />}
                 </StandardIcon>
                 <StandardText size="sm">
-                  Grupo {selectedGroupForAdd?.visibility === "public" ? "público" : "privado"}
+                  Grupo {selectedGroupForAdd?.visibility === 'public' ? 'público' : 'privado'}
                 </StandardText>
               </div>
               {selectedGroupForAdd?.description && (
@@ -564,7 +578,7 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
                   {selectedGroupForDetails?.visibility === 'public' ? <Globe /> : <Lock />}
                 </StandardIcon>
                 <StandardText size="sm">
-                  Grupo {selectedGroupForDetails?.visibility === "public" ? "público" : "privado"} • {selectedGroupForDetails?.article_count} artículo{selectedGroupForDetails?.article_count !== 1 ? "s" : ""}
+                  Grupo {selectedGroupForDetails?.visibility === 'public' ? 'público' : 'privado'} • {selectedGroupForDetails?.article_count} artículo{selectedGroupForDetails?.article_count !== 1 ? 's' : ''}
                 </StandardText>
               </div>
             </StandardPopupWindow.Description>

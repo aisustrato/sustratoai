@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, forwardRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/app/theme-provider';
-import { type ColorSchemeVariant, type ColorShadeName } from '@/lib/theme/ColorToken';
+import { type ColorSchemeVariant } from '@/lib/theme/ColorToken';
 import {
   generateSphereTokens,
   type ImportedIconSize,
@@ -111,7 +111,7 @@ export interface SphereItemData
 
 // #region [Component Implementation]
 // -----------------------------------------------------------------------------
-export const StandardSphere = React.forwardRef<
+export const StandardSphere = forwardRef<
   HTMLDivElement,
   StandardSphereProps
 >(
@@ -121,7 +121,8 @@ export const StandardSphere = React.forwardRef<
       cellHeight,
       allowBadgeRender = true,
       value,
-      keyGroup,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      keyGroup, // Disponible para uso futuro - parte de la interfaz pública
       colorScheme = 'primary',
       styleType = 'filled',
       tooltip,
@@ -165,8 +166,8 @@ export const StandardSphere = React.forwardRef<
 
 
     const { appColorTokens, mode } = useTheme();
-    const [isHovered, setIsHovered] = React.useState(false);
-    const [isActive, setIsActive] = React.useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+    const [isActive, setIsActive] = useState(false);
 
     const allSphereTokens = useMemo(() => {
         if (!appColorTokens) return null;

@@ -1,6 +1,5 @@
 import type { AppColorTokens, Mode } from "../ColorToken";
 import { createAppColorTokens } from "../ColorToken";
-import tinycolor from "tinycolor2";
 
 
 export interface StandardNavbarTokens {
@@ -59,10 +58,6 @@ const generateStandardNavbarTokens = (appColorTokens: AppColorTokens, mode: Mode
   // Crear el degradado específico para el título del logo
   const titleGradient = `linear-gradient(to right, ${primaryColor}, ${accentColor})`
 
-  // Crear un fondo oscuro con un sutil tinte del color primario del tema
-  const themedDarkBackground = isDark 
-      ? tinycolor(primary.pure).lighten(5).toString()
-      : tinycolor(primary.pure).darken(5).toString()
 
   return {
     logo: {

@@ -13,7 +13,6 @@ export interface SustratoLoadingLogoProps {
   speed?: "slow" | "normal" | "fast";
   className?: string;
   primaryColor?: string;
-  secondaryColor?: string;
   accentColor?: string;
   showText?: boolean;
   text?: string;
@@ -27,7 +26,6 @@ export function SustratoLoadingLogo({
   speed = "normal",
   className = "",
   primaryColor,
-  secondaryColor,
   accentColor,
   showText = false,
   text = "Cargando...",

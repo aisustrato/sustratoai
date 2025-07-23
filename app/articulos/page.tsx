@@ -1,13 +1,15 @@
 //. 📍 app/articulos/page.tsx
 "use client";
 
+import * as React from "react";
+
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import Link from "next/link";
-import { FileText, FileUp, LayoutGrid, FileCheck } from "lucide-react";
+import { FileUp, LayoutGrid, FileCheck } from "lucide-react";
 //#endregion ![head]
 
 //#region [main] - 🔧 COMPONENT 🔧
@@ -48,7 +50,9 @@ export default function ArticulosHome() {
               <div className="flex flex-col h-full p-6">
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                    <StandardIcon icon={item.icon} size="lg" />
+                    <StandardIcon size="lg">
+                      {React.createElement(item.icon)}
+                    </StandardIcon>
                   </div>
                   <StandardText variant="subtitle" className="group-hover:text-primary transition-colors">
                     {item.title}

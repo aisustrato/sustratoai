@@ -1,4 +1,4 @@
-import React from 'react';
+import { useMemo } from 'react';
 
 interface MatrixLineRendererProps {
 	content: string;
@@ -6,7 +6,7 @@ interface MatrixLineRendererProps {
 }
 
 export function MatrixLineRenderer({ content, className }: MatrixLineRendererProps) {
-	const renderLineMatrix = React.useMemo(() => {
+	const renderLineMatrix = useMemo(() => {
 		if (!content) return '';
 
 		const lines = content.split('\n');

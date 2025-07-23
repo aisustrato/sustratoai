@@ -3,7 +3,6 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/server";
-import { Database } from "@/lib/database.types"; 
 
 // ========================================================================
 //  INICIO: DEFINICIONES DE INTERFACES Y TIPOS
@@ -289,10 +288,20 @@ export async function actualizarPreferenciasUI(
   try {
     if (!userId || !proyectoId) { return { success: false, error: "Se requiere ID de usuario y proyecto válidos" }; }
     const supabase = await createSupabaseServerClient();
-    const actualizaciones: any = {};
-    if (preferencias.ui_theme !== undefined) actualizaciones.ui_theme = preferencias.ui_theme;
-    if (preferencias.ui_font_pair !== undefined) actualizaciones.ui_font_pair = preferencias.ui_font_pair;
-    if (preferencias.ui_is_dark_mode !== undefined) actualizaciones.ui_is_dark_mode = preferencias.ui_is_dark_mode;
+    // Creamos un objeto de actualización con los campos que se van a modificar
+    const actualizaciones: Record<string, unknown> = {};
+    
+    // Solo agregamos los campos que tienen valores definidos
+    if (preferencias.ui_theme !== undefined) {
+      actualizaciones.ui_theme = preferencias.ui_theme;
+    }
+    if (preferencias.ui_font_pair !== undefined) {
+      actualizaciones.ui_font_pair = preferencias.ui_font_pair;
+    }
+    if (preferencias.ui_is_dark_mode !== undefined) {
+      // Aseguramos que sea un booleano o null, según lo que espere la base de datos
+      actualizaciones.ui_is_dark_mode = preferencias.ui_is_dark_mode;
+    }
     if (Object.keys(actualizaciones).length === 0) { console.log(`ℹ️ [APU:${opId}] No hay cambios que actualizar`); return { success: true, data: null }; }
     console.log(`📝 [APU:${opId}] Actualizando preferencias:`, actualizaciones);
     const { error } = await supabase.from("project_members").update(actualizaciones).eq("user_id", userId).eq("project_id", proyectoId);

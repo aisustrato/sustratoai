@@ -1,6 +1,6 @@
 // Ruta: lib/theme/components/nivo-pie-chart-tokens.ts
 
-import type { AppColorTokens, Mode } from "../ColorToken";
+import type { AppColorTokens } from "../ColorToken";
 
 
 // Mapeo de nuestros IDs de estado a los 'colorScheme' del tema
@@ -14,8 +14,7 @@ const STATUS_TO_COLOR_SCHEME_MAP: Record<string, keyof AppColorTokens> = {
   validados: 'warning', 
 };
 
-export function generateNivoTheme(appColorTokens: AppColorTokens, mode: Mode) {
-  const isDark = mode === 'dark';
+export function generateNivoTheme(appColorTokens: AppColorTokens) {
 
   // Define el tema base para Nivo (fuentes, tooltips, etc.)
   const theme = {

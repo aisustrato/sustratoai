@@ -8,11 +8,10 @@ import BatchSimulatorPage from './components/BatchSimulatorPage';
 import ProjectBatchesDisplay from "./components/ProjectBatchesDisplay";
 import type { BatchForDisplay } from '@/lib/actions/batch-actions'; 
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
-import { StandardText } from '@/components/ui/StandardText';
-import { StandardIcon } from '@/components/ui/StandardIcon';
 import { StandardCard } from "@/components/ui/StandardCard";
-import { StandardPageTitle } from '@/components/ui/StandardPageTitle';
-import { Boxes, AlertTriangle } from 'lucide-react';
+import { StandardIcon } from "@/components/ui/StandardIcon";
+import { StandardText } from "@/components/ui/StandardText";
+import { AlertTriangle } from 'lucide-react';
 
 import { 
     getProjectBatchesForDisplay, 
@@ -38,20 +37,19 @@ export default function LotesOrquestadorPage() {
   
   const [projectMembers, setProjectMembers] = useState<ProjectMemberDetails[]>([]);
   
-  // Mapa de colores simple para los miembros
-  const memberColorMap = useMemo<Record<string, string>>(() => {
-    if (projectMembers.length === 0) return {};
-    const colors = [
-      'blue', 'green', 'yellow', 'red', 'purple', 'pink', 'indigo', 'teal', 'orange'
-    ];
-    const map: Record<string, string> = {};
-    projectMembers.forEach((member, idx) => {
-      if (member.user_id) {
-        map[member.user_id] = colors[idx % colors.length];
-      }
-    });
-    return map;
-  }, [projectMembers]);
+  // Mapa de colores simple para los miembros (comentado ya que no se está utilizando actualmente)
+  // const memberColorMap = useMemo<Record<string, string>>(() => {
+  //   if (projectMembers.length === 0) return {};
+  //   const colors = [
+  //     'blue', 'green', 'yellow', 'red', 'purple', 'pink', 'indigo', 'teal', 'orange'
+  //   ];
+  //   const map: Record<string, string> = {};
+  //   projectMembers.forEach((member, idx) => {
+  //     if (member.user_id) {
+  //       map[member.user_id] = colors[idx % colors.length];
+  //   });
+  //   return map;
+  // }, [projectMembers]);
 
   const permisoGestionGeneral = proyectoActual?.permissions?.can_create_batches || false;
 

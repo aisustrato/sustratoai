@@ -6,9 +6,7 @@ import { ProjectPageTitle } from "./components/ProjectPageTitle";
 import { getProjectDetails } from "@/lib/actions/project-actions";
 import { obtenerProyectosConSettingsUsuario } from "@/lib/actions/project-dashboard-actions";
 import { createSupabaseServerClient } from "@/lib/server";
-import { StandardText } from "@/components/ui/StandardText";
 import { StandardAlert } from "@/components/ui/StandardAlert";
-import { AlertCircle } from "lucide-react";
 
 // 📚 DOCUMENTACIÓN 📚
 /**

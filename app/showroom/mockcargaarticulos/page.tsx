@@ -1,7 +1,7 @@
 // src/app/showroom/StandardTableMetadataShowcase.tsx
 "use client";
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { type ColumnDef, type Row } from "@tanstack/react-table";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { StandardTable } from "@/components/ui/StandardTable";
@@ -56,7 +56,7 @@ const processedShowcaseData = showcaseData.map(article => {
 export default function StandardTableMetadataShowcase() {
 
     const columns = useMemo<ColumnDef<ShowcaseArticle>[]>(() => [
-        { id: 'expander', header: () => null, cell: ({ row }) => null, meta: { isSticky: 'left' }, size: 40, enableHiding: false },
+        { id: 'expander', header: () => null, cell: () => null, meta: { isSticky: 'left' }, size: 40, enableHiding: false },
         { accessorKey: 'title', header: 'Título', size: 300, meta: { isTruncatable: true, tooltipType: 'standard' } },
         { accessorKey: 'abstract', header: 'Abstract', size: 400, meta: { isTruncatable: true, tooltipType: 'longText' } },
         { accessorKey: 'authors', header: 'Autores', size: 200 },
@@ -71,15 +71,64 @@ export default function StandardTableMetadataShowcase() {
     const renderSubComponent = (row: Row<ShowcaseArticle>) => {
         const metadata = row.original.additionalMetadata;
         if (!metadata) {
-            return ( <div className="p-4 bg-neutral-bg/30"> <StandardText size="sm" color="neutral">No hay metadatos adicionales disponibles.</StandardText> </div> );
+            return (
+                <div className="p-4 bg-neutral-bg/30">
+                    <StandardText size="sm" color="neutral">
+                        No hay metadatos adicionales disponibles.
+                    </StandardText>
+                </div>
+            );
         }
+        
         const metadataElements: React.ReactNode[] = [];
-        if (metadata.wosId && metadata.wosId.trim() !== '') { metadataElements.push( <div className="flex flex-col" key="wosId"> <StandardText as="h4" size="sm" weight="medium" className="mb-1">WOS ID</StandardText> <StandardText size="sm">{metadata.wosId}</StandardText> </div> ); }
-        if (metadata.eissn && metadata.eissn.trim() !== '') { metadataElements.push( <div className="flex flex-col" key="eissn"> <StandardText as="h4" size="sm" weight="medium" className="mb-1">eISSN</StandardText> <StandardText size="sm">{metadata.eissn}</StandardText> </div> ); }
-        if (metadata.issn && metadata.issn.trim() !== '') { metadataElements.push( <div className="flex flex-col" key="issn"> <StandardText as="h4" size="sm" weight="medium" className="mb-1">ISSN</StandardText> <StandardText size="sm">{metadata.issn}</StandardText> </div> ); }
+        
+        if (metadata.wosId?.trim()) {
+            metadataElements.push(
+                <div className="flex flex-col" key="wosId">
+                    <StandardText as="h4" size="sm" weight="medium" className="mb-1">
+                        WOS ID
+                    </StandardText>
+                    <StandardText size="sm">{metadata.wosId}</StandardText>
+                </div>
+            );
+        }
+        
+        if (metadata.eissn?.trim()) {
+            metadataElements.push(
+                <div className="flex flex-col" key="eissn">
+                    <StandardText as="h4" size="sm" weight="medium" className="mb-1">
+                        eISSN
+                    </StandardText>
+                    <StandardText size="sm">{metadata.eissn}</StandardText>
+                </div>
+            );
+        }
+        
+        if (metadata.issn?.trim()) {
+            metadataElements.push(
+                <div className="flex flex-col" key="issn">
+                    <StandardText as="h4" size="sm" weight="medium" className="mb-1">
+                        ISSN
+                    </StandardText>
+                    <StandardText size="sm">{metadata.issn}</StandardText>
+                </div>
+            );
+        }
+        
         if (metadataElements.length === 0) return null;
-        const gridColsClass = metadataElements.length === 1 ? 'grid-cols-1' : metadataElements.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
-        return ( <div className={`p-4 bg-neutral-bg/30 grid ${gridColsClass} gap-x-6 gap-y-4 max-w-full overflow-x-auto`}> {metadataElements} </div> );
+        
+        const gridColsClass = 
+            metadataElements.length === 1 ? 'grid-cols-1' : 
+            metadataElements.length === 2 ? 'grid-cols-2' : 
+            'grid-cols-3';
+            
+        return (
+            <div 
+                className={`p-4 bg-neutral-bg/30 grid ${gridColsClass} gap-x-6 gap-y-4 max-w-full overflow-x-auto`}
+            >
+                {metadataElements}
+            </div>
+        );
     };
 
     return (

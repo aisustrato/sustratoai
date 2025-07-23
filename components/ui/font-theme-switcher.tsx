@@ -9,7 +9,6 @@ import { useRef, useState, useEffect } from "react";
 import { useTheme } from "@/app/theme-provider";
 import { fontThemeConfig, type FontTheme } from "@/lib/fonts";
 import { generateFontSelectorTokens } from "@/lib/theme/components/font-selector-tokens";
-import { StandardText } from "@/components/ui/StandardText";
 
 import { useAuth } from "@/app/auth-provider";
 import { actualizarPreferenciasUI } from "@/lib/actions/project-dashboard-actions";

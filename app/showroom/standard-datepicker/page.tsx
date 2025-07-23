@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { StandardDatePicker } from '@/components/ui/StandardDatePicker';
 import { StandardText } from '@/components/ui/StandardText';
 import { StandardCard } from '@/components/ui/StandardCard';

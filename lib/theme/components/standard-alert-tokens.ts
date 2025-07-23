@@ -28,7 +28,6 @@ export function generateStandardAlertTokens(
 	options: StandardAlertTokenOptions
 ): StandardAlertRecipe {
 	const { styleType, colorScheme } = options;
-	const isDark = mode === 'dark';
 	const palette: ColorShade = appTokens[colorScheme] || appTokens.neutral;
 
 	const recipe: StandardAlertRecipe = {

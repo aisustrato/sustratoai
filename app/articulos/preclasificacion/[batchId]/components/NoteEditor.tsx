@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { StandardPopupWindow } from '@/components/ui/StandardPopupWindow';
 import { StandardNote } from '@/components/ui/StandardNote';
 import { StandardInput } from '@/components/ui/StandardInput';
-import { StandardSelect } from '@/components/ui/StandardSelect';
 import { StandardCheckbox } from '@/components/ui/StandardCheckbox';
 import { StandardButton } from '@/components/ui/StandardButton';
 import { StandardText } from '@/components/ui/StandardText';
@@ -17,7 +16,6 @@ import {
   getNotes,
   type DetailedNote 
 } from '@/lib/actions/article-notes-actions';
-import { useTheme } from '@/app/theme-provider';
 import { useAuth } from '@/app/auth-provider';
 import { getArticleIdFromBatchItemId, type ArticleForReview } from '@/lib/actions/preclassification-actions';
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
@@ -33,8 +31,8 @@ interface NoteEditorProps {
 export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, project, showOriginalAsPrimary }): JSX.Element => {
   const [currentNote, setCurrentNote] = useState('');
   const [currentNoteTitle, setCurrentNoteTitle] = useState('');
-  const [currentNoteVisibility, setCurrentNoteVisibility] = React.useState<'private' | 'public'>('private');
-  const [showPublicWarning, setShowPublicWarning] = React.useState(false);
+  const [currentNoteVisibility, setCurrentNoteVisibility] = useState<'private' | 'public'>('private');
+  const [showPublicWarning, setShowPublicWarning] = useState(false);
   const [existingNote, setExistingNote] = useState<DetailedNote | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -129,7 +127,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
     setHasUnsavedChanges(true);
   };
 
-  const handleNoteVisibilityChange = React.useCallback((isPublic: boolean) => {
+  const handleNoteVisibilityChange = useCallback((isPublic: boolean) => {
     if (isPublic && currentNoteVisibility === 'private') {
       setShowPublicWarning(true);
     } else {
@@ -137,7 +135,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
     }
   }, [currentNoteVisibility]);
 
-  const confirmPublicVisibility = React.useCallback(() => {
+  const confirmPublicVisibility = useCallback(() => {
     setCurrentNoteVisibility('public');
     setShowPublicWarning(false);
   }, []);
@@ -309,10 +307,6 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
   const confirmClose = () => {
     setShowCloseConfirm(false);
     onClose();
-  };
-  
-  const cancelClose = () => {
-    setShowCloseConfirm(false);
   };
 
   return (

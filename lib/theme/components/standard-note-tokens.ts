@@ -96,7 +96,7 @@ export function generateStandardNoteTokens(
 ): StandardNoteTokens {
 	const {
 		primary, secondary, tertiary, accent,
-		neutral, danger, success,
+		neutral,
 	} = appColorTokens;
 
 	const baseTextColor = neutral.text;

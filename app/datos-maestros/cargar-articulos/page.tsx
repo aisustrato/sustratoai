@@ -22,10 +22,11 @@ import { StandardBadge } from '@/components/ui/StandardBadge';
 import { FileUp, Save, Trash2, Link as LinkIcon, FileText, FileCheck } from 'lucide-react';
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
 import { StandardProgressBar } from "@/components/ui/StandardProgressBar";
-import Link from 'next/link';
+// Link no se está utilizando actualmente
+// import Link from 'next/link';
 import { uploadAndProcessArticles, ArticleFromCsv, deleteUploadedArticles, checkIfProjectHasArticles } from '@/lib/actions/article-actions';
 import { StandardPageTitle } from '@/components/ui/StandardPageTitle';
-import { StandardRadioGroup, type RadioGroupOption } from '@/components/ui/StandardRadioGroup';
+import { StandardRadioGroup } from '@/components/ui/StandardRadioGroup';
 
 // --- Tipos Locales ---
 interface ArticleForTable {
@@ -136,8 +137,8 @@ export default function CargarArticulosPage() {
                 setDataAlreadyExists(true);
             }, 2000);
 
-        } catch (e: any) {
-            const errorMessage = e.message || "Error inesperado durante la carga.";
+        } catch (e: unknown) {
+            const errorMessage = e instanceof Error ? e.message : "Error inesperado durante la carga.";
             setStatusMessage(`Error: ${errorMessage}`);
             toast.error(errorMessage);
             setUploadProgress(prev => prev);
@@ -158,7 +159,7 @@ export default function CargarArticulosPage() {
             } else {
                 toast.error(result.error || 'No se pudieron eliminar los artículos.');
             }
-        } catch (error) {
+        } catch (_error) {
             toast.error('Ocurrió un error inesperado al eliminar.');
         } finally {
             setIsDeleting(false);

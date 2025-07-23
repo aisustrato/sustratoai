@@ -82,7 +82,7 @@ export async function getNotes(filters: GetNotesFilters): Promise<ResultadoOpera
     }
     
     console.log('[SERVER] Ejecutando consulta...');
-    const { data, error, count } = await query.order('created_at', { ascending: false });
+    const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) {
       console.error('[SERVER] Error al obtener notas:', error);
@@ -116,7 +116,7 @@ export async function createArticleNote(payload: CreateNotePayload): Promise<Res
     const supabase = await createSupabaseServerClient();
     console.log('[SERVER] Cliente Supabase creado');
     
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     console.log('[SERVER] Usuario obtenido:', user ? 'Autenticado' : 'No autenticado');
     
     if (!user) {
@@ -179,7 +179,7 @@ export async function updateArticleNote(payload: UpdateNotePayload): Promise<Res
     const supabase = await createSupabaseServerClient();
     console.log('[SERVER] Cliente Supabase creado');
     
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     console.log('[SERVER] Usuario obtenido:', user ? 'Autenticado' : 'No autenticado');
     
     if (!user) {
@@ -187,7 +187,12 @@ export async function updateArticleNote(payload: UpdateNotePayload): Promise<Res
       return { success: false, error: "Usuario no autenticado." };
     }
 
-    const updateData: any = { 
+    const updateData: {
+      updated_at: string;
+      title?: string;
+      note_content?: string;
+      visibility?: Database["public"]["Enums"]["note_visibility"];
+    } = { 
       updated_at: new Date().toISOString() 
     };
     
@@ -197,7 +202,7 @@ export async function updateArticleNote(payload: UpdateNotePayload): Promise<Res
 
     console.log('[SERVER] Actualizando nota con datos:', updateData);
     
-    const { data: updatedNote, error } = await supabase
+    const { error } = await supabase
       .from('article_notes')
       .update(updateData)
       .eq('id', payload.noteId)
@@ -246,7 +251,7 @@ export async function deleteArticleNote(noteId: string): Promise<ResultadoOperac
     const supabase = await createSupabaseServerClient();
     console.log('[SERVER] Cliente Supabase creado');
     
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     console.log('[SERVER] Usuario obtenido:', user ? 'Autenticado' : 'No autenticado');
     
     if (!user) {

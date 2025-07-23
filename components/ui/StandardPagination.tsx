@@ -3,7 +3,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 "use client";
 
-import React from "react";
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { StandardButton } from "./StandardButton";
 import { StandardText } from "./StandardText";
@@ -34,7 +34,7 @@ const usePagination = ({
 		return Array.from({ length }, (_, idx) => idx + start);
 	};
 
-	const paginationRange = React.useMemo(() => {
+	const paginationRange = useMemo(() => {
 		const totalPageNumbers = siblings * 2 + 3 + 2; // siblings + first/last + current + 2*DOTS
 
 		if (totalPageNumbers >= totalPages) {

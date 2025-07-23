@@ -7,12 +7,12 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import * as Popover from '@radix-ui/react-popover';
-import { DayPicker, type DayPickerSingleProps } from 'react-day-picker';
+import { DayPicker } from 'react-day-picker';
 
 import { useTheme } from '@/app/theme-provider';
-import { type ColorSchemeVariant, type Mode } from '@/lib/theme/ColorToken';
+import { type ColorSchemeVariant } from '@/lib/theme/ColorToken';
 import { StandardInput } from '../StandardInput';
-import { generateStandardDatePickerTokens, type DatePickerSizeVariant, type StandardDatePickerRecipe } from '@/lib/theme/components/standard-datepicker-tokens';
+import { generateStandardDatePickerTokens, type StandardDatePickerRecipe, type DatePickerSizeVariant } from '@/lib/theme/components/standard-datepicker-tokens';
 
 export interface StandardDatePickerProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'size' | 'defaultValue'> {

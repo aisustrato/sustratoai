@@ -115,9 +115,18 @@ export async function getGroupDetails(groupId: string): Promise<ResultadoOperaci
         if (error) throw error;
 
         // Formatear la respuesta para que sea más amigable para el frontend
+        // Definir el tipo para el ítem de la respuesta de la base de datos
+        type GroupItemResponse = {
+            description: string | null;
+            article_id: {
+                id: string;
+                title: string | null;
+            };
+        };
+
         const formattedData: GroupDetails = {
             ...data,
-            items: data.items.map((item: any) => ({
+            items: data.items.map((item: GroupItemResponse) => ({
                 description: item.description,
                 article_id: item.article_id.id,
                 article_title: item.article_id.title

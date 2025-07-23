@@ -14,7 +14,6 @@ import {
 	type StandardRadioTokens,
 } from "@/lib/theme/components/standard-radio-tokens";
 import { StandardText } from "./StandardText";
-import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES & INTERFACE 📦

@@ -40,7 +40,7 @@ export async function uploadAndProcessArticles(
     const { data: lastCorrelativoData, error: correlativoError } = await supabase.from("articles").select("correlativo").eq("project_id", projectId).order("correlativo", { ascending: false }).limit(1).maybeSingle();
     if (correlativoError) throw new Error(`Error al obtener el correlativo: ${correlativoError.message}`);
 
-    let nextCorrelativo = (lastCorrelativoData?.correlativo || 0) + 1;
+    const nextCorrelativo = (lastCorrelativoData?.correlativo || 0) + 1;
 
     const articlesToInsert: Database['public']['Tables']['articles']['Insert'][] = articlesData.map((rawArticle, index) => {
       const mainData = {
@@ -52,7 +52,7 @@ export async function uploadAndProcessArticles(
         doi: rawArticle.DOI as string | null,
       };
 
-      const metadata: { [key: string]: any } = {};
+      const metadata: Record<string, string | number | null> = {};
       const mainKeys = new Set(['Title', 'Authors', 'Journal', 'Publication Year', 'Abstract', 'DOI']);
       for (const key in rawArticle) {
         if (!mainKeys.has(key) && rawArticle[key] !== null && rawArticle[key] !== '') {

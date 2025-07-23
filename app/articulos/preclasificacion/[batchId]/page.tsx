@@ -7,6 +7,11 @@ import { supabase } from "@/app/auth/client";
 import { useAuth } from "@/app/auth-provider";
 import { getBatchDetailsForReview } from "@/lib/actions/preclassification-actions";
 import type { BatchDetails, ArticleForReview } from "@/lib/actions/preclassification-actions";
+import type { Database } from "@/lib/database.types";
+
+type ArticleBatch = Database['public']['Tables']['article_batches']['Row'];
+type ArticleBatchItem = Database['public']['Tables']['article_batch_items']['Row'];
+
 // Las funciones de notas ahora se manejan en NoteEditor
 
 // Tipo para los datos de la tabla
@@ -31,7 +36,7 @@ import { StandardCard } from "@/components/ui/StandardCard";
 import { NoteEditor } from "./components/NoteEditor";
 import { ArticleGroupManager } from "./components/ArticleGroupManager";
 import { toast } from "sonner";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, RowData } from "@tanstack/react-table";
 import { 
 	ClipboardList, 
 	Link, 
@@ -97,7 +102,7 @@ const BatchDetailPage = () => {
 					table: "article_batches",
 					filter: `id=eq.${batchId}`,
 				},
-				(payload: RealtimePostgresChangesPayload<any>) => {
+				(payload: RealtimePostgresChangesPayload<ArticleBatch>) => {
 					console.log("Cambio detectado en el lote:", payload);
 					loadBatchDetails();
 				}
@@ -111,11 +116,12 @@ const BatchDetailPage = () => {
 
 	// Funciones de manejo de acciones
 	const handleOpenDOI = (article: ArticleForReview) => {
-		// En V1, usamos el campo journal que puede contener el DOI o URL
-		if (article.article_data.journal) {
-			const url = article.article_data.journal.startsWith('http') 
-				? article.article_data.journal 
-				: `https://doi.org/${article.article_data.journal}`;
+		// Asegurarse de que article.article_data existe y es del tipo correcto
+		if (article.article_data?.journal) {
+			const journalData = article.article_data.journal;
+			const url = typeof journalData === 'string' && journalData.startsWith('http') 
+				? journalData 
+				: `https://doi.org/${journalData}`;
 			window.open(url, '_blank');
 		} else {
 			console.log('No DOI disponible para este artículo');
@@ -123,11 +129,19 @@ const BatchDetailPage = () => {
 	};
 
 	const handleDisagree = (article: ArticleForReview) => {
+		if (!article.item_id) {
+			console.error('ID de artículo no válido');
+			return;
+		}
 		console.log('Desacuerdo marcado para:', article.item_id);
 		// TODO: Implementar lógica de desacuerdo en futuras versiones
 	};
 
 	const handleValidate = (article: ArticleForReview) => {
+		if (!article.item_id) {
+			console.error('ID de artículo no válido');
+			return;
+		}
 		console.log('Validación marcada para:', article.item_id);
 		// TODO: Implementar lógica de validación en futuras versiones
 	};
@@ -145,7 +159,7 @@ const BatchDetailPage = () => {
 	};
 
 	// Configuración de columnas para la tabla
-	const tableColumns: ColumnDef<TableRowData>[] = [
+	const tableColumns: ColumnDef<TableRow>[] = [
 		// Columna expander (primera columna sticky)
 		{ 
 			id: 'expander', 
@@ -242,7 +256,7 @@ const BatchDetailPage = () => {
 	];
 
 	// Transformar datos para la tabla
-	const tableData = batchDetails?.rows.map((article) => {
+	const tableData: TableRow[] = batchDetails?.rows.map((article: ArticleForReview) => {
 		const primaryTitle = showOriginalAsPrimary 
 			? article.article_data.original_title 
 			: article.article_data.translated_title;
@@ -279,43 +293,61 @@ const BatchDetailPage = () => {
 			rowData.subRows = [{ __isGhost: true }];
 		}
 
-		return rowData;
+		// Crear la fila con la estructura que espera tanstack/table
+		return {
+		  ...rowData,
+		  original: rowData,
+		  getValue: (key: string) => (rowData as any)[key],
+		  renderValue: (key: string) => (rowData as any)[key]
+		} as TableRow;
 	}) || [];
 
-	// Función para renderizar el sub-componente expandible
-	const renderSubComponent = (row: any) => {
-		const { secondaryTitle, secondaryAbstract } = row.original;
-		
-		if (!secondaryTitle && !secondaryAbstract) {
-			return null;
-		}
+	// Definir un tipo para la fila de la tabla que extienda RowData para compatibilidad con tanstack/table
+	interface TableRow extends TableRowData {
+	  // Propiedades adicionales requeridas por tanstack/table
+	  original: TableRowData;
+	  getValue: (key: string) => any;
+	  renderValue: (key: string) => any;
+	  // Hacer que la interfaz sea compatible con RowData
+	  [key: string]: any;
+	  [key: number]: any;
+	  [key: symbol]: any;
+	}
 
-		return (
-			<div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-				<div className="space-y-3">
-					{secondaryTitle && (
-						<div>
-							<StandardText size="sm" className="font-medium text-gray-600 dark:text-gray-400">
-								{showOriginalAsPrimary ? "Título Traducido:" : "Título Original:"}
-							</StandardText>
-							<StandardText size="sm" className="mt-1">
-								{secondaryTitle}
-							</StandardText>
-						</div>
-					)}
-					{secondaryAbstract && (
-						<div>
-							<StandardText size="sm" className="font-medium text-gray-600 dark:text-gray-400">
-								{showOriginalAsPrimary ? "Abstract Traducido:" : "Abstract Original:"}
-							</StandardText>
-							<StandardText size="sm" className="mt-1">
-								{secondaryAbstract}
-							</StandardText>
-						</div>
-					)}
-				</div>
-			</div>
-		);
+	// Función para renderizar el sub-componente expandible
+	const renderSubComponent = (row: { original: TableRow }) => {
+	  const { secondaryTitle, secondaryAbstract } = row.original;
+	  
+	  if (!secondaryTitle && !secondaryAbstract) {
+	    return null;
+	  }
+
+	  return (
+	    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+	      <div className="space-y-3">
+	        {secondaryTitle && (
+	          <div>
+	            <StandardText size="sm" className="font-medium text-gray-600 dark:text-gray-400">
+	              {showOriginalAsPrimary ? "Título Traducido:" : "Título Original:"}
+	            </StandardText>
+	            <StandardText size="sm" className="mt-1">
+	              {secondaryTitle}
+	            </StandardText>
+	          </div>
+	        )}
+	        {secondaryAbstract && (
+	          <div>
+	            <StandardText size="sm" className="font-medium text-gray-600 dark:text-gray-400">
+	              {showOriginalAsPrimary ? "Abstract Traducido:" : "Abstract Original:"}
+	            </StandardText>
+	            <StandardText size="sm" className="mt-1">
+	              {secondaryAbstract}
+	            </StandardText>
+	          </div>
+	        )}
+	      </div>
+	    </div>
+	  );
 	};
 
 	if (isLoading) {

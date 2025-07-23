@@ -39,7 +39,12 @@ const StandardAccordion = React.forwardRef<
 
   // El valor actual es el controlado (value) o el interno (internalValue).
   const currentValue = props.value ?? internalValue;
-  const openItems = currentValue ? (Array.isArray(currentValue) ? currentValue : [currentValue]) : [];
+  
+  // Memoize openItems para evitar recalcular en cada render
+  const openItems = React.useMemo(() => 
+    currentValue ? (Array.isArray(currentValue) ? currentValue : [currentValue]) : [],
+    [currentValue]
+  );
 
   const contextValue = React.useMemo(() => ({
     colorScheme,

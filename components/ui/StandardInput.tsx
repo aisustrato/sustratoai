@@ -55,8 +55,8 @@ const StandardInput = React.forwardRef<HTMLInputElement, StandardInputProps>(
 		);
 
 		//#region [sub_bridge] - 🌉 THE BRIDGE 🌉
-		function isStandardInputVariant(value: any): value is StandardInputVariant {
-			return ["default", "primary", "secondary", "tertiary", "accent", "neutral"].includes(value);
+		function isStandardInputVariant(value: unknown): value is StandardInputVariant {
+			return typeof value === 'string' && ["default", "primary", "secondary", "tertiary", "accent", "neutral"].includes(value);
 		}
 		const effectiveColorScheme: StandardInputVariant =
 			colorScheme && isStandardInputVariant(colorScheme) ? colorScheme : "default";

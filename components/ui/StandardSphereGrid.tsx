@@ -195,11 +195,18 @@ export const StandardSphereGrid = memo(
 			});
 
 			if (sortBy !== "none") {
-				const compareValues = (a: any, b: any) => {
-					if (typeof a === "number" && typeof b === "number") return a - b;
-					if (typeof a === "string" && typeof b === "string")
-						return a.localeCompare(b);
-					return 0;
+				const compareValues = (a: React.ReactNode, b: React.ReactNode) => {
+					// Convertir ReactNode a string para comparación
+					const aStr = String(a || '');
+					const bStr = String(b || '');
+					
+					// Intentar comparar como números si ambos son numéricos
+					const aNum = Number(aStr);
+					const bNum = Number(bStr);
+					if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+					
+					// Comparar como strings
+					return aStr.localeCompare(bStr);
 				};
 				filtered.sort((a, b) => {
 					let comparison = 0;
@@ -403,6 +410,7 @@ export const StandardSphereGrid = memo(
 			calculatedCellHeight,
 			allowBadgeRender,
 			keyGroupColorMap,
+			keyGroupVisibility,
 		]);
 
 		return (
@@ -450,4 +458,6 @@ export const StandardSphereGrid = memo(
 		);
 	}
 );
+
+StandardSphereGrid.displayName = 'StandardSphereGrid';
 // #endregion

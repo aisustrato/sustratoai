@@ -17,8 +17,6 @@ import {
 	LayoutDashboard,
 	FileSpreadsheet,
 	Layers,
-	UserPlus,
-	ShieldCheck,
 	LayoutGrid,
 	FileUp,
 	ClipboardList, // Added for Datos Básicos
@@ -26,9 +24,6 @@ import {
 	User,          // Added for Miembros
 	Shield,        // Added for Roles
 } from "lucide-react";
-
-// Define consistent icon size for the navbar
-const NAV_ICON_SIZE = "h-4 w-4";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StandardButton } from "@/components/ui/StandardButton";
@@ -38,7 +33,6 @@ import { SustratoLogo } from "@/components/ui/sustrato-logo";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import {
 	StandardText,
-	type StandardTextProps,
 } from "@/components/ui/StandardText";
 import { useTheme } from "@/app/theme-provider";
 import { createAppColorTokens } from "@/lib/theme/ColorToken";
@@ -443,7 +437,14 @@ const navItems: NavItem[] = useMemo(() => {
 				: "none",
 			backdropFilter: scrolled ? "blur(8px)" : "none",
 		};
-	}, [scrolled, currentNavTokens, mode]);
+	}, [
+		scrolled, 
+		currentNavTokens, 
+		mode,
+		defaultNavTokens?.background?.normal,
+		defaultNavTokens?.background?.scrolled,
+		defaultNavTokens?.shadow
+	]);
 
 	return (
 		<>

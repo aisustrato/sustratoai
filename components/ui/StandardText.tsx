@@ -66,7 +66,7 @@ const StandardTextComponent = React.forwardRef(
             className, 
             ...props 
         }: StandardTextProps<C>,
-        ref: React.Ref<any>
+        ref: React.Ref<HTMLElement>
     ) {
     
         const { appColorTokens, mode } = useTheme();

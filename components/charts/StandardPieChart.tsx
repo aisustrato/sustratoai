@@ -6,7 +6,7 @@ import { useTheme } from '@/app/theme-provider';
 import { StandardText } from '@/components/ui/StandardText';
 import { generateNivoTheme } from '@/lib/theme/components/nivo-pie-chart-tokens';
 import { ResponsivePie } from '@nivo/pie';
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect } from 'react';
 
 export interface PieChartData {
   id: string;      // ej: 'pendientesRevision'
@@ -21,8 +21,27 @@ export interface StandardPieChartProps {
   totalValue?: number;
 }
 
-const CenteredMetric = ({ dataWithArc, centerX, centerY, totalValue }: any) => {
-  const total = totalValue ?? dataWithArc.reduce((acc: number, datum: any) => acc + datum.value, 0);
+import type { ComputedDatum } from '@nivo/pie';
+
+interface CenteredMetricProps {
+  dataWithArc: readonly ComputedDatum<PieChartData>[];
+  centerX: number;
+  centerY: number;
+  totalValue?: number;
+  radius?: number;
+  innerRadius?: number;
+  arcGenerator?: (params: {
+    startAngle: number;
+    endAngle: number;
+    innerRadius: number;
+    outerRadius: number;
+    cornerRadius?: number;
+    padAngle?: number;
+  }) => string | null;
+}
+
+const CenteredMetric = ({ dataWithArc, centerX, centerY, totalValue }: CenteredMetricProps) => {
+  const total = totalValue ?? dataWithArc.reduce((acc, datum) => acc + (datum.value || 0), 0);
   return (
     <StandardText
       asElement="text"
@@ -39,12 +58,12 @@ const CenteredMetric = ({ dataWithArc, centerX, centerY, totalValue }: any) => {
 
 export function StandardPieChart({ data, onColorMapGenerated, totalValue }: StandardPieChartProps) {
   const totalForPercentage = totalValue ?? data.reduce((acc, item) => acc + item.value, 0);
-  const { appColorTokens, mode } = useTheme();
+  const { appColorTokens } = useTheme();
 
   const { theme, colorMap } = useMemo(() => {
     if (!appColorTokens) return { theme: {}, colorMap: {} };
-    return generateNivoTheme(appColorTokens, mode);
-  }, [appColorTokens, mode]);
+    return generateNivoTheme(appColorTokens);
+  }, [appColorTokens]);
 
   useEffect(() => {
     if (onColorMapGenerated && colorMap) {
@@ -77,8 +96,7 @@ export function StandardPieChart({ data, onColorMapGenerated, totalValue }: Stan
         arcLinkLabelsColor={{ from: 'color' }}
         arcLabelsSkipAngle={15}
         arcLabelsTextColor={{ from: 'color', modifiers: [['darker', 2]] }}
-        // @ts-ignore
-        arcLinkLabel={(datum) => {
+        arcLinkLabel={(datum: ComputedDatum<PieChartData> & { data: { emoticon?: string } }) => {
           if (totalForPercentage === 0) return `${datum.value}`;
           const percentage = ((datum.value / totalForPercentage) * 100).toFixed(1);
           return `${datum.data.emoticon || ''} ${datum.value} (${percentage}%)`;

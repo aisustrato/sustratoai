@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { StandardInput } from '@/components/ui/StandardInput';
+// StandardInput no se está utilizando actualmente
+// import { StandardInput } from '@/components/ui/StandardInput';
 import { StandardSelect } from '@/components/ui/StandardSelect';
 import { StandardTextarea } from '@/components/ui/StandardTextarea';
 import { StandardButton } from '@/components/ui/StandardButton';
@@ -29,7 +30,6 @@ const GeminiShowroomPage = () => {
   ];
 
   const handleSubmit = async (action: 'translate' | 'summarize') => {
-
     setIsLoading(true);
     setError(null);
     setResult('');
@@ -50,8 +50,9 @@ const GeminiShowroomPage = () => {
       }
 
       setResult(data.result);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

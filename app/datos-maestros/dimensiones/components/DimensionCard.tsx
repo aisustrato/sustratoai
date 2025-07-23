@@ -13,7 +13,6 @@ import {
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardButton } from "@/components/ui/StandardButton";
-import { StandardIcon } from "@/components/ui/StandardIcon";
 import { PenLine, Trash2 } from "lucide-react"; // GripVertical para drag handle, Eye para ver detalles (comentado)
 
 import { cn } from "@/lib/utils";

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useCallback, useEffect } from "react";
 import { useTheme } from "@/app/theme-provider";
 
 interface ScrollSyncConfig {
@@ -9,12 +9,12 @@ interface ScrollSyncConfig {
 }
 
 export function useScrollSync({ editorRef, previewRef, content, enabled = true }: ScrollSyncConfig) {
-	const lastHighlightedRef = React.useRef<HTMLElement | null>(null);
-	const isScrollingSyncRef = React.useRef(false);
+	const lastHighlightedRef = useRef<HTMLElement | null>(null);
+	const isScrollingSyncRef = useRef(false);
 	const { appColorTokens } = useTheme();
 
 	// Obtener línea actual del cursor
-	const getCurrentLine = React.useCallback(() => {
+	const getCurrentLine = useCallback(() => {
 		if (!editorRef.current) return -1;
 		
 		const textarea = editorRef.current;
@@ -27,7 +27,7 @@ export function useScrollSync({ editorRef, previewRef, content, enabled = true }
 	}, [editorRef]);
 
 	// Obtener primera línea visible en el editor
-	const getFirstVisibleLine = React.useCallback(() => {
+	const getFirstVisibleLine = useCallback(() => {
 		if (!editorRef.current) return -1;
 		
 		const textarea = editorRef.current;
@@ -40,7 +40,7 @@ export function useScrollSync({ editorRef, previewRef, content, enabled = true }
 	}, [editorRef]);
 
 	// Limpiar highlight anterior
-	const clearHighlight = React.useCallback(() => {
+	const clearHighlight = useCallback(() => {
 		if (lastHighlightedRef.current) {
 			const element = lastHighlightedRef.current;
 			element.style.removeProperty('background-color');
@@ -54,7 +54,7 @@ export function useScrollSync({ editorRef, previewRef, content, enabled = true }
 	}, []);
 
 	// Sincronizar scroll del preview con la primera línea visible del editor
-	const syncPreviewScroll = React.useCallback(() => {
+	const syncPreviewScroll = useCallback(() => {
 		if (!enabled || !previewRef.current || !editorRef.current || isScrollingSyncRef.current) return;
 
 		const editor = editorRef.current;
@@ -97,7 +97,7 @@ export function useScrollSync({ editorRef, previewRef, content, enabled = true }
 	}, [enabled, previewRef, editorRef, getFirstVisibleLine]);
 
 	// MAPEO EXACTO: Índice y contenido por carriles separados
-	const updateHighlight = React.useCallback(() => {
+	const updateHighlight = useCallback(() => {
 		if (!enabled || !previewRef.current) return;
 
 		clearHighlight();
@@ -132,10 +132,10 @@ export function useScrollSync({ editorRef, previewRef, content, enabled = true }
 		} else {
 			console.log(`❌ No element found for line ${lineIndex} (esto NO debería pasar con matriz)`);
 		}
-	}, [enabled, previewRef, clearHighlight, getCurrentLine]);
+	}, [enabled, previewRef, clearHighlight, getCurrentLine, appColorTokens.accent]);
 
 	// Event listeners con throttling
-	React.useEffect(() => {
+	useEffect(() => {
 		if (!enabled || !editorRef.current) return;
 
 		const editor = editorRef.current;
@@ -174,7 +174,7 @@ export function useScrollSync({ editorRef, previewRef, content, enabled = true }
 	}, [enabled, editorRef, updateHighlight, clearHighlight, syncPreviewScroll]);
 
 	// Cleanup al cambiar contenido
-	React.useEffect(() => {
+	useEffect(() => {
 		clearHighlight();
 	}, [content, clearHighlight]);
 

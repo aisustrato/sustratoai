@@ -14,7 +14,7 @@ import {
 	type StandardCheckStyleType,
 	type StandardCheckTokens,
 } from "@/lib/theme/components/standard-check-tokens";
-import { StandardText } from "./StandardText";
+import { StandardText, type StandardTextSize } from "@/components/ui/StandardText";
 import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
 //#endregion ![head]
 
@@ -183,10 +183,10 @@ const StandardCheckbox = forwardRef<HTMLInputElement, StandardCheckboxProps>(
 					<div className="flex flex-col flex-grow pt-px">
 						{label && (
 							<StandardText
-								size={tokens.size.fontSize as any}
+							size={tokens.size.fontSize as StandardTextSize}
                                 weight="medium"
-								className={cn("leading-tight", labelClassName)}
-								colorScheme={disabled ? 'neutral' : variant as ColorSchemeVariant}
+							className={cn("leading-tight", labelClassName)}
+							colorScheme={disabled ? 'neutral' : variant as ColorSchemeVariant}
                                 colorShade={disabled ? 'textShade' : 'text'}
                             >
 								{label}

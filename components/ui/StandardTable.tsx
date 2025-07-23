@@ -1,13 +1,35 @@
 // StandardTable.tsx
 "use client";
 
-import React, { useMemo, useState, useRef, useEffect, Children, isValidElement, cloneElement, useLayoutEffect } from "react";
+import React, { useMemo, useState, useRef, Children, isValidElement, cloneElement, useLayoutEffect } from "react";
 import {
     type ColumnDef, flexRender, getCoreRowModel, useReactTable,
     getFilteredRowModel, getSortedRowModel, getExpandedRowModel,
     type Cell, type Header, type Row, type SortingState, type Table,
-    type CellContext, type RowData, type VisibilityState
+    type CellContext, type VisibilityState, type ColumnMeta as TanStackColumnMeta,
+    type TableMeta as TanStackTableMeta
 } from "@tanstack/react-table";
+
+// Definir nuestras propias interfaces de metadatos sin extender las existentes
+declare module '@tanstack/table-core' {
+    // Sobrescribir completamente la interfaz ColumnMeta
+    interface ColumnMeta<TData = unknown, TValue = unknown> {
+        align?: 'left' | 'center' | 'right';
+        isSticky?: 'left' | 'right';
+        size?: number;
+        isTruncatable?: boolean;
+        tooltipType?: 'standard' | 'longText';
+        cellVariant?: (context: CellContext<TData, TValue>) => 'highlight' | undefined;
+    }
+
+    // Sobrescribir completamente la interfaz TableMeta
+    interface TableMeta<TData = unknown> {
+        getRowStatus?: (row: TData) => Exclude<ColorSchemeVariant, 'neutral' | 'white' | 'default' | 'info'> | null;
+        filterPlaceholder?: string;
+        renderSubComponent?: (row: Row<TData>) => React.ReactNode;
+        truncateRowsTo?: number | null;
+    }
+}
 import { useTheme } from "@/app/theme-provider";
 import { cn } from "@/lib/utils";
 import { generateTableTokens } from "@/lib/theme/components/standard-table-tokens";
@@ -23,22 +45,7 @@ import { motion } from "framer-motion";
 import tinycolor from 'tinycolor2';
 
 
-declare module "@tanstack/react-table" {
-    interface ColumnMeta<TData extends RowData, TValue> {
-        align?: 'left' | 'center' | 'right';
-        isSticky?: 'left' | 'right';
-        size?: number;
-        isTruncatable?: boolean;
-        tooltipType?: 'standard' | 'longText';
-        cellVariant?: (context: CellContext<TData, TValue>) => 'highlight' | undefined;
-    }
-    interface TableMeta<TData extends RowData> {
-        getRowStatus?: (row: TData) => Exclude<ColorSchemeVariant, 'neutral' | 'white' | 'default' | 'info'> | null;
-        filterPlaceholder?: string;
-        renderSubComponent?: (row: Row<TData>) => React.ReactNode;
-        truncateRowsTo?: number | null;
-    }
-}
+// Extensión de tipos de TanStack Table
 
 export interface StandardTableProps<TData extends object> {
     data: TData[];
@@ -181,7 +188,7 @@ const StandardTableHeader = <TData extends object>({ table }: { table: Table<TDa
 };
 
 
-const ExpandIcon = <TData extends object>({ isExpanded }: { isExpanded: boolean }) => {
+const ExpandIcon = ({ isExpanded }: { isExpanded: boolean }) => {
     return (
     <div className="flex items-center justify-center h-full w-full">
         <div className={cn("flex items-center justify-center h-6 w-6 rounded-full border transition-colors", isExpanded ? "bg-[var(--table-expander-expandedCircleBackground)]" : "bg-[var(--table-expander-circleBackground)]", "border-[var(--table-expander-circleBorderColor)]")}>
@@ -190,6 +197,7 @@ const ExpandIcon = <TData extends object>({ isExpanded }: { isExpanded: boolean 
     </div>
     )
 };
+ExpandIcon.displayName = 'StandardTable.ExpandIcon';
 
 const StandardTableCell = <TData extends object, TValue>({ cell }: { cell: Cell<TData, TValue> }) => {
     const meta = cell.column.columnDef.meta;
@@ -264,7 +272,7 @@ const StandardTableRow = <TData extends object>({ row, getRowStatus, renderSubCo
     renderSubComponent?: (row: Row<TData>) => React.ReactNode 
 }) => {
     // ✅ SI LA FILA ES UN FANTASMA, NO LA RENDERIZAMOS.
-    if ((row.original as any)?.__isGhost) {
+    if ('__isGhost' in row.original && (row.original as { __isGhost?: boolean }).__isGhost) {
         return null;
     }
 
@@ -284,25 +292,36 @@ const StandardTableRow = <TData extends object>({ row, getRowStatus, renderSubCo
         </React.Fragment>
     );
 };
+StandardTableRow.displayName = 'StandardTable.Row';
 
 const StandardTableBody = <TData extends object>({ table }: SubComponentProps<TData>) => {
     if (!table) return null;
     const getRowStatus = table.options.meta?.getRowStatus;
     const renderSubComponent = table.options.meta?.renderSubComponent;
-    return (<tbody>{table.getRowModel().rows.map(row => (<StandardTableRow key={row.id} row={row} getRowStatus={getRowStatus} renderSubComponent={renderSubComponent} />))}</tbody>);
+    return (
+        <tbody>
+            {table.getRowModel().rows.map((row) => (
+                <StandardTableRow key={row.id} row={row} getRowStatus={getRowStatus} renderSubComponent={renderSubComponent} />
+            ))}
+        </tbody>
+    );
 };
+StandardTableBody.displayName = 'StandardTable.Body';
 
-const StandardTableTable = <TData extends object>({ table, ...props }: SubComponentProps<TData>) => {
+import type { CSSProperties } from 'react';
+
+const StandardTableTable = <TData extends object>({ table, style }: SubComponentProps<TData> & { style?: CSSProperties }) => {
     if (!table) return null;
     return (
-        <table className="w-full text-sm border-collapse" {...props}>
-            <StandardTableHeader table={table} />
-            <StandardTableBody table={table} />
-        </table>
+        <div className="w-full overflow-auto" style={style}>
+            <table className="w-full border-collapse">
+                <StandardTableHeader table={table} />
+                <StandardTableBody table={table} />
+            </table>
+        </div>
     );
 };
 StandardTableTable.displayName = "StandardTable.Table";
-
 
 function StandardTableRoot<TData extends object>({
     data, columns, getRowStatus, children, className, filterPlaceholder,

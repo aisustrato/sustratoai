@@ -82,7 +82,8 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
     const changedData: Partial<Omit<UpdateProjectDetailsPayload, "projectId">> = {};
     (Object.keys(formData) as Array<keyof typeof formData>).forEach((key) => {
       if (formData[key] !== initialData[key]) {
-        (changedData as any)[key] = formData[key];
+        // Usamos type assertion segura ya que sabemos que las claves coinciden
+        (changedData as Record<string, unknown>)[key] = formData[key];
       }
     });
 
@@ -117,9 +118,10 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
           description: result.error || "No se pudo guardar el proyecto.",
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error en el servidor. Inténtalo de nuevo más tarde.';
       toast.error("Error inesperado", {
-        description: "Ocurrió un error en el servidor. Inténtalo de nuevo más tarde.",
+        description: errorMessage,
       });
     } finally {
       setIsSaving(false);
