@@ -9,7 +9,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import Papa from 'papaparse';
+import { parse as papaParse } from 'papaparse';
 import { toast } from 'sonner';
 import { ColumnDef, Row } from '@tanstack/react-table';
 import { StandardTable } from '@/components/ui/StandardTable';
@@ -159,7 +159,8 @@ export default function CargarArticulosPage() {
             } else {
                 toast.error(result.error || 'No se pudieron eliminar los artículos.');
             }
-        } catch (_error) {
+        } catch {
+            // No necesitamos usar la variable de error aquí, pero capturamos para el toast.
             toast.error('Ocurrió un error inesperado al eliminar.');
         } finally {
             setIsDeleting(false);
@@ -184,7 +185,7 @@ export default function CargarArticulosPage() {
         reader.onload = (e) => {
             const csvText = e.target?.result as string;
 
-            Papa.parse<ArticleFromCsv>(csvText, {
+            papaParse<ArticleFromCsv>(csvText, {
                 delimiter,
                 header: true,
                 skipEmptyLines: true,

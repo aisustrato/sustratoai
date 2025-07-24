@@ -12,7 +12,6 @@ import { StandardText } from "@/components/ui/StandardText";
 import {
 	User,
 	History,
-	Settings,
 	ChevronsLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";

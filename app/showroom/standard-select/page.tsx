@@ -1,28 +1,9 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState } from "react";
 import { StandardSelect } from "@/components/ui/StandardSelect";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
-import { StandardButton } from "@/components/ui/StandardButton";
-import { ThemeSwitcher } from "@/components/ui/theme-switcher";
-import { Star, ChevronDown, ChevronUp, Check, X, List, LayoutGrid, Menu, ArrowUpDown } from "lucide-react";
-import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
-
-// Tipos y constantes
-type SelectVariant = "default" | "multiple" | "with-icons" | "long-options";
-
-const colorSchemes: ColorSchemeVariant[] = [
-  "primary",
-  "secondary",
-  "tertiary",
-  "accent",
-  "success",
-  "warning",
-  "danger",
-  "neutral",
-];
 
 const selectOptions = [
   { value: "option1", label: "Opción 1" },
@@ -32,35 +13,32 @@ const selectOptions = [
   { value: "option5", label: "Opción 5" },
 ];
 
-const longOptions = [
-  { value: "long1", label: "Esta es una opción muy larga que debería caber en el menú desplegable sin problemas de diseño" },
-  { value: "long2", label: "Otra opción con texto largo para probar el comportamiento del menú desplegable" },
-  { value: "long3", label: "Tercera opción con texto largo para asegurar que el menú se ajuste correctamente" },
-];
-
-const optionsWithIcons = [
-  { value: "star", label: "Favorito", icon: Star },
-  { value: "list", label: "Lista", icon: List },
-  { value: "grid", label: "Cuadrícula", icon: LayoutGrid },
-  { value: "menu", label: "Menú", icon: Menu },
-  { value: "sort", label: "Ordenar", icon: ArrowUpDown },
-];
-
 export default function StandardSelectShowroomPage() {
-  const [selectedValue, setSelectedValue] = useState<string | string[]>([]);
-  const [selectedMultiple, setSelectedMultiple] = useState<string[]>([]);
-  const [selectedWithIcons, setSelectedWithIcons] = useState<string>("");
-  const [selectedLong, setSelectedLong] = useState<string>("");
-  const [variant, setVariant] = useState<SelectVariant>("default");
-  const [showInCard, setShowInCard] = useState(false);
-  const [showInScroll, setShowInScroll] = useState(false);
-  const [scrollPosition, setScrollPosition] = useState(0);
+  const [selectedValue, setSelectedValue] = useState<string | string[] | undefined>(undefined);
+  const [selectedMultiple, setSelectedMultiple] = useState<string[] | undefined>([]);
+  // Estados para futuras implementaciones
+  const showInCard = false;
+  const showInScroll = false;
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    setScrollPosition(e.currentTarget.scrollTop);
+  // Función para manejar el scroll (mantenida para futura implementación)
+  const handleScroll = () => {
+    // setScrollPosition(e.currentTarget.scrollTop);
   };
 
-  const renderSelect = (selectProps: any) => (
+  interface SelectProps {
+    options: Array<{ value: string; label: string; icon?: React.ComponentType<{ className?: string }> }>;
+    value: string | string[] | undefined;
+    onChange: (value: string | string[] | undefined) => void;
+    placeholder?: string;
+    multiple?: boolean;
+    clearable?: boolean;
+    label?: string;
+    className?: string;
+  }
+
+  const renderSelect = (selectProps: Omit<SelectProps, 'onChange'> & { 
+    onChange: (value: string | string[] | undefined) => void 
+  }) => (
     <div className="mb-6">
       <StandardText className="mb-2 font-medium">{selectProps.label}</StandardText>
       <StandardSelect
@@ -78,7 +56,7 @@ export default function StandardSelectShowroomPage() {
         {renderSelect({
           options: selectOptions,
           value: selectedValue,
-          onChange: (value: string | string[]) => setSelectedValue(value),
+          onChange: (value: string | string[] | undefined) => setSelectedValue(value),
           placeholder: "Selecciona una opción",
           clearable: true,
           label: "Selección simple"
@@ -91,7 +69,7 @@ export default function StandardSelectShowroomPage() {
         {renderSelect({
           options: selectOptions,
           value: selectedMultiple,
-          onChange: (value: string | string[]) => setSelectedMultiple(Array.isArray(value) ? value : []),
+          onChange: (value: string | string[] | undefined) => setSelectedMultiple(Array.isArray(value) ? value : []),
           placeholder: "Selecciona varias opciones",
           multiple: true,
           clearable: true,
@@ -99,30 +77,20 @@ export default function StandardSelectShowroomPage() {
         })}
       </StandardCard>
 
-      {/* Select con Íconos */}
+      {/* Select con Íconos - Ejemplo deshabilitado */}
       <StandardCard className="p-6 relative z-20">
-        <StandardText className="text-lg font-semibold mb-4">Select con Íconos</StandardText>
-        {renderSelect({
-          options: optionsWithIcons,
-          value: selectedWithIcons,
-          onChange: (value: string | string[]) => setSelectedWithIcons(Array.isArray(value) ? value[0] : value),
-          placeholder: "Selecciona un ícono",
-          clearable: true,
-          label: "Con íconos"
-        })}
+        <StandardText className="text-lg font-semibold mb-4">Select con Íconos (Ejemplo deshabilitado)</StandardText>
+        <StandardText className="text-sm text-gray-500 mb-4">
+          Esta característica está deshabilitada temporalmente.
+        </StandardText>
       </StandardCard>
 
-      {/* Select con Opciones Largas */}
+      {/* Select con Opciones Largas - Ejemplo deshabilitado */}
       <StandardCard className="p-6 relative z-10">
-        <StandardText className="text-lg font-semibold mb-4">Opciones Largas</StandardText>
-        {renderSelect({
-          options: longOptions,
-          value: selectedLong,
-          onChange: (value: string | string[]) => setSelectedLong(Array.isArray(value) ? value[0] : value),
-          placeholder: "Selecciona una opción larga",
-          clearable: true,
-          label: "Opciones de texto largo"
-        })}
+        <StandardText className="text-lg font-semibold mb-4">Select con Opciones Largas (Ejemplo deshabilitado)</StandardText>
+        <StandardText className="text-sm text-gray-500">
+          Esta característica está deshabilitada temporalmente.
+        </StandardText>
       </StandardCard>
     </div>
   );
@@ -136,24 +104,26 @@ export default function StandardSelectShowroomPage() {
             Componente de selección personalizado con soporte para múltiples variantes
           </StandardText>
         </div>
-        <ThemeSwitcher />
+        <div className="w-8 h-8 bg-neutral-200 dark:bg-neutral-700 rounded-full flex items-center justify-center">
+          <span className="text-xs">T</span>
+        </div>
       </div>
 
       <div className="mb-8">
         <StandardText className="text-lg font-semibold mb-4">Controles</StandardText>
         <div className="flex flex-wrap gap-4 mb-6">
-          <StandardButton
-            onClick={() => setShowInCard(!showInCard)}
-            styleType={showInCard ? "solid" : "outline"}
+          <button 
+            className="px-4 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            disabled
           >
             {showInCard ? "Ocultar tarjeta" : "Mostrar en tarjeta"}
-          </StandardButton>
-          <StandardButton
-            onClick={() => setShowInScroll(!showInScroll)}
-            styleType={showInScroll ? "solid" : "outline"}
+          </button>
+          <button 
+            className="px-4 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            disabled
           >
             {showInScroll ? "Ocultar scroll" : "Mostrar con scroll"}
-          </StandardButton>
+          </button>
         </div>
       </div>
 
@@ -174,7 +144,7 @@ export default function StandardSelectShowroomPage() {
                 {renderSelect({
                   options: selectOptions,
                   value: selectedValue,
-                  onChange: (value: string | string[]) => setSelectedValue(value),
+                  onChange: (value: string | string[] | undefined) => setSelectedValue(value),
                   placeholder: "Prueba con scroll",
                   clearable: true,
                   label: "Select con scroll"
@@ -191,7 +161,7 @@ export default function StandardSelectShowroomPage() {
           {renderSelect({
             options: selectOptions,
             value: selectedValue,
-            onChange: (value: string | string[]) => setSelectedValue(value),
+            onChange: (value: string | string[] | undefined) => setSelectedValue(value),
             placeholder: "Selecciona una opción",
             clearable: true,
             label: "Select en tarjeta"

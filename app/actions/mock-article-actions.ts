@@ -4,7 +4,7 @@
 interface ArticleData {
   Title: string;
   Authors: string;
-  [key: string]: any;
+  [key: string]: string | number | string[];
 }
 
 /**

@@ -11,7 +11,7 @@ import {
   modificarDetallesMiembroEnProyecto,
   ProjectMemberDetails,
   ProjectRoleInfo,
-  ResultadoOperacion,
+
   MemberProfileData,
 } from "@/lib/actions/member-actions";
 import { StandardButton } from "@/components/ui/StandardButton";
