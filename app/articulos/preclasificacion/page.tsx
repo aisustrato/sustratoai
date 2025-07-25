@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import {
 	getProjectBatchesForUser,
 } from "@/lib/actions/preclassification-actions";
+import { useUserProfile, getUserDisplayName } from "@/hooks/useUserProfile";
 import { type BatchWithCounts } from "@/lib/types/preclassification-types";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { ClipboardList } from "lucide-react";
@@ -87,6 +88,7 @@ const getVisualsForStatus = (
 const PreclassificationPage = () => {
 	const auth = useAuth();
 	const router = useRouter();
+	const { profile: userProfile } = useUserProfile();
 	const [batches, setBatches] = useState<BatchWithCounts[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -321,7 +323,7 @@ const PreclassificationPage = () => {
 			<StandardPageTitle
 				title="Preclasificación de Artículos"
 				mainIcon={ClipboardList}
-				subtitle="Visualiza y gestiona el estado de los artículos de los lotes activos."
+				subtitle={`${getUserDisplayName(auth.user, userProfile)}, estos son tus lotes asignados`}
 				showBackButton={{ href: "/articulos" }}
 				breadcrumbs={[
 					{ label: "Artículos", href: "/articulos" },

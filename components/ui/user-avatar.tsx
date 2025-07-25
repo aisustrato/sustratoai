@@ -18,6 +18,7 @@ import { generateUserAvatarTokens } from "@/lib/theme/components/user-avatar-tok
 import { actualizarProyectoActivo } from "@/lib/actions/project-dashboard-actions"; // Importar server action y tipo
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { FontThemeSwitcher } from "@/components/ui/font-theme-switcher";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 // Traducciones amigables para los nombres de permisos (sin cambios)
 const permissionTranslations = {
@@ -233,11 +234,22 @@ export function UserAvatar({
 	const defaultBorderColor = "rgba(150, 150, 150, 0.3)";
 	const defaultTextColor = "#333333";
 
-	const userDisplayName =
-		user?.user_metadata?.public_display_name ||
-		user?.user_metadata?.name ||
-		user?.email ||
-		"Usuario";
+	// Usar el hook useUserProfile para obtener el perfil extendido del usuario
+	const { profile: userProfile } = useUserProfile();
+
+	// Obtener el nombre completo del usuario desde el perfil extendido o los metadatos
+	const userDisplayName = useMemo(() => {
+		if (userProfile?.public_display_name) return userProfile.public_display_name;
+		if (userProfile?.first_name) {
+			return userProfile.last_name 
+				? `${userProfile.first_name} ${userProfile.last_name}`
+			: userProfile.first_name;
+		}
+		return user?.user_metadata?.public_display_name ||
+			user?.user_metadata?.name ||
+			user?.email ||
+			"Usuario";
+	}, [user, userProfile]);
 
 	return (
 		<div className="relative">

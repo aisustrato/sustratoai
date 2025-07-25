@@ -1,229 +1,179 @@
 "use client";
 
-import { createContext, forwardRef, useContext, useMemo } from 'react';
+import React, { createContext, forwardRef, useContext, useMemo, useState } from 'react';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
 import { generateDropdownMenuTokens } from "@/lib/theme/components/standard-dropdown-menu-tokens";
-import { Check } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft } from 'lucide-react';
 
-// --- Contexto para las variables CSS ---
 const DropdownMenuCssVariablesContext = createContext<React.CSSProperties>({});
 
-// --- Componente Raíz y Proveedor de Estilos ---
+interface SubmenuContextType {
+    side: 'left' | 'right';
+}
+const SubmenuContext = createContext<SubmenuContextType>({ side: 'right' });
+
 interface StandardDropdownMenuRootProps {
     children: React.ReactNode;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
 }
 
-const StandardDropdownMenuRoot = ({ children, open, onOpenChange }: StandardDropdownMenuRootProps) => {
+const StandardDropdownMenuRoot = ({ children, ...props }: StandardDropdownMenuRootProps) => {
     const { appColorTokens, mode } = useTheme();
     
-    const cssVariables = useMemo<React.CSSProperties & { [key: `--${string}`]: string | number }>(() => {
+    const cssVariables = useMemo(() => {
         if (!appColorTokens || !mode) return {};
         const tokens = generateDropdownMenuTokens(appColorTokens, mode);
         const vars: { [key: `--${string}`]: string | number } = {};
-
-        Object.entries(tokens.content).forEach(([key, value]) => { vars[`--dropdown-content-${key}`] = value; });
-        Object.entries(tokens.item).forEach(([key, value]) => { vars[`--dropdown-item-${key}`] = value; });
-        Object.entries(tokens.separator).forEach(([key, value]) => { vars[`--dropdown-separator-${key}`] = value; });
-        Object.entries(tokens.arrow).forEach(([key, value]) => { vars[`--dropdown-arrow-${key}`] = value; });
-
+        Object.entries(tokens).forEach(([group, groupTokens]) => {
+            if (typeof groupTokens === 'object' && groupTokens !== null) {
+                Object.entries(groupTokens).forEach(([key, value]) => {
+                    if (typeof value === 'string' || typeof value === 'number') {
+                        vars[`--sddm-${group}-${key}`] = value;
+                    }
+                });
+            }
+        });
         return vars;
     }, [appColorTokens, mode]);
 
     return (
         <DropdownMenuCssVariablesContext.Provider value={cssVariables}>
-            <DropdownMenuPrimitive.Root open={open} onOpenChange={onOpenChange}>
+            <DropdownMenuPrimitive.Root {...props}>
                 {children}
             </DropdownMenuPrimitive.Root>
         </DropdownMenuCssVariablesContext.Provider>
     );
 };
 
-// --- Subcomponentes ---
-
 const StandardDropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 
 const StandardDropdownMenuContent = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.Content>,
-    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
->(({ sideOffset = 4, ...props }, ref) => {
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & { submenusSide?: 'left' | 'right' }
+>(({ sideOffset = 6, className, children, submenusSide = 'right', ...props }, ref) => {
     const cssVariables = useContext(DropdownMenuCssVariablesContext);
+    
     return (
         <DropdownMenuPrimitive.Portal>
-            <DropdownMenuPrimitive.Content
-                ref={ref}
-                sideOffset={sideOffset}
-                className={cn(
-                    "z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md",
-                    "animate-in data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
-                    "data-[side=right]:slide-in-from-left-2 data-[side=left]:slide-in-from-right-2"
-                )}
-                style={{
-                    ...cssVariables,
-                    backgroundColor: 'var(--dropdown-content-backgroundColor)',
-                    borderColor: 'var(--dropdown-content-borderColor)',
-                    boxShadow: 'var(--dropdown-content-boxShadow)',
-                }}
-                {...props}
-            />
+            <DropdownMenuPrimitive.Content ref={ref} sideOffset={sideOffset} className={cn("z-50 min-w-[12rem] overflow-hidden rounded-lg border p-1.5", "animate-in")} style={{ ...cssVariables, backgroundColor: 'var(--sddm-content-backgroundColor)', borderColor: 'var(--sddm-content-borderColor)', boxShadow: 'var(--sddm-content-boxShadow)'}} {...props}>
+                <SubmenuContext.Provider value={{ side: submenusSide }}>
+                    {children}
+                </SubmenuContext.Provider>
+            </DropdownMenuPrimitive.Content>
         </DropdownMenuPrimitive.Portal>
     );
 });
-StandardDropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
+StandardDropdownMenuContent.displayName = 'StandardDropdownMenuContent';
 
-
-const StandardDropdownMenuItem = forwardRef<
+const StandardMenuItem = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.Item>,
-    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & { inset?: boolean }
->(({ inset, ...props }, ref) => (
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & { className?: string }
+>(({ className, ...props }, ref) => (
     <DropdownMenuPrimitive.Item
         ref={ref}
         className={cn(
-            "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
-            "focus:bg-[var(--dropdown-item-hoverBackgroundColor)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-            inset && "pl-8"
+            "relative flex cursor-pointer select-none items-center rounded-md px-2.5 py-2 text-sm outline-none transition-colors",
+            "text-[var(--sddm-item-foregroundColor)]",
+            "hover:bg-[var(--sddm-item-hoverBackgroundColor)] hover:text-[var(--sddm-item-hoverForegroundColor)]",
+            "focus:bg-[var(--sddm-item-hoverBackgroundColor)] focus:text-[var(--sddm-item-hoverForegroundColor)]",
+            "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            className
         )}
-        style={{ 
-            color: 'var(--dropdown-item-foregroundColor)',
-            backgroundColor: 'var(--dropdown-item-backgroundColor)',
-        }}
         {...props}
     />
 ));
-StandardDropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
+StandardMenuItem.displayName = 'StandardMenuItem';
 
+
+const StandardDropdownMenuSeparator = forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.Separator>, React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>>((props, ref) => (
+    <DropdownMenuPrimitive.Separator ref={ref} className={cn("-mx-1 my-1.5 h-px", "bg-[var(--sddm-separator-backgroundColor)]")} {...props} />
+));
+StandardDropdownMenuSeparator.displayName = 'StandardDropdownMenuSeparator';
+
+const StandardDropdownMenuLabel = forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.Label>, React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label>>((props, ref) => (
+    <DropdownMenuPrimitive.Label ref={ref} className={cn("px-2.5 py-1.5 text-xs font-semibold", "text-[var(--sddm-label-foregroundColor)]")} {...props} />
+));
+StandardDropdownMenuLabel.displayName = 'StandardDropdownMenuLabel';
+
+
+interface SubMenuItemProps extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> {
+    submenuContent: React.ReactNode;
+}
+
+const SubMenuItem = forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
+    SubMenuItemProps
+>(({ children, className, submenuContent, ...props }, ref) => {
+    const { side } = useContext(SubmenuContext);
+    const cssVariables = useContext(DropdownMenuCssVariablesContext);
+
+    return (
+        <DropdownMenuPrimitive.Sub>
+            <DropdownMenuPrimitive.SubTrigger
+                ref={ref}
+                className={cn("relative flex w-full cursor-pointer select-none items-center rounded-md px-2.5 py-2 text-sm outline-none transition-colors", "focus:bg-[var(--sddm-item-hoverBackgroundColor)] focus:text-[var(--sddm-item-hoverForegroundColor)]", "data-[state=open]:bg-[var(--sddm-item-hoverBackgroundColor)] data-[state=open]:text-[var(--sddm-item-hoverForegroundColor)]", className)}
+                {...props}
+            >
+                <div className="flex-grow flex items-center gap-2">
+                    {side === 'left' && <ChevronLeft className="h-4 w-4" />}
+                    {children}
+                </div>
+                {side === 'right' && <ChevronRight className="h-4 w-4" />}
+            </DropdownMenuPrimitive.SubTrigger>
+            <DropdownMenuPrimitive.Portal>
+                <DropdownMenuPrimitive.SubContent
+                    sideOffset={6}
+                    // 📌 FIX DEFINITIVO: Eliminada la propiedad `side={side}` que causaba el error recurrente.
+                    className={cn("z-50 min-w-[12rem] overflow-hidden rounded-lg border p-1.5", "animate-in")}
+                    style={{ ...cssVariables, backgroundColor: 'var(--sddm-content-backgroundColor)', borderColor: 'var(--sddm-content-borderColor)', boxShadow: 'var(--sddm-content-boxShadow)'}}
+                >
+                    {submenuContent}
+                </DropdownMenuPrimitive.SubContent>
+            </DropdownMenuPrimitive.Portal>
+        </DropdownMenuPrimitive.Sub>
+    );
+});
+SubMenuItem.displayName = 'SubMenuItem';
 
 const StandardDropdownMenuCheckboxItem = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
->(({ children, checked, ...props }, ref) => (
-    <DropdownMenuPrimitive.CheckboxItem
-        ref={ref}
-        className={cn(
-            "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors",
-            "focus:bg-[var(--dropdown-item-hoverBackgroundColor)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-        )}
-        style={{ color: 'var(--dropdown-item-foregroundColor)' }}
-        checked={checked}
-        {...props}
-    >
-        <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-            <DropdownMenuPrimitive.ItemIndicator>
-                <Check className="h-4 w-4" />
-            </DropdownMenuPrimitive.ItemIndicator>
-        </span>
-        {children}
-    </DropdownMenuPrimitive.CheckboxItem>
-));
-StandardDropdownMenuCheckboxItem.displayName = DropdownMenuPrimitive.CheckboxItem.displayName;
-
-
-const StandardDropdownMenuSeparator = forwardRef<
-    React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
-    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
->(({ className, ...props }, ref) => (
-    <DropdownMenuPrimitive.Separator
-        ref={ref}
-        className={cn("-mx-1 my-1 h-px", className)}
-        style={{ backgroundColor: 'var(--dropdown-separator-backgroundColor)' }}
-        {...props}
-    />
-));
-StandardDropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
-
-
-const StandardDropdownMenuLabel = forwardRef<
-    React.ElementRef<typeof DropdownMenuPrimitive.Label>,
-    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & { inset?: boolean }
->(({ inset, className, ...props }, ref) => (
-    <DropdownMenuPrimitive.Label
-        ref={ref}
-        className={cn(
-            "px-2 py-1.5 text-sm font-semibold", 
-            inset && "pl-8",
-            className
-        )}
-        style={{ color: 'var(--dropdown-item-disabledForegroundColor)'}}
-        {...props}
-    />
-));
-StandardDropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
-
-
-// --- Componentes de Submenú ---
-const StandardDropdownMenuSub = DropdownMenuPrimitive.Sub;
-
-const StandardDropdownMenuSubTrigger = forwardRef<
-    React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
-    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & { inset?: boolean }
->(({ inset, children, className, ...props }, ref) => (
-    <DropdownMenuPrimitive.SubTrigger
-        ref={ref}
-        className={cn(
-            "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",
-            "focus:bg-[var(--dropdown-item-hoverBackgroundColor)] data-[state=open]:bg-[var(--dropdown-item-hoverBackgroundColor)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-            inset && "pl-8",
-            className
-        )}
-        style={{ 
-            color: 'var(--dropdown-item-foregroundColor)',
-            backgroundColor: 'var(--dropdown-item-backgroundColor)',
-        }}
-        {...props}
-    >
-        {children}
-        <svg
-            className="ml-auto h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-        >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-    </DropdownMenuPrimitive.SubTrigger>
-));
-StandardDropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName;
-
-const StandardDropdownMenuSubContent = forwardRef<
-    React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
-    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
->(({ className, ...props }, ref) => {
+>(({ className, children, checked, ...props }, ref) => {
     const cssVariables = useContext(DropdownMenuCssVariablesContext);
+    
     return (
-        <DropdownMenuPrimitive.SubContent
+        <DropdownMenuPrimitive.CheckboxItem
             ref={ref}
             className={cn(
-                "z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md",
-                "animate-in data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
-                "data-[side=right]:slide-in-from-left-2 data-[side=left]:slide-in-from-right-2",
+                "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors",
+                "focus:bg-[var(--sddm-item-hoverBackgroundColor)] focus:text-[var(--sddm-item-hoverForegroundColor)]",
+                "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
                 className
             )}
-            style={{
-                ...cssVariables,
-                backgroundColor: 'var(--dropdown-content-backgroundColor)',
-                borderColor: 'var(--dropdown-content-borderColor)',
-                boxShadow: 'var(--dropdown-content-boxShadow)',
-            }}
+            checked={checked}
+            style={cssVariables}
             {...props}
-        />
+        >
+            <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                <DropdownMenuPrimitive.ItemIndicator>
+                    <Check className="h-4 w-4" />
+                </DropdownMenuPrimitive.ItemIndicator>
+            </span>
+            {children}
+        </DropdownMenuPrimitive.CheckboxItem>
     );
 });
-StandardDropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayName;
+StandardDropdownMenuCheckboxItem.displayName = 'StandardDropdownMenu.CheckboxItem';
 
-
-// --- Exportación compuesta ---
 export const StandardDropdownMenu = Object.assign(StandardDropdownMenuRoot, {
     Trigger: StandardDropdownMenuTrigger,
     Content: StandardDropdownMenuContent,
-    Item: StandardDropdownMenuItem,
-    CheckboxItem: StandardDropdownMenuCheckboxItem,
+    Item: StandardMenuItem,
     Separator: StandardDropdownMenuSeparator,
     Label: StandardDropdownMenuLabel,
-    Sub: StandardDropdownMenuSub,
-    SubTrigger: StandardDropdownMenuSubTrigger,
-    SubContent: StandardDropdownMenuSubContent,
+    SubMenuItem: SubMenuItem,
+    CheckboxItem: StandardDropdownMenuCheckboxItem,
 });

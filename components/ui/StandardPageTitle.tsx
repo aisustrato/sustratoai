@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { ChevronRight, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { StandardText } from "@/components/ui/StandardText";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardBreadcrumbs } from "@/components/ui/StandardBreadcrumbs";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 
 import { cn } from "@/lib/utils";
@@ -50,36 +51,32 @@ export function StandardPageTitle({
     <div className={cn("space-y-2 mb-8", className)}>
       {/* Breadcrumbs */}
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="flex items-center text-sm text-muted-foreground mb-2">
-          {breadcrumbs.map((crumb, index) => (
-            <React.Fragment key={index}>
-              {index > 0 && (
-                <StandardIcon styleType="outline" size="xs" colorScheme="tertiary" colorShade="pure"><ChevronRight className="h-4 w-4 mx-1 text-muted-foreground/70" /></StandardIcon>
-              )}
-              {crumb.href ? (
-                <Link
-                  href={crumb.href}
-                  className="hover:text-primary transition-colors"
-                >
-                  {crumb.label}
-                </Link>
-              ) : (
-                <span className="text-foreground font-medium">{crumb.label}</span>
-              )}
-            </React.Fragment>
-          ))}
-        </nav>
+        <div className="mb-2">
+          <StandardBreadcrumbs
+            items={breadcrumbs.map((crumb, index) => ({
+              label: crumb.label,
+              href: crumb.href,
+              isCurrent: index === breadcrumbs.length - 1
+            }))}
+            colorScheme="primary"
+            variant="default"
+          />
+        </div>
       )}
 
       {/* Botón de regreso */}
       {backButton && (
-        <Link
-          href={backButton.href}
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-2"
-        >
-          <StandardIcon styleType="outline" size="xs" colorScheme="tertiary" colorShade="pure"><ArrowLeft className="h-3.5 w-3.5 mr-1" /></StandardIcon>
-          {backButton.label || "Volver"}
-        </Link>
+        <div className="mb-2">
+          <StandardButton
+            styleType="ghost"
+            size="sm"
+            leftIcon={ArrowLeft}
+            className="px-2 h-8"
+            onClick={() => window.location.href = backButton.href}
+          >
+            {backButton.label || "Volver"}
+          </StandardButton>
+        </div>
       )}
 
       {/* Título principal con icono opcional */}

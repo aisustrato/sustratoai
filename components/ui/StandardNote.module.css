@@ -3,10 +3,14 @@
 .noteContainer {
   position: relative;
   overflow: hidden;
+  width: 100%;
+  min-height: 180px;
 }
 
+/* Estilos para el textarea */
 .rawTextarea {
   width: 100%;
+  min-height: 180px;
   background: transparent;
   border: none;
   outline: none;
@@ -14,174 +18,154 @@
   font-family: 'Courier New', monospace;
   font-size: 14px;
   line-height: 1.5;
+  padding: 0.5rem;
 }
 
-/* Estilos específicos para @uiw/react-md-editor - Solo afectar el contenedor principal */
-.noteContainer :global(.w-md-editor) {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+/* Estilos para la vista previa de Markdown */
+.markdownPreview {
+  width: 100%;
+  min-height: 180px;
+  padding: 0.5rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
-/* Corregir elemento negro a la izquierda del editor */
-.noteContainer :global(.w-md-editor-text-container) {
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
+/* Estilos básicos para elementos de Markdown */
+.markdownPreview h1,
+.markdownPreview h2,
+.markdownPreview h3,
+.markdownPreview h4,
+.markdownPreview h5,
+.markdownPreview h6 {
+  margin: 1em 0 0.5em 0;
+  line-height: 1.2;
 }
 
-.noteContainer :global(.w-md-editor-text) {
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
+.markdownPreview h1 { font-size: 1.8em; }
+.markdownPreview h2 { font-size: 1.5em; }
+.markdownPreview h3 { font-size: 1.3em; }
+.markdownPreview h4 { font-size: 1.1em; }
+.markdownPreview h5 { font-size: 1em; font-weight: bold; }
+.markdownPreview h6 { font-size: 1em; font-style: italic; }
+
+.markdownPreview p {
+  margin: 0.8em 0;
+  line-height: 1.6;
 }
 
-.noteContainer :global(.w-md-editor-text-container::before),
-.noteContainer :global(.w-md-editor-text-container::after) {
-  display: none !important;
-  content: none !important;
+.markdownPreview ul,
+.markdownPreview ol {
+  margin: 0.8em 0;
+  padding-left: 2em;
 }
 
-/* Eliminar cualquier borde lateral del editor */
-.noteContainer :global(.w-md-editor-text-container > *) {
-  border-left: none !important;
-  border-right: none !important;
-  box-shadow: none !important;
+.markdownPreview ul {
+  list-style-type: disc;
 }
 
-/* Estilos más agresivos para eliminar artefactos visuales */
-.noteContainer :global(.w-md-editor *) {
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
+.markdownPreview ol {
+  list-style-type: decimal;
 }
 
-.noteContainer :global(.w-md-editor::before),
-.noteContainer :global(.w-md-editor::after),
-.noteContainer :global(.w-md-editor *::before),
-.noteContainer :global(.w-md-editor *::after) {
-  display: none !important;
-  content: none !important;
-  border: none !important;
-  background: none !important;
-  box-shadow: none !important;
+.markdownPreview li {
+  margin: 0.3em 0;
 }
 
-/* Eliminar cualquier separador o divisor visual */
-.noteContainer :global(.w-md-editor-text-container),
-.noteContainer :global(.w-md-editor-preview) {
-  border-left: none !important;
-  border-right: none !important;
-  position: relative;
+.markdownPreview blockquote {
+  margin: 0.8em 0;
+  padding: 0 1em;
+  border-left: 4px solid #ddd;
+  color: #777;
 }
 
-/* Asegurar que no hay elementos flotantes o posicionados que creen artefactos */
-.noteContainer :global(.w-md-editor-text-container::before),
-.noteContainer :global(.w-md-editor-preview::before) {
-  display: none !important;
+.markdownPreview pre {
+  background: #f5f5f5;
+  padding: 1em;
+  border-radius: 3px;
+  overflow-x: auto;
 }
 
-/* Mantener estilos de preview intactos para renderizado correcto de Markdown */
-.noteContainer :global(.w-md-editor-preview) {
-  /* Permitir que el preview mantenga sus estilos nativos */
-  background: inherit;
+.markdownPreview code {
+  font-family: 'Courier New', monospace;
+  background: #f5f5f5;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
 }
 
-/* Estilos específicos y forzados para listas en el preview */
-.noteContainer :global(.w-md-editor-preview ol) {
-  margin: 1em 0 !important;
-  padding-left: 2em !important;
-  list-style-type: decimal !important;
-  counter-reset: list-counter !important;
+.markdownPreview pre code {
+  background: transparent;
+  padding: 0;
 }
 
-.noteContainer :global(.w-md-editor-preview ul) {
-  margin: 1em 0 !important;
-  padding-left: 2em !important;
-  list-style-type: disc !important;
+.markdownPreview a {
+  color: #0066cc;
+  text-decoration: none;
 }
 
-/* Soporte para highlight (==texto==) - renderizar como <mark> */
-.noteContainer :global(.w-md-editor-preview mark) {
-  background-color: #ffeb3b !important;
-  color: #000 !important;
-  padding: 2px 4px !important;
-  border-radius: 2px !important;
+.markdownPreview a:hover {
+  text-decoration: underline;
 }
 
-/* Fallback: si el markdown no se convierte a <mark>, usar una clase personalizada */
-.noteContainer :global(.w-md-editor-preview .highlight) {
-  background-color: #ffeb3b !important;
-  color: #000 !important;
-  padding: 2px 4px !important;
-  border-radius: 2px !important;
+.markdownPreview img {
+  max-width: 100%;
+  height: auto;
 }
 
-.noteContainer :global(.w-md-editor-preview ol li) {
-  margin: 0.5em 0 !important;
-  list-style-type: decimal !important;
-  display: list-item !important;
-  padding-left: 0.5em !important;
+/* Estilos para el modo de edición */
+.editMode .rawTextarea {
+  display: block;
 }
 
-.noteContainer :global(.w-md-editor-preview ul li) {
-  margin: 0.5em 0 !important;
-  list-style-type: disc !important;
-  display: list-item !important;
-  padding-left: 0.5em !important;
+.editMode .markdownPreview {
+  display: none;
 }
 
-.noteContainer :global(.mdxeditor-root-contenteditable) {
-  background: transparent !important;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  border-right: none !important;
-  border-left: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  min-height: 180px !important;
+/* Estilos para el modo de vista previa */
+.previewMode .rawTextarea {
+  display: none;
 }
 
-/* Eliminar cualquier borde o línea de todos los elementos internos */
-.noteContainer :global(.mdxeditor *) {
-  border-right: none !important;
-  border-left: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  box-shadow: none !important;
-  outline: none !important;
+.previewMode .markdownPreview {
+  display: block;
 }
 
-/* Asegurar que el contenido editable sea completamente transparente */
-.noteContainer :global(.mdxeditor-root-contenteditable *) {
-  background: transparent !important;
-  border: none !important;
-  outline: none !important;
+/* Estilos para el modo dividido */
+.splitMode .rawTextarea {
+  width: 50%;
+  display: inline-block;
+  vertical-align: top;
+  border-right: 1px solid #eee;
+  min-height: 300px;
 }
 
-/* Eliminar cualquier pseudo-elemento que pueda crear líneas */
-.noteContainer :global(.mdxeditor::before),
-.noteContainer :global(.mdxeditor::after),
-.noteContainer :global(.mdxeditor *::before),
-.noteContainer :global(.mdxeditor *::after) {
-  display: none !important;
-  content: none !important;
-  border: none !important;
-  background: none !important;
+.splitMode .markdownPreview {
+  width: 50%;
+  display: inline-block;
+  vertical-align: top;
+  padding-left: 1rem;
+  min-height: 300px;
+  overflow-y: auto;
 }
 
-/* Estilos para el modo raw (textarea) */
-.rawTextarea {
-  resize: none;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
-
-.rawTextarea:focus {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
+/* Estilos para resaltado de sintaxis (opcional) */
+.markdownPreview code[class*="language-"],
+.markdownPreview pre[class*="language-"] {
+  color: #333;
+  background: #f5f5f5;
+  text-shadow: none;
+  font-family: 'Courier New', monospace;
+  direction: ltr;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  line-height: 1.5;
+  -moz-tab-size: 4;
+  -o-tab-size: 4;
+  tab-size: 4;
+  -webkit-hyphens: none;
+  -moz-hyphens: none;
+  -ms-hyphens: none;
+  hyphens: none;
 }

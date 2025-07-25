@@ -1,5 +1,4 @@
-// --- EN proyecto-actions.ts ---
-// (Asegúrate que la ruta sea la correcta, ej: lib/actions/proyecto-actions.ts)
+
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/server";

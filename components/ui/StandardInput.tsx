@@ -49,10 +49,6 @@ const StandardInput = React.forwardRef<HTMLInputElement, StandardInputProps>(
 		},
 		ref
 	) => {
-		//> 💡 LÍNEA DE DEPURACIÓN: Verificamos el valor de las props en cada renderizado.
-		console.log(
-			`[StandardInput ID: ${id}] - Renderizando. Prop 'error':`, error, "| Prop 'success':", success
-		);
 
 		//#region [sub_bridge] - 🌉 THE BRIDGE 🌉
 		function isStandardInputVariant(value: unknown): value is StandardInputVariant {

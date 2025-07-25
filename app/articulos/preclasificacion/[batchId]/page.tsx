@@ -6,6 +6,7 @@ import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { supabase } from "@/app/auth/client";
 import { useAuth } from "@/app/auth-provider";
 import { getBatchDetailsForReview } from "@/lib/actions/preclassification-actions";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import type { BatchDetails, ArticleForReview } from "@/lib/actions/preclassification-actions";
 import type { Database } from "@/lib/database.types";
 
@@ -48,6 +49,7 @@ import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 const BatchDetailPage = () => {
 	const params = useParams();
 	const auth = useAuth();
+	useUserProfile(); // Se mantiene el hook por efectos secundarios
 	const batchId = params.batchId as string;
 	
 	const [batchDetails, setBatchDetails] = useState<BatchDetails | null>(null);
@@ -424,12 +426,13 @@ const BatchDetailPage = () => {
 		);
 	}
 
+
 	return (
 		<div className="w-full h-full p-4 sm:p-6 flex flex-col">
 			<StandardPageTitle
 				title={`Preclasificación Lote #${batchDetails.batch_number || batchId}`}
 				mainIcon={ClipboardList}
-				subtitle={`${batchDetails.rows.length} artículo${batchDetails.rows.length !== 1 ? 's' : ''} en revisión`}
+				subtitle={`${batchDetails.rows.length} artículos en revisión`}
 				showBackButton={{ href: "/articulos/preclasificacion" }}
 				breadcrumbs={[
 					{ label: "Artículos", href: "/articulos" },

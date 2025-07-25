@@ -40,7 +40,6 @@ interface GroupArticleData {
 }
 
 export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ article, project }) => {
-  // Estados para los datos cargados on-demand
   const [menuData, setMenuData] = useState<{
     articleId: string;
     allGroups: GroupWithArticleCount[];
@@ -50,32 +49,27 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
   const [isLoadingMenu, setIsLoadingMenu] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   
-  // Estados para los popups y diálogos
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showAddConfirm, setShowAddConfirm] = useState(false);
   const [showGroupDetails, setShowGroupDetails] = useState(false);
   const [showPublicWarning, setShowPublicWarning] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   
-  // Estados para el grupo seleccionado
   const [selectedGroupForAdd, setSelectedGroupForAdd] = useState<GroupWithArticleCount | null>(null);
   const [selectedGroupForDetails, setSelectedGroupForDetails] = useState<GroupWithArticleCount | null>(null);
   const [groupDetails, setGroupDetails] = useState<GroupDetails | null>(null);
   
-  // Estados para crear nuevo grupo
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDescription, setNewGroupDescription] = useState('');
   const [newGroupIsPublic, setNewGroupIsPublic] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
-  // Estados para acciones
   const [isAdding, setIsAdding] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   
   const { user } = useAuth();
   
-  // Función para cargar datos on-demand al abrir el menú
   const loadMenuData = useCallback(async () => {
     if (!article?.item_id) {
       toast.error('Artículo no válido');
@@ -84,37 +78,24 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
     
     setIsLoadingMenu(true);
     try {
-      console.log(`[CLIENT] Cargando datos del menú para batchItem: ${article.item_id}`);
-      
-      // Paso 1: Obtener articleId real
       const articleIdResult = await getArticleIdFromBatchItemId(article.item_id);
       if (!articleIdResult.success) {
-        console.error('[CLIENT] Error al obtener articleId:', articleIdResult.error);
         toast.error('Error al obtener ID del artículo');
         return;
       }
       
       const articleId = articleIdResult.data.articleId;
-      console.log(`[CLIENT] ArticleId obtenido: ${articleId}`);
-      
-      // Paso 2: Cargar todos los grupos y sus conteos de artículos
       const allGroupsResult = await getGroups({ articleId });
+
       if (!allGroupsResult.success) {
-        console.error('[CLIENT] Error al cargar grupos:', allGroupsResult.error);
         toast.error('Error al cargar grupos');
         return;
       }
       
       const allGroupsData = allGroupsResult.data || [];
-      
-      // Paso 3: Filtrar grupos basado en si el artículo está en cada grupo
-      // Si article_count > 0, el artículo está en ese grupo
       const articleGroupsData = allGroupsData.filter(g => g.article_count > 0);
       const availableGroupsData = allGroupsData.filter(g => g.article_count === 0);
       
-      console.log(`[CLIENT] Datos cargados - Total: ${allGroupsData.length}, En grupos: ${articleGroupsData.length}, Disponibles: ${availableGroupsData.length}`);
-      
-      // Paso 5: Guardar datos y abrir menú
       setMenuData({
         articleId,
         allGroups: allGroupsData,
@@ -124,32 +105,26 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
       
       setMenuOpen(true);
       
-    } catch (error) {
-      console.error('[CLIENT] Error inesperado al cargar datos del menú:', error);
+    } catch {
       toast.error('Error inesperado al cargar datos');
     } finally {
       setIsLoadingMenu(false);
     }
   }, [article?.item_id]);
   
-  // Manejar apertura del menú
   const handleMenuOpenChange = (open: boolean) => {
     if (open && !menuData) {
-      // Si se abre el menú y no tenemos datos, cargarlos
       loadMenuData();
     } else if (!open) {
-      // Si se cierra el menú, mantener los datos pero cerrar
       setMenuOpen(false);
     }
   };
 
-  // Manejar selección de grupo para agregar artículo
   const handleSelectGroupToAdd = (group: GroupWithArticleCount) => {
     setSelectedGroupForAdd(group);
     setShowAddConfirm(true);
   };
 
-  // Manejar confirmación de agregar a grupo existente
   const handleAddToGroup = async () => {
     if (!selectedGroupForAdd || !user || !menuData) return;
     
@@ -164,21 +139,18 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
         toast.success(`Artículo agregado al grupo "${selectedGroupForAdd.name}"`);
         setShowAddConfirm(false);
         setSelectedGroupForAdd(null);
-        // Limpiar datos para forzar recarga en próxima apertura
         setMenuData(null);
         setMenuOpen(false);
       } else {
         toast.error(`Error al agregar artículo: ${result.error}`);
       }
-    } catch (error) {
-      console.error('Error al agregar artículo:', error);
+    } catch {
       toast.error('Error inesperado al agregar artículo');
     } finally {
       setIsAdding(false);
     }
   };
 
-  // Manejar selección de grupo para ver detalles
   const handleSelectGroupToView = async (group: GroupWithArticleCount) => {
     setSelectedGroupForDetails(group);
     setIsLoadingDetails(true);
@@ -193,8 +165,7 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
         toast.error(`Error al cargar detalles del grupo: ${result.error}`);
         setGroupDetails(null);
       }
-    } catch (error) {
-      console.error('Error al cargar detalles del grupo:', error);
+    } catch {
       toast.error('Error inesperado al cargar detalles del grupo');
       setGroupDetails(null);
     } finally {
@@ -202,11 +173,9 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
     }
   };
 
-  // Manejar creación de nuevo grupo
   const handleCreateGroup = async () => {
     if (!newGroupName.trim() || !article || !project) return;
     
-    // Si es público, mostrar advertencia primero
     if (newGroupIsPublic) {
       setShowPublicWarning(true);
       return;
@@ -215,13 +184,11 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
     await executeCreateGroup();
   };
 
-  // Ejecutar creación de grupo
   const executeCreateGroup = async () => {
     if (!newGroupName.trim() || !article || !project) return;
     
     setIsCreating(true);
     try {
-      // Obtener el articleId real
       const articleIdResult = await getArticleIdFromBatchItemId(article.item_id);
       
       if (!articleIdResult.success) {
@@ -243,41 +210,29 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
       
       if (result.success) {
         toast.success(`Grupo "${newGroupName}" creado exitosamente`);
-        // Limpiar formulario
         resetFormAndClose();
-        // Limpiar datos para forzar recarga en próxima apertura
         setMenuData(null);
         setMenuOpen(false);
       } else {
         toast.error(`Error al crear grupo: ${result.error}`);
       }
-    } catch (error) {
-      console.error('Error al crear grupo:', error);
+    } catch {
       toast.error('Error inesperado al crear grupo');
     } finally {
       setIsCreating(false);
     }
   };
 
-  // Confirmar creación de grupo público (desde el diálogo de advertencia)
   const confirmPublicGroupFromWarning = () => {
     setShowPublicWarning(false);
     executeCreateGroup();
   };
 
-  // Cancelar creación de grupo público (desde el diálogo de advertencia)
   const cancelPublicGroupFromWarning = () => {
     setShowPublicWarning(false);
-    // No cambiamos el estado del checkbox, se mantiene como estaba
+    setNewGroupIsPublic(false);
   };
 
-  // Manejar click en grupo existente (función no utilizada, se puede eliminar)
-  // const handleGroupClick = (group: GroupWithArticleCount) => {
-  //   setSelectedGroupForAdd(group);
-  //   setShowAddConfirm(true);
-  // };
-
-  // Manejar cambios en los campos del formulario
   const handleGroupNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewGroupName(e.target.value);
     setHasUnsavedChanges(true);
@@ -290,7 +245,6 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
 
   const handleGroupVisibilityChange = (checked: boolean) => {
     if (checked) {
-      // Si quiere hacer público, mostrar advertencia primero
       setShowPublicWarning(true);
     } else {
       setNewGroupIsPublic(false);
@@ -298,9 +252,6 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
     }
   };
 
-
-
-  // Manejar cierre del formulario de crear grupo
   const handleCloseCreateGroup = () => {
     if (hasUnsavedChanges) {
       setShowCloseConfirm(true);
@@ -309,18 +260,15 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
     }
   };
 
-  // Confirmar cierre sin guardar
   const confirmClose = () => {
     setShowCloseConfirm(false);
     resetFormAndClose();
   };
 
-  // Cancelar cierre
   const cancelClose = () => {
     setShowCloseConfirm(false);
   };
 
-  // Resetear formulario y cerrar
   const resetFormAndClose = () => {
     setNewGroupName('');
     setNewGroupDescription('');
@@ -329,9 +277,6 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
     setShowCreateGroup(false);
   };
 
-
-
-  // Configuración de columnas para la tabla de artículos del grupo
   const groupArticlesColumns: ColumnDef<GroupArticleData>[] = [
     {
       id: "title",
@@ -361,7 +306,6 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
     },
   ];
 
-  // Transformar datos de artículos del grupo para la tabla
   const groupArticlesData: GroupArticleData[] = groupDetails?.items.map((item) => ({
     id: item.article_id,
     title: item.article_title || "Sin título",
@@ -370,7 +314,6 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
 
   return (
     <>
-      {/* Botón principal con menú desplegable */}
       <StandardDropdownMenu open={menuOpen || isLoadingMenu} onOpenChange={handleMenuOpenChange}>
         <StandardDropdownMenu.Trigger asChild>
           <StandardButton
@@ -383,7 +326,7 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
           </StandardButton>
         </StandardDropdownMenu.Trigger>
         
-        <StandardDropdownMenu.Content align="end" className="w-64">
+        <StandardDropdownMenu.Content align="end" className="w-64" submenusSide="left">
           {isLoadingMenu ? (
             <div className="px-3 py-8 flex flex-col items-center justify-center">
               <SustratoLoadingLogo 
@@ -396,108 +339,71 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
             </div>
           ) : menuData ? (
             <>
-              {/* Submenú: Asignar a Grupos */}
-              <StandardDropdownMenu.Sub>
-                <StandardDropdownMenu.SubTrigger className="flex items-center gap-2">
-                  <StandardIcon size="xs" styleType="outline" colorScheme="primary">
-                    <FolderPlus />
-                  </StandardIcon>
-                  Asignar a grupos
-                </StandardDropdownMenu.SubTrigger>
-                <StandardDropdownMenu.SubContent className="w-56">
-                  {menuData.availableGroups.length > 0 ? (
-                    <>
-                      {menuData.availableGroups.map((group: GroupWithArticleCount) => (
-                        <StandardDropdownMenu.Item
-                          key={group.id}
-                          onSelect={() => handleSelectGroupToAdd(group)}
-                          className="flex items-center justify-between"
-                        >
+              <StandardDropdownMenu.SubMenuItem
+                submenuContent={
+                  <>
+                    {menuData.availableGroups.length > 0 ? (
+                      menuData.availableGroups.map((group) => (
+                        <StandardDropdownMenu.Item key={group.id} onSelect={() => handleSelectGroupToAdd(group)} className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <StandardIcon 
-                              size="xs" 
-                              styleType="outline"
-                              colorScheme={group.visibility === 'public' ? 'primary' : 'neutral'}
-                            >
+                            <StandardIcon size="xs" styleType="outline" colorScheme={group.visibility === 'public' ? 'primary' : 'neutral'}>
                               {group.visibility === 'public' ? <Globe /> : <Lock />}
                             </StandardIcon>
                             <span className="truncate">{group.name}</span>
                           </div>
-                          <StandardText size="xs" colorShade="subtle">
-                            ({group.article_count})
-                          </StandardText>
+                          <StandardText size="xs" colorShade="subtle">({group.article_count})</StandardText>
+                        </StandardDropdownMenu.Item>
+                      ))
+                    ) : (
+                      <StandardDropdownMenu.Item disabled>Ya está en todos los grupos</StandardDropdownMenu.Item>
+                    )}
+                    <StandardDropdownMenu.Separator />
+                    <StandardDropdownMenu.Item onSelect={() => setShowCreateGroup(true)} className="flex items-center gap-2">
+                      <StandardIcon size="xs" styleType="outline" colorScheme="primary"><Plus /></StandardIcon>
+                      Crear nuevo grupo
+                    </StandardDropdownMenu.Item>
+                  </>
+                }
+              >
+                <span className="flex items-center gap-2">
+                  <StandardIcon size="xs" styleType="outline" colorScheme="primary"><FolderPlus /></StandardIcon>
+                  Asignar a grupos
+                </span>
+              </StandardDropdownMenu.SubMenuItem>
+              
+              {menuData.articleGroups.length > 0 && (
+                <StandardDropdownMenu.SubMenuItem
+                  submenuContent={
+                    <>
+                      {menuData.articleGroups.map((group) => (
+                        <StandardDropdownMenu.Item key={group.id} onSelect={() => handleSelectGroupToView(group)} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <StandardIcon size="xs" styleType="outline" colorScheme={group.visibility === 'public' ? 'primary' : 'neutral'}>
+                              {group.visibility === 'public' ? <Globe /> : <Lock />}
+                            </StandardIcon>
+                            <span className="truncate">{group.name}</span>
+                          </div>
+                          <StandardText size="xs" colorShade="subtle">({group.article_count})</StandardText>
                         </StandardDropdownMenu.Item>
                       ))}
-                      <StandardDropdownMenu.Separator />
                     </>
-                  ) : (
-                    <>
-                      <StandardText size="sm" colorShade="subtle" className="px-2 py-2 italic">
-                        Ya está en todos los grupos
-                      </StandardText>
-                      <StandardDropdownMenu.Separator />
-                    </>
-                  )}
-                  
-                  {/* Opción: Crear nuevo grupo */}
-                  <StandardDropdownMenu.Item
-                    onSelect={() => setShowCreateGroup(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <StandardIcon size="xs" styleType="outline" colorScheme="primary">
-                      <Plus />
-                    </StandardIcon>
-                    Crear nuevo grupo
-                  </StandardDropdownMenu.Item>
-                </StandardDropdownMenu.SubContent>
-              </StandardDropdownMenu.Sub>
-              
-              {/* Submenú: Grupos donde está */}
-              {menuData.articleGroups.length > 0 && (
-                <StandardDropdownMenu.Sub>
-                  <StandardDropdownMenu.SubTrigger className="flex items-center gap-2">
-                    <StandardIcon size="xs" styleType="outline" colorScheme="success">
-                      <CheckCircle />
-                    </StandardIcon>
+                  }
+                >
+                  <span className="flex items-center gap-2">
+                    <StandardIcon size="xs" styleType="outline" colorScheme="success"><CheckCircle /></StandardIcon>
                     Grupos donde está
-                  </StandardDropdownMenu.SubTrigger>
-                  <StandardDropdownMenu.SubContent className="w-56">
-                    {menuData.articleGroups.map((group: GroupWithArticleCount) => (
-                      <StandardDropdownMenu.Item
-                        key={group.id}
-                        onSelect={() => handleSelectGroupToView(group)}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-2">
-                          <StandardIcon 
-                            size="xs" 
-                            styleType="outline"
-                            colorScheme={group.visibility === 'public' ? 'primary' : 'neutral'}
-                          >
-                            {group.visibility === 'public' ? <Globe /> : <Lock />}
-                          </StandardIcon>
-                          <span className="truncate">{group.name}</span>
-                        </div>
-                        <StandardText size="xs" colorShade="subtle">
-                          ({group.article_count})
-                        </StandardText>
-                      </StandardDropdownMenu.Item>
-                    ))}
-                  </StandardDropdownMenu.SubContent>
-                </StandardDropdownMenu.Sub>
+                  </span>
+                </StandardDropdownMenu.SubMenuItem>
               )}
             </>
           ) : (
             <div className="px-3 py-4 text-center">
-              <StandardText size="sm" colorShade="subtle">
-                Error al cargar datos
-              </StandardText>
+              <StandardText size="sm" colorShade="subtle">Error al cargar datos</StandardText>
             </div>
           )}
         </StandardDropdownMenu.Content>
       </StandardDropdownMenu>
 
-      {/* Diálogo de confirmación para agregar a grupo existente */}
       <StandardDialog open={showAddConfirm} onOpenChange={setShowAddConfirm}>
         <StandardDialog.Content size="sm">
           <StandardDialog.Header>
@@ -506,121 +412,88 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
               ¿Estás seguro de que quieres agregar este artículo al grupo &ldquo;{selectedGroupForAdd?.name}&rdquo;?
             </StandardDialog.Description>
           </StandardDialog.Header>
-          <StandardDialog.Body>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <StandardIcon 
-                  size="sm" 
-                  styleType="outline"
-                  colorScheme={selectedGroupForAdd?.visibility === 'public' ? 'primary' : 'neutral'}
-                >
-                  {selectedGroupForAdd?.visibility === 'public' ? <Globe /> : <Lock />}
-                </StandardIcon>
-                <StandardText size="sm">
-                  Grupo {selectedGroupForAdd?.visibility === "public" ? "público" : "privado"}
-                </StandardText>
-              </div>
-              {selectedGroupForAdd?.description && (
-                <StandardText size="sm" colorShade="subtle">
-                  {selectedGroupForAdd.description}
-                </StandardText>
-              )}
-            </div>
-          </StandardDialog.Body>
           <StandardDialog.Footer>
-            <StandardButton 
-              styleType="outline" 
-              onClick={() => setShowAddConfirm(false)}
-              disabled={isAdding}
-            >
-              Cancelar
-            </StandardButton>
-            <StandardButton 
-              styleType="solid" 
-              colorScheme="primary" 
-              onClick={handleAddToGroup}
-              disabled={isAdding}
-            >
+            <StandardButton styleType="outline" onClick={() => setShowAddConfirm(false)} disabled={isAdding}>Cancelar</StandardButton>
+            <StandardButton styleType="solid" colorScheme="primary" onClick={handleAddToGroup} disabled={isAdding}>
               {isAdding ? 'Agregando...' : 'Agregar al Grupo'}
             </StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>
       </StandardDialog>
 
-      {/* Popup para visualizar detalles del grupo */}
       <StandardPopupWindow open={showGroupDetails} onOpenChange={setShowGroupDetails}>
-        <StandardPopupWindow.Content size="lg">
-          <StandardPopupWindow.Header>
-            <StandardPopupWindow.Title>
-              Detalles del Grupo: {selectedGroupForDetails?.name}
-            </StandardPopupWindow.Title>
-            <StandardPopupWindow.Description>
-              <div className="flex items-center gap-2 mt-2">
-                <StandardIcon 
-                  size="sm" 
-                  styleType="outline"
-                  colorScheme={selectedGroupForDetails?.visibility === 'public' ? 'primary' : 'neutral'}
-                >
-                  {selectedGroupForDetails?.visibility === 'public' ? <Globe /> : <Lock />}
-                </StandardIcon>
-                <StandardText size="sm">
-                  Grupo {selectedGroupForDetails?.visibility === "public" ? "público" : "privado"} • {selectedGroupForDetails?.article_count} artículo{selectedGroupForDetails?.article_count !== 1 ? "s" : ""}
-                </StandardText>
-              </div>
-            </StandardPopupWindow.Description>
-          </StandardPopupWindow.Header>
-          
-          <StandardPopupWindow.Body className="space-y-4">
-            {groupDetails?.description && (
-              <div>
-                <StandardText size="sm" weight="semibold" className="mb-2">
-                  Descripción:
-                </StandardText>
-                <StandardText size="sm" colorShade="subtle">
-                  {groupDetails.description}
-                </StandardText>
-              </div>
-            )}
-            
-            <div>
-              <StandardText size="sm" weight="semibold" className="mb-3">
-                Artículos en este grupo:
-              </StandardText>
-              {isLoadingDetails ? (
-                <div className="flex justify-center py-8">
-                  <StandardText size="sm" colorShade="subtle">
-                    Cargando artículos...
-                  </StandardText>
-                </div>
-              ) : groupArticlesData.length > 0 ? (
-                <StandardTable
-                  data={groupArticlesData}
-                  columns={groupArticlesColumns}
-                  enableTruncation={true}
-                  filterPlaceholder="Buscar artículos..."
-                >
-                  <StandardTable.Table />
-                </StandardTable>
-              ) : (
-                <StandardText size="sm" colorShade="subtle" className="italic text-center py-4">
-                  No hay artículos en este grupo
-                </StandardText>
-              )}
-            </div>
-          </StandardPopupWindow.Body>
-          
-          <StandardPopupWindow.Footer>
-            <StandardButton 
-              styleType="outline" 
-              onClick={() => setShowGroupDetails(false)}
-            >
-              Cerrar
-            </StandardButton>
-          </StandardPopupWindow.Footer>
-        </StandardPopupWindow.Content>
-      </StandardPopupWindow>
+         <StandardPopupWindow.Content size="lg">
+           <StandardPopupWindow.Header>
+             <StandardPopupWindow.Title>
+               Detalles del Grupo: {selectedGroupForDetails?.name}
+             </StandardPopupWindow.Title>
+             <StandardPopupWindow.Description>
+               <div className="flex items-center gap-2 mt-2">
+                 <StandardIcon 
+                   size="sm" 
+                   styleType="outline"
+                   colorScheme={selectedGroupForDetails?.visibility === 'public' ? 'primary' : 'neutral'}
+                 >
+                   {selectedGroupForDetails?.visibility === 'public' ? <Globe /> : <Lock />}
+                 </StandardIcon>
+                 <StandardText size="sm">
+                   Grupo {selectedGroupForDetails?.visibility === "public" ? "público" : "privado"} • {selectedGroupForDetails?.article_count} artículo{selectedGroupForDetails?.article_count !== 1 ? "s" : ""}
+                 </StandardText>
+               </div>
+             </StandardPopupWindow.Description>
+           </StandardPopupWindow.Header>
+           
+           <StandardPopupWindow.Body className="space-y-4">
+             {groupDetails?.description && (
+               <div>
+                 <StandardText size="sm" weight="semibold" className="mb-2">
+                   Descripción:
+                 </StandardText>
+                 <StandardText size="sm" colorShade="subtle">
+                   {groupDetails.description}
+                 </StandardText>
+               </div>
+             )}
+             
+             <div>
+               <StandardText size="sm" weight="semibold" className="mb-3">
+                 Artículos en este grupo:
+               </StandardText>
+               {isLoadingDetails ? (
+                 <div className="flex justify-center py-8">
+                   <StandardText size="sm" colorShade="subtle">
+                     Cargando artículos...
+                   </StandardText>
+                 </div>
+               ) : groupArticlesData.length > 0 ? (
+                 // 📌 FIX: Se restaura el hijo <StandardTable.Table />
+                 <StandardTable
+                   data={groupArticlesData}
+                   columns={groupArticlesColumns}
+                   enableTruncation={true}
+                   filterPlaceholder="Buscar artículos..."
+                 >
+                   <StandardTable.Table />
+                 </StandardTable>
+               ) : (
+                 <StandardText size="sm" colorShade="subtle" className="italic text-center py-4">
+                   No hay artículos en este grupo
+                 </StandardText>
+               )}
+             </div>
+           </StandardPopupWindow.Body>
+           
+           <StandardPopupWindow.Footer>
+             <StandardButton 
+               styleType="outline" 
+               onClick={() => setShowGroupDetails(false)}
+             >
+               Cerrar
+             </StandardButton>
+           </StandardPopupWindow.Footer>
+         </StandardPopupWindow.Content>
+       </StandardPopupWindow>
 
-      {/* Popup para crear nuevo grupo */}
       <StandardPopupWindow open={showCreateGroup} onOpenChange={handleCloseCreateGroup}>
         <StandardPopupWindow.Content size="md">
           <StandardPopupWindow.Header>
@@ -687,7 +560,6 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
         </StandardPopupWindow.Content>
       </StandardPopupWindow>
 
-      {/* Diálogo de advertencia para grupo público */}
       <StandardDialog open={showPublicWarning} onOpenChange={setShowPublicWarning}>
         <StandardDialog.Content size="sm" colorScheme="warning">
           <StandardDialog.Header>
@@ -730,7 +602,6 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
         </StandardDialog.Content>
       </StandardDialog>
 
-      {/* Diálogo de cierre sin guardar */}
       <StandardDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
         <StandardDialog.Content size="sm">
           <StandardDialog.Header>
