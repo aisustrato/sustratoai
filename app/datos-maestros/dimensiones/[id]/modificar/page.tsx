@@ -3,7 +3,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import {
   listDimensions,
@@ -38,7 +38,11 @@ export default function ModificarDimensionPage() {
 	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HELPER FUNCTIONS 🧰
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const dimensionId = params?.id ? String(params.id) : "";
+  
+  // Obtener la fase activa desde la URL
+  const activePhaseId = searchParams.get('phase') || '';
 
   const { proyectoActual, loadingProyectos } = useAuth();
   const { showLoading, hideLoading } = useLoading();
@@ -53,9 +57,9 @@ export default function ModificarDimensionPage() {
 
   const cargarDimension = useCallback(async () => {
     // Validaciones tempranas
-    if (!proyectoActual?.id || !dimensionId) {
+    if (!proyectoActual?.id || !dimensionId || !activePhaseId) {
       if (!loadingProyectos) { // Solo mostrar error si la carga de proyectos ya terminó
-        setErrorPage(!dimensionId ? "ID de dimensión no especificado." : "Proyecto no seleccionado.");
+        setErrorPage(!dimensionId ? "ID de dimensión no especificado." : !activePhaseId ? "Fase no especificada." : "Proyecto no seleccionado.");
       }
       setIsPageLoading(false);
       setDimensionActual(null); // Asegurar que se limpie
@@ -75,13 +79,13 @@ export default function ModificarDimensionPage() {
     setDimensionActual(null); // Resetear antes de cargar
 
     try {
-      const resultado = await listDimensions(proyectoActual.id); // Asume que RLS protege esto para el proyectoActual
+      const resultado = await listDimensions(activePhaseId); // Usar phaseId en lugar de projectId
       if (resultado.success) {
         const dim = resultado.data.find(d => d.id === dimensionId);
         if (dim) {
           setDimensionActual(dim);
         } else {
-          setErrorPage(`Dimensión con ID "${dimensionId}" no encontrada en el proyecto "${proyectoActual.name}".`);
+          setErrorPage(`Dimensión con ID "${dimensionId}" no encontrada en la fase activa.`);
           // sonnerToast.error("Error", { description: "Dimensión no encontrada." }); // Podría ser muy ruidoso si el ID es incorrecto en URL
         }
       } else {
@@ -95,7 +99,7 @@ export default function ModificarDimensionPage() {
     } finally {
       setIsPageLoading(false);
     }
-  }, [proyectoActual?.id, proyectoActual?.name, dimensionId, loadingProyectos, puedeGestionarDimensiones, router]);
+  }, [proyectoActual?.id, activePhaseId, dimensionId, loadingProyectos, puedeGestionarDimensiones, router]);
 
   useEffect(() => {
     // Disparar carga solo si tenemos la información necesaria o si la carga de proyectos ha terminado
@@ -189,6 +193,7 @@ export default function ModificarDimensionPage() {
   // Mapeo cuidadoso de FullDimension a DimensionFormValues
   const valoresFormIniciales: DimensionFormValues | undefined = dimensionActual ? {
     name: dimensionActual.name,
+    phaseId: dimensionActual.phase_id || activePhaseId, // Incluir el phaseId de la dimensión, usar activePhaseId como fallback
     type: dimensionActual.type as 'finite' | 'open', // Esto es un cast, asegurar que el tipo sea uno de los dos
     description: dimensionActual.description || "", // El form usa string vacío para null/undefined en description
     options: dimensionActual.options.map(o => ({ 
@@ -310,6 +315,7 @@ export default function ModificarDimensionPage() {
               valoresIniciales={valoresFormIniciales}
               onSubmit={handleFormSubmit}
               loading={isSubmitting}
+              activePhaseId={activePhaseId}
             />
           </StandardCard>
         </div>

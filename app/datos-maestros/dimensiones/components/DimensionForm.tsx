@@ -2,7 +2,7 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
 	useForm,
 	Controller,
@@ -11,6 +11,8 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useAuth } from "@/app/auth-provider";
+import { getPhasesForProject } from "@/lib/actions/preclassification_phases_actions";
 
 import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardTextarea } from "@/components/ui/StandardTextarea";
@@ -69,6 +71,9 @@ const dimensionFormSchema = z
 			.string()
 			.min(3, "El nombre debe tener al menos 3 caracteres.")
 			.max(100, "Máximo 100 caracteres."),
+		phaseId: z
+			.string()
+			.min(1, "Debe seleccionar una fase."),
 		type: z.enum(["finite", "open"], {
 			required_error: "Debe seleccionar un tipo de dimensión.",
 		}),
@@ -100,12 +105,24 @@ const dimensionFormSchema = z
 
 export type DimensionFormValues = z.infer<typeof dimensionFormSchema>;
 
+// Definir el tipo de fase para TypeScript
+type Phase = {
+	id: string;
+	name: string;
+	phase_number: number;
+	status: 'active' | 'inactive' | 'completed' | 'annulled';
+	project_id: string;
+	created_at: string;
+	description: string | null;
+};
+
 interface DimensionFormProps {
 	modo: "crear" | "editar" | "ver";
 	valoresIniciales?: Partial<DimensionFormValues>;
 	onSubmit?: (data: DimensionFormValues) => void;
 	loading?: boolean;
 	disabled?: boolean;
+	activePhaseId?: string; // Fase activa desde la página principal
 }
 //#endregion ![def]
 
@@ -116,12 +133,20 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 	onSubmit,
 	loading = false,
 	disabled = false,
+	activePhaseId,
 }) => {
 	//#region [sub] - 🧰 HOOKS, STATE, FORM SETUP & EFFECTS 🧰
+	const { proyectoActual } = useAuth();
+	
+	// Estados para fases
+	const [phases, setPhases] = useState<Phase[]>([]);
+	const [loadingPhases, setLoadingPhases] = useState(true);
+	
 	const form = useForm<DimensionFormValues>({
 		resolver: zodResolver(dimensionFormSchema),
 		defaultValues: {
 			name: "",
+			phaseId: activePhaseId || "", // Pre-seleccionar la fase activa
 			type: undefined,
 			description: "",
 			options: [],
@@ -146,6 +171,41 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 	const examplesArray = watch("examples");
 
 	const isReadOnlyEffective = modo === "ver" || disabled;
+
+	// Función para cargar las fases del proyecto
+	const cargarFases = useCallback(async () => {
+		if (!proyectoActual?.id) {
+			setPhases([]);
+			setLoadingPhases(false);
+			return;
+		}
+
+		setLoadingPhases(true);
+		try {
+			const resultado = await getPhasesForProject(proyectoActual.id);
+			if (resultado.data && !resultado.error) {
+				setPhases(resultado.data);
+			} else {
+				setPhases([]);
+			}
+		} catch (err) {
+			setPhases([]);
+		} finally {
+			setLoadingPhases(false);
+		}
+	}, [proyectoActual?.id]);
+
+	// Efecto para cargar las fases cuando cambia el proyecto
+	useEffect(() => {
+		cargarFases();
+	}, [cargarFases]);
+
+	// Efecto para actualizar la fase seleccionada cuando cambia activePhaseId
+	useEffect(() => {
+		if (activePhaseId && modo === "crear") {
+			form.setValue("phaseId", activePhaseId);
+		}
+	}, [activePhaseId, modo, form]);
 
 	const {
 		fields: optionFields,
@@ -283,6 +343,37 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 											{...field}
 										/>
 									)}
+								/>
+							</StandardFormField>
+
+							<StandardFormField
+								label="Fase de Preclasificación"
+								htmlFor="dim-phase"
+								isRequired
+								error={errors.phaseId?.message}
+							>
+								<Controller
+									name="phaseId"
+									control={control}
+									render={({ field }) => {
+										const phaseOptions: SelectOption[] = phases.map(phase => ({
+											value: phase.id,
+											label: `${phase.name} (Fase ${phase.phase_number})`,
+											disabled: phase.status === 'completed' || phase.status === 'annulled'
+										}));
+
+										return (
+											<StandardSelect
+												id="dim-phase"
+												options={phaseOptions}
+												placeholder={loadingPhases ? "Cargando fases..." : "Selecciona una fase..."}
+												disabled={isReadOnlyEffective || loadingPhases || phases.length === 0}
+												error={errors.phaseId?.message}
+												success={getFieldSuccessState("phaseId")}
+												{...field}
+											/>
+										);
+									}}
 								/>
 							</StandardFormField>
 

@@ -3,7 +3,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import {
   createDimension,
@@ -33,7 +33,11 @@ import { useLoading } from "@/contexts/LoadingContext"; // Opcional
 //#region [main] - 🔧 COMPONENT 🔧
 export default function CrearDimensionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { proyectoActual, loadingProyectos } = useAuth();
+  
+  // Obtener la fase activa desde la URL
+  const activePhaseId = searchParams.get('phase') || '';
   //#region [sub] - 🧰 HELPER FUNCTIONS & LOGIC 🧰
   const { showLoading, hideLoading } = useLoading() as {
     showLoading?: (message: string) => void;
@@ -93,13 +97,12 @@ export default function CrearDimensionPage() {
 
     const payload: CreateDimensionPayload = {
       projectId: proyectoActual.id,
+      phaseId: data.phaseId, // Incluir el phaseId del formulario
       name: data.name,
       type: data.type,
       description: data.description || null,
-      ordering: 0, // Placeholder - la action debería recalcular esto basado en las existentes.
-                   // O el frontend debería obtener el count de dimensiones y pasar count + 1.
-                   // Modifiqué la action para que reciba y use `ordering`.
-      options: data.type === "finite" ? (data.options || []) : [],
+      ordering: 0, // Por ahora, un valor por defecto. La action podría manejar esto.
+      options: data.options || [],
       questions: data.questions || [],
       examples: data.examples || [],
     };
@@ -238,6 +241,7 @@ export default function CrearDimensionPage() {
               // No se pasan valoresIniciales para "crear", el form usa sus defaults.
               onSubmit={handleFormSubmit}
               loading={isSubmitting}
+              activePhaseId={activePhaseId}
             />
           </StandardCard>
         </div>

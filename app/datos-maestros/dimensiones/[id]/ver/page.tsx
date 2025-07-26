@@ -3,7 +3,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import {
   listDimensions, // Usaremos esta y filtraremos, o podríamos crear getDimensionDetails
@@ -33,7 +33,11 @@ export default function VerDimensionPage() {
 	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HELPER FUNCTIONS 🧰
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const dimensionId = params?.id ? String(params.id) : "";
+  
+  // Obtener la fase activa desde la URL
+  const activePhaseId = searchParams.get('phase') || '';
 
   const { proyectoActual, loadingProyectos } = useAuth();
 
@@ -45,9 +49,9 @@ export default function VerDimensionPage() {
     proyectoActual?.permissions?.can_manage_master_data || false;
 
   const cargarDimension = useCallback(async () => {
-    if (!proyectoActual?.id || !dimensionId) {
+    if (!proyectoActual?.id || !dimensionId || !activePhaseId) {
       if (!loadingProyectos) {
-         setErrorPage(!dimensionId ? "ID de dimensión no especificado." : "Proyecto no seleccionado.");
+         setErrorPage(!dimensionId ? "ID de dimensión no especificado." : !activePhaseId ? "Fase no especificada." : "Proyecto no seleccionado.");
       }
       setIsPageLoading(false);
       setDimensionActual(null);
@@ -59,13 +63,13 @@ export default function VerDimensionPage() {
     setDimensionActual(null); 
 
     try {
-      const resultado = await listDimensions(proyectoActual.id);
+      const resultado = await listDimensions(activePhaseId); // Usar phaseId en lugar de projectId
       if (resultado.success) {
         const dim = resultado.data.find(d => d.id === dimensionId);
         if (dim) {
           setDimensionActual(dim);
         } else {
-          setErrorPage(`Dimensión con ID "${dimensionId}" no encontrada en el proyecto "${proyectoActual.name}".`);
+          setErrorPage(`Dimensión con ID "${dimensionId}" no encontrada en la fase activa.`);
         }
       } else {
         setErrorPage(resultado.error || "Error al cargar los datos de la dimensión.");
@@ -78,7 +82,7 @@ export default function VerDimensionPage() {
     } finally {
       setIsPageLoading(false);
     }
-  }, [proyectoActual?.id, proyectoActual?.name, dimensionId, loadingProyectos, setErrorPage, setIsPageLoading, setDimensionActual]);
+  }, [proyectoActual?.id, dimensionId, activePhaseId, loadingProyectos, setErrorPage, setIsPageLoading, setDimensionActual]);
 
   useEffect(() => {
     if ((proyectoActual?.id && dimensionId) || !loadingProyectos) {
@@ -87,17 +91,26 @@ export default function VerDimensionPage() {
   }, [proyectoActual?.id, dimensionId, loadingProyectos, cargarDimension]);
 
   const handleVolver = () => {
-    router.push("/datos-maestros/dimensiones");
+    // Incluir la fase activa en la URL de regreso
+    const url = activePhaseId 
+      ? `/datos-maestros/dimensiones?phase=${activePhaseId}`
+      : "/datos-maestros/dimensiones";
+    router.push(url);
   };
 
   const handleEditar = () => {
     if (dimensionId) {
-      router.push(`/datos-maestros/dimensiones/${dimensionId}/modificar`);
+      // Incluir la fase activa en la URL de edición
+      const url = activePhaseId 
+        ? `/datos-maestros/dimensiones/${dimensionId}/modificar?phase=${activePhaseId}`
+        : `/datos-maestros/dimensiones/${dimensionId}/modificar`;
+      router.push(url);
     }
   };
   
   const valoresFormIniciales: DimensionFormValues | undefined = dimensionActual ? {
     name: dimensionActual.name,
+    phaseId: dimensionActual.phase_id || '', // Incluir el phaseId de la dimensión
     type: dimensionActual.type as 'finite' | 'open',
     description: dimensionActual.description || "",
     options: dimensionActual.options.map(o => ({ id: o.id, value: o.value, ordering: o.ordering })),
@@ -180,10 +193,19 @@ export default function VerDimensionPage() {
             mainIcon={Eye} // Icono para ver
             breadcrumbs={[
               { label: "Datos Maestros", href: "/datos-maestros" },
-              { label: "Dimensiones", href: "/datos-maestros/dimensiones" },
+              { 
+                label: "Dimensiones", 
+                href: activePhaseId 
+                  ? `/datos-maestros/dimensiones?phase=${activePhaseId}`
+                  : "/datos-maestros/dimensiones" 
+              },
               { label: "Ver" },
             ]}
-            showBackButton={{ href: "/datos-maestros/dimensiones" }}
+            showBackButton={{ 
+              href: activePhaseId 
+                ? `/datos-maestros/dimensiones?phase=${activePhaseId}`
+                : "/datos-maestros/dimensiones" 
+            }}
             actions={ // Botón de editar como una acción del PageTitle
               puedeGestionarDimensiones ? (
                 <StandardButton

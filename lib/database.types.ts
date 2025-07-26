@@ -151,6 +151,7 @@ export type Database = {
           created_at: string
           id: string
           name: string | null
+          phase_id: string | null
           project_id: string
           started_at: string | null
           status: Database["public"]["Enums"]["batch_preclass_status"] | null
@@ -163,6 +164,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string | null
+          phase_id?: string | null
           project_id: string
           started_at?: string | null
           status?: Database["public"]["Enums"]["batch_preclass_status"] | null
@@ -175,12 +177,20 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string | null
+          phase_id?: string | null
           project_id?: string
           started_at?: string | null
           status?: Database["public"]["Enums"]["batch_preclass_status"] | null
           translation_complete?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "article_batches_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "preclassification_phases"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "article_batches_project_id_fkey"
             columns: ["project_id"]
@@ -679,7 +689,9 @@ export type Database = {
           id: string
           name: string
           ordering: number
+          phase_id: string | null
           project_id: string
+          status: Database["public"]["Enums"]["dimension_status"]
           type: Database["public"]["Enums"]["dimension_type"]
           updated_at: string | null
         }
@@ -689,7 +701,9 @@ export type Database = {
           id?: string
           name: string
           ordering?: number
+          phase_id?: string | null
           project_id: string
+          status?: Database["public"]["Enums"]["dimension_status"]
           type: Database["public"]["Enums"]["dimension_type"]
           updated_at?: string | null
         }
@@ -699,13 +713,60 @@ export type Database = {
           id?: string
           name?: string
           ordering?: number
+          phase_id?: string | null
           project_id?: string
+          status?: Database["public"]["Enums"]["dimension_status"]
           type?: Database["public"]["Enums"]["dimension_type"]
           updated_at?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "preclass_dimensions_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "preclassification_phases"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "preclass_dimensions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preclassification_phases: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          phase_number: number
+          project_id: string
+          status: Database["public"]["Enums"]["preclassification_phase_status"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          phase_number: number
+          project_id: string
+          status?: Database["public"]["Enums"]["preclassification_phase_status"]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          phase_number?: number
+          project_id?: string
+          status?: Database["public"]["Enums"]["preclassification_phase_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preclassification_phases_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -888,6 +949,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          active_phase_id: string | null
           code: string | null
           created_at: string
           description: string | null
@@ -905,6 +967,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_phase_id?: string | null
           code?: string | null
           created_at?: string
           description?: string | null
@@ -922,6 +985,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_phase_id?: string | null
           code?: string | null
           created_at?: string
           description?: string | null
@@ -938,7 +1002,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_active_phase_id_fkey"
+            columns: ["active_phase_id"]
+            isOneToOne: false
+            referencedRelation: "preclassification_phases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users_profiles: {
         Row: {
@@ -1181,6 +1253,7 @@ export type Database = {
         | "ai_prefilled"
         | "discrepancies"
         | "completed"
+      dimension_status: "active" | "archived"
       dimension_type: "finite" | "open"
       group_visibility: "public" | "private"
       item_preclass_status:
@@ -1192,6 +1265,11 @@ export type Database = {
       job_status: "running" | "completed" | "failed"
       job_type: "TRANSLATION" | "PRECLASSIFICATION"
       note_visibility: "public" | "private"
+      preclassification_phase_status:
+        | "inactive"
+        | "active"
+        | "completed"
+        | "annulled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1342,6 +1420,7 @@ export const Constants = {
         "discrepancies",
         "completed",
       ],
+      dimension_status: ["active", "archived"],
       dimension_type: ["finite", "open"],
       group_visibility: ["public", "private"],
       item_preclass_status: [
@@ -1354,6 +1433,12 @@ export const Constants = {
       job_status: ["running", "completed", "failed"],
       job_type: ["TRANSLATION", "PRECLASSIFICATION"],
       note_visibility: ["public", "private"],
+      preclassification_phase_status: [
+        "inactive",
+        "active",
+        "completed",
+        "annulled",
+      ],
     },
   },
 } as const

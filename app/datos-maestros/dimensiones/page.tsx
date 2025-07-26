@@ -3,14 +3,17 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import {
 	listDimensions,
-	deleteDimension, // <-- ASEGÚRATE QUE ESTÉ IMPORTADO
+	hardDeleteDimension, // <-- NOMBRE CORRECTO DE LA FUNCIÓN
 	type FullDimension,
-	type DeleteDimensionPayload, // <-- Y ESTE TIPO TAMBIÉN
+	type HardDeleteDimensionPayload, // <-- NOMBRE CORRECTO DEL TIPO
 } from "@/lib/actions/dimension-actions";
+import {
+	getPhasesForProject
+} from "@/lib/actions/preclassification_phases_actions";
 import { StandardDialog } from "@/components/ui/StandardDialog";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardButton } from "@/components/ui/StandardButton";
@@ -21,7 +24,11 @@ import {
 	StandardCard,
 } from "@/components/ui/StandardCard";
 import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
-import { AlertTriangle, LayoutGrid, Trash2, Plus } from "lucide-react";
+import { StandardTabs } from "@/components/ui/StandardTabs/StandardTabs";
+import { StandardTabsList } from "@/components/ui/StandardTabs/StandardTabsList";
+import { StandardTabsTrigger } from "@/components/ui/StandardTabs/StandardTabsTrigger";
+import * as TabsPrimitive from "@radix-ui/react-tabs";
+import { AlertTriangle, LayoutGrid, Trash2, Plus, Layers } from "lucide-react";
 import { DimensionCard } from "./components/DimensionCard"; // Tu componente DimensionCard
 import { toast as sonnerToast } from "sonner";
 import { useLoading } from "@/contexts/LoadingContext"; // Opcional, si lo usas
@@ -32,12 +39,30 @@ import { useLoading } from "@/contexts/LoadingContext"; // Opcional, si lo usas
 // //#endregion ![def]
 
 //#region [main] - 🔧 COMPONENT 🔧
+// Definir el tipo de fase para TypeScript
+type Phase = {
+	id: string;
+	name: string;
+	phase_number: number;
+	status: 'active' | 'inactive' | 'completed' | 'annulled';
+	project_id: string;
+	created_at: string;
+	description: string | null;
+};
+
 export default function DimensionesPage() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const { proyectoActual, loadingProyectos } = useAuth();
 	//#region [sub] - 🧰 HELPER FUNCTIONS & LOGIC 🧰
-		useLoading(); // Opcional para feedback global
+	useLoading(); // Opcional para feedback global
 
+	// Estados para fases
+	const [phases, setPhases] = useState<Phase[]>([]);
+	const [activePhaseId, setActivePhaseId] = useState<string | null>(null);
+	const [loadingPhases, setLoadingPhases] = useState(true);
+	
+	// Estados para dimensiones
 	const [dimensions, setDimensions] = useState<FullDimension[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isDeleting, setIsDeleting] = useState<string | null>(null); // string: ID de la dimensión borrándose
@@ -50,21 +75,62 @@ export default function DimensionesPage() {
 	const puedeGestionarDimensiones =
 		proyectoActual?.permissions?.can_manage_master_data || false;
 
-	const cargarDimensiones = useCallback(async () => {
+	// Función para cargar las fases del proyecto
+	const cargarFases = useCallback(async () => {
 		if (!proyectoActual?.id) {
 			if (!loadingProyectos) {
-				// No es un error, solo un estado sin proyecto
-				// setError("No hay un proyecto seleccionado.");
+				setPhases([]);
+				setActivePhaseId(null);
 			}
-			setIsLoading(false);
+			setLoadingPhases(false);
+			return;
+		}
+
+		setLoadingPhases(true);
+		try {
+			const resultado = await getPhasesForProject(proyectoActual.id);
+			if (resultado.data && !resultado.error) {
+				setPhases(resultado.data);
+				// Establecer la fase activa desde la URL o la primera fase disponible
+				const phaseFromUrl = searchParams.get('phase');
+				if (phaseFromUrl && resultado.data.find(p => p.id === phaseFromUrl)) {
+					setActivePhaseId(phaseFromUrl);
+				} else if (resultado.data.length > 0) {
+					// Priorizar fase activa, luego la primera disponible
+					const activePhase = resultado.data.find(p => p.status === 'active');
+					setActivePhaseId(activePhase?.id || resultado.data[0].id);
+				}
+			} else {
+				setPhases([]);
+				setActivePhaseId(null);
+				if (resultado.error) {
+					sonnerToast.error("Error al Cargar Fases", {
+						description: resultado.error.message,
+					});
+				}
+			}
+		} catch (err) {
+			const errorMsg = err instanceof Error ? err.message : "Error desconocido.";
+			setPhases([]);
+			setActivePhaseId(null);
+			sonnerToast.error("Error Inesperado", { description: errorMsg });
+		} finally {
+			setLoadingPhases(false);
+		}
+	}, [proyectoActual?.id, loadingProyectos, searchParams]);
+
+	// Función para cargar dimensiones de una fase específica
+	const cargarDimensiones = useCallback(async (phaseId: string) => {
+		if (!phaseId) {
 			setDimensions([]);
+			setIsLoading(false);
 			return;
 		}
 
 		setIsLoading(true);
 		setError(null);
 		try {
-			const resultado = await listDimensions(proyectoActual.id);
+			const resultado = await listDimensions(phaseId);
 			if (resultado.success) {
 				setDimensions(resultado.data);
 			} else {
@@ -81,24 +147,56 @@ export default function DimensionesPage() {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [proyectoActual?.id, loadingProyectos]);
+	}, []);
 
+	// Función para manejar el cambio de pestaña
+	const handleTabChange = useCallback((phaseId: string) => {
+		setActivePhaseId(phaseId);
+		// Actualizar la URL para mantener el estado
+		const newUrl = new URL(window.location.href);
+		newUrl.searchParams.set('phase', phaseId);
+		window.history.replaceState({}, '', newUrl.toString());
+	}, []);
+
+	// Efecto para cargar las fases cuando cambia el proyecto
 	useEffect(() => {
 		if (proyectoActual?.id || !loadingProyectos) {
-			cargarDimensiones();
+			cargarFases();
 		}
-	}, [proyectoActual?.id, loadingProyectos, cargarDimensiones]);
+	}, [proyectoActual?.id, loadingProyectos, cargarFases]);
+
+	// Efecto para cargar dimensiones cuando cambia la fase activa
+	useEffect(() => {
+		if (activePhaseId) {
+			cargarDimensiones(activePhaseId);
+		} else {
+			setDimensions([]);
+			setIsLoading(false);
+		}
+	}, [activePhaseId, cargarDimensiones]);
 
 	const handleCrearDimension = () => {
-		router.push("/datos-maestros/dimensiones/crear");
+		// Incluir la fase activa en la URL de creación
+		const url = activePhaseId 
+			? `/datos-maestros/dimensiones/crear?phase=${activePhaseId}`
+			: "/datos-maestros/dimensiones/crear";
+		router.push(url);
 	};
 
 	const handleEditarDimension = (dimensionId: string) => {
-		router.push(`/datos-maestros/dimensiones/${dimensionId}/modificar`);
+		// Incluir la fase activa en la URL de edición
+		const url = activePhaseId 
+			? `/datos-maestros/dimensiones/${dimensionId}/modificar?phase=${activePhaseId}`
+			: `/datos-maestros/dimensiones/${dimensionId}/modificar`;
+		router.push(url);
 	};
 
 	const handleVerDimension = (dimensionId: string) => {
-		router.push(`/datos-maestros/dimensiones/${dimensionId}/ver`);
+		// Incluir la fase activa en la URL de visualización
+		const url = activePhaseId 
+			? `/datos-maestros/dimensiones/${dimensionId}/ver?phase=${activePhaseId}`
+			: `/datos-maestros/dimensiones/${dimensionId}/ver`;
+		router.push(url);
 	};
 
 	// --- FUNCIÓN handleEliminarDimension ACTUALIZADA ---
@@ -123,11 +221,11 @@ export default function DimensionesPage() {
 		setIsDeleting(dimensionId);
 
 		try {
-			const payload: DeleteDimensionPayload = {
+			const payload: HardDeleteDimensionPayload = {
 				dimensionId: dimensionId,
 				projectId: proyectoActual.id,
 			};
-			const resultado = await deleteDimension(payload);
+			const resultado = await hardDeleteDimension(payload);
 
 			if (resultado.success) {
 				sonnerToast.success(`Dimensión "${dimensionName}" eliminada`);
@@ -179,111 +277,187 @@ export default function DimensionesPage() {
 
 	return (
 		<div className="container mx-auto py-8">
-				        <StandardPageTitle
-          title="Dimensiones"
-          subtitle="Gestión de dimensiones"
-          description="Crea y gestiona las dimensiones para clasificar los artículos en tu revisión sistemática."
-          mainIcon={LayoutGrid}
-          showBackButton={{ href: "/datos-maestros" }}
-          breadcrumbs={[
-            { label: "Datos Maestros", href: "/datos-maestros" },
-            { label: "Dimensiones" },
-          ]}
-        />
+			<div className="flex justify-between items-start mb-6">
+				<StandardPageTitle
+					title="Dimensiones de Clasificación"
+					subtitle="Gestión por Fases"
+					description="Gestiona las dimensiones que guiarán la preclasificación de artículos, organizadas por fases de trabajo."
+					mainIcon={LayoutGrid}
+					showBackButton={{ href: "/datos-maestros" }}
+					breadcrumbs={[
+						{ label: "Datos Maestros", href: "/datos-maestros" },
+						{ label: "Dimensiones" },
+					]}
+				/>
+				{puedeGestionarDimensiones && proyectoActual?.id && activePhaseId && (
+					<StandardButton
+						onClick={handleCrearDimension}
+						colorScheme="primary"
+						leftIcon={Plus}>
+						Crear Dimensión
+					</StandardButton>
+				)}
+			</div>
 
-				{error && (
-					<StandardCard
-						// Informational error card
-						colorScheme="primary" // Rule: Inner card
-						accentPlacement="none" // Rule: Inner card
-						hasOutline={false} // Rule: Inner card
-						shadow="none" // Rule: Inner card
-						disableShadowHover={true} // Rule: Inner card
-						styleType="subtle"
-						className="my-6"
-						// styleType removed
-					>
-						<div className="flex items-start gap-3">
-							<StandardIcon>
-								<AlertTriangle className="h-5 w-5 mt-0.5 text-danger-fg" />
-							</StandardIcon>
-							<div>
-								<StandardText weight="bold" colorScheme="danger">
-									Error al Cargar Dimensiones
-								</StandardText>
-								<StandardText size="sm" className="text-danger-fg/90 mt-1">
-									{error}
-								</StandardText>
-							</div>
+				{/* Estado de carga de fases */}
+			{loadingPhases && (
+				<div className="flex justify-center items-center py-12">
+					<SustratoLoadingLogo />
+				</div>
+			)}
+
+			{/* Error general */}
+			{error && (
+				<StandardCard
+					colorScheme="primary"
+					accentPlacement="none"
+					hasOutline={false}
+					shadow="none"
+					disableShadowHover={true}
+					styleType="subtle"
+					className="my-6"
+				>
+					<div className="flex items-start gap-3">
+						<StandardIcon>
+							<AlertTriangle className="h-5 w-5 mt-0.5 text-danger-fg" />
+						</StandardIcon>
+						<div>
+							<StandardText weight="bold" colorScheme="danger">
+								Error al Cargar Datos
+							</StandardText>
+							<StandardText size="sm" className="text-danger-fg/90 mt-1">
+								{error}
+							</StandardText>
 						</div>
-					</StandardCard>
+					</div>
+				</StandardCard>
+			)}
+
+			{/* Proyecto no seleccionado */}
+			{!proyectoActual?.id && !loadingProyectos && !error && (
+				<StandardCard
+					colorScheme="primary"
+					accentPlacement="none"
+					hasOutline={false}
+					shadow="none"
+					disableShadowHover={true}
+					styleType="subtle"
+					className="my-6 p-6 text-center"
+				>
+					<StandardText preset="subheading" weight="medium" className="mb-2">
+						Proyecto No Seleccionado
+					</StandardText>
+					<StandardText colorScheme="neutral">
+						Por favor, selecciona un proyecto activo desde el menú superior
+						para gestionar sus dimensiones.
+					</StandardText>
+				</StandardCard>
+			)}
+
+				{/* Sin fases creadas */}
+				{proyectoActual?.id && !loadingPhases && phases.length === 0 && !error && (
+					<StandardEmptyState
+						icon={Layers}
+						title="No Hay Fases Creadas"
+						description={
+							puedeGestionarDimensiones
+								? "Antes de crear dimensiones, necesitas definir al menos una fase de preclasificación para organizar el trabajo."
+								: "Este proyecto aún no tiene fases de preclasificación definidas. Contacta al administrador del proyecto."
+						}
+						action={
+							puedeGestionarDimensiones ? (
+								<StandardButton
+									onClick={() => router.push("/datos-maestros/fases/crear")}
+									colorScheme="primary"
+									leftIcon={Plus}>
+									Crear Primera Fase
+								</StandardButton>
+							) : undefined
+						}
+					/>
 				)}
 
-				{!proyectoActual?.id && !loadingProyectos && !error && (
-					<StandardCard
-						// Informational 'proyecto no seleccionado' card
-						colorScheme="primary" // Rule: Inner card
-						accentPlacement="none" // Rule: Inner card
-						hasOutline={false} // Rule: Inner card
-						shadow="none" // Rule: Inner card
-						disableShadowHover={true} // Rule: Inner card
-						styleType="subtle"
-						className="my-6 p-6 text-center"
-						// styleType removed
+				{/* Sistema de pestañas por fases */}
+				{proyectoActual?.id && !loadingPhases && phases.length > 0 && !error && (
+					<StandardTabs
+						value={activePhaseId || ''}
+						onValueChange={handleTabChange}
+						colorScheme="primary"
+						styleType="line"
+						size="md"
+						className="w-full"
 					>
-						<StandardText preset="subheading" weight="medium" className="mb-2">
-							Proyecto No Seleccionado
-						</StandardText>
-						<StandardText colorScheme="neutral">
-							Por favor, selecciona un proyecto activo desde el menú superior
-							para gestionar sus dimensiones.
-						</StandardText>
-					</StandardCard>
+						{/* Lista de pestañas */}
+						<StandardTabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${phases.length}, minmax(0, 1fr))` }}>
+							{phases.map((phase) => {
+								// Contar dimensiones por fase (esto se podría optimizar con una consulta separada)
+								const dimensionCount = phase.id === activePhaseId ? dimensions.length : 0;
+								return (
+									<StandardTabsTrigger key={phase.id} value={phase.id} className="flex flex-col gap-1 py-3">
+										<span className="font-medium">{phase.name}</span>
+										<span className="text-xs opacity-70">
+											Fase {phase.phase_number}
+											{phase.id === activePhaseId && ` • ${dimensionCount} dimensiones`}
+										</span>
+									</StandardTabsTrigger>
+								);
+							})}
+						</StandardTabsList>
+
+						{/* Contenido de cada pestaña */}
+						{phases.map((phase) => (
+							<TabsPrimitive.Content key={phase.id} value={phase.id} className="mt-6">
+								{/* Estado de carga de dimensiones */}
+								{isLoading && (
+									<div className="flex justify-center items-center py-12">
+										<SustratoLoadingLogo />
+									</div>
+								)}
+
+								{/* Sin dimensiones en esta fase */}
+								{!isLoading && dimensions.length === 0 && (
+									<StandardEmptyState
+										icon={LayoutGrid}
+										title={`No hay Dimensiones en ${phase.name}`}
+										description={
+											puedeGestionarDimensiones
+												? `Comienza creando la primera dimensión para la fase "${phase.name}" y guía la clasificación de artículos.`
+												: `Esta fase aún no tiene dimensiones de clasificación definidas. Contacta al administrador del proyecto.`
+										}
+										action={
+											puedeGestionarDimensiones ? (
+												<StandardButton
+													onClick={handleCrearDimension}
+													colorScheme="primary"
+													leftIcon={Plus}>
+													Crear Primera Dimensión
+												</StandardButton>
+											) : undefined
+										}
+									/>
+								)}
+
+								{/* Grid de dimensiones */}
+								{!isLoading && dimensions.length > 0 && (
+									<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+										{dimensions.map((dim) => (
+											<DimensionCard
+												key={dim.id}
+												dimension={dim}
+												onEdit={() => handleEditarDimension(dim.id)}
+												onDelete={() => handleEliminarDimension(dim.id, dim.name)}
+												onViewDetails={() => handleVerDimension(dim.id)}
+												canManage={puedeGestionarDimensiones}
+												isBeingDeleted={isDeleting === dim.id}
+											/>
+										))}
+									</div>
+								)}
+							</TabsPrimitive.Content>
+						))}
+					</StandardTabs>
 				)}
 
-				{proyectoActual?.id &&
-					!isLoading &&
-					!error &&
-					dimensions.length === 0 && (
-						<StandardEmptyState
-							icon={LayoutGrid}
-							title="Aún no hay Dimensiones Definidas"
-							description={
-								puedeGestionarDimensiones
-									? "Comienza creando la primera dimensión para guiar la clasificación de artículos en tu proyecto."
-									: "Este proyecto aún no tiene dimensiones de clasificación definidas. Contacta al administrador del proyecto."
-							}
-							action={
-								puedeGestionarDimensiones ? (
-									<StandardButton
-										onClick={handleCrearDimension}
-										colorScheme="primary"
-										leftIcon={Plus}>
-										Crear Primera Dimensión
-									</StandardButton>
-								) : undefined
-							}
-						/>
-					)}
-
-				{proyectoActual?.id &&
-					!isLoading &&
-					!error &&
-					dimensions.length > 0 && (
-						<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 my-6">
-							{dimensions.map((dim) => (
-								<DimensionCard
-									key={dim.id}
-									dimension={dim}
-									onEdit={() => handleEditarDimension(dim.id)}
-									onDelete={() => handleEliminarDimension(dim.id, dim.name)}
-									onViewDetails={() => handleVerDimension(dim.id)}
-									canManage={puedeGestionarDimensiones}
-									isBeingDeleted={isDeleting === dim.id} // Pasar el estado de borrado
-								/>
-							))}
-						</div>
-					)}
 				{/* Diálogo de confirmación destructiva */}
 				<StandardDialog
 					open={!!dialogToDelete}
