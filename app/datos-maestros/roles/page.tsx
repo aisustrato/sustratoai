@@ -154,14 +154,24 @@ export default function RolesPage() {
 	const columnas: ColumnDef<ProjectRoleRow>[] = [
 		{
 			accessorKey: "role_name",
-			header: () => <StandardText weight="semibold">Nombre del Rol</StandardText>,
-			cell: (info) => <StandardBadge size="xs" colorScheme="primary">{String(info.getValue())}</StandardBadge>,
+			header: () => (
+				<StandardText weight="semibold">
+					<div className="text-left">Nombre del Rol</div>
+				</StandardText>
+			),
+			cell: (info) => (
+				<div className="flex items-center">
+					<StandardBadge size="xs" colorScheme="primary">
+						{String(info.getValue())}
+					</StandardBadge>
+				</div>
+			),
 			meta: {
-				size: 200, // Ajustar ancho
+				size: 250, // Ancho fijo para la columna de nombre
 			},
 		},
 
-		// Columnas de Permisos Separadas
+		// Columnas de Permisos con ancho fijo
 		{
 			accessorKey: "can_manage_master_data",
 			header: () => <div className="text-center">Gest. Datos</div>,
@@ -173,6 +183,7 @@ export default function RolesPage() {
 			),
 			meta: {
 				align: "center",
+				size: 120, // Ancho fijo para columna de permiso
 			},
 		},
 		{
@@ -186,6 +197,7 @@ export default function RolesPage() {
 			),
 			meta: {
 				align: "center",
+				size: 120,
 			},
 		},
 		{
@@ -199,6 +211,7 @@ export default function RolesPage() {
 			),
 			meta: {
 				align: "center",
+				size: 120,
 			},
 		},
 		{
@@ -212,58 +225,57 @@ export default function RolesPage() {
 			),
 			meta: {
 				align: "center",
+				size: 120,
 			},
 		},
 		{
 			id: "actions",
-			header: () => <div className="text-right pr-2">Acciones</div>,
+			header: () => <div className="text-center">Acciones</div>,
 			cell: ({ row }) => {
 				const rol = row.original;
 				return (
-					<div className="flex gap-1 justify-end">
+					<div className="flex justify-center gap-1">
 						<StandardButton
-							styleType="ghost"
-							colorScheme="secondary"
+							styleType="outline"
+							colorScheme="primary"
+							size="sm"
 							onClick={() => handleVerRol(rol)}
 							aria-label={`Ver detalles del rol ${rol.role_name}`}
 							tooltip="Ver detalles"
 							leftIcon={Eye}
 							iconOnly={true}
-						>
-							Ver
-						</StandardButton>
+						/>
 						{puedeGestionarRoles && (
 							<>
 								<StandardButton
-									styleType="ghost"
-									colorScheme="secondary"
+									styleType="outline"
+									colorScheme="primary"
+									size="sm"
 									onClick={() => handleEditarRol(rol)}
 									aria-label={`Editar el rol ${rol.role_name}`}
 									tooltip="Editar rol"
 									leftIcon={PenLine}
 									iconOnly={true}
-									>
-									Editar	
-								</StandardButton>
+								/>
 								<StandardButton
-									styleType="ghost"
+									styleType="outline"
 									colorScheme="danger"
+									size="sm"
 									onClick={() => handleEliminarRol(rol)}
 									aria-label={`Eliminar el rol ${rol.role_name}`}
 									tooltip="Eliminar rol"
 									leftIcon={Trash2}
 									iconOnly={true}
-								>
-									Eliminar
-								</StandardButton>
+								/>
 							</>
 						)}
 					</div>
 				);
 			},
 			meta: {
-				align: "right",
+				align: "center",
 				isSticky: "right",
+				size: 220, // Ancho fijo para la columna de acciones
 			},
 		},
 	];

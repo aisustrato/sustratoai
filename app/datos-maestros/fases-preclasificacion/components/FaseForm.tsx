@@ -15,7 +15,6 @@ import { StandardTextarea } from "@/components/ui/StandardTextarea";
 import { StandardFormField } from "@/components/ui/StandardFormField";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardCard } from "@/components/ui/StandardCard";
-import { StandardText } from "@/components/ui/StandardText";
 import { StandardSelect, type SelectOption } from "@/components/ui/StandardSelect";
 
 //#endregion [head]
@@ -120,25 +119,9 @@ export default function FaseForm({
     };
 
     return (
-        <StandardCard className="max-w-3xl mx-auto">
+        <StandardCard  accentPlacement="top"> 
             <div className="p-6">
-                <div className="flex items-center space-x-3 mb-6">
-                    <StandardButton
-                        styleType="ghost"
-                        size="md"
-                        onClick={() => router.back()}
-                        className="mr-2 p-2"
-                    >
-                        <ArrowLeft className="h-5 w-5" />
-                    </StandardButton>
-                    <StandardText variant="h3">
-                        {modo === "crear" 
-                            ? "Nueva Fase de Preclasificación" 
-                            : modo === "editar" 
-                                ? "Editar Fase" 
-                                : "Detalles de la Fase"}
-                    </StandardText>
-                </div>
+             
 
                 <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

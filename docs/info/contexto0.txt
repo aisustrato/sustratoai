@@ -1,0 +1,43 @@
+Anexo Cero: La Intención de Sustrato.ai – Un Manifiesto de Co-Creación
+I. ¿Qué es Sustrato.ai? (Más Allá de la Herramienta)
+Sustrato.ai no es una herramienta de productividad ni una plataforma para automatizar la investigación. Es un entorno de co-creación diseñado para amplificar el pensamiento cualitativo. Nace de la convicción de que la sinergia entre la intuición y el juicio crítico del investigador humano y la capacidad de procesamiento de la Inteligencia Artificial puede generar comprensiones más profundas que las que cualquiera podría alcanzar por separado.
+
+Su propósito no es dar respuestas rápidas, sino facilitar un diálogo más rico con grandes volúmenes de información no estructurada (artículos, entrevistas, etc.). Se opone a la "filosofía zero-shot" de las soluciones mágicas, y en su lugar, se enfoca en la trazabilidad, la auditoría y el valor de la "desafinación fértil": el error o la discrepancia como punto de partida para el aprendizaje.
+
+El principio rector es la co-creación fractal: el propio proceso de construcción de la herramienta (nuestra colaboración) debe reflejar la metodología que la herramienta busca potenciar en sus usuarios.
+
+II. Nuestra Historia Colaborativa (Hitos del "Barro")
+Nuestra colaboración ha sido un viaje iterativo para construir una base sólida y coherente. Los hitos más importantes han sido:
+
+Cimientos Filosóficos y de Datos: Comenzamos estableciendo una forma de trabajo única (la "Semilla de Contexto") y modelando la arquitectura de datos fundamental: proyectos, usuarios, roles y permisos, con la seguridad (RLS) como pilar desde el primer día.
+
+La Gran Migración de Artículos: Enfrentamos el desafío de manejar datos bibliográficos complejos. Esto nos llevó a un hito clave:
+
+Diseñamos y ejecutamos una migración desde una tabla monolítica a una estructura normalizada (articles + metadata JSONB).
+
+Construimos un sistema de carga masiva por lotes ("chunks") para manejar miles de registros sin sobrecargar el sistema.
+
+Realizamos el "enroque" de las tablas en producción y depuramos las políticas de seguridad y las relaciones que no se actualizaron automáticamente, fortaleciendo la integridad de la base de datos.
+
+El Ecosistema de Preclasificación: Diseñamos la arquitectura completa para el corazón del sistema:
+
+Definimos los flujos de estado para los lotes y los artículos individuales, distinguiendo entre estados persistentes y efímeros.
+
+Creamos las tablas de soporte (preclass_dimensions, article_dimension_reviews) y enriquecimos las existentes (article_batch_items) para soportar un proceso de revisión y reconciliación de varias etapas.
+
+Implementamos un sistema de logging (ai_job_history) para auditar cada interacción con las APIs de IA, monitorear costos y rendimiento.
+
+Capas de Anotación y Curación: Añadimos funcionalidades para un análisis más profundo:
+
+Notas por Artículo: Un sistema completo con visibilidad pública/privada, asegurado por políticas RLS complejas, que permite la anotación directa.
+
+Grupos de Artículos: Diseñamos la arquitectura para la curación temática, permitiendo a los usuarios crear colecciones de artículos, sentando las bases para análisis transversales.
+
+III. La Aspiración (Hacia Dónde Vamos)
+Sustrato.ai aspira a ser mucho más que una plataforma de clasificación. La visión a largo plazo es convertirlo en un compañero intelectual para el investigador cualitativo.
+
+A corto plazo: La misión es implementar completamente la lógica del Módulo de Fases y la interfaz de detalle de lote, dando vida al flujo de clasificación, revisión y reconciliación que hemos diseñado.
+
+A mediano plazo: El objetivo es trascender la clasificación para facilitar la síntesis. Esto implica crear nuevas herramientas que ayuden a los investigadores a conectar ideas entre artículos, a visualizar patrones en los datos clasificados y a usar el "glosario" que ideamos para enriquecer el contexto de cada análisis.
+
+La Gran Visión: Sustrato.ai aspira a ser un ecosistema donde la IA no sea una "caja negra" que da respuestas, sino un interlocutor transparente. Un sistema que pueda decir "clasifiqué esto de esta manera por estas razones, con este nivel de confianza" y que pueda aprender y ajustar su enfoque basado en el diálogo con el experto humano. El fin último no es reemplazar el trabajo del investigador, sino liberarlo de la carga cognitiva repetitiva para que pueda dedicar más tiempo a lo que solo un humano puede hacer: pensar críticamente, formular preguntas profundas y crear nuevo conocimiento.

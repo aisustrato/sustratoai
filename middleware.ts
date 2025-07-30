@@ -3,7 +3,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { Database } from '@/lib/database.types';
 
-const PUBLIC_ROUTES = [ '/login', '/signup', '/reset-password', '/contact', '/api/auth/callback', '/auth/callback' ];
+const PUBLIC_ROUTES = [ '/login', '/signup', '/reset-password', '/update-password', '/contact', '/api/auth/callback', '/auth/callback' ];
 
 function shouldIgnorePathForSession(pathname: string): boolean {
   if (PUBLIC_ROUTES.some(route => pathname === route || (route !== '/' && pathname.startsWith(`${route}/`)))) return true;
@@ -14,13 +14,46 @@ function shouldIgnorePathForSession(pathname: string): boolean {
 
 export async function middleware(request: NextRequest) {
   const { nextUrl } = request;
-  const { pathname } = nextUrl;
+  const { pathname, search, hash } = nextUrl;
   const LOG_PREFIX_MW = "[MIDDLEWARE_SSR_V2]"; // Nuevo prefijo para esta versión
   const requestId = Math.floor(Math.random() * 10000);
 
   const response = NextResponse.next({ request: { headers: request.headers } });
 
-  console.log(`${LOG_PREFIX_MW}:${requestId} Procesando: ${pathname}`);
+  // 🔍 LOGS DETALLADOS PARA DEBUGGING DE PASSWORD RESET
+  console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 URL COMPLETA: ${request.url}`);
+  console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 PATHNAME: ${pathname}`);
+  console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 SEARCH: ${search}`);
+  console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 HASH: ${hash}`);
+  console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 REFERER: ${request.headers.get('referer') || 'NO REFERER'}`);
+  
+  // 🔧 SOLUCIÓN PARA RECOVERY TOKENS: Detectar tokens de recuperación en cualquier ruta
+  // Supabase puede usar diferentes parámetros: ?code=, ?type=recovery, #access_token, etc.
+  const isRecoveryFlow = search.includes('type=recovery') || 
+                        hash.includes('access_token') || 
+                        search.includes('access_token') ||
+                        search.includes('code='); // 🚨 ESTE ES EL QUE FALTABA!
+  
+  // 🚫 PREVENIR LOOP INFINITO: Si ya estamos en /update-password, no redirigir
+  if (isRecoveryFlow && pathname !== '/update-password') {
+    console.log(`${LOG_PREFIX_MW}:${requestId} 🚨 DETECTADA URL DE RECUPERACIÓN DE CONTRASEÑA!`);
+    console.log(`${LOG_PREFIX_MW}:${requestId} 🔧 Recovery flow detectado, redirigiendo a /update-password para cambio de contraseña.`);
+    
+    // 🎯 REDIRIGIR A /update-password PARA QUE EL USUARIO PUEDA CAMBIAR SU CONTRASEÑA
+    const updatePasswordUrl = new URL('/update-password', request.url);
+    // Preservar el código de recuperación como query parameter por si es necesario
+    if (search.includes('code=')) {
+      updatePasswordUrl.search = search;
+    }
+    
+    console.log(`${LOG_PREFIX_MW}:${requestId} 🎯 Redirigiendo a: ${updatePasswordUrl.toString()}`);
+    return NextResponse.redirect(updatePasswordUrl);
+  }
+  
+  if (pathname === '/update-password') {
+    console.log(`${LOG_PREFIX_MW}:${requestId} 🚨 RUTA /update-password detectada, permitiendo paso.`);
+    return response;
+  }
 
   if (shouldIgnorePathForSession(pathname)) {
     console.log(`${LOG_PREFIX_MW}:${requestId} Ruta ignorada (sesión): ${pathname}`);

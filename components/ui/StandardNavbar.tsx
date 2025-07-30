@@ -23,6 +23,7 @@ import {
 	Boxes,         // Added for Lote
 	User,          // Added for Miembros
 	Shield,        // Added for Roles
+	Network,       // Added for Fases de Preclasificación
 } from "lucide-react";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -338,6 +339,11 @@ const navItems: NavItem[] = useMemo(() => {
         label: "Dimensiones",
         href: "/datos-maestros/dimensiones",
         icon: (isActive) => createMenuIcon(LayoutGrid, isActive),
+      },
+      {
+        label: "Fases de Preclasificación",
+        href: "/datos-maestros/fases-preclasificacion",
+        icon: (isActive) => createMenuIcon(Network, isActive),
       },
       {
         label: "Lotes",

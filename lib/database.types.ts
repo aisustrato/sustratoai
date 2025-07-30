@@ -598,6 +598,49 @@ export type Database = {
           },
         ]
       }
+      phase_eligible_articles: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          phase_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          phase_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          phase_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phase_eligible_articles_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phase_eligible_articles_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_articles_for_batching_view"
+            referencedColumns: ["article_id"]
+          },
+          {
+            foreignKeyName: "phase_eligible_articles_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "preclassification_phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       preclass_dimension_examples: {
         Row: {
           dimension_id: string

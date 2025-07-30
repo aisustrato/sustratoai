@@ -78,7 +78,7 @@ const StandardTextComponent = React.forwardRef(
                 case "title":	return { baseAsElement: "h3" as const, baseSize: "xl" as const, baseWeight: "semibold" as const, baseFontType: "heading" as const };
                 case "subtitle":	return { baseAsElement: "h4" as const, baseSize: "lg" as const, baseWeight: "medium" as const, baseColorScheme: "neutral" as const, baseFontType: "heading" as const };
                 case "body":	return { baseAsElement: "p" as const, baseSize: "base" as const, baseWeight: "normal" as const, baseFontType: "body" as const };
-                case "caption":	return { baseAsElement: "span" as const, baseSize: "xs" as const, baseWeight: "normal" as const, baseColorScheme: "neutral" as const, baseFontType: "body" as const };
+                case "caption":	return { baseAsElement: "span" as const, baseSize: "sm" as const, baseWeight: "normal" as const, baseColorScheme: "neutral" as const, baseFontType: "body" as const };
                 default:	return { baseAsElement: "span" as const, baseSize: "base" as const, baseWeight: "normal" as const, baseFontType: "body" as const };
             }
         }, [preset]);

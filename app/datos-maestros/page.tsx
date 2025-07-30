@@ -14,6 +14,7 @@ import {
   Boxes,
   User,
   Shield,
+  Network,
 } from "lucide-react";
 //#endregion ![head]
 
@@ -40,6 +41,12 @@ export default function DatosMaestrosHome() {
             icon: ClipboardList,
             title: "Proyecto",
             description: "Gestiona el nombre, descripción y módulos activos de tu proyecto."
+          },
+          {
+            href: "/datos-maestros/fases-preclasificacion",
+            icon: Network,
+            title: "Fases de Preclasificación",
+            description: "Administra las fases de preclasificación para la evaluación de artículos en tu proyecto."
           },
           {
             href: "/datos-maestros/cargar-articulos",

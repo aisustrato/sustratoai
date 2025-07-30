@@ -114,58 +114,72 @@ export default function MiembrosPage() {
 			header: "Nombre",
 			accessorFn: (row: ProjectMemberDetails) => {
 				const profile = row.profile;
-				if (profile?.public_display_name) {
-					return profile.public_display_name;
-				}
-				if (profile?.first_name || profile?.last_name) {
-					return `${profile.first_name || ""} ${
-						profile.last_name || ""
-					}`.trim();
-				}
+				if (profile?.public_display_name) return profile.public_display_name;
+				if (profile?.first_name || profile?.last_name) return `${profile.first_name || ""} ${profile.last_name || ""}`.trim();
 				return "Sin nombre registrado";
 			},
-						cell: ({ getValue }: CellContext<ProjectMemberDetails, unknown>) => <StandardText weight="semibold">{getValue() as string}</StandardText>,
-			meta: {
-				size: 250,
-			},
+			cell: ({ getValue }) => (
+				<div className="font-medium">
+					<StandardText weight="semibold">{getValue() as string}</StandardText>
+				</div>
+			),
+			meta: { size: 250 },
 		},
 		{
 			header: "Institución",
-			accessorFn: (row: ProjectMemberDetails) =>
-				row.profile?.primary_institution || "No especificada",
-			cell: ({ getValue }: CellContext<ProjectMemberDetails, unknown>) => getValue() as string,
-			meta: {
+			accessorFn: (row: ProjectMemberDetails) => row.profile?.primary_institution || "No especificada",
+			cell: ({ getValue }) => (
+				<div className="truncate">
+					{getValue() as string}
+				</div>
+			),
+			meta: { 
 				size: 200,
+				isTruncatable: true
 			},
 		},
 		{
 			header: "Perfil de Usuario",
-			accessorFn: (row: ProjectMemberDetails) =>
-				row.profile?.public_contact_email || "No especificado",
-			cell: ({ getValue }: CellContext<ProjectMemberDetails, unknown>) => getValue() as string,
-			meta: { size: 200 },
+			accessorFn: (row: ProjectMemberDetails) => row.profile?.public_contact_email || "No especificado",
+			cell: ({ getValue }) => (
+				<div className="truncate">
+					{getValue() as string}
+				</div>
+			),
+			meta: { 
+				size: 200,
+				isTruncatable: true 
+			},
 		},
 		{
 			header: "Rol en el Proyecto",
-			accessorFn: (row: ProjectMemberDetails) =>
-				row.role_name || "Sin rol asignado",
-						cell: ({ getValue }: CellContext<ProjectMemberDetails, unknown>) => (
-				<StandardBadge size="xs" colorScheme="primary" styleType="subtle">
-					{getValue() as string}
-				</StandardBadge>
+			accessorFn: (row: ProjectMemberDetails) => row.role_name || "Sin rol asignado",
+			cell: ({ getValue }) => (
+				<div className="flex justify-center">
+					<StandardBadge size="xs" colorScheme="primary" styleType="subtle">
+						{getValue() as string}
+					</StandardBadge>
+				</div>
 			),
-			meta: { size: 200 },
+			meta: { 
+				size: 180,
+				align: 'center' 
+			},
 		},
 		{
 			id: 'actions',
-			header: () => <div className="text-right pr-2">Acciones</div>,
-			meta: { align: 'right', isSticky: 'right' },
-						cell: ({ row }: CellContext<ProjectMemberDetails, unknown>) => {
+			header: () => <div className="text-center">Acciones</div>,
+			meta: { 
+				align: 'center', 
+				isSticky: 'right',
+				size: 200 // Ancho fijo para la columna de acciones
+			},
+			cell: ({ row }) => {
 				const miembro = row.original as ProjectMemberDetails;
 				return (
-					<div className="flex gap-1 justify-end">
+					<div className="flex justify-center gap-1">
 						<StandardButton
-							styleType="ghost"
+							styleType="outline"
 							colorScheme="primary"
 							size="sm"
 							iconOnly={true}
@@ -173,13 +187,11 @@ export default function MiembrosPage() {
 							tooltip="Ver detalles"
 							leftIcon={Eye}
 							aria-label="Ver detalles del miembro"
-						>
-							Ver
-						</StandardButton>
+						/>
 						{puedeGestionarMiembros && (
 							<>
 								<StandardButton
-									styleType="ghost"
+									styleType="outline"
 									colorScheme="primary"
 									size="sm"
 									iconOnly={true}
@@ -187,11 +199,9 @@ export default function MiembrosPage() {
 									tooltip="Editar miembro"
 									leftIcon={PenLine}
 									aria-label="Editar miembro"
-								>
-									Editar
-								</StandardButton>
+								/>
 								<StandardButton
-									styleType="ghost"
+									styleType="outline"
 									size="sm"
 									iconOnly={true}
 									onClick={() => handleEliminarMiembro(miembro)}

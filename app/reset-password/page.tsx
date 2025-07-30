@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase"; // ⚠️ ¡OJO! Asegúrate que la ruta a tu cliente de supabase sea correcta.
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardFormField } from "@/components/ui/StandardFormField";
@@ -13,24 +14,12 @@ import { SustratoLogoWithFixedText } from "@/components/ui/sustrato-logo-with-fi
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function ResetPasswordPage() {
-	console.log("ResetPasswordPage - Componente cargado");
-
 	const [email, setEmail] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [sent, setSent] = useState(false);
 
-	useEffect(() => {
-		console.log("ResetPasswordPage - useEffect ejecutado");
-		// Verificar la URL actual
-		if (typeof window !== "undefined") {
-			console.log("ResetPasswordPage - URL actual:", window.location.href);
-			console.log("ResetPasswordPage - Pathname:", window.location.pathname);
-		}
-	}, []);
-
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		console.log("ResetPasswordPage - Formulario enviado");
 
 		if (!email) {
 			toast.error("Por favor, ingresa tu correo electrónico");
@@ -40,17 +29,30 @@ export default function ResetPasswordPage() {
 		setLoading(true);
 
 		try {
-			// Aquí iría la lógica para enviar correo de recuperación de contraseña
-			// Por ahora sólo simulamos una espera y éxito
-			await new Promise((resolve) => setTimeout(resolve, 1500));
+			// 🧠 Lógica real de Supabase
+			// Usamos `resetPasswordForEmail` para pedirle a Supabase que envíe el correo.
+			// La opción `redirectTo` es crucial: le dice a Supabase a qué página debe llevar
+			// el enlace del correo. Usamos `window.location.origin` para que la URL
+			// funcione automáticamente en desarrollo (localhost) y producción (sustrato.ai).
+			const { error } = await supabase.auth.resetPasswordForEmail(email, {
+				redirectTo: `${window.location.origin}/update-password`,
+			});
+
+			if (error) {
+				// Si Supabase devuelve un error, lo mostramos.
+				throw error;
+			}
 
 			setSent(true);
+			// Mantenemos un mensaje genérico por seguridad, para no revelar si un email existe o no en la base de datos.
 			toast.success(
-				"Se ha enviado un correo con instrucciones para restablecer tu contraseña"
+				"Si existe una cuenta, se ha enviado un correo con instrucciones."
 			);
-		} catch (error) {
+		} catch (error: any) {
 			console.error("Error al enviar correo de recuperación:", error);
-			toast.error("Ocurrió un error. Por favor, intenta nuevamente.");
+			toast.error(
+				`Ocurrió un error: ${error.message || "Por favor, intenta nuevamente."}`
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -59,7 +61,11 @@ export default function ResetPasswordPage() {
 	return (
 		<StandardPageBackground variant="subtle" bubbles={true}>
 			<div className="flex items-center justify-center min-h-screen p-4">
-				<StandardCard className="max-w-md w-full" accentPlacement="top" colorScheme="primary" styleType="filled">
+				<StandardCard
+					className="max-w-md w-full"
+					accentPlacement="top"
+					colorScheme="primary"
+					styleType="filled">
 					<StandardCard.Header className="space-y-2 text-center">
 						<div className="flex justify-center mb-2">
 							<SustratoLogoWithFixedText
@@ -82,7 +88,7 @@ export default function ResetPasswordPage() {
 							colorScheme="neutral"
 							className="text-center text-muted-foreground">
 							{!sent
-								? "Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu contraseña"
+								? "Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu contraseña."
 								: "Hemos enviado instrucciones a tu correo electrónico. Sigue los pasos indicados en el mensaje."}
 						</StandardText>
 					</StandardCard.Header>
@@ -99,6 +105,7 @@ export default function ResetPasswordPage() {
 										onChange={(e) => setEmail(e.target.value)}
 										placeholder="tucorreo@ejemplo.com"
 										required
+										disabled={loading}
 									/>
 								</StandardFormField>
 
@@ -139,7 +146,8 @@ export default function ResetPasswordPage() {
 							<StandardButton
 								styleType="ghost"
 								leftIcon={ArrowLeft}
-								size="sm">
+								size="sm"
+								disabled={loading}>
 								Volver a inicio de sesión
 							</StandardButton>
 						</Link>

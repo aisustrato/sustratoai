@@ -13,7 +13,7 @@ import { StandardIcon } from "@/components/ui/StandardIcon";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
-import { AlertCircle, CheckCircle2, Layers } from "lucide-react";
+import { AlertCircle, CheckCircle2, Network } from "lucide-react";
 import { toast } from "sonner";
 
 export default function NuevaFasePage() {
@@ -140,7 +140,7 @@ export default function NuevaFasePage() {
                         title="Nueva Fase de Preclasificación"
                         subtitle="Crea una nueva fase para el proceso de preclasificación"
                         description="Completa los siguientes campos para crear una nueva fase en el proceso de preclasificación de documentos."
-                        mainIcon={Layers}
+                        mainIcon={Network}
                         showBackButton={{ href: "/datos-maestros/fases-preclasificacion" }}
                         breadcrumbs={[
                             { label: "Datos Maestros", href: "/datos-maestros" },

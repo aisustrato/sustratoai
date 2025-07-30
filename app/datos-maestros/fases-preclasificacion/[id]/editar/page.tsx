@@ -19,13 +19,14 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import FaseForm from "../../components/FaseForm";
 import { getPhasesForProject, updatePhaseDetails, updatePhaseStatus } from "@/lib/actions/preclassification_phases_actions";
+import { populateInitialPhaseUniverse, listEligibleArticlesForPhase } from "@/lib/actions/phase-eligible-articles-actions";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { StandardText } from "@/components/ui/StandardText";
-import { Layers, AlertCircle, ArrowLeft, RotateCw, CheckCircle2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, RotateCw, CheckCircle2, Sparkles, Network } from "lucide-react";
 import { toast } from "sonner";
 import { StandardButton } from "@/components/ui/StandardButton";
 
@@ -37,6 +38,8 @@ export default function EditarFasePage() {
     
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [populating, setPopulating] = useState(false);
+    const [hasEligibleArticles, setHasEligibleArticles] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [fase, setFase] = useState<Phase | null>(null);
 
@@ -71,11 +74,16 @@ export default function EditarFasePage() {
                         ? faseEncontrada.status as PhaseStatus 
                         : 'inactive')
                 };
-                
                 setFase(faseCompleta);
-            } catch (err) {
-                console.error('Error cargando la fase:', err);
-                setError(err instanceof Error ? err.message : 'Error desconocido al cargar la fase');
+
+                // Verificar si la fase ya tiene artículos elegibles
+                const eligibleResult = await listEligibleArticlesForPhase(faseCompleta.id);
+                if (eligibleResult.success && eligibleResult.data && eligibleResult.data.length > 0) {
+                    setHasEligibleArticles(true);
+                }
+            } catch {
+                console.error('Error cargando la fase');
+                setError('Error desconocido al cargar la fase');
             } finally {
                 setLoading(false);
             }
@@ -83,6 +91,42 @@ export default function EditarFasePage() {
 
         cargarFase();
     }, [id, proyectoActual?.id]);
+
+    const handlePopulate = async () => {
+        if (!fase || !proyectoActual?.id) {
+            toast.error("Error", { description: "No se pudo obtener la información necesaria para iniciar el proceso." });
+            return;
+        }
+
+        setPopulating(true);
+        const toastId = toast.loading("Poblando fase inicial...", {
+            description: "Añadiendo todos los artículos del proyecto a la fase 1. Esto puede tardar unos segundos.",
+        });
+
+        try {
+            const result = await populateInitialPhaseUniverse(proyectoActual.id);
+
+            if (result.success) {
+                toast.success("¡Éxito!", {
+                    id: toastId,
+                    description: `Se han añadido ${result.data.count} artículos a la fase.`,
+                });
+                setHasEligibleArticles(true);
+            } else {
+                toast.error("Error al poblar la fase", {
+                    id: toastId,
+                    description: result.error || "Ocurrió un error inesperado.",
+                });
+            }
+        } catch (err) {
+            toast.error("Error inesperado", {
+                id: toastId,
+                description: "Ocurrió un error en el servidor. Inténtalo de nuevo.",
+            });
+        } finally {
+            setPopulating(false);
+        }
+    };
 
     const handleSubmit = async (formData: FormData) => {
         if (!proyectoActual?.id) {
@@ -248,7 +292,7 @@ export default function EditarFasePage() {
                         title={`Editar Fase: ${fase.name}`}
                         subtitle="Modifica los detalles de la fase de preclasificación"
                         description="Actualiza la información de esta fase del proceso de preclasificación de documentos."
-                        mainIcon={Layers}
+                        mainIcon={Network}
                         showBackButton={{ href: `/datos-maestros/fases-preclasificacion/${faseId}/ver` }}
                         breadcrumbs={[
                             { label: "Datos Maestros", href: "/datos-maestros" },
@@ -271,6 +315,47 @@ export default function EditarFasePage() {
                             status: fase.status
                         }}
                     />
+
+                    {fase.phase_number === 1 && (
+                        <StandardCard className="mt-6">
+                            <div className="p-6">
+                                <div className="flex items-center mb-2">
+                                    <StandardIcon size="lg" colorScheme="accent" className="mr-3">
+                                        <Sparkles />
+                                    </StandardIcon>
+                                    <StandardText variant="h4">Universo de Artículos de la Fase 1</StandardText>
+                                </div>
+                                <StandardText colorScheme="primary" className="mb-4">
+                                    Esta es la fase inicial. Puedes poblarla automáticamente con todos los artículos de tu proyecto para comenzar la preclasificación.
+                                </StandardText>
+
+                                {populating ? (
+                                    <div className="flex flex-col items-center justify-center p-8">
+                                        <SustratoLoadingLogo showText text="Añadiendo artículos..." />
+                                    </div>
+                                ) : hasEligibleArticles ? (
+                                    <div className="p-4 bg-success-bg rounded-md flex items-center">
+                                        <StandardIcon size="md" colorScheme="success" className="mr-3">
+                                            <CheckCircle2 />
+                                        </StandardIcon>
+                                        <StandardText colorScheme="success">
+                                            Esta fase ya ha sido poblada con los artículos del proyecto.
+                                        </StandardText>
+                                    </div>
+                                ) : (
+                                    <StandardButton
+                                        onClick={handlePopulate}
+                                        disabled={populating}
+                                        leftIcon={Sparkles}
+                                        colorScheme="accent"
+                                        styleType="solid"
+                                    >
+                                        Poblar Fase 1 con todos los artículos
+                                    </StandardButton>
+                                )}
+                            </div>
+                        </StandardCard>
+                    )}
                 </div>
             </div>
         </StandardPageBackground>

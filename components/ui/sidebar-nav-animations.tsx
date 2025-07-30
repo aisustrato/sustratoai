@@ -91,8 +91,9 @@ export function SidebarNavAnimations({
           >
             {Icon && (
               <StandardIcon
-                colorScheme="tertiary"
+                colorScheme="secondary"
                 styleType={isActive ? "inverseStroke" : "outlineGradient"}
+                colorShade="text"
                 className={cn("w-5 h-5 transition-all", !isCollapsed && "mr-2")}
               >
                 <Icon />

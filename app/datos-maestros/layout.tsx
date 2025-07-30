@@ -21,6 +21,7 @@ import {
 	FileUp,
 	ChevronsLeft,
 	ClipboardList,
+	Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 //#endregion ![head]
@@ -36,6 +37,11 @@ const sidebarNavItems = [
 		title: "Proyecto",
 		href: "/datos-maestros/proyecto",
 		icon: ClipboardList,
+	},
+	{
+		title: "Fases ",
+		href: "/datos-maestros/fases-preclasificacion",
+		icon: Network,
 	},
 	{
 		title: "Miembros",
@@ -153,7 +159,7 @@ export default function DatosMaestrosLayout({
               <div className="flex items-center gap-2 min-w-0 pl-4">
                 <StandardIcon
                   colorScheme="secondary"
-                  colorShade="pure"
+                  colorShade="text"
                   styleType="outlineGradient"
                 >
                   <Database className="h-5 w-5 flex-shrink-0" />

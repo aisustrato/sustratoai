@@ -68,7 +68,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const PUBLIC_PATHS = ["/login", "/signup", "/reset-password", "/contact"];
+const PUBLIC_PATHS = ["/login", "/signup", "/reset-password", "/update-password", "/contact"];
 const isPublicPage = (pathname: string | null): boolean => {
 	if (!pathname) return false;
 	return PUBLIC_PATHS.some(
@@ -461,7 +461,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		// RedirectEffect
 		const currentAuthInitialized = authInitializedRef.current;
 		const currentUser = userRef.current;
-		if (!currentAuthInitialized) return;
+		
+		// 🔍 LOGS DETALLADOS PARA DEBUGGING DE PASSWORD RESET
+		console.log(`${LOG_PREFIX} [RedirectEffect] 🔍 EJECUTÁNDOSE con:`);
+		console.log(`${LOG_PREFIX} [RedirectEffect] 🔍 pathname: ${pathname}`);
+		console.log(`${LOG_PREFIX} [RedirectEffect] 🔍 currentUser: ${currentUser ? currentUser.id.substring(0,8) : 'null'}`);
+		console.log(`${LOG_PREFIX} [RedirectEffect] 🔍 authInitialized: ${currentAuthInitialized}`);
+		console.log(`${LOG_PREFIX} [RedirectEffect] 🔍 authLoading: ${authLoading}`);
+		console.log(`${LOG_PREFIX} [RedirectEffect] 🔍 window.location.href: ${typeof window !== 'undefined' ? window.location.href : 'SSR'}`);
+		
+		// 🔧 SOLUCIÓN PARA CARRERA DE CONDICIONES: Omitir redirección en /update-password
+		// Esto permite que Supabase procese el token de recuperación antes de que
+		// el AuthProvider intente redirigir por falta de sesión activa
+		if (pathname === '/update-password') {
+			console.log(`${LOG_PREFIX} [RedirectEffect] 🚨 EN /update-password, omitiendo redirección para permitir procesamiento del token de recuperación.`);
+			return;
+		}
+		
+		if (!currentAuthInitialized) {
+			console.log(`${LOG_PREFIX} [RedirectEffect] 🔍 Auth no inicializado, saliendo early.`);
+			return;
+		}
 		if (
 			authLoading &&
 			currentUser &&

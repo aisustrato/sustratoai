@@ -10,7 +10,7 @@ import { SolidNavbarWrapper } from "@/components/ui/solid-navbar-wrapper";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 
 // Constantes para las rutas donde NO se debe mostrar la Navbar principal de la app
-const NO_NAVBAR_PAGES = ["/login", "/signup", "/reset-password"]; 
+const NO_NAVBAR_PAGES = ["/login", "/signup", "/reset-password", "/update-password"]; 
 
 // Función helper para determinar si una ruta es pública (AuthProvider también la tiene)
 const PUBLIC_PATHS = ["/login", "/signup", "/reset-password", "/contact"]; // Asegurar que coincida con AuthProvider

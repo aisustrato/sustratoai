@@ -11,7 +11,7 @@ import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
-import { Layers, AlertCircle, Trash2, ArrowLeft, RotateCw, Loader2 } from "lucide-react";
+import { AlertCircle, Trash2, ArrowLeft, RotateCw, Loader2, Network } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function EliminarFasePage() {
@@ -192,7 +192,7 @@ export default function EliminarFasePage() {
                         title={`Eliminar Fase: ${fase.name}`}
                         subtitle="Confirmar eliminación de fase de preclasificación"
                         description="Esta acción es irreversible. Por favor, confirma que deseas eliminar esta fase."
-                        mainIcon={Layers}
+                        mainIcon={Network}
                         showBackButton={{ href: `/datos-maestros/fases-preclasificacion/${id}/ver` }}
                         breadcrumbs={[
                             { label: "Datos Maestros", href: "/datos-maestros" },

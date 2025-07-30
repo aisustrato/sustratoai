@@ -13,7 +13,7 @@ import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { StandardText } from "@/components/ui/StandardText";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-import { Layers, Edit, ArrowLeft, AlertCircle, RotateCw, CheckCircle2 } from "lucide-react";
+import { Edit, ArrowLeft, AlertCircle, RotateCw, CheckCircle2, Network } from "lucide-react";
 import { toast } from "sonner";
 
 export default function VerFasePage() {
@@ -164,7 +164,7 @@ export default function VerFasePage() {
                         title={`Fase: ${fase.name}`}
                         subtitle="Detalles de la fase de preclasificación"
                         description="Revisa la información detallada de esta fase del proceso de preclasificación."
-                        mainIcon={Layers}
+                        mainIcon={Network}
                         showBackButton={{ href: "/datos-maestros/fases-preclasificacion" }}
                         breadcrumbs={[
                             { label: "Datos Maestros", href: "/datos-maestros" },
