@@ -14,6 +14,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useComponentVisibility } from '@/lib/hooks/useComponentVisibility';
 
 export const JobManager = () => {
   const { 
@@ -25,6 +26,12 @@ export const JobManager = () => {
     minimizeJobManager
   } = useJobManager();
   const router = useRouter();
+  const { shouldShowJobManager } = useComponentVisibility();
+
+  // No mostrar el JobManager en ciertas rutas (como /update-password)
+  if (!shouldShowJobManager) {
+    return null;
+  }
 
   const renderJob = (job: Job) => {
     switch (job.type) {

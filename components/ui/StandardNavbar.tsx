@@ -195,7 +195,7 @@ export function StandardNavbar() {
 			showFontSwitcherInNavbar: currentStage === 'STAGE_1',
 			showDarkModeSwitchInNavbar: currentStage === 'STAGE_1' || currentStage === 'STAGE_2',
 			// STAGE_4: Solo logo/nombre + UserAvatar + botón hamburguesa (ocultar menús principales)
-			showMainMenus: currentStage !== 'STAGE_4' && currentStage !== 'STAGE_5',
+			showMainMenus: currentStage !== 'STAGE_4', // En STAGE_5 (móvil) los menús SÍ se muestran dentro del hamburguesa
 			textSize: TEXT_SIZES_BY_STAGE[currentStage as keyof typeof TEXT_SIZES_BY_STAGE],
 			// Mostrar botón hamburguesa en STAGE_4 y STAGE_5
 			useMobileMenu: currentStage === 'STAGE_4' || currentStage === 'STAGE_5',
@@ -810,7 +810,8 @@ const navItems: NavItem[] = useMemo(() => {
 									<ThemeSwitcher />
 							</div>
 
-							{stageConfig.showMainMenus && navItems.map((item, index) => (
+							{/* En modo móvil, siempre mostrar los menús dentro del menú hamburguesa */}
+			{navItems.map((item, index) => (
 									<motion.div
 										key={item.href || item.label}
 										initial={{ opacity: 0, x: -10 }}

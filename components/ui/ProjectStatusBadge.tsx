@@ -3,17 +3,24 @@
 import React from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { StandardText } from './StandardText';
+import { useComponentVisibility } from '@/lib/hooks/useComponentVisibility';
 
 /**
  * @description
  * ProjectStatusBadge es un componente que muestra el nombre del proyecto actual
  * en una etiqueta o "badge". Está diseñado para ser posicionado de forma fija
  * en el layout principal de la aplicación.
+ * 
+ * Se oculta automáticamente en:
+ * - Modo móvil/estrecho (para evitar solapamiento)
+ * - Ruta /update-password (donde no es relevante)
  */
 const ProjectStatusBadge: React.FC = () => {
   const { proyectoActual } = useAuth();
+  const { shouldShowProjectStatusBadge } = useComponentVisibility();
 
-  if (!proyectoActual) {
+  // No mostrar si no hay proyecto o si las condiciones de visibilidad no se cumplen
+  if (!proyectoActual || !shouldShowProjectStatusBadge) {
     return null;
   }
 
