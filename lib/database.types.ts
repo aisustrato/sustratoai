@@ -1225,6 +1225,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Record<string, unknown>[]
       }
+      get_eligible_article_ids_for_phase: {
+        Args: { p_phase_id: string }
+        Returns: string[]
+      }
+      get_phase_batches_with_details: {
+        Args: { p_phase_id: string }
+        Returns: {
+          id: string
+          batch_number: number
+          status: Database["public"]["Enums"]["batch_preclass_status"]
+          article_count: number
+          assigned_researcher_name: string
+        }[]
+      }
       get_project_batches_with_assignee_names: {
         Args: { p_project_id: string }
         Returns: {

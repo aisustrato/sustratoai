@@ -184,7 +184,7 @@ export async function clearFromPhaseUniverse(
 }
 
 // ========================================================================
-// 	ACCIÓN 3: LISTAR ARTÍCULOS ELEGIBLES (CON JOIN)
+// 	ACCIÓN 3: LISTAR ARTÍCULOS ELEGIBLES (CON JOIN) - CON PAGINACIÓN
 // ========================================================================
 export async function listEligibleArticlesForPhase(
     phaseId: string
@@ -195,19 +195,35 @@ export async function listEligibleArticlesForPhase(
     try {
         const supabase = await createSupabaseServerClient();
         
-        const { data, error } = await supabase
-            .from('phase_eligible_articles')
-            .select(`
-                *,
-                articles (*)
-            `)
-            .eq('phase_id', phaseId);
-
-        if (error) return { success: false, error: `Error al listar artículos elegibles: ${error.message}` };
+        // CORRECCIÓN: Implementar paginación para obtener TODOS los artículos elegibles
+        let allArticles: any[] = [];
+        let page = 0;
+        const pageSize = 1000; // Límite de Supabase por consulta
         
-        if (!data) return { success: true, data: [] };
+        while (true) {
+            const { data, error } = await supabase
+                .from('phase_eligible_articles')
+                .select(`
+                    *,
+                    articles (*)
+                `)
+                .eq('phase_id', phaseId)
+                .range(page * pageSize, (page + 1) * pageSize - 1);
 
-        const flattenedData = data.map(item => {
+            if (error) return { success: false, error: `Error al listar artículos elegibles: ${error.message}` };
+            
+            if (!data || data.length === 0) break; // No hay más artículos
+            
+            allArticles = allArticles.concat(data);
+            page++;
+            
+            console.log(`[${opId}] Página ${page}: ${data.length} artículos obtenidos (total acumulado: ${allArticles.length})`);
+            
+            // Si obtuvimos menos registros que el pageSize, hemos llegado al final
+            if (data.length < pageSize) break;
+        }
+
+        const flattenedData = allArticles.map(item => {
             // Verificación para asegurar que item.articles no sea nulo
             if (!item.articles) {
                 console.warn(`[${opId}] Se encontró un registro en phase_eligible_articles (id: ${item.id}) sin un artículo correspondiente.`);
@@ -219,7 +235,7 @@ export async function listEligibleArticlesForPhase(
             };
         }).filter(item => item !== null); // Filtramos cualquier resultado nulo
 
-        console.log(`🎉 [${opId}] ÉXITO: Se encontraron ${flattenedData.length} artículos elegibles.`);
+        console.log(`🎉 [${opId}] ÉXITO: Se encontraron ${flattenedData.length} artículos elegibles en total (${page} páginas procesadas).`);
         return { success: true, data: flattenedData };
 
     } catch (error) {
