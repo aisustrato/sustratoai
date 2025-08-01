@@ -312,7 +312,7 @@ import type { CSSProperties } from 'react';
 const StandardTableTable = <TData extends object>({ table, style }: SubComponentProps<TData> & { style?: CSSProperties }) => {
     if (!table) return null;
     return (
-        <div className="w-full overflow-auto" style={style}>
+        <div className="w-full h-full overflow-auto" style={style}>
             <table className="w-full border-collapse">
                 <StandardTableHeader table={table} />
                 <StandardTableBody table={table} />
