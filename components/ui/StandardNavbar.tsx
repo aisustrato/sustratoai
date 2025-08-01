@@ -331,24 +331,9 @@ const navItems: NavItem[] = useMemo(() => {
         icon: (isActive) => createMenuIcon(ClipboardList, isActive),
       },
       {
-        label: "Cargar Artículos",
-        href: "/datos-maestros/cargar-articulos",
-        icon: (isActive) => createMenuIcon(FileUp, isActive),
-      },
-      {
-        label: "Dimensiones",
-        href: "/datos-maestros/dimensiones",
-        icon: (isActive) => createMenuIcon(LayoutGrid, isActive),
-      },
-      {
-        label: "Fases de Preclasificación",
-        href: "/datos-maestros/fases-preclasificacion",
-        icon: (isActive) => createMenuIcon(Network, isActive),
-      },
-      {
-        label: "Lotes",
-        href: "/datos-maestros/lote",
-        icon: (isActive) => createMenuIcon(Boxes, isActive),
+        label: "Roles Proyecto",
+        href: "/datos-maestros/roles",
+        icon: (isActive) => createMenuIcon(Shield, isActive),
       },
       {
         label: "Miembros Proyecto",
@@ -356,9 +341,24 @@ const navItems: NavItem[] = useMemo(() => {
         icon: (isActive) => createMenuIcon(User, isActive),
       },
       {
-        label: "Roles Proyecto",
-        href: "/datos-maestros/roles",
-        icon: (isActive) => createMenuIcon(Shield, isActive),
+        label: "Cargar Artículos",
+        href: "/datos-maestros/cargar-articulos",
+        icon: (isActive) => createMenuIcon(FileUp, isActive),
+      },
+      {
+        label: "Fases de Preclasificación",
+        href: "/datos-maestros/fases-preclasificacion",
+        icon: (isActive) => createMenuIcon(Network, isActive),
+      },
+      {
+        label: "Dimensiones",
+        href: "/datos-maestros/dimensiones",
+        icon: (isActive) => createMenuIcon(LayoutGrid, isActive),
+      },
+      {
+        label: "Lotes",
+        href: "/datos-maestros/lote",
+        icon: (isActive) => createMenuIcon(Boxes, isActive),
       },
     ],
   });

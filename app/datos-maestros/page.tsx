@@ -30,7 +30,7 @@ export default function DatosMaestrosHome() {
     <div className="container mx-auto py-8">
       <StandardPageTitle
         title="Datos Maestros"
-        description="Administra la información estructural clave de tu proyecto: datos básicos, artículos, dimensiones, lotes, miembros y roles."
+        description="Configura tu proyecto de investigación siguiendo un flujo estructurado: desde la definición básica hasta la creación de lotes de trabajo para el análisis colaborativo."
         breadcrumbs={[{ label: "Datos Maestros" }]}
         showBackButton={{ href: "/" }}
       />
@@ -39,44 +39,44 @@ export default function DatosMaestrosHome() {
           {
             href: "/datos-maestros/proyecto",
             icon: ClipboardList,
-            title: "Proyecto",
-            description: "Gestiona el nombre, descripción y módulos activos de tu proyecto."
-          },
-          {
-            href: "/datos-maestros/fases-preclasificacion",
-            icon: Network,
-            title: "Fases de Preclasificación",
-            description: "Administra las fases de preclasificación para la evaluación de artículos en tu proyecto."
-          },
-          {
-            href: "/datos-maestros/cargar-articulos",
-            icon: FileUp,
-            title: "Cargar Artículos",
-            description: "Importa artículos de forma masiva desde un archivo CSV para agilizar la carga de datos."
-          },
-          {
-            href: "/datos-maestros/dimensiones",
-            icon: LayoutGrid,
-            title: "Dimensiones",
-            description: "Define las dimensiones y categorías que se usarán para analizar y clasificar los artículos."
-          },
-          {
-            href: "/datos-maestros/lote",
-            icon: Boxes,
-            title: "Lotes de Trabajo",
-            description: "Crea y gestiona los lotes de trabajo que serán asignados a los miembros del equipo."
-          },
-          {
-            href: "/datos-maestros/miembros",
-            icon: User,
-            title: "Miembros",
-            description: "Añade o elimina los perfiles de los investigadores y colaboradores asignados a este proyecto."
+            title: "1. Proyecto",
+            description: "Establece los datos básicos del proyecto: nombre, descripción, objetivos y módulos que estarán activos para tu investigación."
           },
           {
             href: "/datos-maestros/roles",
             icon: Shield,
-            title: "Roles y Permisos",
-            description: "Gestiona los roles que determinan qué acciones pueden realizar los miembros en el proyecto."
+            title: "2. Roles y Permisos",
+            description: "Define los roles de investigación y establece los permisos específicos que determinan las acciones disponibles para cada tipo de colaborador."
+          },
+          {
+            href: "/datos-maestros/miembros",
+            icon: User,
+            title: "3. Miembros del Equipo",
+            description: "Incorpora a los investigadores y colaboradores al proyecto, asignándoles los roles correspondientes según su participación."
+          },
+          {
+            href: "/datos-maestros/cargar-articulos",
+            icon: FileUp,
+            title: "4. Cargar Artículos Académicos",
+            description: "Importa el corpus de artículos académicos que conformarán el universo de análisis de tu proyecto de investigación."
+          },
+          {
+            href: "/datos-maestros/fases-preclasificacion",
+            icon: Network,
+            title: "5. Fases de Preclasificación",
+            description: "Diseña las etapas secuenciales de análisis que guiarán el proceso de evaluación y categorización de los artículos."
+          },
+          {
+            href: "/datos-maestros/dimensiones",
+            icon: LayoutGrid,
+            title: "6. Dimensiones de Análisis",
+            description: "Configura las dimensiones y categorías específicas que se utilizarán para preclasificar los artículos en cada fase del proceso."
+          },
+          {
+            href: "/datos-maestros/lote",
+            icon: Boxes,
+            title: "7. Lotes de Trabajo",
+            description: "Genera los lotes de artículos que serán distribuidos secuencialmente entre los miembros del equipo para el análisis colaborativo."
           },
         ].map(({ href, icon: Icon, title, description }) => (
           <StandardCard

@@ -119,9 +119,9 @@ export default function UpdatePasswordPage() {
 				router.push("/login?password_updated=true");
 			}, 1500);
 
-		} catch (err: any) {
+		} catch (err: unknown) {
 			console.error("Error al actualizar la contraseña:", err);
-			const errorMessage = err.message || "Ocurrió un error inesperado.";
+			const errorMessage = err instanceof Error ? err.message : "Ocurrió un error inesperado.";
 			setError("password", { type: "server", message: errorMessage });
 			toast.error("Error inesperado", { description: errorMessage });
 		}

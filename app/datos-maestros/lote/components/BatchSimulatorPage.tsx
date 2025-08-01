@@ -43,7 +43,7 @@ import { AlertTriangle, CheckCircle, Boxes, Settings, FileText } from "lucide-re
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
-import { useRouter } from "next/navigation";
+
 import Link from "next/link";
 import { toast as sonnerToast } from "sonner";
 // Removed checkIfProjectHasArticles import as we now use phase-specific data
@@ -57,7 +57,6 @@ interface BatchSimulatorPageProps {
 }
 
 export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: BatchSimulatorPageProps) {
-  const router = useRouter();
   const { proyectoActual } = useAuth();
   const { appColorTokens, mode } = useTheme();
 
@@ -73,7 +72,7 @@ export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: Bat
     articlesPerMember: Record<string, number>;
   } | null>(null);
   const [totalEligibleArticles, setTotalEligibleArticles] = useState(0);
-  const [cachedEligibleArticles, setCachedEligibleArticles] = useState<any[]>([]);
+  const [cachedEligibleArticles, setCachedEligibleArticles] = useState<unknown[]>([]);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -106,7 +105,7 @@ export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: Bat
         } else {
           setUiError('No se pudo obtener información de la fase activa.');
         }
-      } catch (error) {
+      } catch {
         setUiError('Error al verificar el estado de la fase.');
       }
     };

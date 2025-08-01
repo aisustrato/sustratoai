@@ -184,8 +184,12 @@ const PreclassificationPage = () => {
 
 	// Calcula el ancho disponible restando el sidebar y un padding general
 	const containerWidth = windowWidth ? windowWidth - sidebarWidth - layoutGap - globalXPadding : 0;
-	// La altura puede ser fija o depender de la ventana menos la navbar, etc.
-	const containerHeight = 500; // Mantenemos la altura fija del div por ahora
+	
+	// 🎯 LÓGICA INTELIGENTE: Altura dinámica según cantidad de lotes
+	// Si hay menos de 30 lotes, reducir altura en 40% (usar 60% del original)
+	const baseHeight = 500;
+	const containerHeight = batches.length < 30 ? Math.floor(baseHeight * 0.6) : baseHeight;
+	const gridHeight = containerHeight; // Altura del div contenedor
 
 	const fetchBatches = useCallback(async () => {
 		if (auth.authLoading) return; // No hacer nada si la autenticación aún está en proceso
@@ -331,7 +335,7 @@ const PreclassificationPage = () => {
 				]}
 			/>
 			<div className="mt-6 flex-grow flex flex-col gap-6">
-				<div className="h-[500px] w-full">
+				<div className="w-full" style={{ height: `${gridHeight}px` }}>
 					{containerWidth && (
 						<StandardSphereGrid
 							items={sphereData}

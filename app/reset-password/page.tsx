@@ -48,10 +48,11 @@ export default function ResetPasswordPage() {
 			toast.success(
 				"Si existe una cuenta, se ha enviado un correo con instrucciones."
 			);
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error("Error al enviar correo de recuperación:", error);
+			const errorMessage = error instanceof Error ? error.message : "Por favor, intenta nuevamente.";
 			toast.error(
-				`Ocurrió un error: ${error.message || "Por favor, intenta nuevamente."}`
+				`Ocurrió un error: ${errorMessage}`
 			);
 		} finally {
 			setLoading(false);

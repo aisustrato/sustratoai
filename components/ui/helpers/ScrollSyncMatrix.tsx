@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect } from "react";
+import React, { useRef, useCallback, useEffect, useState } from "react";
 import { useTheme } from "@/app/theme-provider";
 
 interface ScrollSyncConfig {
@@ -11,6 +11,8 @@ interface ScrollSyncConfig {
 export function useScrollSync({ editorRef, previewRef, content, enabled = true }: ScrollSyncConfig) {
 	const lastHighlightedRef = useRef<HTMLElement | null>(null);
 	const isScrollingSyncRef = useRef(false);
+	// 🎯 CONTROL DE FOCO: Solo activar cuando el textarea está enfocado
+	const [isTextareaFocused, setIsTextareaFocused] = useState(false);
 	const { appColorTokens } = useTheme();
 
 	// Obtener línea actual del cursor
@@ -134,44 +136,127 @@ export function useScrollSync({ editorRef, previewRef, content, enabled = true }
 		}
 	}, [enabled, previewRef, clearHighlight, getCurrentLine, appColorTokens.accent]);
 
-	// Event listeners con throttling
+	// 🎯 CONTROL DE FOCO: Gestionar estado de foco del textarea
 	useEffect(() => {
-		if (!enabled || !editorRef.current) return;
+		if (!enabled || !editorRef.current) {
+			// Si no está habilitado, asegurar que el foco esté en false
+			setIsTextareaFocused(false);
+			return;
+		}
+
+		const editor = editorRef.current;
+		
+		const handleFocus = () => {
+			// 🛡️ VERIFICACIÓN DE SEGURIDAD: Asegurar que el elemento aún existe
+			if (!editorRef.current) return;
+			console.log(`🎯 FOCUS: StandardNote textarea enfocado (ID: ${editor.id || 'sin-id'})`);
+			setIsTextareaFocused(true);
+		};
+		
+		const handleBlur = () => {
+			// 🛡️ VERIFICACIÓN DE SEGURIDAD: Asegurar que el elemento aún existe
+			if (!editorRef.current) return;
+			console.log(`🎯 BLUR: StandardNote textarea desenfocado (ID: ${editor.id || 'sin-id'})`);
+			setIsTextareaFocused(false);
+			// Limpiar highlight al perder foco
+			clearHighlight();
+		};
+
+		// 🛡️ VERIFICACIÓN INICIAL: ¿El textarea ya está enfocado?
+		const isCurrentlyFocused = document.activeElement === editor;
+		if (isCurrentlyFocused) {
+			console.log(`🎯 INIT: Textarea ya estaba enfocado al montar`);
+			setIsTextareaFocused(true);
+		}
+
+		editor.addEventListener('focus', handleFocus);
+		editor.addEventListener('blur', handleBlur);
+
+		// Cleanup
+		return () => {
+			// 🛡️ CLEANUP ROBUSTO: Verificar que el elemento aún existe antes de remover listeners
+			if (editor && editor.removeEventListener) {
+				editor.removeEventListener('focus', handleFocus);
+				editor.removeEventListener('blur', handleBlur);
+			}
+			// Limpiar estado y highlight al desmontar
+			setIsTextareaFocused(false);
+			clearHighlight();
+			console.log(`🎯 CLEANUP: Listeners de foco removidos`);
+		};
+	}, [enabled, editorRef, clearHighlight]);
+
+	// Event listeners con throttling - SOLO cuando el textarea está enfocado
+	useEffect(() => {
+		if (!enabled || !editorRef.current || !isTextareaFocused) {
+			// Si no está enfocado, limpiar cualquier highlight existente
+			if (!isTextareaFocused) {
+				clearHighlight();
+			}
+			return;
+		}
 
 		const editor = editorRef.current;
 		
 		let highlightTimeoutId: NodeJS.Timeout;
 		let scrollTimeoutId: NodeJS.Timeout;
+		let isCleanedUp = false; // 🛡️ FLAG para evitar race conditions
 		
 		const throttledHighlight = () => {
+			// 🛡️ TRIPLE VERIFICACIÓN: Solo si sigue enfocado, habilitado y no limpiado
+			if (!isTextareaFocused || !enabled || isCleanedUp || !editorRef.current) return;
 			clearTimeout(highlightTimeoutId);
-			highlightTimeoutId = setTimeout(updateHighlight, 100);
+			highlightTimeoutId = setTimeout(() => {
+				if (!isCleanedUp && isTextareaFocused) {
+					updateHighlight();
+				}
+			}, 100);
 		};
 		
 		const throttledScrollSync = () => {
+			// 🛡️ TRIPLE VERIFICACIÓN: Solo si sigue enfocado, habilitado y no limpiado
+			if (!isTextareaFocused || !enabled || isCleanedUp || !editorRef.current) return;
 			clearTimeout(scrollTimeoutId);
-			scrollTimeoutId = setTimeout(syncPreviewScroll, 50); // Más rápido para scroll
+			scrollTimeoutId = setTimeout(() => {
+				if (!isCleanedUp && isTextareaFocused) {
+					syncPreviewScroll();
+				}
+			}, 50);
 		};
 
-		// Eventos para highlight (cursor/selección)
+		// 🎯 EVENTOS ESPECÍFICOS DEL TEXTAREA (no globales)
 		editor.addEventListener('click', throttledHighlight);
 		editor.addEventListener('keyup', throttledHighlight);
-		document.addEventListener('selectionchange', throttledHighlight);
+		editor.addEventListener('input', throttledHighlight); // Para cambios de texto
+		editor.addEventListener('select', throttledHighlight); // Para selecciones
 		
 		// Evento para scroll sync
 		editor.addEventListener('scroll', throttledScrollSync);
 
+		console.log(`🎯 LISTENERS: Activados para StandardNote enfocado (ID: ${editor.id || 'sin-id'})`);
+
 		// Cleanup
 		return () => {
+			isCleanedUp = true; // 🛡️ Marcar como limpiado para evitar race conditions
+			
+			// 🛡️ CLEANUP AGRESIVO: Limpiar timeouts
 			clearTimeout(highlightTimeoutId);
 			clearTimeout(scrollTimeoutId);
-			editor.removeEventListener('click', throttledHighlight);
-			editor.removeEventListener('keyup', throttledHighlight);
-			document.removeEventListener('selectionchange', throttledHighlight);
-			editor.removeEventListener('scroll', throttledScrollSync);
+			
+			// 🛡️ CLEANUP ROBUSTO: Verificar que el elemento aún existe
+			if (editor && editor.removeEventListener) {
+				editor.removeEventListener('click', throttledHighlight);
+				editor.removeEventListener('keyup', throttledHighlight);
+				editor.removeEventListener('input', throttledHighlight);
+				editor.removeEventListener('select', throttledHighlight);
+				editor.removeEventListener('scroll', throttledScrollSync);
+			}
+			
+			// 🛡️ CLEANUP FINAL: Limpiar highlight
 			clearHighlight();
+			console.log(`🎯 LISTENERS: Removidos para StandardNote (ID: ${editor.id || 'sin-id'})`);
 		};
-	}, [enabled, editorRef, updateHighlight, clearHighlight, syncPreviewScroll]);
+	}, [enabled, editorRef, isTextareaFocused, updateHighlight, clearHighlight, syncPreviewScroll]);
 
 	// Cleanup al cambiar contenido
 	useEffect(() => {

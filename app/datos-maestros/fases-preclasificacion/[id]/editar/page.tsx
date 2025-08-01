@@ -118,7 +118,7 @@ export default function EditarFasePage() {
                     description: result.error || "Ocurrió un error inesperado.",
                 });
             }
-        } catch (err) {
+        } catch {
             toast.error("Error inesperado", {
                 id: toastId,
                 description: "Ocurrió un error en el servidor. Inténtalo de nuevo.",

@@ -41,7 +41,7 @@ import {
 	Link, 
 	ThumbsDown, 
 	CheckCircle,
-	RotateCcw,
+	Globe,
 	StickyNote
 } from "lucide-react";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
@@ -448,7 +448,7 @@ const BatchDetailPage = () => {
 						styleType="outline"
 						onClick={() => setShowOriginalAsPrimary(!showOriginalAsPrimary)}
 						className="flex items-center gap-2"
-            leftIcon= {RotateCcw}
+            leftIcon= {Globe}
 					>
 						
 						{showOriginalAsPrimary ? "Idioma Español" : "Idioma Original"}

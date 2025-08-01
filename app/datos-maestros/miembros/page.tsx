@@ -21,7 +21,7 @@ import { User, UserPlus, AlertCircle, Trash2, PenLine, Eye } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast";
 import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
 import type { ProjectMemberDetails } from "@/lib/actions/member-actions";
-import type { ColumnDef, CellContext } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { StandardBadge } from "@/components/ui/StandardBadge";

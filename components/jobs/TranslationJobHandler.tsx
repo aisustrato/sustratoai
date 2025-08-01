@@ -3,6 +3,9 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useJobManager, type Job } from '@/app/contexts/JobManagerContext';
+
+// Switch para habilitar/deshabilitar delays de desarrollo
+const ENABLE_DEV_DELAYS = false;
 import { getArticlesForTranslation, saveBatchTranslations } from '@/lib/actions/preclassification-actions';
 // ✅ 1. IMPORTA LAS NUEVAS ACTIONS DE LOGGING
 import { startJobLog, updateJobAsCompleted, updateJobAsFailed } from '@/lib/actions/job-history-actions';
@@ -92,7 +95,7 @@ export function TranslationJobHandler({ job }: { job: Job }) {
 
       for (let i = 0; i < totalArticles; i++) {
         const article = articlesToTranslate[i];
-        setStatusMessage(`Traduciendo artículo ${i + 1} de ${totalArticles}...`);
+        setStatusMessage(` Traduciendo artículo ${i + 1} de ${totalArticles}...`);
 
         const prompt = createPrompt(article.title || '', article.abstract || '');
 
@@ -155,8 +158,10 @@ export function TranslationJobHandler({ job }: { job: Job }) {
         updateJobProgress(job.id, completedProgress);
 
         if (i < totalArticles - 1) {
-          setStatusMessage(`Pausa de 7s para respetar límite de API...`);
-          await sleep(7000);
+          if (ENABLE_DEV_DELAYS) {
+            setStatusMessage(`Pausa de 7s para respetar límite de API... (solo en desarrollo)`);
+            await sleep(7000);
+          }
         }
       }
 

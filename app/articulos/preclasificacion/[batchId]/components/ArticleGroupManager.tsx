@@ -24,7 +24,7 @@ import {
 } from '@/lib/actions/article-group-actions';
 import { getArticleIdFromBatchItemId, type ArticleForReview } from '@/lib/actions/preclassification-actions';
 import { useAuth } from '@/app/auth-provider';
-import { Plus, Lock, Globe, ArrowRight, FolderPlus, CheckCircle } from 'lucide-react';
+import { Plus, Lock, Globe, Grip, FolderPlus, CheckCircle } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
 
@@ -48,6 +48,7 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
   } | null>(null);
   const [isLoadingMenu, setIsLoadingMenu] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Estado local para feedback visual
   
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showAddConfirm, setShowAddConfirm] = useState(false);
@@ -104,6 +105,7 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
       });
       
       setMenuOpen(true);
+      setIsDropdownOpen(true); // Sincronizar estado visual
       
     } catch {
       toast.error('Error inesperado al cargar datos');
@@ -113,10 +115,14 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
   }, [article?.item_id]);
   
   const handleMenuOpenChange = (open: boolean) => {
+    // Actualizar estado visual inmediatamente
+    setIsDropdownOpen(open);
+    
     if (open && !menuData) {
       loadMenuData();
     } else if (!open) {
       setMenuOpen(false);
+      setIsDropdownOpen(false); // Sincronizar estado visual al cerrar
     }
   };
 
@@ -139,8 +145,8 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
         toast.success(`Artículo agregado al grupo "${selectedGroupForAdd.name}"`);
         setShowAddConfirm(false);
         setSelectedGroupForAdd(null);
-        setMenuData(null);
         setMenuOpen(false);
+        setIsDropdownOpen(false); // Resetear estado visual
       } else {
         toast.error(`Error al agregar artículo: ${result.error}`);
       }
@@ -317,12 +323,12 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
       <StandardDropdownMenu open={menuOpen || isLoadingMenu} onOpenChange={handleMenuOpenChange}>
         <StandardDropdownMenu.Trigger asChild>
           <StandardButton
-            styleType="outline"
+            styleType={isDropdownOpen ? "solid" : "outline"}
             iconOnly={true}
             tooltip="Gestionar Grupos"
             disabled={isLoadingMenu}
           >
-            <ArrowRight size={16} />
+            <Grip size={16} />
           </StandardButton>
         </StandardDropdownMenu.Trigger>
         

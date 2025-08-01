@@ -39,9 +39,9 @@ const sidebarNavItems = [
 		icon: ClipboardList,
 	},
 	{
-		title: "Fases ",
-		href: "/datos-maestros/fases-preclasificacion",
-		icon: Network,
+		title: "Roles",
+		href: "/datos-maestros/roles",
+		icon: Shield,
 	},
 	{
 		title: "Miembros",
@@ -49,14 +49,14 @@ const sidebarNavItems = [
 		icon: User,
 	},
 	{
-		title: "Roles",
-		href: "/datos-maestros/roles",
-		icon: Shield,
+		title: "Cargar Artículos",
+		href: "/datos-maestros/cargar-articulos",
+		icon: FileUp,
 	},
 	{
-		title: "Lotes",
-		href: "/datos-maestros/lote",
-		icon: Boxes,
+		title: "Fases",
+		href: "/datos-maestros/fases-preclasificacion",
+		icon: Network,
 	},
 	{
 		title: "Dimensiones",
@@ -64,9 +64,9 @@ const sidebarNavItems = [
 		icon: LayoutGrid,
 	},
 	{
-		title: "Cargar Artículos",
-		href: "/datos-maestros/cargar-articulos",
-		icon: FileUp,
+		title: "Lotes",
+		href: "/datos-maestros/lote",
+		icon: Boxes,
 	},
 ];
 

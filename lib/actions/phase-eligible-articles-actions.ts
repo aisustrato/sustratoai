@@ -2,7 +2,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/server";
-import type { Database } from "@/lib/database.types";
+
 import { getActivePhaseForProject } from "./preclassification_phases_actions";
 import { ResultadoOperacion } from "./dimension-actions";
 
@@ -188,7 +188,7 @@ export async function clearFromPhaseUniverse(
 // ========================================================================
 export async function listEligibleArticlesForPhase(
     phaseId: string
-): Promise<ResultadoOperacion<any[]>> { 
+): Promise<ResultadoOperacion<unknown[]>> { 
     const opId = `LEAFP-${Math.floor(Math.random() * 10000)}`;
     console.log(`[${opId}] Iniciando listado de artículos para fase: ${phaseId}`);
 
@@ -196,7 +196,7 @@ export async function listEligibleArticlesForPhase(
         const supabase = await createSupabaseServerClient();
         
         // CORRECCIÓN: Implementar paginación para obtener TODOS los artículos elegibles
-        let allArticles: any[] = [];
+        let allArticles: unknown[] = [];
         let page = 0;
         const pageSize = 1000; // Límite de Supabase por consulta
         
@@ -223,15 +223,22 @@ export async function listEligibleArticlesForPhase(
             if (data.length < pageSize) break;
         }
 
+        // Interfaz temporal para type safety
+        interface PhaseEligibleArticleItem {
+            id: string;
+            articles: unknown;
+        }
+        
         const flattenedData = allArticles.map(item => {
+            const typedItem = item as PhaseEligibleArticleItem;
             // Verificación para asegurar que item.articles no sea nulo
-            if (!item.articles) {
-                console.warn(`[${opId}] Se encontró un registro en phase_eligible_articles (id: ${item.id}) sin un artículo correspondiente.`);
+            if (!typedItem.articles) {
+                console.warn(`[${opId}] Se encontró un registro en phase_eligible_articles (id: ${typedItem.id}) sin un artículo correspondiente.`);
                 return null;
             }
             return {
-                ...item.articles, 
-                phase_eligible_article_id: item.id 
+                ...(typedItem.articles as Record<string, unknown>), 
+                phase_eligible_article_id: typedItem.id 
             };
         }).filter(item => item !== null); // Filtramos cualquier resultado nulo
 

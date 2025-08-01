@@ -188,7 +188,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 			} else {
 				setPhases([]);
 			}
-		} catch (err) {
+		} catch {
 			setPhases([]);
 		} finally {
 			setLoadingPhases(false);

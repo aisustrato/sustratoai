@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, forwardRef, useContext, useMemo, useState } from 'react';
+import React, { createContext, forwardRef, useContext, useMemo, ComponentPropsWithoutRef } from 'react';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/theme-provider";
@@ -52,8 +52,8 @@ const StandardDropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 
 const StandardDropdownMenuContent = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.Content>,
-    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & { submenusSide?: 'left' | 'right' }
->(({ sideOffset = 6, className, children, submenusSide = 'right', ...props }, ref) => {
+    ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & { submenusSide?: 'left' | 'right' }
+>(({ sideOffset = 6, children, submenusSide = 'right', ...props }, ref) => {
     const cssVariables = useContext(DropdownMenuCssVariablesContext);
     
     return (
@@ -70,7 +70,7 @@ StandardDropdownMenuContent.displayName = 'StandardDropdownMenuContent';
 
 const StandardMenuItem = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.Item>,
-    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & { className?: string }
+    ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & { className?: string }
 >(({ className, ...props }, ref) => (
     <DropdownMenuPrimitive.Item
         ref={ref}
@@ -88,18 +88,18 @@ const StandardMenuItem = forwardRef<
 StandardMenuItem.displayName = 'StandardMenuItem';
 
 
-const StandardDropdownMenuSeparator = forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.Separator>, React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>>((props, ref) => (
+const StandardDropdownMenuSeparator = forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.Separator>, ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>>((props, ref) => (
     <DropdownMenuPrimitive.Separator ref={ref} className={cn("-mx-1 my-1.5 h-px", "bg-[var(--sddm-separator-backgroundColor)]")} {...props} />
 ));
 StandardDropdownMenuSeparator.displayName = 'StandardDropdownMenuSeparator';
 
-const StandardDropdownMenuLabel = forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.Label>, React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label>>((props, ref) => (
+const StandardDropdownMenuLabel = forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.Label>, ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label>>((props, ref) => (
     <DropdownMenuPrimitive.Label ref={ref} className={cn("px-2.5 py-1.5 text-xs font-semibold", "text-[var(--sddm-label-foregroundColor)]")} {...props} />
 ));
 StandardDropdownMenuLabel.displayName = 'StandardDropdownMenuLabel';
 
 
-interface SubMenuItemProps extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> {
+interface SubMenuItemProps extends ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> {
     submenuContent: React.ReactNode;
 }
 
@@ -140,7 +140,7 @@ SubMenuItem.displayName = 'SubMenuItem';
 
 const StandardDropdownMenuCheckboxItem = forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
-    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
+    ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
 >(({ className, children, checked, ...props }, ref) => {
     const cssVariables = useContext(DropdownMenuCssVariablesContext);
     

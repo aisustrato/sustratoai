@@ -180,7 +180,7 @@ export default function LotesOrquestadorPage() {
           if (status.activePhase?.id) {
             const batchesResult = await getBatchesForPhaseDisplay(status.activePhase.id);
             if (batchesResult.success) {
-              setBatchesData(batchesResult.data);
+              setBatchesData(batchesResult.data as BatchData[]);
             } else {
               console.warn('⚠️ Error al cargar lotes para visualización:', batchesResult.error);
             }

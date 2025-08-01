@@ -2,6 +2,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActivePhaseForProject } from "./preclassification_phases_actions";
 // CAMBIO: Se importa la acción del otro archivo para obtener los IDs
 import { listEligibleArticlesForPhase } from "./phase-eligible-articles-actions";
@@ -36,7 +37,7 @@ export interface CreateBatchesResult {
 //	HELPERS (Funciones de Apoyo Internas)
 // ========================================================================
 
-async function verificarPermiso(supabase: any, projectId: string): Promise<ResultadoOperacion<string>> {
+async function verificarPermiso(supabase: SupabaseClient, projectId: string): Promise<ResultadoOperacion<string>> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: "Usuario no autenticado." };
 
@@ -163,7 +164,7 @@ export async function getBatchingStatusForActivePhase(
 // ========================================================================
 export async function getBatchesForPhaseDisplay(
     phaseId: string
-): Promise<ResultadoOperacion<any[]>> {
+): Promise<ResultadoOperacion<unknown[]>> {
     const opId = `GBFD-${Math.floor(Math.random() * 10000)}`;
     console.log(`[${opId}] Obteniendo lotes para fase: ${phaseId}`);
 
@@ -176,15 +177,25 @@ export async function getBatchesForPhaseDisplay(
         }
         
         // Mapear los datos para que coincidan con la interfaz esperada en el frontend
-        const mappedData = (data || []).map((batch: any) => {
+        interface BatchFromDB {
+            id: string;
+            batch_number: number;
+            status: string;
+            article_count: number;
+            assigned_researcher_name: string;
+            phase_name?: string;
+        }
+        
+        const mappedData = (data || []).map((batch: unknown) => {
+            const typedBatch = batch as BatchFromDB;
             return {
-                id: batch.id,
-                batch_number: batch.batch_number,
-                status: batch.status,
+                id: typedBatch.id,
+                batch_number: typedBatch.batch_number,
+                status: typedBatch.status,
                 // Mapear los nombres de campos de la DB a los esperados en el frontend
-                total_items: batch.article_count, // article_count -> total_items
-                assigned_member_name: batch.assigned_researcher_name, // assigned_researcher_name -> assigned_member_name
-                phase_name: batch.phase_name || null
+                total_items: typedBatch.article_count, // article_count -> total_items
+                assigned_member_name: typedBatch.assigned_researcher_name, // assigned_researcher_name -> assigned_member_name
+                phase_name: typedBatch.phase_name || null
             };
         });
         
@@ -226,7 +237,7 @@ export async function createBatches(
         if (availableArticles.length === 0) return { success: false, error: "No hay artículos disponibles para lotear." };
         
         // CORRECCIÓN: Extraer solo los IDs de los objetos artículo
-        const availableArticleIds = availableArticles.map((article: any) => article.id);
+        const availableArticleIds = availableArticles.map((article: unknown) => (article as { id: string }).id);
         console.log(`[${opId}] Artículos disponibles: ${availableArticles.length}, IDs extraídos: ${availableArticleIds.length}`);
         
         const articlesPerBatchArray = segmentArticles(availableArticleIds.length, batchSize);
