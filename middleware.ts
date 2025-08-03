@@ -27,21 +27,29 @@ export async function middleware(request: NextRequest) {
   console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 HASH: ${hash}`);
   console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 REFERER: ${request.headers.get('referer') || 'NO REFERER'}`);
   
-  // 🔧 SOLUCIÓN PARA RECOVERY TOKENS: Detectar tokens de recuperación en cualquier ruta
-  // Supabase puede usar diferentes parámetros: ?code=, ?type=recovery, #access_token, etc.
-  const isRecoveryFlow = search.includes('type=recovery') || 
-                        hash.includes('access_token') || 
-                        search.includes('access_token') ||
-                        search.includes('code='); // 🚨 ESTE ES EL QUE FALTABA!
+  // 🔧 DETECCIÓN DE ENLACE EXPIRADO: Interceptar directamente en middleware
+  // Si detectamos error de enlace expirado Y NO estamos ya en /login, redirigir
+  if ((search.includes('error_code=otp_expired') || search.includes('expired')) && pathname !== '/login') {
+    console.log(`${LOG_PREFIX_MW}:${requestId} 🚨 ENLACE EXPIRADO DETECTADO - Redirigiendo a /login`);
+    const loginUrl = new URL('/login', request.url);
+    // Preservar los parámetros de error para que login los detecte
+    loginUrl.search = search;
+    console.log(`${LOG_PREFIX_MW}:${requestId} 🎯 Redirigiendo a: ${loginUrl.toString()}`);
+    return NextResponse.redirect(loginUrl);
+  }
+  
+  // 🔧 SOLUCIÓN PARA RECOVERY TOKENS: Detectar tokens de recuperación válidos
+  const isValidRecoveryFlow = search.includes('type=recovery') || 
+                             hash.includes('access_token') || 
+                             search.includes('access_token') ||
+                             (search.includes('code=') && !search.includes('error'));
   
   // 🚫 PREVENIR LOOP INFINITO: Si ya estamos en /update-password, no redirigir
-  if (isRecoveryFlow && pathname !== '/update-password') {
-    console.log(`${LOG_PREFIX_MW}:${requestId} 🚨 DETECTADA URL DE RECUPERACIÓN DE CONTRASEÑA!`);
-    console.log(`${LOG_PREFIX_MW}:${requestId} 🔧 Recovery flow detectado, redirigiendo a /update-password para cambio de contraseña.`);
+  if (isValidRecoveryFlow && pathname !== '/update-password') {
+    console.log(`${LOG_PREFIX_MW}:${requestId} 🚨 DETECTADA URL DE RECUPERACIÓN VÁLIDA!`);
+    console.log(`${LOG_PREFIX_MW}:${requestId} 🔧 Recovery flow válido detectado, redirigiendo a /update-password.`);
     
-    // 🎯 REDIRIGIR A /update-password PARA QUE EL USUARIO PUEDA CAMBIAR SU CONTRASEÑA
     const updatePasswordUrl = new URL('/update-password', request.url);
-    // Preservar el código de recuperación como query parameter por si es necesario
     if (search.includes('code=')) {
       updatePasswordUrl.search = search;
     }

@@ -1,29 +1,25 @@
-// EN: lib/actions/preclassification-actions.ts
-
+// lib/actions/preclassification-actions.ts
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/server";
+import { callGeminiAPI } from "@/lib/gemini/api";
 import type { Database } from "@/lib/database.types";
-import type {
-  ResultadoOperacion,
-  BatchWithCounts,
-  ArticleForReview,
-  BatchDetails,
-  SubmitHumanReviewPayload,
-  TranslatedArticlePayload,
-  ClassificationReview
+import type { ResultadoOperacion } from "./types";
+import type { 
+    BatchWithCounts,
+    ArticleForReview,
+    BatchDetails,
+    SubmitHumanReviewPayload,
+    TranslatedArticlePayload,
+    ClassificationReview
 } from "@/lib/types/preclassification-types";
 
 export type { ArticleForReview, BatchDetails };
 
 // ========================================================================
-//  ACCIONES DE LECTURA (GET)
+//	ACCIONES DE LECTURA (GET)
 // ========================================================================
 
-/**
- * Obtiene todos los lotes asignados a un usuario para un proyecto,
- * incluyendo un desglose detallado del estado de los artículos en cada lote.
- */
 export async function getProjectBatchesForUser(projectId: string, userId: string): Promise<ResultadoOperacion<BatchWithCounts[]>> {
     if (!projectId || !userId) return { success: false, error: "Se requiere ID de usuario y proyecto." };
     try {
@@ -37,9 +33,6 @@ export async function getProjectBatchesForUser(projectId: string, userId: string
     }
 }
 
-/**
- * Obtiene los artículos de un lote con su título y abstract originales, listos para ser traducidos.
- */
 export async function getArticlesForTranslation(batchId: string): Promise<ResultadoOperacion<{id: string, title: string | null, abstract: string | null}[]>> {
     if (!batchId) return { success: false, error: "Se requiere ID de lote." };
     try {
@@ -61,10 +54,9 @@ export async function getArticlesForTranslation(batchId: string): Promise<Result
     }
 }
 
-
 /**
  * Obtiene todos los datos necesarios para renderizar la vista de detalle de un lote.
- * **VERSIÓN CORREGIDA**
+ * **VERSIÓN REFACTORIZADA PARA SER CONSCIENTE DE LAS FASES**
  */
 export async function getBatchDetailsForReview(batchId: string): Promise<ResultadoOperacion<BatchDetails>> {
     if (!batchId) return { success: false, error: "Se requiere ID de lote." };
@@ -72,42 +64,36 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
     try {
         const supabase = await createSupabaseServerClient();
         
-        const { data: batchData, error: batchError } = await supabase
+        // --- LÓGICA CORREGIDA PARA FASES ---
+        const { data: batch, error: batchError } = await supabase
             .from("article_batches")
-            .select("projects(id, preclass_dimensions(*, preclass_dimension_options(*)))")
+            .select("phase_id, batch_number, name, status")
             .eq("id", batchId)
             .single();
-            
-        if(batchError || !batchData) throw new Error(`Error obteniendo lote o proyecto: ${batchError?.message || 'No encontrado'}`);
-        
-        const dimensions = batchData.projects?.preclass_dimensions || [];
 
-        // --- CONSULTA CORREGIDA ---
-        // Ahora se anida la consulta de 'article_translations' dentro de 'articles'
+        if (batchError || !batch || !batch.phase_id) {
+            throw new Error(`Lote no encontrado o no está asociado a una fase: ${batchError?.message || 'No encontrado'}`);
+        }
+        
+        const { data: dimensions, error: dimensionsError } = await supabase
+            .from("preclass_dimensions")
+            .select("*, preclass_dimension_options(*)")
+            .eq("phase_id", batch.phase_id)
+            .eq('status', 'active') // Solo dimensiones activas
+            .order("ordering");
+
+        if (dimensionsError) throw new Error(`Error obteniendo dimensiones de la fase: ${dimensionsError.message}`);
+        
         const { data: batchItems, error: itemsError } = await supabase
             .from("article_batch_items")
             .select(`
-                id, status_preclasificacion, ai_keywords, ai_process_opinion, requires_adjudication,
-                articles (
-                    id, publication_year, journal, title, abstract,
-                    article_translations ( title, abstract, summary )
-                )
+                id, status_preclasificacion, ai_keywords, ai_process_opinion,
+                articles (id, publication_year, journal, title, abstract, article_translations(title, abstract, summary))
             `)
             .eq("batch_id", batchId);
-        // --- FIN DE CONSULTA CORREGIDA ---
-        
+            
         if (itemsError) throw new Error(`Error obteniendo ítems del lote: ${itemsError.message}`);
-        if (!batchItems) return { 
-            success: true, 
-            data: { 
-                columns: [], 
-                rows: [],
-                batch_number: 0, // Valor por defecto
-                id: batchId,
-                name: null,
-                status: 'pending' as const
-            } 
-        };
+        if (!batchItems) return { success: false, error: "No se encontraron artículos en el lote." };
 
         const itemIds = batchItems.map(item => item.id);
         const { data: allReviews = [], error: reviewsError } = await supabase
@@ -117,30 +103,13 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
             
         if(reviewsError) throw new Error(`Error obteniendo revisiones: ${reviewsError.message}`);
         
-        // Obtener información adicional del lote
-        const { data: batchInfo, error: batchInfoError } = await supabase
-            .from("article_batches")
-            .select("batch_number, name, status")
-            .eq("id", batchId)
-            .single();
-            
-        if (batchInfoError) throw new Error(`Error obteniendo información del lote: ${batchInfoError.message}`);
-
         const rows: ArticleForReview[] = batchItems.map(item => {
             const safeReviews = allReviews || [];
-            // Comentario sobre las variables no utilizadas que podrían ser útiles en el futuro
-            // const itemReviews = safeReviews.filter(r => r.article_batch_item_id === item.id);
-            // const classifications: Record<string, ClassificationReview[]> = {};
+            const articleStatus = item.status_preclasificacion || 'pending_review';
+            const validStatuses = ['pending_review', 'agreed', 'reconciled', 'disputed', 'reconciliation_pending'] as const;
+            type ItemStatus = typeof validStatuses[number];
+            const safeStatus: ItemStatus = (validStatuses as readonly string[]).includes(articleStatus) ? articleStatus as ItemStatus : 'pending_review';
 
-            const articleStatus = item.status_preclasificacion || 'pending';
-            const validStatuses = ['pending', 'agreed', 'reconciled', 'disputed', 'reconciliation_pending'] as const;
-            // Convertir el estado del artículo a minúsculas para hacer la comparación insensible a mayúsculas
-            const normalizedStatus = articleStatus?.toLowerCase() as Database["public"]["Enums"]["item_preclass_status"];
-            // Usar aserción de tipo para validar el estado
-            const safeStatus = (validStatuses as readonly string[]).includes(normalizedStatus.toLowerCase())
-                ? normalizedStatus as typeof validStatuses[number]
-                : 'pending';
-            
             return {
                 item_id: item.id,
                 article_status: safeStatus,
@@ -158,14 +127,10 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
                     process_opinion: item.ai_process_opinion
                 },
                 classifications: dimensions.reduce((acc, dim) => {
-                    const reviews = safeReviews.filter((r: { article_batch_item_id: string; dimension_id: string }) => 
-                        r.article_batch_item_id === item.id && 
-                        r.dimension_id === dim.id
-                    );
-                    
-                    if (reviews.length > 0) {
-                        acc[dim.id] = reviews.map((r: { reviewer_id: string; iteration: number; classification_value: string | null; confidence_score: number | null; rationale: string | null }) => ({
-                            reviewer_type: 'human' as const,
+                    const reviewsForDim = safeReviews.filter(r => r.article_batch_item_id === item.id && r.dimension_id === dim.id);
+                    if (reviewsForDim.length > 0) {
+                        acc[dim.id] = reviewsForDim.map(r => ({
+                            reviewer_type: r.reviewer_type as 'ai' | 'human',
                             reviewer_id: r.reviewer_id,
                             iteration: r.iteration,
                             value: r.classification_value,
@@ -175,23 +140,18 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
                     }
                     return acc;
                 }, {} as Record<string, ClassificationReview[]>)
-            } as ArticleForReview;
+            };
         });
 
         return {
             success: true,
             data: {
-                columns: dimensions.map(d => ({
-                    id: d.id,
-                    name: d.name,
-                    type: d.type,
-                    options: d.preclass_dimension_options?.map(o => o.value) || []
-                })),
+                columns: dimensions.map(d => ({ id: d.id, name: d.name, type: d.type, options: d.preclass_dimension_options?.map(o => o.value) || [] })),
                 rows,
-                batch_number: batchInfo?.batch_number || 0,
+                batch_number: batch.batch_number || 0,
                 id: batchId,
-                name: batchInfo?.name || null,
-                status: (batchInfo?.status as Database["public"]["Enums"]["batch_preclass_status"]) || 'pending'
+                name: batch.name || null,
+                status: batch.status as Database["public"]["Enums"]["batch_preclass_status"]
             }
         };
 
@@ -202,131 +162,238 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
 }
 
 // ========================================================================
-//  ACCIONES DE MODIFICACIÓN (WRITE)
+//	ACCIONES DE MODIFICACIÓN (WRITE)
 // ========================================================================
 
 export async function saveBatchTranslations(
-  batchId: string,
-  articles: TranslatedArticlePayload[]
+    batchId: string,
+    articles: TranslatedArticlePayload[]
 ): Promise<ResultadoOperacion<{ upsertedCount: number }>> {
-  if (!batchId || !articles || articles.length === 0) {
-    return { success: false, error: "Se requiere ID de lote y un array de artículos." };
-  }
+    if (!batchId || !articles || articles.length === 0) {
+        return { success: false, error: "Se requiere ID de lote y al menos un artículo." };
+    }
+    try {
+        const supabase = await createSupabaseServerClient();
+        const translationsToUpsert = articles.map(article => ({
+            article_id: article.articleId,
+            title: article.title,
+            abstract: article.abstract,
+            summary: article.summary,
+            language: 'es' // Asumimos español por ahora
+        }));
 
-  const supabase = await createSupabaseServerClient();
+        const { count, error: upsertError } = await supabase
+            .from('article_translations')
+            .upsert(translationsToUpsert, { onConflict: 'article_id, language' });
 
-  try {
-    const translationsToUpsert = articles.map(article => ({
-      article_id: article.articleId,
-      language: 'es',
-      title: article.title,
-      abstract: article.abstract,
-      summary: article.summary,
-      translated_at: new Date().toISOString(),
-      translated_by: article.translated_by || null,
-      translator_system: article.translator_system || null,
-    }));
+        if (upsertError) throw upsertError;
 
-    const { count, error: upsertError } = await supabase
-      .from('article_translations')
-      .upsert(translationsToUpsert, { onConflict: 'article_id, language', count: 'exact' });
+        // Actualizar estado del lote a 'traducido'
+        const { error: batchUpdateError } = await supabase
+            .from('article_batches')
+            .update({ status: 'translated' })
+            .eq('id', batchId);
 
-    if (upsertError) throw new Error(`Error guardando las traducciones: ${upsertError.message}`);
+        if (batchUpdateError) {
+            console.warn(`Traducciones guardadas, pero no se pudo actualizar el estado del lote ${batchId}: ${batchUpdateError.message}`);
+        }
 
-    const { error: batchUpdateError } = await supabase
-      .from('article_batches')
-      .update({ status: 'translated' })
-      .eq('id', batchId);
+        return { success: true, data: { upsertedCount: count || 0 } };
 
-    if (batchUpdateError) throw new Error(`Traducciones guardadas, pero falló al actualizar el estado del lote: ${batchUpdateError.message}`);
-    
-    return { success: true, data: { upsertedCount: count || 0 } };
-
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : "Error desconocido.";
-    return { success: false, error: `Error en saveBatchTranslations: ${msg}` };
-  }
+    } catch (error) {
+        const msg = error instanceof Error ? error.message : "Error desconocido.";
+        return { success: false, error: `Error guardando traducciones: ${msg}` };
+    }
 }
 
+/**
+ * Inicia el proceso de preclasificación de un lote en el backend.
+ * Retorna inmediatamente con un ID de trabajo para monitoreo.
+ */
+export async function startInitialPreclassification(batchId: string): Promise<ResultadoOperacion<{ jobId: string }>> {
+    const supabase = await createSupabaseServerClient();
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Usuario no autenticado." };
+    
+    const { data: batch, error: batchError } = await supabase.from('article_batches').select('*, projects(id)').eq('id', batchId).single();
+    if (batchError || !batch) return { success: false, error: "Lote no encontrado." };
+    if (batch.status !== 'translated') return { success: false, error: "El lote debe estar en estado 'traducido' para iniciar la preclasificación." };
+    
+    const { data: job, error: jobError } = await supabase.from('ai_job_history').insert({
+        project_id: batch.projects!.id,
+        user_id: user.id,
+        job_type: 'PRECLASSIFICATION',
+        status: 'running',
+        description: `Preclasificando Lote #${batch.batch_number}`,
+        progress: 0,
+        details: { total: 0, processed: 0, step: 'Iniciando...' }
+    }).select('id').single();
+
+    if (jobError || !job) return { success: false, error: `No se pudo crear el registro del job: ${jobError?.message}` };
+    
+    runPreclassificationJob(job.id, batchId, user.id); 
+    
+    return { success: true, data: { jobId: job.id } };
+}
 
 /**
- * Guarda el título y abstract traducidos de un artículo y actualiza su estado.
+ * Tipos para la construcción del prompt, para evitar 'any'.
  */
-export async function saveTranslatedArticle(
-  articleId: string, 
-  translatedTitle: string, 
-  translatedAbstract: string
-): Promise<ResultadoOperacion<{ updated: boolean }>> {
-  if (!articleId || !translatedTitle || !translatedAbstract) {
-    return { success: false, error: "Se requieren ID de artículo, título y abstract traducidos." };
-  }
+type DimensionForPrompt = {
+    id: string;
+    name: string;
+    description: string | null;
+    type: string;
+    preclass_dimension_options: { value: string }[];
+};
 
-  try {
+type ArticleForPrompt = {
+    id: string;
+    articles: {
+        article_translations: {
+            title: string | null;
+            abstract: string | null;
+        }[];
+    } | null;
+};
+
+/**
+ * Helper que construye el prompt dinámico para la IA.
+ */
+function buildPreclassificationPrompt(
+    project: { name: string; proposal: string | null; proposal_bibliography: string | null; },
+    dimensions: DimensionForPrompt[],
+    articleChunk: ArticleForPrompt[]
+): string {
+    const dimensionDetails = dimensions.map(dim => `
+**Dimensión: "${dim.name}"**
+- Descripción: ${dim.description}
+- Tipo: ${dim.type}
+${dim.type === 'finite' ? `- Opciones Válidas: [${dim.preclass_dimension_options.map(opt => `"${opt.value}"`).join(', ')}]` : ''}
+    `).join('\n---\n');
+
+    const articleDetails = articleChunk.map(item => `
+---
+**Artículo ID:** "${item.id}"
+- Título: ${item.articles?.article_translations?.[0]?.title}
+- Abstract: ${item.articles?.article_translations?.[0]?.abstract}
+    `).join('');
+
+    return `### ROL Y CONTEXTO GLOBAL ###
+Eres un asistente de investigación experto en análisis bibliográfico. Tu tarea es colaborar en la preclasificación de artículos para el proyecto de investigación titulado: "${project.name}".
+Propósito del Proyecto: ${project.proposal}
+Objetivo de esta Fase Bibliográfica: ${project.proposal_bibliography}
+
+### INSTRUCCIONES DE CLASIFICACIÓN ###
+A continuación, te proporcionaré las definiciones de ${dimensions.length} dimensiones de clasificación y luego un lote de ${articleChunk.length} artículos.
+Debes analizar cada artículo y clasificarlo según CADA una de las dimensiones definidas.
+Tu respuesta debe ser OBLIGATORIAMENTE un objeto JSON válido, sin ningún texto antes o después del bloque JSON. La estructura debe ser un array, donde cada elemento del array es un objeto que representa un artículo clasificado.
+
+### ESQUEMA DE LAS DIMENSIONES ###
+${dimensionDetails}
+
+### ARTÍCULOS A CLASIFICAR ###
+${articleDetails}
+
+### FORMATO DE SALIDA JSON ESPERADO ###
+\`\`\`json
+[
+  {
+    "itemId": "ID_DEL_PRIMER_ARTICLE_BATCH_ITEM",
+    "classifications": {
+      "${dimensions[0]?.id}": {
+        "value": "VALOR_CLASIFICADO",
+        "confidence": "Alta",
+        "rationale": "Justificación concisa."
+      }
+    }
+  }
+]
+\`\`\``;
+}
+
+/**
+ * Helper que ejecuta el trabajo de preclasificación.
+ */
+async function runPreclassificationJob(jobId: string, batchId: string, userId: string) {
     const supabase = await createSupabaseServerClient();
 
-    // 1. Actualizar la tabla de artículos con el contenido traducido en el campo metadata
-    const { error: articleUpdateError } = await supabase
-      .from('articles')
-      .update({
-        metadata: {
-          translatedTitle: translatedTitle,
-          translatedAbstract: translatedAbstract,
+    try {
+        const { data: batchData } = await supabase.from('article_batches').select('phase_id, projects(id, name, proposal, proposal_bibliography)').eq('id', batchId).single();
+        if (!batchData?.phase_id || !batchData.projects) throw new Error("Datos del lote o proyecto no encontrados.");
+
+        const { data: items, error: itemsError } = await supabase.from('article_batch_items').select('id, articles(id, article_translations(title, abstract))').eq('batch_id', batchId);
+        if (itemsError || !items) throw new Error("No se encontraron artículos para procesar.");
+        
+        const { data: dimensions, error: dimsError } = await supabase.from('preclass_dimensions').select('id, name, description, type, preclass_dimension_options(value)').eq('phase_id', batchData.phase_id).eq('status', 'active');
+        if (dimsError || !dimensions) throw new Error("No se encontraron dimensiones para la fase.");
+
+        await supabase.from('ai_job_history').update({ details: { total: items.length, processed: 0, step: 'Datos preparados' } }).eq('id', jobId);
+
+        const miniBatchSize = 5;
+        let processedCount = 0;
+        for (let i = 0; i < items.length; i += miniBatchSize) {
+            const chunk = items.slice(i, i + miniBatchSize);
+            
+            await supabase.from('ai_job_history').update({
+                progress: (processedCount / items.length) * 100,
+                details: { total: items.length, processed: processedCount, step: `Procesando artículos ${i+1}-${i+chunk.length}` }
+            }).eq('id', jobId);
+
+            const prompt = buildPreclassificationPrompt(batchData.projects, dimensions as DimensionForPrompt[], chunk as ArticleForPrompt[]);
+            const { result, usage } = await callGeminiAPI('gemini-1.5-flash', prompt);
+            
+            try {
+                const parsedResult = JSON.parse(result);
+                if (Array.isArray(parsedResult)) {
+                    const reviewsToInsert: Database['public']['Tables']['article_dimension_reviews']['Insert'][] = [];
+                    
+                    for (const item of parsedResult) {
+                        for (const dimId in item.classifications) {
+                            reviewsToInsert.push({
+                                article_batch_item_id: item.itemId,
+                                dimension_id: dimId,
+                                reviewer_type: 'ai',
+                                reviewer_id: userId,
+                                iteration: 1,
+                                classification_value: item.classifications[dimId].value,
+                                confidence_score: item.classifications[dimId].confidence === 'Alta' ? 0.9 : (item.classifications[dimId].confidence === 'Media' ? 0.6 : 0.3),
+                                rationale: item.classifications[dimId].rationale,
+                            });
+                        }
+                    }
+
+                    if (reviewsToInsert.length > 0) {
+                        await supabase.from('article_dimension_reviews').insert(reviewsToInsert);
+                    }
+                }
+            } catch (parseError) {
+                console.error(`[${jobId}] Error parseando JSON de la IA:`, parseError);
+                throw new Error("La respuesta de la IA no fue un JSON válido.");
+            }
+            
+            await supabase.rpc('increment_job_tokens', {
+                job_id: jobId,
+                input_increment: usage?.promptTokenCount || 0,
+                output_increment: usage?.candidatesTokenCount || 0
+            });
+            
+            processedCount += chunk.length;
         }
-      })
-      .eq('id', articleId);
 
-    if (articleUpdateError) throw new Error(`Error actualizando el artículo: ${articleUpdateError.message}`);
+        await supabase.from('ai_job_history').update({ status: 'completed', progress: 100, details: { total: items.length, processed: items.length, step: 'Completado' } }).eq('id', jobId);
+        await supabase.from('article_batches').update({ status: 'review_pending' }).eq('id', batchId);
 
-    // 2. Actualizar el estado del ítem a 'pending_review' para que entre en la cola de revisión humana
-    const { error: itemUpdateError } = await supabase
-      .from('article_batch_items')
-      .update({ status_preclasificacion: 'pending_review' })
-      .eq('article_id', articleId);
-
-    if (itemUpdateError) throw new Error(`Error actualizando el estado del ítem del lote: ${itemUpdateError.message}`);
-
-    return { success: true, data: { updated: true } };
-
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : "Error desconocido.";
-    return { success: false, error: `Error interno al guardar la traducción: ${msg}` };
-  }
+    } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Error desconocido';
+        await supabase.from('ai_job_history').update({ status: 'failed', progress: 100, details: { error: msg } }).eq('id', jobId);
+    }
 }
 
-/**
- * Orquesta la traducción de artículos de un lote y actualiza su estado.
- */
-export async function translateBatch(batchId: string): Promise<ResultadoOperacion<{ translatedCount: number }>> {
-    console.log(`Función translateBatch llamada para el lote: ${batchId}. La implementación real con API externa está pendiente.`);
-    // 1. Verificar permisos.
-    // 2. Verificar que el estado del lote es 'pending'.
-    // 3. Llamar a getArticlesForTranslation(batchId).
-    // 4. Iterar y llamar a la API de traducción (placeholder).
-    // 5. 'upsert' en 'article_translations'.
-    // 6. Actualizar estado del lote a 'translated'.
-    return { success: true, data: { translatedCount: 0 } }; // Placeholder
-}
-
-/**
- * Inicia el primer pase de pre-clasificación con IA para un lote.
- */
-export async function startInitialPreclassification(batchId: string): Promise<ResultadoOperacion<{ preclassifiedCount: number }>> {
-    console.log(`Función startInitialPreclassification llamada para el lote: ${batchId}. La implementación real con API externa está pendiente.`);
-    // 1. Verificar permisos y que el lote esté en 'translated'.
-    // 2. Iterar, construir prompts y llamar a la API de IA de clasificación.
-    // 3. Poblar 'article_dimension_reviews' y actualizar 'article_batch_items'.
-    // 4. Actualizar estado del lote a 'review_pending'.
-    return { success: true, data: { preclassifiedCount: 0 } }; // Placeholder
-}
-
-/**
- * Guarda la revisión de un humano sobre una única dimensión, registrando una discrepancia.
- */
 export async function submitHumanDiscrepancy(payload: SubmitHumanReviewPayload, userId: string): Promise<ResultadoOperacion<{ reviewId: string }>> {
     const supabase = await createSupabaseServerClient();
     try {
-        // 1. Verificar que el usuario pertenece al proyecto.
-        // 2. Insertar la opinión humana en la tabla de revisiones.
         const { data, error } = await supabase
             .from('article_dimension_reviews')
             .insert({
@@ -334,7 +401,7 @@ export async function submitHumanDiscrepancy(payload: SubmitHumanReviewPayload, 
                 dimension_id: payload.dimension_id,
                 reviewer_type: 'human',
                 reviewer_id: userId,
-                iteration: 2, // La discrepancia humana inicia la iteración 2
+                iteration: 2,
                 classification_value: payload.human_value,
                 confidence_score: payload.human_confidence,
                 rationale: payload.human_rationale,
@@ -343,9 +410,6 @@ export async function submitHumanDiscrepancy(payload: SubmitHumanReviewPayload, 
             .single();
 
         if (error) throw error;
-
-        // 3. Actualizar el estado del ítem para reflejar que hay una discrepancia pendiente.
-        // Podríamos tener un estado 'awaiting_reclassification'. Por ahora, se maneja al llamar la siguiente acción.
         return { success: true, data: { reviewId: data.id } };
 
     } catch(error) {
@@ -354,36 +418,14 @@ export async function submitHumanDiscrepancy(payload: SubmitHumanReviewPayload, 
     }
 }
 
-
-/**
- * Inicia el segundo pase de la IA para resolver las discrepancias marcadas.
- * VERSIÓN CORREGIDA
- */
 export async function reclassifyDiscrepancies(batchId: string): Promise<ResultadoOperacion<{ reclassifiedCount: number }>> {
-    // 1. Verificar permisos y que el estado del lote sea 'review_pending'.
-    // 2. Buscar ítems con revisiones humanas (iteración 2).
-    // 3. Construir prompts con feedback y llamar a la API de IA. (placeholder)
-    // 4. Insertar nuevas revisiones de la IA (iteración 3).
-    // 5. Actualizar estado de los ítems a 'reconciliation_pending'.
-    
-    // 6. Al finalizar, actualizar el estado del lote al NUEVO estado.
     const supabase = await createSupabaseServerClient();
-    await supabase
-        .from('article_batches')
-        .update({ status: 'reconciliation_pending' })
-        .eq('id', batchId);
-    
-    console.log(`Función reclassifyDiscrepancies ejecutada para el lote: ${batchId}. El lote ahora espera el veredicto final.`);
-    return { success: true, data: { reclassifiedCount: 0 } }; // Placeholder
+    await supabase.from('article_batches').update({ status: 'reconciliation_pending' }).eq('id', batchId);
+    return { success: true, data: { reclassifiedCount: 0 } };
 }
 
-/**
- * Cierra un lote, asignándole un estado final basado en el estado de sus artículos.
- * **VERSIÓN CORREGIDA**
- */
 export async function finalizeBatch(batchId: string): Promise<ResultadoOperacion<{ finalStatus: string }>> {
     if (!batchId) return { success: false, error: "Se requiere ID de lote." };
-
     try {
         const supabase = await createSupabaseServerClient();
         
@@ -391,14 +433,9 @@ export async function finalizeBatch(batchId: string): Promise<ResultadoOperacion
             .from('article_batch_items')
             .select('status_preclasificacion')
             .eq('batch_id', batchId);
-
         if (itemsError) throw itemsError;
 
-        // --- LÓGICA DE CHEQUEO ACTUALIZADA ---
-        const pendingItems = items.filter(item => 
-            ['pending_review', 'reconciliation_pending'].includes(item.status_preclasificacion || '')
-        );
-        // --- FIN DE LÓGICA DE CHEQUEO ACTUALIZADA ---
+        const pendingItems = items.filter(item => ['pending_review', 'reconciliation_pending'].includes(item.status_preclasificacion || ''));
         if (pendingItems.length > 0) {
             return { success: false, error: `Aún hay ${pendingItems.length} artículos pendientes de revisión en este lote.` };
         }
@@ -416,9 +453,8 @@ export async function finalizeBatch(batchId: string): Promise<ResultadoOperacion
 
         const { error: updateError } = await supabase
             .from('article_batches')
-            .update({ status: finalBatchStatus }) // El tipo aquí ya es correcto por el Paso 1
+            .update({ status: finalBatchStatus })
             .eq('id', batchId);
-
         if (updateError) throw updateError;
         
         return { success: true, data: { finalStatus: finalBatchStatus } };
@@ -429,38 +465,24 @@ export async function finalizeBatch(batchId: string): Promise<ResultadoOperacion
     }
 }
 
-/**
- * Obtiene el ID del artículo ('articles') a partir del ID de un ítem de lote ('article_batch_items').
- * @param batchItemId El ID de la fila en la tabla 'article_batch_items'.
- * @returns El 'article_id' correspondiente o un error si no se encuentra.
- */
-export async function getArticleIdFromBatchItemId(
-  batchItemId: string
-): Promise<ResultadoOperacion<{ articleId: string }>> {
-  if (!batchItemId) {
-    return { success: false, error: "Se requiere el ID del ítem del lote." };
-  }
-
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
-      .from('article_batch_items')
-      .select('article_id')
-      .eq('id', batchItemId)
-      .single();
-
-    if (error) {
-      throw new Error(`No se encontró el ítem del lote o el usuario no tiene permisos: ${error.message}`);
+export async function getArticleIdFromBatchItemId(batchItemId: string): Promise<ResultadoOperacion<{ articleId: string }>> {
+    if (!batchItemId) {
+        return { success: false, error: "Se requiere el ID del ítem del lote." };
     }
+    try {
+        const supabase = await createSupabaseServerClient();
+        const { data, error } = await supabase
+            .from('article_batch_items')
+            .select('article_id')
+            .eq('id', batchItemId)
+            .single();
 
-    if (!data) {
-      return { success: false, error: "Ítem de lote no encontrado." };
+        if (error) throw new Error(`No se encontró el ítem del lote: ${error.message}`);
+        if (!data) return { success: false, error: "Ítem de lote no encontrado." };
+        return { success: true, data: { articleId: data.article_id } };
+
+    } catch (error) {
+        const msg = error instanceof Error ? error.message : "Error desconocido.";
+        return { success: false, error: `Error interno: ${msg}` };
     }
-
-    return { success: true, data: { articleId: data.article_id } };
-
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : "Error desconocido.";
-    return { success: false, error: `Error interno: ${msg}` };
-  }
 }

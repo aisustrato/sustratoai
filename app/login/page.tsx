@@ -2,8 +2,9 @@
 // Versión: 17.2 (Mínimamente Invasiva - Lógica de AuthProvider centralizada - Base corregida)
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardInput } from "@/components/ui/StandardInput";
@@ -18,12 +19,29 @@ import { SustratoLogoWithFixedText } from "@/components/ui/sustrato-logo-with-fi
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function LoginPage() {
-  // router y searchParams eliminados ya que no se utilizan
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   // MODIFICACIÓN: Se obtiene authLoading del provider para deshabilitar el botón si es necesario.
   const { signIn, user, authInitialized, authLoading: authProviderLoading } = useAuth(); 
+  
+  // 🔧 DETECCIÓN DE ERRORES DE ENLACE EXPIRADO
+  // Detecta parámetros de error en la URL y muestra toast informativo
+  useEffect(() => {
+    // Leemos los parámetros de error de la URL
+    const errorCode = searchParams.get('error_code');
+    const errorDescription = searchParams.get('error_description');
+
+    // 🧠 Lógica clave: Si detectamos el error específico de link expirado...
+    if (errorCode === 'otp_expired' || (errorDescription && errorDescription.toLowerCase().includes('expired'))) {
+      // ...mostramos un toast de error informativo y amigable.
+      toast.error("El enlace de recuperación ha expirado", {
+        description: "Por favor, solicita un nuevo enlace para restablecer tu contraseña.",
+        duration: 8000, // Duración extendida para que el usuario pueda leerlo
+      });
+    }
+  }, [searchParams]); // Este efecto se ejecuta cada vez que los parámetros de la URL cambien
   
   // La lógica de redirección ahora es manejada por AuthProvider
 

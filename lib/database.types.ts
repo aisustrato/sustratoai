@@ -19,11 +19,13 @@ export type Database = {
           ai_model: string | null
           completed_at: string | null
           description: string | null
+          details: Json | null
           error_message: string | null
           id: string
           input_tokens: number | null
           job_type: Database["public"]["Enums"]["job_type"]
           output_tokens: number | null
+          progress: number | null
           project_id: string
           started_at: string
           status: Database["public"]["Enums"]["job_status"]
@@ -33,11 +35,13 @@ export type Database = {
           ai_model?: string | null
           completed_at?: string | null
           description?: string | null
+          details?: Json | null
           error_message?: string | null
           id?: string
           input_tokens?: number | null
           job_type: Database["public"]["Enums"]["job_type"]
           output_tokens?: number | null
+          progress?: number | null
           project_id: string
           started_at?: string
           status?: Database["public"]["Enums"]["job_status"]
@@ -47,11 +51,13 @@ export type Database = {
           ai_model?: string | null
           completed_at?: string | null
           description?: string | null
+          details?: Json | null
           error_message?: string | null
           id?: string
           input_tokens?: number | null
           job_type?: Database["public"]["Enums"]["job_type"]
           output_tokens?: number | null
+          progress?: number | null
           project_id?: string
           started_at?: string
           status?: Database["public"]["Enums"]["job_status"]
@@ -1225,10 +1231,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Record<string, unknown>[]
       }
-      get_eligible_article_ids_for_phase: {
-        Args: { p_phase_id: string }
-        Returns: string[]
-      }
       get_phase_batches_with_details: {
         Args: { p_phase_id: string }
         Returns: {
@@ -1283,6 +1285,14 @@ export type Database = {
           p_permission_column: string
         }
         Returns: boolean
+      }
+      increment_job_tokens: {
+        Args: {
+          job_id: string
+          input_increment: number
+          output_increment: number
+        }
+        Returns: undefined
       }
       is_user_member_of_project: {
         Args: { p_user_id: string; p_project_id_to_check: string }

@@ -12,7 +12,7 @@ import { LoadingProvider } from "@/contexts/LoadingContext";
 import ProjectStatusBadge from "@/components/ui/ProjectStatusBadge";
 import { JobManagerProvider } from '@/app/contexts/JobManagerContext';
 import { DialogProvider } from '@/app/contexts/DialogContext';
-import { JobManager } from '@/app/components/ui/JobManager';
+import { JobManager } from '@/components/jobs/JobManager';
 
 export const metadata: Metadata = {
   title: "Sustrato.ai",
