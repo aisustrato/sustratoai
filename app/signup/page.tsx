@@ -23,6 +23,7 @@ export default function SignUpPage() {
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [message, setMessage] = useState("");
+	const [website, setWebsite] = useState(""); // Campo honeypot
 	const [loading, setLoading] = useState(false);
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -36,20 +37,95 @@ export default function SignUpPage() {
 		setLoading(true);
 
 		try {
-			// Aquí iría la lógica para enviar el formulario de contacto
-			// Por ahora solo simulamos una espera
-			await new Promise((resolve) => setTimeout(resolve, 1500));
+			// Enviar solicitud al endpoint de API
+			const response = await fetch('/api/signup-request', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					name,
+					email,
+					message,
+					website, // Campo honeypot
+				}),
+			});
 
+			const result = await response.json();
+
+			if (!response.ok) {
+				// Manejar errores específicos
+				if (response.status === 429) {
+					toast.error("🚫 Demasiadas solicitudes. Por favor, espera unos minutos antes de intentar de nuevo.");
+				} else if (response.status === 400) {
+					// Procesar errores de validación específicos
+					const validationErrors = result.details;
+					if (validationErrors && Array.isArray(validationErrors)) {
+						// Crear mensajes específicos para cada error de validación
+						interface ValidationError {
+							path?: string[];
+							code: string;
+							message?: string;
+							minimum?: number;
+							maximum?: number;
+							validation?: string;
+							// Otras propiedades que puedan ser necesarias según la validación
+						}
+
+						const errorMessages = validationErrors.map((error: ValidationError) => {
+							const field = error.path?.[0] || 'campo';
+							const fieldNames: { [key: string]: string } = {
+								name: 'Nombre',
+								email: 'Correo electrónico',
+								message: 'Mensaje'
+							};
+							const fieldName = fieldNames[field] || field;
+							
+							// Mensajes específicos según el tipo de error
+							if (error.code === 'too_small') {
+								return `📝 ${fieldName}: Debe tener al menos ${error.minimum} caracteres`;
+							} else if (error.code === 'too_big') {
+								return `📝 ${fieldName}: No puede exceder ${error.maximum} caracteres`;
+							} else if (error.code === 'invalid_string' && error.validation === 'email') {
+								return `📧 ${fieldName}: Debe ser una dirección de correo válida`;
+							} else {
+								return `⚠️ ${fieldName}: ${error.message}`;
+							}
+						});
+						
+						// Mostrar todos los errores en un solo toast
+						if (errorMessages.length === 1) {
+							toast.error(errorMessages[0]);
+						} else {
+							toast.error(`❌ Errores de validación:\n${errorMessages.join('\n')}`);
+						}
+					} else {
+						// Fallback para errores de validación sin detalles
+						toast.error("❌ Datos del formulario inválidos. Por favor, revisa la información.");
+					}
+				} else if (response.status === 503) {
+					toast.error("🔧 Servicio temporalmente no disponible. Por favor, inténtalo más tarde.");
+				} else {
+					toast.error(result.error || "❌ Ocurrió un error al enviar tu solicitud.");
+				}
+				return;
+			}
+
+			// Éxito
 			toast.success(
-				"Tu solicitud ha sido enviada correctamente. Nos pondremos en contacto contigo pronto."
+				"✅ ¡Solicitud enviada exitosamente! Te contactaremos pronto a tu correo electrónico."
 			);
+			
+			// Limpiar formulario
 			setName("");
 			setEmail("");
 			setMessage("");
+			setWebsite(""); // Limpiar honeypot también
+			
 		} catch (error) {
 			console.error("Error al enviar el formulario:", error);
 			toast.error(
-				"Ocurrió un error al enviar tu solicitud. Por favor, intenta nuevamente."
+				"🌐 Error de conexión. Verifica tu internet e inténtalo nuevamente."
 			);
 		} finally {
 			setLoading(false);
@@ -176,6 +252,18 @@ export default function SignUpPage() {
 
 									<StandardCard.Content>
 										<form onSubmit={handleSubmit} className="space-y-4">
+											{/* Campo honeypot - oculto para usuarios reales */}
+											<input
+												type="text"
+												name="website"
+												value={website}
+												onChange={(e) => setWebsite(e.target.value)}
+												style={{ display: 'none' }}
+												tabIndex={-1}
+												autoComplete="off"
+												aria-hidden="true"
+											/>
+
 											<StandardFormField label="Nombre" htmlFor="name">
 												<StandardInput
 													id="name"
