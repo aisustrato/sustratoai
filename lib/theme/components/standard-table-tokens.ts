@@ -5,7 +5,7 @@ import tinycolor from "tinycolor2";
 
 // --- Definiciones de Tipo ---
 
-export type CellVariant = 'highlight' | 'muted';
+export type CellVariant = 'highlight' | 'muted' | 'success' | 'warning' | 'danger';
 
 interface TablePartTokens {
     backgroundColor: string;
@@ -89,6 +89,24 @@ export function generateTableTokens(appColorTokens: AppColorTokens, mode: Mode):
                     foregroundColor: neutral.textShade,
                     borderColor: 'transparent',
                     hoverBackgroundColor: neutral.bg,
+                },
+                success: {
+                    backgroundColor: appColorTokens.success.bg,
+                    foregroundColor: appColorTokens.success.text,
+                    borderColor: appColorTokens.success.bgShade,
+                    hoverBackgroundColor: appColorTokens.success.bgShade,
+                },
+                warning: {
+                    backgroundColor: appColorTokens.warning.bg,
+                    foregroundColor: appColorTokens.warning.text,
+                    borderColor: appColorTokens.warning.bgShade,
+                    hoverBackgroundColor: appColorTokens.warning.bgShade,
+                },
+                danger: {
+                    backgroundColor: appColorTokens.danger.bg,
+                    foregroundColor: appColorTokens.danger.text,
+                    borderColor: appColorTokens.danger.bgShade,
+                    hoverBackgroundColor: appColorTokens.danger.bgShade,
                 }
             }
         },

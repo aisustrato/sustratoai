@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { supabase } from "@/app/auth/client";
 import { useAuth } from "@/app/auth-provider";
 import { getBatchDetailsForReview } from "@/lib/actions/preclassification-actions";
+import { useJobManager } from "@/app/contexts/JobManagerContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import type { BatchDetails, ArticleForReview } from "@/lib/actions/preclassification-actions";
 import type { Database } from "@/lib/database.types";
@@ -28,6 +29,9 @@ interface TableRowData {
 	subRows?: { __isGhost: true }[];
 }
 
+// TableRow se usa implícitamente en ColumnDef<TableRow> - mantener para compatibilidad
+// type TableRow = TableRowData;
+
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardTable } from "@/components/ui/StandardTable";
 import { StandardButton } from "@/components/ui/StandardButton";
@@ -35,6 +39,8 @@ import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { NoteEditor } from "./components/NoteEditor";
 import { ArticleGroupManager } from "./components/ArticleGroupManager";
+import { KeywordHighlighter } from "./components/KeywordHighlighter";
+import { TextHighlighter } from "./components/TextHighlighter";
 import { ColumnDef } from "@tanstack/react-table";
 import { 
 	ClipboardList, 
@@ -42,13 +48,18 @@ import {
 	ThumbsDown, 
 	CheckCircle,
 	Globe,
-	StickyNote
+	StickyNote,
+	Brain,
+	Search,
+	X
 } from "lucide-react";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 
 const BatchDetailPage = () => {
 	const params = useParams();
+	const router = useRouter();
 	const auth = useAuth();
+	const { startJob } = useJobManager();
 	useUserProfile(); // Se mantiene el hook por efectos secundarios
 	const batchId = params.batchId as string;
 	
@@ -59,6 +70,120 @@ const BatchDetailPage = () => {
 	// Estados para NoteEditor
 	const [noteDialogOpen, setNoteDialogOpen] = useState(false);
 	const [currentArticle, setCurrentArticle] = useState<ArticleForReview | null>(null);
+	
+	// Estados para Preclasificación
+	const [isStartingPreclassification, setIsStartingPreclassification] = useState(false);
+	
+	// Estado para resaltado de palabras clave
+	const [highlightKeyword, setHighlightKeyword] = useState<string | null>(null);
+	const [keywordHighlighterOpen, setKeywordHighlighterOpen] = useState(false);
+	
+	// 📊 Estados para Dimensiones Dinámicas
+	interface DimensionType {
+		id: string;
+		name: string;
+		type: 'finite' | 'open';
+	}
+	
+	interface ClassificationType {
+		id: string;
+		article_batch_item_id: string;
+		dimension_id: string;
+		classification_value: string | null;
+		rationale: string | null;
+		confidence_score: number | null;
+		iteration: number;
+		created_at: string;
+		reviewer_id: string;
+		reviewer_type: string;
+		// Campos calculados para compatibilidad
+		ai_value?: string;
+		ai_rationale?: string;
+	}
+	
+	const [activeDimensions, setActiveDimensions] = useState<DimensionType[]>([]);
+	const [dimensionClassifications, setDimensionClassifications] = useState<Record<string, ClassificationType>>({});
+
+	// 📊 Función para cargar dimensiones activas de la fase
+	const loadActiveDimensions = useCallback(async () => {
+		if (!batchDetails?.id) return;
+		
+		try {
+			// Obtener la fase activa del proyecto
+			const { getActivePhaseForProject } = await import('@/lib/actions/preclassification_phases_actions');
+			
+			// Necesitamos obtener el project_id del batch
+			const supabase = (await import('@/app/auth/client')).supabase;
+			const { data: batchData, error: batchError } = await supabase
+				.from('article_batches')
+				.select('project_id')
+				.eq('id', batchDetails.id)
+				.single();
+			
+			if (batchError || !batchData) {
+				console.error('Error obteniendo project_id del batch:', batchError);
+				return;
+			}
+			
+			// Obtener fase activa
+			const activePhaseResult = await getActivePhaseForProject(batchData.project_id);
+			if (activePhaseResult.error || !activePhaseResult.data) {
+				console.error('Error obteniendo fase activa:', activePhaseResult.error);
+				return;
+			}
+			
+			// Cargar dimensiones activas
+			const { listDimensions } = await import('@/lib/actions/dimension-actions');
+			const dimensionsResult = await listDimensions(activePhaseResult.data.id, false);
+			
+			if (dimensionsResult.success) {
+				setActiveDimensions(dimensionsResult.data);
+				console.log('📊 Dimensiones activas cargadas:', dimensionsResult.data.length);
+			} else {
+				console.error('Error cargando dimensiones:', dimensionsResult.error);
+			}
+			
+		} catch (error) {
+			console.error('Error cargando dimensiones activas:', error);
+		}
+	}, [batchDetails?.id]);
+	
+	// 📋 Función para cargar clasificaciones de dimensiones
+	const loadDimensionClassifications = useCallback(async () => {
+		if (!batchId) return;
+		
+		try {
+			const supabase = (await import('@/app/auth/client')).supabase;
+			const { data: classifications, error } = await supabase
+				.from('article_dimension_reviews')
+				.select(`
+					*,
+					article_batch_items!inner(batch_id),
+					preclass_dimensions!inner(name)
+				`)
+				.eq('article_batch_items.batch_id', batchId)
+				.order('iteration', { ascending: false }); // Iteración más alta primero
+			
+			if (error) {
+				console.error('Error cargando clasificaciones:', error);
+				return;
+			}
+			
+			// Organizar clasificaciones por artículo y dimensión (solo la iteración más alta)
+			const classificationMap: Record<string, ClassificationType> = {};
+			classifications?.forEach(classification => {
+				const key = `${classification.article_batch_item_id}_${classification.dimension_id}`;
+				if (!classificationMap[key] || classificationMap[key].iteration < classification.iteration) {
+					classificationMap[key] = classification;
+				}
+			});
+			
+			setDimensionClassifications(classificationMap);
+			console.log('📋 Clasificaciones cargadas:', Object.keys(classificationMap).length);
+		} catch (error) {
+			console.error('Error cargando clasificaciones de dimensiones:', error);
+		}
+	}, [batchId]);
 
 	// Función para cargar los detalles del lote
 	const loadBatchDetails = useCallback(async () => {
@@ -86,6 +211,14 @@ const BatchDetailPage = () => {
 	useEffect(() => {
 		loadBatchDetails();
 	}, [loadBatchDetails]);
+	
+	// 📊 Cargar dimensiones cuando se cargan los detalles del batch
+	useEffect(() => {
+		if (batchDetails) {
+			loadActiveDimensions();
+			loadDimensionClassifications(); // 🔧 CORRECCIÓN CRÍTICA: Cargar clasificaciones existentes
+		}
+	}, [batchDetails, loadActiveDimensions, loadDimensionClassifications]);
 
 	// Suscripción a cambios en tiempo real
 	useEffect(() => {
@@ -113,9 +246,38 @@ const BatchDetailPage = () => {
 		};
 	}, [batchId, loadBatchDetails]);
 
+	// Suscripción a cambios en article_dimension_reviews para refrescar datos automáticamente
+	useEffect(() => {
+		if (!batchId) return;
+
+		const reviewsSubscription = supabase
+			.channel(`reviews-${batchId}`)
+			.on(
+				"postgres_changes",
+				{
+					event: "INSERT",
+					schema: "public",
+					table: "article_dimension_reviews",
+					// Filtrar por artículos que pertenecen a este lote sería ideal,
+					// pero por simplicidad refrescaremos en cualquier INSERT
+				},
+				(payload) => {
+					console.log("🔄 Nueva clasificación detectada:", payload);
+					// Recargar clasificaciones de dimensiones para actualizar la tabla
+					loadDimensionClassifications();
+					// Refrescar la página para mostrar los nuevos datos
+					router.refresh();
+				}
+			)
+			.subscribe();
+
+		return () => {
+			reviewsSubscription.unsubscribe();
+		};
+	}, [batchId, router, loadDimensionClassifications]);
+
 	// Funciones de manejo de acciones
-	const handleOpenDOI = (article: ArticleForReview) => {
-		// Asegurarse de que article.article_data existe y es del tipo correcto
+	const handleOpenDOI = useCallback((article: ArticleForReview) => {
 		if (article.article_data?.journal) {
 			const journalData = article.article_data.journal;
 			const url = typeof journalData === 'string' && journalData.startsWith('http') 
@@ -125,31 +287,31 @@ const BatchDetailPage = () => {
 		} else {
 			console.log('No DOI disponible para este artículo');
 		}
-	};
+	}, []);
 
-	const handleDisagree = (article: ArticleForReview) => {
+	const handleDisagree = useCallback((article: ArticleForReview) => {
 		if (!article.item_id) {
 			console.error('ID de artículo no válido');
 			return;
 		}
 		console.log('Desacuerdo marcado para:', article.item_id);
 		// TODO: Implementar lógica de desacuerdo en futuras versiones
-	};
+	}, []);
 
-	const handleValidate = (article: ArticleForReview) => {
+	const handleValidate = useCallback((article: ArticleForReview) => {
 		if (!article.item_id) {
 			console.error('ID de artículo no válido');
 			return;
 		}
 		console.log('Validación marcada para:', article.item_id);
 		// TODO: Implementar lógica de validación en futuras versiones
-	};
+	}, []);
 
 	// Función para abrir el editor de notas
-	const handleOpenNotes = (article: ArticleForReview) => {
+	const handleOpenNotes = useCallback((article: ArticleForReview) => {
 		setCurrentArticle(article);
 		setNoteDialogOpen(true);
-	};
+	}, []);
 
 	// Función para cerrar el editor de notas
 	const handleCloseNotes = () => {
@@ -157,102 +319,303 @@ const BatchDetailPage = () => {
 		setCurrentArticle(null);
 	};
 
-	// Configuración de columnas para la tabla
-	const tableColumns: ColumnDef<TableRow>[] = [
-		// Columna expander (primera columna sticky)
-		{ 
-			id: 'expander', 
-			header: () => null, 
-			cell: ({ row }) => row.getCanExpand() ? '' : null, 
-			meta: { isSticky: 'left' as const }, 
-			size: 40, 
-			enableHiding: false 
-		},
-		{
-			id: "title",
-			accessorKey: "title",
-			header: showOriginalAsPrimary ? "Título Original" : "Título Traducido",
-			size: 250,
-			meta: { isTruncatable: true },
-		},
-		{
-			id: "abstract",
-			accessorKey: "abstract",
-			header: showOriginalAsPrimary ? "Abstract Original" : "Abstract Traducido",
-			size: 300,
-			meta: { isTruncatable: true, tooltipType: "longText" as const },
-		},
-		{
-			id: "ai_summary",
-			accessorKey: "ai_summary",
-			header: "Resumen del Abstract",
-			size: 250,
-			meta: { isTruncatable: true, tooltipType: "longText" as const },
-		},
-		{
-			id: "year",
-			accessorKey: "year",
-			header: "Año",
-			size: 80,
-			meta: { align: "center" as const },
-		},
-		{
-			id: "journal",
-			accessorKey: "journal",
-			header: "Revista",
-			size: 150,
-			meta: { isTruncatable: true },
-		},
-		{
-			id: "actions",
-			header: "Acciones",
-			size: 200,
-			meta: { isSticky: "right" as const },
-			cell: ({ row }) => {
-				const article = row.original.originalArticle;
-				return (
-					<div className="flex gap-1">
-						<StandardButton
-							styleType="outline"
-							iconOnly={true}
-							onClick={() => handleOpenDOI(article)}
-							tooltip="Abrir DOI"
-						>
-							<Link size={16} />
-						</StandardButton>
-						<StandardButton
-							styleType="outline"
-							iconOnly={true}
-							onClick={() => handleOpenNotes(article)}
-							tooltip="Abrir Notas"
-						>
-							<StickyNote size={16} />
-						</StandardButton>
-						<ArticleGroupManager
-							article={article}
-							project={auth.proyectoActual ? { id: auth.proyectoActual.id, name: auth.proyectoActual.name } : null}
+	// Callback para manejar el cambio de palabra clave
+	const handleKeywordChange = useCallback((keyword: string | null) => {
+		setHighlightKeyword(keyword);
+	}, []);
+
+	// Función para iniciar la preclasificación
+	const handleStartPreclassification = async () => {
+		if (!batchId || !auth.user?.id || !auth.proyectoActual?.id) {
+			console.error('Faltan datos necesarios para iniciar la preclasificación');
+			return;
+		}
+
+		setIsStartingPreclassification(true);
+		try {
+			// 🎨 ARQUITECTURA LIMPIA: Page solo dispara el trabajo, PreclassificationJobHandler maneja TODO lo demás
+			startJob({
+				type: 'PRECLASSIFY_BATCH',
+				title: `Preclasificación Lote #${batchDetails?.batch_number || batchId}`,
+				payload: {
+					batchId: batchId,
+					userId: auth.user.id,
+					projectId: auth.proyectoActual.id,
+				},
+			});
+			
+			console.log('🚀 [Page] Trabajo disparado al JobManager. El PreclassificationJobHandler se encarga del resto.');
+		} catch (error) {
+			console.error('🚨 [Page] Error disparando trabajo:', error);
+		} finally {
+			setIsStartingPreclassification(false);
+		}
+	};
+
+	// 📊 Función para generar columnas dinámicas de dimensiones - API NATIVA
+	const createDimensionColumns = useCallback((): ColumnDef<TableRow>[] => {
+		const columns: ColumnDef<TableRow>[] = [];
+		
+		activeDimensions.forEach(dimension => {
+			// 📊 Columna de Valor de Dimensión - API NATIVA
+			columns.push({
+				id: `dimension_${dimension.id}`,
+				header: dimension.name,
+				size: 180,
+				// 🔧 CLAVE: accessorFn proporciona el valor para cell.getValue() usado en tooltips
+				accessorFn: (row) => {
+					const articleBatchItemId = row.id;
+					const classificationKey = `${articleBatchItemId}_${dimension.id}`;
+					const classification = dimensionClassifications[classificationKey];
+					
+					if (!classification) {
+						return 'Pendiente';
+					}
+					
+					// Mapear confidence score a texto
+					const confidenceScore = Number(classification.confidence_score);
+					const confidenceText = {
+						1: 'Baja',
+						2: 'Media',
+						3: 'Alta'
+					}[confidenceScore as 1 | 2 | 3] || 'N/A';
+					
+					const displayValue = classification.classification_value || 'Sin valor';
+					
+					// Valor completo para tooltip
+					return `${displayValue} (Confianza: ${confidenceText}) - Iteración: ${classification.iteration}`;
+				},
+				// 🎨 NUEVA FUNCIÓN CELL: Renderizar con resaltado de palabra clave
+				cell: (info) => {
+					const row = info.row as { original: TableRowData };
+					const articleBatchItemId = row.original.id;
+					const classificationKey = `${articleBatchItemId}_${dimension.id}`;
+					const classification = dimensionClassifications[classificationKey];
+					
+					if (!classification) {
+						return (
+							<TextHighlighter 
+								text="Pendiente" 
+								keyword={highlightKeyword}
+								className="text-neutral-textShade italic"
+							/>
+						);
+					}
+					
+					const displayValue = classification.classification_value || 'Sin valor';
+					
+					return (
+						<TextHighlighter 
+							text={displayValue} 
+							keyword={highlightKeyword}
 						/>
-						<StandardButton
-							styleType="outline"
-							iconOnly={true}
-							onClick={() => handleDisagree(article)}
-							tooltip="Marcar desacuerdo"
-						>
-							<ThumbsDown size={16} />
-						</StandardButton>
-						<StandardButton
-							styleType="outline"
-							iconOnly={true}
-							onClick={() => handleValidate(article)}
-							tooltip="Validar"
-						>
-							<CheckCircle size={16} />
-						</StandardButton>
-					</div>
-				);
+					);
+				},
+				meta: { 
+					isTruncatable: true,
+					tooltipType: 'longText' as const,
+					cellVariant: (context) => {
+						const row = context.row as { original: TableRowData };
+						const articleBatchItemId = row.original.id;
+						const classificationKey = `${articleBatchItemId}_${dimension.id}`;
+						const classification = dimensionClassifications[classificationKey];
+						
+						if (!classification) return undefined;
+						
+						const confidenceScore = Number(classification.confidence_score);
+						switch (confidenceScore) {
+							case 3: return 'success';   // Verde para confianza alta
+							case 2: return 'warning';   // Amarillo para confianza media
+							case 1: return 'danger';    // Rojo para confianza baja
+							default: return undefined;  // Sin color para casos sin clasificación
+						}
+					}
+				}
+			});
+			
+			// 🔄 Columna de Iteración - API NATIVA
+			columns.push({
+				id: `iteration_${dimension.id}`,
+				header: "I",
+				size: 50, // Columna pequeña para un solo dígito
+				accessorFn: (row) => {
+					const articleBatchItemId = row.id;
+					const classificationKey = `${articleBatchItemId}_${dimension.id}`;
+					const classification = dimensionClassifications[classificationKey];
+					
+					if (!classification || !classification.iteration) {
+						return '0';
+					}
+					
+					return String(classification.iteration);
+				},
+				cell: (info) => {
+					const row = info.row as { original: TableRowData };
+					const articleBatchItemId = row.original.id;
+					const classificationKey = `${articleBatchItemId}_${dimension.id}`;
+					const classification = dimensionClassifications[classificationKey];
+					
+					const iteration = classification?.iteration || 0;
+					
+					return (
+						<div className="flex justify-center items-center text-sm font-medium">
+							{iteration}
+						</div>
+					);
+				},
+				meta: {
+					tooltipType: 'standard' as const
+				}
+			});
+			
+			// 📝 Columna de Justificación - API NATIVA
+			const dimensionAcronym = dimension.name
+				.split(' ')
+				.map((word: string) => word.charAt(0).toUpperCase())
+				.join('')
+				.substring(0, 3);
+				
+			columns.push({
+				id: `justification_${dimension.id}`,
+				header: `Justificación ${dimensionAcronym}`,
+				size: 300,
+				// 🔧 CLAVE: accessorFn para que el tooltip tenga acceso al valor de justificación
+				accessorFn: (row) => {
+					const articleBatchItemId = row.id;
+					const classificationKey = `${articleBatchItemId}_${dimension.id}`;
+					const classification = dimensionClassifications[classificationKey];
+					
+					if (!classification || !classification.rationale) {
+						return 'Sin justificación';
+					}
+					
+					// Retornar la justificación completa para el tooltip
+					return classification.rationale;
+				},
+				meta: { 
+					isTruncatable: true, 
+					tooltipType: "longText" as const 
+				}
+			});
+		});
+		
+		return columns;
+	}, [activeDimensions, dimensionClassifications, highlightKeyword]);
+
+	// 📊 Configuración final de columnas: base + dimensiones dinámicas
+	const tableColumns: ColumnDef<TableRow>[] = useMemo(() => {
+		const dimensionColumns = createDimensionColumns();
+		
+		// Definir columnas base dentro del useMemo
+		const baseColumns: ColumnDef<TableRow>[] = [
+			// Columna expander (primera columna sticky)
+			{ 
+				id: 'expander', 
+				header: () => null, 
+				cell: ({ row }) => row.getCanExpand() ? '' : null, 
+				meta: { isSticky: 'left' as const }, 
+				size: 40, 
+				enableHiding: false 
 			},
-		},
-	];
+			{
+				id: "title",
+				accessorKey: "title",
+				header: showOriginalAsPrimary ? "Título Original" : "Título Traducido",
+				size: 250,
+				meta: { isTruncatable: true },
+			},
+			{
+				id: "abstract",
+				accessorKey: "abstract",
+				header: showOriginalAsPrimary ? "Abstract Original" : "Abstract Traducido",
+				size: 300,
+				meta: { isTruncatable: true, tooltipType: "longText" as const },
+			},
+			{
+				id: "ai_summary",
+				accessorKey: "ai_summary",
+				header: "Resumen del Abstract",
+				size: 250,
+				meta: { isTruncatable: true, tooltipType: "longText" as const },
+			},
+			{
+				id: "year",
+				accessorKey: "year",
+				header: "Año",
+				size: 80,
+				meta: { align: "center" as const },
+			},
+			{
+				id: "journal",
+				accessorKey: "journal",
+				header: "Revista",
+				size: 200,
+				meta: { isTruncatable: true },
+			},
+			// Columna de acciones (sticky derecha)
+			{
+				id: "actions",
+				header: "Acciones",
+				size: 200,
+				meta: { isSticky: "right" as const },
+				enableHiding: false, // 🔧 CRÍTICO: Como en showroom para sticky
+				cell: ({ row }) => {
+					const article = row.original.originalArticle;
+					
+					return (
+						<div className="flex gap-1">
+							<StandardButton
+								styleType="outline"
+								iconOnly={true}
+								onClick={() => handleOpenDOI(article)}
+								tooltip="Abrir DOI"
+							>
+								<Link size={16} />
+							</StandardButton>
+							<StandardButton
+								styleType="outline"
+								iconOnly={true}
+								onClick={() => handleOpenNotes(article)}
+								tooltip="Abrir Notas"
+							>
+								<StickyNote size={16} />
+							</StandardButton>
+							<ArticleGroupManager
+								article={article}
+								project={auth.proyectoActual ? { id: auth.proyectoActual.id, name: auth.proyectoActual.name } : null}
+							/>
+							<StandardButton
+								styleType="outline"
+								iconOnly={true}
+								onClick={() => handleDisagree(article)}
+								tooltip="Marcar desacuerdo"
+							>
+								<ThumbsDown size={16} />
+							</StandardButton>
+							<StandardButton
+								styleType="outline"
+								iconOnly={true}
+								onClick={() => handleValidate(article)}
+								tooltip="Validar"
+							>
+								<CheckCircle size={16} />
+							</StandardButton>
+						</div>
+					);
+				},
+			},
+		];
+		
+		// Insertar columnas de dimensiones antes de la columna de acciones
+		const actionsColumn = baseColumns[baseColumns.length - 1]; // Última columna (acciones)
+		const otherColumns = baseColumns.slice(0, -1); // Todas excepto la última
+		
+		return [
+			...otherColumns,
+			...dimensionColumns,
+			actionsColumn
+		];
+	}, [createDimensionColumns, showOriginalAsPrimary, handleOpenDOI, handleOpenNotes, handleDisagree, handleValidate, auth.proyectoActual]);
 
 	// Transformar datos para la tabla
 	const tableData: TableRow[] = batchDetails?.rows.map((article: ArticleForReview) => {
@@ -427,8 +790,10 @@ const BatchDetailPage = () => {
 	}
 
 
+	// ✅ ESTRUCTURA CORREGIDA: Eliminar contenedores flex que limitan el scroll
+	// Aplicar la misma estructura que funciona en standard-table-final
 	return (
-		<div className="w-full h-full p-4 sm:p-6 flex flex-col">
+		<div className="p-4 sm:p-6">
 			<StandardPageTitle
 				title={`Preclasificación Lote #${batchDetails.batch_number || batchId}`}
 				mainIcon={ClipboardList}
@@ -441,22 +806,67 @@ const BatchDetailPage = () => {
 				]}
 			/>
 			
-			<div className="mt-6 flex-grow flex flex-col gap-4">
-				{/* Botón de inversión de vista */}
-				<div className="flex justify-end">
-					<StandardButton
-						styleType="outline"
-						onClick={() => setShowOriginalAsPrimary(!showOriginalAsPrimary)}
-						className="flex items-center gap-2"
-            leftIcon= {Globe}
-					>
+			<div className="mt-6 space-y-4">
+				{/* Botones de acción */}
+				<div className="flex justify-between items-center">
+					{/* Sección izquierda: Preclasificación y Resaltado */}
+					<div className="flex items-center gap-4">
+						{/* Botón de preclasificación - solo visible si el lote está traducido */}
+						{batchDetails?.status === 'translated' && (
+							<StandardButton
+								styleType="solid"
+								colorScheme="accent"
+								leftIcon={Brain}
+								onClick={handleStartPreclassification}
+								disabled={isStartingPreclassification}
+								className="flex items-center gap-2"
+							>
+								{isStartingPreclassification ? 'Iniciando...' : 'Iniciar Preclasificación'}
+							</StandardButton>
+						)}
 						
-						{showOriginalAsPrimary ? "Idioma Español" : "Idioma Original"}
-					</StandardButton>
+						{/* Botón para abrir KeywordHighlighter - solo el trigger */}
+						<StandardButton
+							leftIcon={Search}
+							styleType="outline"
+							colorScheme="accent"
+							onClick={() => setKeywordHighlighterOpen(true)}
+							tooltip="Resaltar palabra clave en valores de dimensión"
+						>
+							{highlightKeyword ?
+								`Resaltando: "${highlightKeyword}"`
+							:	"Resaltar Palabra Clave"}
+						</StandardButton>
+						
+						{highlightKeyword && (
+							<StandardButton
+								leftIcon={X}
+								styleType="ghost"
+								colorScheme="neutral"
+								size="sm"
+								onClick={() => handleKeywordChange(null)}
+								tooltip="Limpiar resaltado"
+							>
+								Limpiar
+							</StandardButton>
+						)}
+					</div>
+					
+					{/* Botón de inversión de vista */}
+					<div>
+						<StandardButton
+							styleType="outline"
+							onClick={() => setShowOriginalAsPrimary(!showOriginalAsPrimary)}
+							className="flex items-center gap-2"
+							leftIcon={Globe}
+						>
+							{showOriginalAsPrimary ? "Idioma Español" : "Idioma Original"}
+						</StandardButton>
+					</div>
 				</div>
 
-				{/* Tabla principal */}
-				<div className="flex-grow">
+				{/* Tabla principal - Sin contenedores flex que limiten el crecimiento */}
+				<div>
 					<StandardTable
 						data={tableData}
 						columns={tableColumns}
@@ -464,6 +874,7 @@ const BatchDetailPage = () => {
 						isStickyHeader={true}
 						enableTruncation={true}
 						filterPlaceholder="Buscar artículos..."
+						stickyOffset={64}
 					>
 						<StandardTable.Table />
 					</StandardTable>
@@ -477,6 +888,14 @@ const BatchDetailPage = () => {
 				article={currentArticle}
 				project={auth.proyectoActual ? { id: auth.proyectoActual.id, name: auth.proyectoActual.name } : null}
 				showOriginalAsPrimary={showOriginalAsPrimary}
+			/>
+
+			{/* KeywordHighlighter Component - Popup */}
+			<KeywordHighlighter
+				open={keywordHighlighterOpen}
+				onClose={() => setKeywordHighlighterOpen(false)}
+				onKeywordChange={handleKeywordChange}
+				currentKeyword={highlightKeyword}
 			/>
 		</div>
 	);

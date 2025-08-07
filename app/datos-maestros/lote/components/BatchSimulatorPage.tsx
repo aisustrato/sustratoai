@@ -31,8 +31,8 @@ import { useAuth } from "@/app/auth-provider";
 import {
   createBatches,
   type CreateBatchesPayload,
-  getBatchingStatusForActivePhase,
 } from "@/lib/actions/batch-actions";
+import { getActivePhaseForProject } from "@/lib/actions/preclassification_phases_actions";
 import { listEligibleArticlesForPhase } from "@/lib/actions/phase-eligible-articles-actions";
 import {
   obtenerMiembrosConPerfilesYRolesDelProyecto,
@@ -80,6 +80,7 @@ export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: Bat
   const [uiError, setUiError] = useState<string | null>(null);
   const [creationStatusMessage, setCreationStatusMessage] = useState<string | null>(null);
   const [activePhaseId, setActivePhaseId] = useState<string | null>(null);
+  const [activePhaseInfo, setActivePhaseInfo] = useState<{ id: string; phase_number: number; name: string } | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const gridContainerRef = useRef<HTMLDivElement>(null);
 
@@ -99,9 +100,15 @@ export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: Bat
       if (!proyectoActual?.id) return;
       
       try {
-        const statusResult = await getBatchingStatusForActivePhase(proyectoActual.id);
-        if (statusResult.success && statusResult.data.activePhase) {
-          setActivePhaseId(statusResult.data.activePhase.id);
+        // Obtener información completa de la fase activa
+        const activePhaseResult = await getActivePhaseForProject(proyectoActual.id);
+        if (activePhaseResult.data) {
+          setActivePhaseId(activePhaseResult.data.id);
+          setActivePhaseInfo({
+            id: activePhaseResult.data.id,
+            phase_number: activePhaseResult.data.phase_number,
+            name: activePhaseResult.data.name
+          });
         } else {
           setUiError('No se pudo obtener información de la fase activa.');
         }
@@ -524,7 +531,7 @@ export default function BatchSimulatorPage({ onBatchesCreatedSuccessfully }: Bat
     <StandardPageBackground variant="gradient">
       <div className="container mx-auto py-8">
         <StandardPageTitle
-          title="Simulador de Creación de Lotes"
+          title={activePhaseInfo ? `Simulador de Creación de Lotes fase ${activePhaseInfo.phase_number}: ${activePhaseInfo.name}` : "Simulador de Creación de Lotes"}
           subtitle={`Define los parámetros para distribuir los artículos del proyecto "${proyectoActual.name}" en lotes de trabajo.`}
           mainIcon={Boxes}
           showBackButton={{ href: "/datos-maestros/lote" }}

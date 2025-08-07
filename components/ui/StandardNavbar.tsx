@@ -24,6 +24,7 @@ import {
 	User,          // Added for Miembros
 	Shield,        // Added for Roles
 	Network,       // Added for Fases de Preclasificación
+	Filter,        // Added for Preclasificación
 } from "lucide-react";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -312,7 +313,7 @@ const navItems: NavItem[] = useMemo(() => {
         {
           label: "Preclasificación",
           href: "/articulos/preclasificacion",
-          icon: () => createMenuIcon(LayoutDashboard),
+          icon: () => createMenuIcon(Filter),
         },
       ],
     });

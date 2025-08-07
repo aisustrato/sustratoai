@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-export type JobType = 'TRANSLATE_BATCH'; // Can be extended with other job types
+export type JobType = 'TRANSLATE_BATCH' | 'PRECLASSIFY_BATCH'; // Can be extended with other job types
 
 export interface Job {
   id: string;
@@ -51,6 +51,23 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
   const minimizeJobManager = () => setJobManagerExpanded(false);
 
   const startJob = useCallback((jobData: Omit<Job, 'id' | 'status' | 'progress' | 'errorMessage' | 'completedAt' | 'startedAt'>) => {
+    // 🛡️ VALIDACIÓN CRÍTICA: Prevenir trabajos duplicados del mismo tipo y lote
+    const existingJob = jobs.find(job => 
+      job.type === jobData.type && 
+      job.payload.batchId === jobData.payload.batchId && 
+      (job.status === 'queued' || job.status === 'running')
+    );
+    
+    if (existingJob) {
+      console.warn(`🚨 [JobManager] Trabajo duplicado detectado y rechazado:`, {
+        tipo: jobData.type,
+        lote: jobData.payload.batchId,
+        trabajoExistente: existingJob.id,
+        estado: existingJob.status
+      });
+      return; // No crear trabajo duplicado
+    }
+    
     const newJob: Job = {
       id: uuidv4(),
       ...jobData,
@@ -58,13 +75,21 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
       progress: 0,
       startedAt: new Date(),
     };
+    
+    console.log(`✅ [JobManager] Iniciando nuevo trabajo:`, {
+      id: newJob.id,
+      tipo: newJob.type,
+      lote: newJob.payload.batchId,
+      titulo: newJob.title
+    });
+    
     setJobs(prevJobs => [...prevJobs, newJob]);
     // Auto-expandir cuando se inicia un nuevo trabajo
     if (!isJobManagerExpanded) {
         expandJobManager();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isJobManagerExpanded]);
+  }, [isJobManagerExpanded, jobs]);
 
   const updateJobProgress = useCallback((jobId: string, progress: number) => {
     setJobs(prevJobs =>

@@ -22,7 +22,8 @@ import {
     getBatchingStatusForActivePhase,
     getBatchesForPhaseDisplay,
     resetBatchesForPhase
-} from '@/lib/actions/batch-actions'; 
+} from '@/lib/actions/batch-actions';
+import { getActivePhaseForProject } from '@/lib/actions/preclassification_phases_actions'; 
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -103,6 +104,7 @@ export default function LotesOrquestadorPage() {
   const [batchesData, setBatchesData] = useState<BatchData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [activePhaseInfo, setActivePhaseInfo] = useState<{ id: string; phase_number: number; name: string } | null>(null);
   
   // Hooks para dimensiones reactivas - igual que preclasificación
   const { width: windowWidth } = useWindowSize();
@@ -149,6 +151,16 @@ export default function LotesOrquestadorPage() {
     
     try {
       console.log(`🔄 Cargando estado de loteo para proyecto: ${proyectoActual.id}`);
+      
+      // Obtener información completa de la fase activa
+      const activePhaseResult = await getActivePhaseForProject(proyectoActual.id);
+      if (activePhaseResult.data) {
+        setActivePhaseInfo({
+          id: activePhaseResult.data.id,
+          phase_number: activePhaseResult.data.phase_number,
+          name: activePhaseResult.data.name
+        });
+      }
       
       const statusResult = await getBatchingStatusForActivePhase(proyectoActual.id);
       
@@ -275,7 +287,7 @@ export default function LotesOrquestadorPage() {
       {/* Título condicional: solo se muestra cuando no estamos en ready_for_batching */}
       {viewState !== 'ready_for_batching' && (
         <StandardPageTitle
-          title="Gestión de Lotes por Fases"
+          title={activePhaseInfo ? `Gestión de Lotes fase ${activePhaseInfo.phase_number}: ${activePhaseInfo.name}` : "Gestión de Lotes por Fases"}
           subtitle={viewState === 'no_active_phase' ? 'Sin fase activa' : 
                    viewState === 'universe_not_defined' ? 'Configuración requerida' :
                    viewState === 'batches_created' ? 'Lotes creados' :

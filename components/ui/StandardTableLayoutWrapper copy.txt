@@ -1,0 +1,224 @@
+//. 📍 components/ui/StandardTableLayoutWrapper.tsx
+"use client";
+
+//#region [head] - 🏷️ IMPORTS 🏷️
+import React from 'react';
+import { useLayout } from '@/app/contexts/layout-context';
+//#endregion [head]
+
+//#region [main] - 🔧 COMPONENT 🔧
+interface StandardTableLayoutWrapperProps {
+  children: React.ReactNode;
+  /**
+   * Offset adicional para el sticky header (ej. navbar height)
+   * Se suma al offset calculado dinámicamente del layout
+   */
+  baseStickyOffset?: number;
+  /**
+   * Estrategia para solucionar sticky columns
+   * 'width-constraint': Limita el ancho de la tabla al espacio disponible (RECOMENDADO)
+   * 'css-override': Usa CSS forzado con !important
+   * @default 'width-constraint'
+   */
+  strategy?: 'width-constraint' | 'css-override';
+}
+
+/**
+ * Wrapper INTELIGENTE para StandardTable que soluciona sticky columns
+ * calculando y limitando el ancho disponible dinámicamente.
+ * 
+ * ESTRATEGIA WIDTH-CONSTRAINT (como StandardSphereGrid):
+ * 1. Calcula el ancho real disponible considerando sidebar y paddings
+ * 2. Pasa maxTableWidth como prop para forzar que la tabla no se desborde
+ * 3. Permite que sticky funcione correctamente dentro del espacio limitado
+ */
+export function StandardTableLayoutWrapper({
+  children,
+  baseStickyOffset = 64,
+  strategy = 'width-constraint'
+}: StandardTableLayoutWrapperProps) {
+  const layoutContext = useLayout();
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [availableWidth, setAvailableWidth] = React.useState<number>(0);
+  
+  // Calcular ancho disponible dinámicamente (estrategia principal)
+  React.useEffect(() => {
+    if (strategy !== 'width-constraint' || !containerRef.current) return;
+    
+    const updateAvailableWidth = () => {
+      if (!containerRef.current) return;
+      
+      const rect = containerRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      console.log('🔍 DEBUGGING WIDTH CALCULATION:');
+      console.log('  📱 Viewport:', { width: viewportWidth, height: viewportHeight });
+      console.log('  📏 Container rect:', rect);
+      
+      let calculatedWidth;
+      
+      if (layoutContext) {
+        const sidebarWidth = layoutContext.sidebarWidth;
+        const globalPadding = layoutContext.globalXPadding;
+        const layoutGap = layoutContext.layoutGap;
+        
+        console.log('  🏠 Layout context:', {
+          sidebarWidth,
+          globalPadding,
+          layoutGap,
+          isSidebarCollapsed: layoutContext.isSidebarCollapsed
+        });
+        
+        // CÁLCULO SIMPLE Y DIRECTO: viewport - sidebar - paddings
+        calculatedWidth = viewportWidth - sidebarWidth - globalPadding - 60; // 60px margen de seguridad
+        
+        console.log('  🧮 Calculation: ', viewportWidth, '-', sidebarWidth, '-', globalPadding, '- 60 =', calculatedWidth);
+      } else {
+        // Sin contexto, usar el 90% del viewport
+        calculatedWidth = viewportWidth * 0.9;
+        console.log('  ⚠️ No layout context, using 90% of viewport:', calculatedWidth);
+      }
+      
+      // Mínimo 800px para que sea usable
+      const finalWidth = Math.max(800, calculatedWidth);
+      
+      console.log('  ✅ Final width:', finalWidth, '(min 800px applied)');
+      console.log('  📊 Previous availableWidth:', availableWidth);
+      
+      setAvailableWidth(finalWidth);
+    };
+    
+    updateAvailableWidth();
+    
+    const resizeObserver = new ResizeObserver(updateAvailableWidth);
+    resizeObserver.observe(containerRef.current);
+    
+    window.addEventListener('resize', updateAvailableWidth);
+    
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateAvailableWidth);
+    };
+  }, [strategy, layoutContext]); // Agregar layoutContext como dependencia para reactividad
+
+  // Calcular offset dinámico
+  const dynamicStickyOffset = React.useMemo(() => {
+    if (!layoutContext) return baseStickyOffset;
+    return baseStickyOffset + (layoutContext.isSidebarCollapsed ? 0 : 8);
+  }, [layoutContext, baseStickyOffset]);
+
+  // Estilos según estrategia
+  const wrapperStyles: React.CSSProperties = strategy === 'width-constraint' ? {
+    // ESTRATEGIA WIDTH-CONSTRAINT: Contenedor ÚNICO de scroll
+    position: 'relative',
+    width: availableWidth > 0 ? `${availableWidth}px` : '100%', // FORZAR ancho exacto
+    maxWidth: availableWidth > 0 ? `${availableWidth}px` : '100%',
+    // CRÍTICO: Este wrapper será el ÚNICO contenedor de scroll
+    overflow: 'auto', // Scroll en el wrapper
+    // Altura fija para que el scroll funcione correctamente
+    height: 'calc(100vh - 200px)',
+    border: '2px solid red', // DEBUG: ver el contenedor
+    // Crear un nuevo stacking context para contener el sticky
+    isolation: 'isolate',
+  } : {
+    // ESTRATEGIA CSS-OVERRIDE: Z-index alto y CSS forzado
+    position: 'relative',
+    zIndex: 9999,
+    width: '100%',
+    isolation: 'isolate',
+    overflow: 'visible',
+  };
+
+  // CSS personalizado solo para estrategia css-override
+  const stickyFixStyles = strategy === 'css-override' ? `
+    .standard-table-layout-wrapper table {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .standard-table-layout-wrapper .sticky {
+      position: sticky !important;
+      z-index: 100 !important;
+      background: var(--table-row-default-backgroundColor) !important;
+    }
+    
+    .standard-table-layout-wrapper thead .sticky {
+      z-index: 101 !important;
+      background: var(--table-row-default-backgroundColor) !important;
+    }
+    
+    .standard-table-layout-wrapper .sticky.left-0 {
+      left: 0 !important;
+      box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+    }
+    
+    .standard-table-layout-wrapper .sticky.right-0 {
+      right: 0 !important;
+      box-shadow: -2px 0 4px rgba(0,0,0,0.1);
+    }
+  ` : '';
+
+  // Inyectar props dinámicos a StandardTable
+  const enhancedChildren = React.Children.map(children, (child) => {
+    if (React.isValidElement(child) && child.type && 
+        typeof child.type === 'function' && 
+        (child.type as any).displayName === 'StandardTable') {
+      
+      const childProps = child.props as any;
+      const newProps: any = { ...childProps };
+      
+      // Inyectar stickyOffset si no está definido
+      if (childProps.stickyOffset === undefined) {
+        newProps.stickyOffset = dynamicStickyOffset;
+      }
+      
+      // ESTRATEGIA WIDTH-CONSTRAINT: FORZAR ancho máximo del sticky header
+      if (strategy === 'width-constraint' && availableWidth > 0) {
+        // QUIRÚRGICO: Controlar el ancho del sticky header directamente
+        newProps.maxHeaderWidth = `${availableWidth}px`;
+        newProps.maxTableHeight = 'none'; // Deshabilitar altura máxima
+        
+        console.log('🔧 SURGICAL FIX: Controlling sticky header width:', {
+          availableWidth,
+          maxHeaderWidth: newProps.maxHeaderWidth,
+          maxTableHeight: newProps.maxTableHeight,
+          stickyOffset: newProps.stickyOffset,
+          strategy,
+          sidebarCollapsed: layoutContext?.isSidebarCollapsed,
+          originalProps: Object.keys(childProps)
+        });
+      }
+      
+      return React.cloneElement(child, newProps);
+    }
+    return child;
+  });
+
+  return (
+    <>
+      {strategy === 'css-override' && stickyFixStyles && (
+        <style dangerouslySetInnerHTML={{ __html: stickyFixStyles }} />
+      )}
+      <div 
+        ref={containerRef}
+        style={wrapperStyles}
+        className="standard-table-layout-wrapper"
+        data-sidebar-collapsed={layoutContext?.isSidebarCollapsed}
+        data-sticky-offset={dynamicStickyOffset}
+        data-strategy={strategy}
+        data-available-width={availableWidth}
+      >
+        {enhancedChildren}
+      </div>
+    </>
+  );
+}
+
+// Agregar displayName para debugging
+StandardTableLayoutWrapper.displayName = 'StandardTableLayoutWrapper';
+//#endregion [main]
+
+//#region [foo] - 🔚 EXPORTS 🔚
+// Default export is part of the component declaration.
+//#endregion [foo]

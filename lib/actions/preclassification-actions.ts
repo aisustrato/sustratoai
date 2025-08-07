@@ -220,6 +220,32 @@ export async function startInitialPreclassification(batchId: string): Promise<Re
     if (batchError || !batch) return { success: false, error: "Lote no encontrado." };
     if (batch.status !== 'translated') return { success: false, error: "El lote debe estar en estado 'traducido' para iniciar la preclasificación." };
     
+    // 🛡️ VALIDACIÓN CRÍTICA: Prevenir trabajos duplicados del mismo lote
+    const { data: existingJobs, error: jobCheckError } = await supabase
+        .from('ai_job_history')
+        .select('id, status, description')
+        .eq('job_type', 'PRECLASSIFICATION')
+        .eq('project_id', batch.projects!.id)
+        .eq('status', 'running')
+        .ilike('description', `%Lote #${batch.batch_number}%`);
+    
+    if (jobCheckError) {
+        console.error('🚨 Error verificando trabajos existentes:', jobCheckError);
+        return { success: false, error: "Error verificando trabajos existentes." };
+    }
+    
+    if (existingJobs && existingJobs.length > 0) {
+        console.warn(`🚨 [startInitialPreclassification] Trabajo duplicado detectado:`, {
+            lote: batchId,
+            batchNumber: batch.batch_number,
+            trabajosExistentes: existingJobs.map(j => ({ id: j.id, status: j.status, description: j.description }))
+        });
+        return { 
+            success: false, 
+            error: `Ya existe un trabajo de preclasificación en curso para el Lote #${batch.batch_number}. Por favor, espera a que termine o cancela el trabajo existente.` 
+        };
+    }
+    
     const { data: job, error: jobError } = await supabase.from('ai_job_history').insert({
         project_id: batch.projects!.id,
         user_id: user.id,
@@ -251,10 +277,9 @@ type DimensionForPrompt = {
 type ArticleForPrompt = {
     id: string;
     articles: {
-        article_translations: {
-            title: string | null;
-            abstract: string | null;
-        }[];
+        id: string;
+        title: string | null;
+        abstract: string | null;
     } | null;
 };
 
@@ -266,18 +291,42 @@ function buildPreclassificationPrompt(
     dimensions: DimensionForPrompt[],
     articleChunk: ArticleForPrompt[]
 ): string {
-    const dimensionDetails = dimensions.map(dim => `
+    const dimensionDetails = dimensions.map(dim => {
+        let instructionForDim = '';
+        if (dim.type === 'finite') {
+            const optionsString = dim.preclass_dimension_options.map(opt => `"${opt.value}"`).join(', ');
+            
+            // 🧠 LÓGICA INTELIGENTE: Detectar si existe opción "Otros" para permitir flexibilidad
+            const hasOtrosOption = dim.preclass_dimension_options.some(opt => 
+                opt.value.toLowerCase().startsWith('otros')
+            );
+            
+            instructionForDim = `
+- Tipo: Opción Múltiple.
+- Instrucción: Para esta dimensión, DEBES escoger uno de los siguientes valores de la lista.
+- Opciones Válidas: [${optionsString}]`;
+            
+            if (hasOtrosOption) {
+                instructionForDim += `
+- **Nota Especial para 'Otros':** Si ninguna de las opciones encaja perfectamente, puedes usar la opción que comienza con 'Otros:' y reemplazar la palabra 'Especificar' con un resumen muy breve (1-5 palabras) del tema real que has identificado.`;
+            }
+        } else { // 'open'
+            instructionForDim = `
+- Tipo: Respuesta Abierta.
+- Instrucción: Para esta dimensión, DEBES generar una respuesta de texto libre y concisa (1-2 frases) basada en el contenido del artículo.`;
+        }
+
+        return `
 **Dimensión: "${dim.name}"**
 - Descripción: ${dim.description}
-- Tipo: ${dim.type}
-${dim.type === 'finite' ? `- Opciones Válidas: [${dim.preclass_dimension_options.map(opt => `"${opt.value}"`).join(', ')}]` : ''}
-    `).join('\n---\n');
+${instructionForDim}`;
+    }).join('\n---\n');
 
     const articleDetails = articleChunk.map(item => `
 ---
 **Artículo ID:** "${item.id}"
-- Título: ${item.articles?.article_translations?.[0]?.title}
-- Abstract: ${item.articles?.article_translations?.[0]?.abstract}
+- Título: ${item.articles?.title}
+- Abstract: ${item.articles?.abstract}
     `).join('');
 
     return `### ROL Y CONTEXTO GLOBAL ###
@@ -286,9 +335,10 @@ Propósito del Proyecto: ${project.proposal}
 Objetivo de esta Fase Bibliográfica: ${project.proposal_bibliography}
 
 ### INSTRUCCIONES DE CLASIFICACIÓN ###
-A continuación, te proporcionaré las definiciones de ${dimensions.length} dimensiones de clasificación y luego un lote de ${articleChunk.length} artículos.
-Debes analizar cada artículo y clasificarlo según CADA una de las dimensiones definidas.
-Tu respuesta debe ser OBLIGATORIAMENTE un objeto JSON válido, sin ningún texto antes o después del bloque JSON. La estructura debe ser un array, donde cada elemento del array es un objeto que representa un artículo clasificado.
+A continuación, te proporcionaré las definiciones de ${dimensions.length} dimensiones y un lote de ${articleChunk.length} artículos.
+Debes analizar el texto original de cada artículo y clasificarlo según CADA dimensión.
+**Importante:** Todas tus justificaciones ("rationale") deben estar escritas en **español**.
+Tu respuesta debe ser OBLIGATORIAMENTE un objeto JSON válido, sin ningún texto antes o después del bloque JSON.
 
 ### ESQUEMA DE LAS DIMENSIONES ###
 ${dimensionDetails}
@@ -300,12 +350,12 @@ ${articleDetails}
 \`\`\`json
 [
   {
-    "itemId": "ID_DEL_PRIMER_ARTICLE_BATCH_ITEM",
+    "itemId": "ID_DEL_ARTICLE_BATCH_ITEM",
     "classifications": {
-      "${dimensions[0]?.id}": {
+      "${dimensions[0]?.name}": {
         "value": "VALOR_CLASIFICADO",
         "confidence": "Alta",
-        "rationale": "Justificación concisa."
+        "rationale": "Justificación concisa en español."
       }
     }
   }
@@ -323,7 +373,7 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
         const { data: batchData } = await supabase.from('article_batches').select('phase_id, projects(id, name, proposal, proposal_bibliography)').eq('id', batchId).single();
         if (!batchData?.phase_id || !batchData.projects) throw new Error("Datos del lote o proyecto no encontrados.");
 
-        const { data: items, error: itemsError } = await supabase.from('article_batch_items').select('id, articles(id, article_translations(title, abstract))').eq('batch_id', batchId);
+        const { data: items, error: itemsError } = await supabase.from('article_batch_items').select('id, articles(id, title, abstract)').eq('batch_id', batchId);
         if (itemsError || !items) throw new Error("No se encontraron artículos para procesar.");
         
         const { data: dimensions, error: dimsError } = await supabase.from('preclass_dimensions').select('id, name, description, type, preclass_dimension_options(value)').eq('phase_id', batchData.phase_id).eq('status', 'active');
@@ -342,35 +392,162 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
             }).eq('id', jobId);
 
             const prompt = buildPreclassificationPrompt(batchData.projects, dimensions as DimensionForPrompt[], chunk as ArticleForPrompt[]);
+            
+            // 📝 LOGGING: Prompt enviado
+            console.log(`\n🚀 [${jobId}] PROMPT ENVIADO A GEMINI:`);
+            console.log('=' .repeat(80));
+            console.log(prompt);
+            console.log('=' .repeat(80));
+            
             const { result, usage } = await callGeminiAPI('gemini-1.5-flash', prompt);
             
+            // 📝 LOGGING: Respuesta recibida
+            console.log(`\n📥 [${jobId}] RESPUESTA RECIBIDA DE GEMINI:`);
+            console.log('=' .repeat(80));
+            console.log(result);
+            console.log('=' .repeat(80));
+            
+            // 🔧 MEJORAR PARSING: Limpiar markdown si está presente
+            let cleanResult = result.trim();
+            
+            // Remover bloques de código markdown si existen
+            if (cleanResult.startsWith('```json')) {
+                cleanResult = cleanResult.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+            } else if (cleanResult.startsWith('```')) {
+                cleanResult = cleanResult.replace(/^```\s*/, '').replace(/\s*```$/, '');
+            }
+            
+            console.log(`\n🧹 [${jobId}] JSON LIMPIO PARA PARSING:`);
+            console.log('=' .repeat(50));
+            console.log(cleanResult);
+            console.log('=' .repeat(50));
+            
             try {
-                const parsedResult = JSON.parse(result);
+                const parsedResult = JSON.parse(cleanResult);
                 if (Array.isArray(parsedResult)) {
                     const reviewsToInsert: Database['public']['Tables']['article_dimension_reviews']['Insert'][] = [];
-                    
+
+                    // 🛡️ FUNCIÓN ROBUSTA PARA MAPEAR CONFIDENCE_SCORE
+                    const mapConfidenceToScore = (confidenceText: string): number => {
+                        if (typeof confidenceText !== 'string') {
+                            throw new Error(`Valor de confianza inválido, se esperaba un string: "${confidenceText}"`);
+                        }
+                        const lowerConfidence = confidenceText.toLowerCase();
+                        switch (lowerConfidence) {
+                            case 'alta': return 3;
+                            case 'media': return 2;
+                            case 'baja': return 1;
+                            default:
+                                throw new Error(`Valor de confianza no reconocido: "${confidenceText}"`);
+                        }
+                    };
+
+                    console.log(`\n🔍 [${jobId}] INICIANDO VALIDACIÓN INTELIGENTE:`);
+                    console.log('Dimensiones disponibles:', dimensions.map(d => ({ id: d.id, name: d.name, type: d.type })));
+
                     for (const item of parsedResult) {
-                        for (const dimId in item.classifications) {
+                        console.log(`\n📄 [${jobId}] Procesando artículo itemId: ${item.itemId}`);
+                        
+                        for (const dimensionName in item.classifications) {
+                            console.log(`\n🔍 [${jobId}] Validando dimensión: "${dimensionName}"`);
+                            
+                            const foundDimension = dimensions.find(d => d.name === dimensionName);
+
+                            if (!foundDimension) {
+                                throw new Error(`La IA devolvió una dimensión desconocida: "${dimensionName}"`);
+                            }
+
+                            const classification = item.classifications[dimensionName];
+                            const valueToSave = classification.value;
+
+                            console.log(`🧠 [${jobId}] Validando valor "${valueToSave}" para dimensión "${foundDimension.name}" (tipo: ${foundDimension.type})`);
+
+                            // 🧠 LÓGICA DE VALIDACIÓN INTELIGENTE CON NORMALIZACIÓN
+                            if (foundDimension.type === 'finite') {
+                                const validOptions = foundDimension.preclass_dimension_options.map(opt => opt.value);
+                                
+                                // 🔧 NORMALIZAR STRINGS: Limpiar espacios y caracteres invisibles
+                                const normalizeString = (str: string) => str.trim().replace(/\s+/g, ' ');
+                                const normalizedValue = normalizeString(valueToSave);
+                                const normalizedOptions = validOptions.map(opt => normalizeString(opt));
+                                
+                                // Verificar coincidencia exacta con normalización
+                                const exactMatchIndex = normalizedOptions.findIndex(opt => opt === normalizedValue);
+                                const isExactMatch = exactMatchIndex !== -1;
+                                
+                                // Verificar opción "Otros" inteligente
+                                const otherOption = validOptions.find(opt => normalizeString(opt).toLowerCase().startsWith('otros'));
+                                const isSmartOther = otherOption && typeof valueToSave === 'string' && normalizedValue.toLowerCase().startsWith('otros');
+
+                                console.log(`🔍 [${jobId}] Valor original: "${valueToSave}"`);
+                                console.log(`🔍 [${jobId}] Valor normalizado: "${normalizedValue}"`);
+                                console.log(`🔍 [${jobId}] Opciones válidas:`, validOptions);
+                                console.log(`🔍 [${jobId}] Opciones normalizadas:`, normalizedOptions);
+                                console.log(`🔍 [${jobId}] Coincidencia exacta: ${isExactMatch} (índice: ${exactMatchIndex}), Otros inteligente: ${isSmartOther}`);
+
+                                if (!isExactMatch && !isSmartOther) {
+                                    throw new Error(`Valor "${valueToSave}" inválido para la dimensión finita "${foundDimension.name}". Opciones válidas: ${validOptions.join(', ')}`);
+                                }
+                            }
+
+                            console.log(`✅ [${jobId}] Valor validado exitosamente: "${valueToSave}"`);
+
                             reviewsToInsert.push({
                                 article_batch_item_id: item.itemId,
-                                dimension_id: dimId,
+                                dimension_id: foundDimension.id,
                                 reviewer_type: 'ai',
                                 reviewer_id: userId,
                                 iteration: 1,
-                                classification_value: item.classifications[dimId].value,
-                                confidence_score: item.classifications[dimId].confidence === 'Alta' ? 0.9 : (item.classifications[dimId].confidence === 'Media' ? 0.6 : 0.3),
-                                rationale: item.classifications[dimId].rationale,
+                                classification_value: valueToSave,
+                                confidence_score: mapConfidenceToScore(classification.confidence),
+                                rationale: classification.rationale,
                             });
                         }
                     }
 
+                    console.log(`\n💾 [${jobId}] PREPARANDO INSERCIÓN:`);
+                    console.log(`Total de clasificaciones a insertar: ${reviewsToInsert.length}`);
+                    
+                    // 🛡️ VALIDACIÓN FINAL ANTI-FALLO SILENCIOSO
                     if (reviewsToInsert.length > 0) {
-                        await supabase.from('article_dimension_reviews').insert(reviewsToInsert);
+                        console.log(`\n🚀 [${jobId}] EJECUTANDO INSERCIÓN EN article_dimension_reviews...`);
+                        const { error: insertError } = await supabase.from('article_dimension_reviews').insert(reviewsToInsert);
+                        
+                        if (insertError) {
+                            console.error(`❌ [${jobId}] ERROR EN INSERCIÓN:`, insertError);
+                            throw new Error(`Error de base de datos al insertar clasificaciones: ${insertError.message}`);
+                        }
+                        
+                        console.log(`✅ [${jobId}] INSERCIÓN EXITOSA: ${reviewsToInsert.length} clasificaciones guardadas`);
+                    } else if (parsedResult.length > 0) {
+                        console.error(`❌ [${jobId}] FALLO SILENCIOSO EVITADO: Respuesta parseada pero sin clasificaciones válidas`);
+                        throw new Error('La respuesta de la IA fue parseada pero no generó ninguna clasificación válida para guardar.');
                     }
                 }
             } catch (parseError) {
-                console.error(`[${jobId}] Error parseando JSON de la IA:`, parseError);
-                throw new Error("La respuesta de la IA no fue un JSON válido.");
+                console.error(`\n❌ [${jobId}] ERROR PARSEANDO JSON DE LA IA:`);
+                console.error('=' .repeat(60));
+                console.error('Error:', parseError);
+                console.error('Respuesta original:', result);
+                console.error('JSON limpio intentado:', cleanResult);
+                console.error('=' .repeat(60));
+                
+                const errorMsg = `Error parseando JSON: ${parseError instanceof Error ? parseError.message : 'Error desconocido'}`;
+                
+                // Actualizar el job con error específico
+                await supabase.from('ai_job_history').update({ 
+                    status: 'failed', 
+                    progress: 100, 
+                    details: { 
+                        error: errorMsg,
+                        originalResponse: result,
+                        step: `Error en lote ${i+1}-${i+chunk.length}`,
+                        total: items.length,
+                        processed: processedCount
+                    } 
+                }).eq('id', jobId);
+                
+                throw new Error(errorMsg);
             }
             
             await supabase.rpc('increment_job_tokens', {

@@ -3,6 +3,7 @@
 import React from 'react';
 import { useJobManager, type Job } from '@/app/contexts/JobManagerContext';
 import { TranslationJobHandler } from '@/components/jobs/TranslationJobHandler';
+import { PreclassificationJobHandler } from '@/components/jobs/PreclassificationJobHandler';
 import { StandardCard } from '@/components/ui/StandardCard';
 import { StandardText } from '@/components/ui/StandardText';
 import { StandardButton } from '@/components/ui/StandardButton';
@@ -37,6 +38,8 @@ export const JobManager = () => {
     switch (job.type) {
       case 'TRANSLATE_BATCH':
         return <TranslationJobHandler key={job.id} job={job} />;
+      case 'PRECLASSIFY_BATCH':
+        return <PreclassificationJobHandler key={job.id} job={job} />;
       default:
         return <div key={job.id}>Trabajo desconocido: {job.title}</div>;
     }

@@ -13,12 +13,15 @@ import { useRouter } from "next/navigation";
 import {
 	getProjectBatchesForUser,
 } from "@/lib/actions/preclassification-actions";
+import { getActivePhaseForProject } from "@/lib/actions/preclassification_phases_actions";
 import { useUserProfile, getUserDisplayName } from "@/hooks/useUserProfile";
 import { type BatchWithCounts } from "@/lib/types/preclassification-types";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
-import { ClipboardList } from "lucide-react";
+import { Filter, Boxes } from "lucide-react";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
+import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
+import { StandardButton } from "@/components/ui/StandardButton";
 import {
 	StandardPieChart,
 	type PieChartData,
@@ -93,6 +96,7 @@ const PreclassificationPage = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [colorMap, setColorMap] = useState<Record<string, string>>({});
+	const [activePhase, setActivePhase] = useState<{ id: string; phase_number: number; name: string } | null>(null);
 	const { startJob } = useJobManager();
 	const { showDialog } = useDialog();
 	const { appColorTokens } = useTheme();
@@ -192,26 +196,47 @@ const PreclassificationPage = () => {
 	const gridHeight = containerHeight; // Altura del div contenedor
 
 	const fetchBatches = useCallback(async () => {
-		if (auth.authLoading) return; // No hacer nada si la autenticación aún está en proceso
+		if (!auth.proyectoActual?.id || !auth.user?.id) {
+			setIsLoading(false);
+			return;
+		}
 
-		const userId = auth.user?.id;
-		const projectId = auth.proyectoActual?.id;
+		setIsLoading(true);
+		setError(null);
 
-		if (projectId && userId) {
-			setError(null);
-			const result = await getProjectBatchesForUser(projectId, userId);
-			if (result.success) {
-				setBatches(result.data || []);
+		try {
+			// Obtener lotes y fase activa en paralelo
+			const [batchesResult, phaseResult] = await Promise.all([
+				getProjectBatchesForUser(auth.proyectoActual.id, auth.user.id),
+				getActivePhaseForProject(auth.proyectoActual.id)
+			]);
+
+			if (batchesResult.success) {
+				setBatches(batchesResult.data);
 			} else {
-				setError(result.error || "Ocurrió un error desconocido.");
+				setError(batchesResult.error);
 				setBatches([]);
 			}
-		} else {
-			// Si no hay proyecto o usuario, no mostrar error, sino un estado vacío.
+
+			// Establecer la fase activa si existe
+			if (phaseResult.data) {
+				setActivePhase({
+					id: phaseResult.data.id,
+					phase_number: phaseResult.data.phase_number,
+					name: phaseResult.data.name
+				});
+			} else {
+				setActivePhase(null);
+			}
+		} catch (err) {
+			console.error("Error al cargar datos:", err);
+			setError("Error inesperado al cargar los datos");
 			setBatches([]);
+			setActivePhase(null);
+		} finally {
+			setIsLoading(false);
 		}
-		setIsLoading(false);
-	}, [auth.user, auth.proyectoActual, auth.authLoading]);
+	}, [auth.proyectoActual?.id, auth.user?.id]);
 
 	// Efecto para la carga inicial
 	useEffect(() => {
@@ -322,12 +347,27 @@ const PreclassificationPage = () => {
 		});
 	}, [batches, handleSphereClick]);
 
+	// Título condicional basado en la existencia de lotes y la fase activa
+	const pageSubtitle = useMemo(() => {
+		const userName = getUserDisplayName(auth.user, userProfile);
+		if (!activePhase) {
+			return `${userName}, no hay una fase activa configurada`;
+		}
+
+		const phaseInfo = `Fase ${activePhase.phase_number}: ${activePhase.name}`;
+		if (batches.length === 0 && !isLoading) {
+			return `${userName}, aún no se asignan lotes para la ${phaseInfo}`;
+		} else {
+			return `${userName}, estos son tus lotes asignados para la ${phaseInfo}`;
+		}
+	}, [auth.user, userProfile, activePhase, batches.length, isLoading]);
+
 	return (
 		<div className="w-full h-full p-4 sm:p-6 flex flex-col">
 			<StandardPageTitle
 				title="Preclasificación de Artículos"
-				mainIcon={ClipboardList}
-				subtitle={`${getUserDisplayName(auth.user, userProfile)}, estos son tus lotes asignados`}
+				mainIcon={Filter}
+				subtitle={pageSubtitle}
 				showBackButton={{ href: "/articulos" }}
 				breadcrumbs={[
 					{ label: "Artículos", href: "/articulos" },
@@ -335,23 +375,67 @@ const PreclassificationPage = () => {
 				]}
 			/>
 			<div className="mt-6 flex-grow flex flex-col gap-6">
-				<div className="w-full" style={{ height: `${gridHeight}px` }}>
-					{containerWidth && (
-						<StandardSphereGrid
-							items={sphereData}
-							containerWidth={containerWidth}
-							containerHeight={containerHeight}
-							groupByKeyGroup
-							forceBadge={true}
-							title={sphereGridTitle}
-							isLoading={isLoading}
-							loadingMessage="Cargando lotes..."
-							emptyStateText={
-								error ? `Error: ${error}` : "No hay lotes para mostrar."
-							}
-						/>
-					)}
-				</div>
+				{/* Mostrar empty state independiente cuando no hay lotes */}
+				{!isLoading && batches.length === 0 && !error ? (
+					<StandardCard
+						animateEntrance
+						colorScheme="primary"
+						accentPlacement="top"
+						accentColorScheme="primary"
+						shadow="md"
+						className="flex-1"
+						styleType="subtle"
+						hasOutline={false}>
+						<StandardCard.Header>
+							<StandardText size="lg" weight="semibold">
+								Lotes Asignados
+							</StandardText>
+						</StandardCard.Header>
+						<StandardCard.Content className="p-8 flex-1 flex items-center justify-center">
+							<StandardEmptyState
+								icon={Boxes}
+								title={activePhase ? 
+									`Aún no tienes lotes asignados` : 
+									`No hay una fase activa configurada`
+								}
+								description={activePhase ? 
+									`Para comenzar con la preclasificación de artículos en la Fase ${activePhase.phase_number}: ${activePhase.name}, primero necesitas crear y asignar lotes. Los lotes organizan los artículos en grupos manejables para su revisión.` :
+									`Antes de poder crear lotes y comenzar la preclasificación, necesitas configurar y activar una fase en la gestión de fases del proyecto.`
+								}
+								colorScheme="blue"
+								action={
+									<StandardButton
+										colorScheme="primary"
+										styleType="solid"
+										size="md"
+										onClick={() => router.push(activePhase ? '/datos-maestros/lote' : '/datos-maestros/fases')}
+										leftIcon={Boxes}>
+										{activePhase ? 'Ir a Gestión de Lotes' : 'Ir a Gestión de Fases'}
+									</StandardButton>
+								}
+							/>
+						</StandardCard.Content>
+					</StandardCard>
+				) : (
+					/* Mostrar SphereGrid solo cuando hay lotes o está cargando */
+					<div className="w-full" style={{ height: `${gridHeight}px` }}>
+						{containerWidth && (
+							<StandardSphereGrid
+								items={sphereData}
+								containerWidth={containerWidth}
+								containerHeight={containerHeight}
+								groupByKeyGroup
+								forceBadge={true}
+								title={sphereGridTitle}
+								isLoading={isLoading}
+								loadingMessage="Cargando lotes..."
+								emptyStateText={
+									error ? `Error: ${error}` : "No hay lotes disponibles."
+								}
+							/>
+						)}
+					</div>
+				)}
 
 				{pieChartData.length > 0 && (
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
