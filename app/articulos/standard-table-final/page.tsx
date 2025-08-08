@@ -3,11 +3,13 @@
 import React, { useMemo } from "react";
 import { type ColumnDef, type Row } from "@tanstack/react-table";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardTable } from "@/components/ui/StandardTable";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardBadge } from "@/components/ui/StandardBadge";
+import { StandardButton } from "@/components/ui/StandardButton";
 import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
-import { FileText, Link as LinkIcon } from "lucide-react";
+import { FileText, Link as LinkIcon, Table } from "lucide-react";
 
 // --- DATOS Y TIPOS (Sin cambios) ---
 type Publication = {
@@ -89,11 +91,13 @@ export default function StandardTableFinalShowcasePage() {
     // Eliminamos el contenedor con 'overflow-auto' para permitir que la página principal haga scroll.
     return (
         <StandardPageBackground variant="default">
-            <div className="p-6">
-                <div className="mb-6">
-                    <StandardText asElement="h1" preset="heading">Hangar de Pruebas Final</StandardText>
-                    <StandardText color="neutral" colorShade="text" className="mt-2">Demostración de todas las funcionalidades integradas de <code>StandardTable</code>.</StandardText>
-                </div>
+            <div className="p-4 sm:p-6">
+                <StandardPageTitle
+                    title="Showroom StandardTable"
+                    mainIcon={Table}
+                    subtitle="Demostración de keyword highlighting nativo y sticky header"
+                    showBackButton={{ href: "/articulos/preclasificacion" }}
+                />
 
                 {/* Este div ya no limita el crecimiento de la tabla, 
                     permitiendo que el scroll ocurra en el <body> de la página */}
@@ -106,11 +110,24 @@ export default function StandardTableFinalShowcasePage() {
                         filterPlaceholder="Buscar por título, autor, journal..."
                         enableTruncation={true}
                         isStickyHeader={true}
-                        stickyOffset={64} 
-                        // maxTableHeight ya no es necesario aquí si queremos que la página entera haga scroll
+                        stickyOffset={64}
+                        enableKeywordHighlighting={true}
+                        keywordHighlightPlaceholder="Resaltar palabra clave en showroom..."
                     >
                         <StandardTable.Table />
                     </StandardTable>
+                    
+                    {/* Botón de prueba para equiparar UX */}
+                    <div className="mt-6">
+                        <StandardButton
+                            styleType="outline"
+                            colorScheme="accent"
+                            leftIcon={FileText}
+                            onClick={() => console.log('Botón de prueba clickeado')}
+                        >
+                            Botón de Prueba UX
+                        </StandardButton>
+                    </div>
                 </div>
             </div>
         </StandardPageBackground>

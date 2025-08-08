@@ -176,8 +176,14 @@ export function TranslationJobHandler({ job }: { job: Job }) {
         outputTokens: totalOutputTokens,
       });
 
+      // 🎯 ASEGURAR PROGRESO AL 100% Y MENSAJE TEMPORAL
+      updateJobProgress(job.id, 100);
       setStatusMessage('¡Traducción completada!');
-      completeJob(job.id);
+      
+      // 🕒 OCULTAR MENSAJE DESPUÉS DE 2 SEGUNDOS
+      setTimeout(() => {
+        completeJob(job.id);
+      }, 2000);
 
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -187,8 +193,15 @@ export function TranslationJobHandler({ job }: { job: Job }) {
         jobId: historyJobId,
         errorMessage,
       });
+      
+      // 🎯 ASEGURAR PROGRESO AL 100% INCLUSO EN ERROR
+      updateJobProgress(job.id, 100);
       setStatusMessage(`Error: ${errorMessage}`);
-      failJob(job.id, errorMessage);
+      
+      // 🕒 OCULTAR MENSAJE DE ERROR DESPUÉS DE 3 SEGUNDOS
+      setTimeout(() => {
+        failJob(job.id, errorMessage);
+      }, 3000);
     }
   }, [job, completeJob, failJob, updateJobProgress, articleRetries]);
 
@@ -227,9 +240,16 @@ export function TranslationJobHandler({ job }: { job: Job }) {
     const errorMessage = `Lote fallido: No se pudo procesar el artículo ${errorDialog.failedArticle.index + 1} después de ${MAX_RETRIES_PER_ARTICLE} intentos.`;
     
     setErrorDialog({ isOpen: false, failedArticle: null, totalArticles: 0, canRetry: false });
+    
+    // 🎯 ASEGURAR PROGRESO AL 100% AL MARCAR COMO FALLIDO
+    updateJobProgress(job.id, 100);
     setStatusMessage(errorMessage);
-    failJob(job.id, errorMessage);
-  }, [errorDialog.failedArticle, failJob, job.id]);
+    
+    // 🕒 OCULTAR MENSAJE DESPUÉS DE 3 SEGUNDOS
+    setTimeout(() => {
+      failJob(job.id, errorMessage);
+    }, 3000);
+  }, [errorDialog.failedArticle, failJob, job.id, updateJobProgress]);
 
   return (
     <>

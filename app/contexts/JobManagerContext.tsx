@@ -5,6 +5,9 @@ import { v4 as uuidv4 } from 'uuid';
 
 export type JobType = 'TRANSLATE_BATCH' | 'PRECLASSIFY_BATCH'; // Can be extended with other job types
 
+// 🎯 LÍMITE GLOBAL: Máximo de jobs concurrentes por usuario
+const MAX_CONCURRENT_JOBS = 2;
+
 export interface Job {
   id: string;
   type: JobType;
@@ -34,6 +37,13 @@ interface JobManagerContextType {
   completeJob: (jobId: string) => void;
   failJob: (jobId: string, message?: string) => void;
   removeJob: (jobId: string) => void;
+  // 💬 Propiedades del diálogo de límite
+  limitDialogOpen: boolean;
+  limitDialogData: {
+    activeJobs: Job[];
+    attemptedJob: { type: JobType; title: string };
+  } | null;
+  closeLimitDialog: () => void;
 }
 
 const JobManagerContext = createContext<JobManagerContextType | undefined>(undefined);
@@ -42,6 +52,13 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [recentCompletedJobs, setRecentCompletedJobs] = useState<Job[]>([]);
   const [isJobManagerExpanded, setJobManagerExpanded] = useState(false);
+  
+  // 💬 Estado para el diálogo de límite excedido
+  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
+  const [limitDialogData, setLimitDialogData] = useState<{
+    activeJobs: Job[];
+    attemptedJob: { type: JobType; title: string };
+  } | null>(null);
 
   // Calcular si hay trabajos activos
   const hasActiveJobs = jobs.some(job => job.status === 'queued' || job.status === 'running');
@@ -51,6 +68,24 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
   const minimizeJobManager = () => setJobManagerExpanded(false);
 
   const startJob = useCallback((jobData: Omit<Job, 'id' | 'status' | 'progress' | 'errorMessage' | 'completedAt' | 'startedAt'>) => {
+    // 🚨 VALIDACIÓN DE LÍMITE: Verificar máximo de jobs concurrentes por usuario
+    const activeJobs = jobs.filter(job => job.status === 'queued' || job.status === 'running');
+    
+    if (activeJobs.length >= MAX_CONCURRENT_JOBS) {
+      console.warn(`🚨 [JobManager] Límite de trabajos concurrentes excedido (${activeJobs.length}/${MAX_CONCURRENT_JOBS}):`, {
+        trabajosActivos: activeJobs.map(job => ({ id: job.id, tipo: job.type, titulo: job.title })),
+        trabajoIntentado: { tipo: jobData.type, titulo: jobData.title }
+      });
+      
+      // 🔴 MOSTRAR DIÁLOGO AL USUARIO: Límite excedido
+      setLimitDialogData({
+        activeJobs: activeJobs,
+        attemptedJob: { type: jobData.type, title: jobData.title }
+      });
+      setLimitDialogOpen(true);
+      return; // No crear el trabajo
+    }
+    
     // 🛡️ VALIDACIÓN CRÍTICA: Prevenir trabajos duplicados del mismo tipo y lote
     const existingJob = jobs.find(job => 
       job.type === jobData.type && 
@@ -101,46 +136,68 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
 
   const completeJob = useCallback((jobId: string) => {
     setJobs(prevJobs => {
-      const updatedJobs = prevJobs.map(job =>
-        job.id === jobId ? { ...job, status: 'completed' as const, progress: 100, completedAt: new Date() } : job
-      );
-      
-      // Mover el trabajo completado a la lista de recientes
-      const completedJob = updatedJobs.find(job => job.id === jobId);
-      if (completedJob) {
+      // Encontrar el trabajo a completar
+      const jobToComplete = prevJobs.find(job => job.id === jobId);
+      if (jobToComplete) {
+        const completedJob = { ...jobToComplete, status: 'completed' as const, progress: 100, completedAt: new Date() };
+        
+        // Mover a la lista de recientes
         setRecentCompletedJobs(prev => {
           const newRecent = [completedJob, ...prev.filter(j => j.id !== jobId)];
           return newRecent.slice(0, 3); // Mantener solo los últimos 3
         });
       }
       
+      // 🎯 CRÍTICO: Remover el trabajo de la lista activa
+      const updatedJobs = prevJobs.filter(job => job.id !== jobId);
+      
+      // 🔄 AUTO-MINIMIZAR: Si no quedan trabajos activos, minimizar el JobManager
+      if (updatedJobs.length === 0 && isJobManagerExpanded) {
+        setTimeout(() => {
+          setJobManagerExpanded(false);
+        }, 500); // Pequeño delay para que el usuario vea que se completó
+      }
+      
       return updatedJobs;
     });
-  }, []);
+  }, [isJobManagerExpanded]);
 
   const failJob = useCallback((jobId: string, message?: string) => {
     setJobs(prevJobs => {
-      const updatedJobs = prevJobs.map(job =>
-        job.id === jobId
-          ? { ...job, status: 'error' as const, progress: 100, errorMessage: message, completedAt: new Date() }
-          : job
-      );
-      
-      // Mover el trabajo fallido a la lista de recientes
-      const failedJob = updatedJobs.find(job => job.id === jobId);
-      if (failedJob) {
+      // Encontrar el trabajo que falló
+      const jobToFail = prevJobs.find(job => job.id === jobId);
+      if (jobToFail) {
+        const failedJob = { ...jobToFail, status: 'error' as const, progress: 100, errorMessage: message, completedAt: new Date() };
+        
+        // Mover a la lista de recientes
         setRecentCompletedJobs(prev => {
           const newRecent = [failedJob, ...prev.filter(j => j.id !== jobId)];
           return newRecent.slice(0, 3); // Mantener solo los últimos 3
         });
       }
       
+      // 🎯 CRÍTICO: Remover el trabajo de la lista activa
+      const updatedJobs = prevJobs.filter(job => job.id !== jobId);
+      
+      // 🔄 AUTO-MINIMIZAR: Si no quedan trabajos activos, minimizar el JobManager
+      if (updatedJobs.length === 0 && isJobManagerExpanded) {
+        setTimeout(() => {
+          setJobManagerExpanded(false);
+        }, 500); // Pequeño delay para que el usuario vea que falló
+      }
+      
       return updatedJobs;
     });
-  }, []);
+  }, [isJobManagerExpanded]);
 
   const removeJob = useCallback((jobId: string) => {
     setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
+  }, []);
+
+  // 💬 Función para cerrar el diálogo de límite
+  const closeLimitDialog = useCallback(() => {
+    setLimitDialogOpen(false);
+    setLimitDialogData(null);
   }, []);
 
   return (
@@ -158,6 +215,10 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
         completeJob,
         failJob,
         removeJob,
+        // 💬 Propiedades del diálogo de límite
+        limitDialogOpen,
+        limitDialogData,
+        closeLimitDialog,
       }}
     >
       {children}

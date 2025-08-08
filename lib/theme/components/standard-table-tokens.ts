@@ -31,6 +31,13 @@ export type TableTokens = {
         expandedCircleBackground: string;
         expandedIconColor: string;
     };
+    // 🔍 KEYWORD HIGHLIGHTING
+    keywordHighlight: {
+        backgroundColor: string;
+        textColor: string;
+        borderRadius: string;
+        padding: string;
+    };
     // ✅ RESPONSABILIDAD MOVIDA AQUÍ
     subRowBackgroundColor: string; 
 };
@@ -111,6 +118,13 @@ export function generateTableTokens(appColorTokens: AppColorTokens, mode: Mode):
             }
         },
         expander: { circleBackground: "transparent", circleBorderColor: neutral.bgShade, iconColor: neutral.text, expandedCircleBackground: appColorTokens.primary.pure, expandedIconColor: appColorTokens.primary.contrastText, },
+        // 🔍 KEYWORD HIGHLIGHTING - Usando accent como color corporativo
+        keywordHighlight: {
+            backgroundColor: appColorTokens.accent.bg,
+            textColor: appColorTokens.accent.text,
+            borderRadius: "4px",
+            padding: "2px 4px",
+        },
         // ✅ CÁLCULO HECHO EN SU LUGAR CORRECTO
         subRowBackgroundColor: isDark ? tinycolor(neutral.bgShade).lighten(2).toHexString() : tinycolor(neutral.bg).darken(2).toHexString(),
     } as TableTokens;

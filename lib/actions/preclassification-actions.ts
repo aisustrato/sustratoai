@@ -220,32 +220,9 @@ export async function startInitialPreclassification(batchId: string): Promise<Re
     if (batchError || !batch) return { success: false, error: "Lote no encontrado." };
     if (batch.status !== 'translated') return { success: false, error: "El lote debe estar en estado 'traducido' para iniciar la preclasificación." };
     
-    // 🛡️ VALIDACIÓN CRÍTICA: Prevenir trabajos duplicados del mismo lote
-    const { data: existingJobs, error: jobCheckError } = await supabase
-        .from('ai_job_history')
-        .select('id, status, description')
-        .eq('job_type', 'PRECLASSIFICATION')
-        .eq('project_id', batch.projects!.id)
-        .eq('status', 'running')
-        .ilike('description', `%Lote #${batch.batch_number}%`);
+    // 🎯 LÓGICA ROBUSTA: Crear job primero, luego validar con UUID como llave maestra
     
-    if (jobCheckError) {
-        console.error('🚨 Error verificando trabajos existentes:', jobCheckError);
-        return { success: false, error: "Error verificando trabajos existentes." };
-    }
-    
-    if (existingJobs && existingJobs.length > 0) {
-        console.warn(`🚨 [startInitialPreclassification] Trabajo duplicado detectado:`, {
-            lote: batchId,
-            batchNumber: batch.batch_number,
-            trabajosExistentes: existingJobs.map(j => ({ id: j.id, status: j.status, description: j.description }))
-        });
-        return { 
-            success: false, 
-            error: `Ya existe un trabajo de preclasificación en curso para el Lote #${batch.batch_number}. Por favor, espera a que termine o cancela el trabajo existente.` 
-        };
-    }
-    
+    // 🚀 PASO 1: CREAR JOB Y OBTENER UUID REAL DE SUPABASE
     const { data: job, error: jobError } = await supabase.from('ai_job_history').insert({
         project_id: batch.projects!.id,
         user_id: user.id,
@@ -253,14 +230,76 @@ export async function startInitialPreclassification(batchId: string): Promise<Re
         status: 'running',
         description: `Preclasificando Lote #${batch.batch_number}`,
         progress: 0,
-        details: { total: 0, processed: 0, step: 'Iniciando...' }
+        details: { 
+            batchId: batchId,
+            total: 0, 
+            processed: 0, 
+            step: 'Iniciando...' 
+        }
     }).select('id').single();
-
-    if (jobError || !job) return { success: false, error: `No se pudo crear el registro del job: ${jobError?.message}` };
     
-    runPreclassificationJob(job.id, batchId, user.id); 
+    if (jobError || !job) {
+        console.error('🚨 Error creando el job:', jobError);
+        return { success: false, error: `No se pudo crear el registro del job: ${jobError?.message}` };
+    }
     
-    return { success: true, data: { jobId: job.id } };
+    const jobUUID = job.id; // 🔑 LLAVE MAESTRA: UUID real de Supabase
+    console.log(`✅ [startInitialPreclassification] Job creado con UUID: ${jobUUID}`);
+    
+    // 🔍 PASO 2: VALIDAR SI HAY OTRO JOB RUNNING PARA ESTE LOTE (CON UUID DISTINTO)
+    const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    
+    const { data: otherJobs, error: duplicateCheckError } = await supabase
+        .from('ai_job_history')
+        .select('id, status, description')
+        .eq('job_type', 'PRECLASSIFICATION')
+        .eq('project_id', batch.projects!.id)
+        .eq('status', 'running')
+        .gte('started_at', twentyMinutesAgo)
+        .ilike('description', `%Lote #${batch.batch_number}%`)
+        .neq('id', jobUUID); // 🎯 CLAVE: Excluir el job recién creado
+    
+    if (duplicateCheckError) {
+        console.error('🚨 Error verificando duplicados:', duplicateCheckError);
+        // 🚨 MARCAR JOB COMO FALLIDO Y ABORTAR
+        await supabase.from('ai_job_history')
+            .update({ status: 'failed', error_message: 'Error verificando duplicados', progress: 100 })
+            .eq('id', jobUUID);
+        return { success: false, error: "Error verificando trabajos duplicados." };
+    }
+    
+    // 🚨 PASO 3: SI HAY DUPLICADOS, MARCAR COMO FALLIDO Y ABORTAR
+    if (otherJobs && otherJobs.length > 0) {
+        console.warn(`🚨 [startInitialPreclassification] Duplicado detectado, abortando job ${jobUUID}:`, {
+            jobUUID,
+            lote: batchId,
+            batchNumber: batch.batch_number,
+            otrosJobs: otherJobs.map(j => ({ id: j.id, status: j.status }))
+        });
+        
+        // 🚨 MARCAR JOB COMO FALLIDO POR DUPLICACIÓN
+        await supabase.from('ai_job_history')
+            .update({ 
+                status: 'failed', 
+                error_message: `Trabajo duplicado detectado para Lote #${batch.batch_number}`,
+                progress: 100,
+                completed_at: new Date().toISOString()
+            })
+            .eq('id', jobUUID);
+            
+        return { 
+            success: false, 
+            error: `Ya existe un trabajo de preclasificación en curso para el Lote #${batch.batch_number}. Por favor, espera a que termine.` 
+        };
+    }
+    
+    // ✅ PASO 4: NO HAY DUPLICADOS, INICIAR PROCESO Y ESCUCHAR SOLO ESTE UUID
+    console.log(`✅ [startInitialPreclassification] Sin duplicados, iniciando proceso para UUID: ${jobUUID}`);
+    
+    // 🚀 Iniciar el trabajo en background
+    runPreclassificationJob(jobUUID, batchId, user.id); 
+    
+    return { success: true, data: { jobId: jobUUID } };
 }
 
 /**
@@ -280,6 +319,8 @@ type ArticleForPrompt = {
         id: string;
         title: string | null;
         abstract: string | null;
+        publication_year: number | null;
+        journal: string | null;
     } | null;
 };
 
@@ -325,6 +366,8 @@ ${instructionForDim}`;
     const articleDetails = articleChunk.map(item => `
 ---
 **Artículo ID:** "${item.id}"
+- Revista: ${item.articles?.journal}
+- Año de Publicación: ${item.articles?.publication_year}
 - Título: ${item.articles?.title}
 - Abstract: ${item.articles?.abstract}
     `).join('');
@@ -373,7 +416,7 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
         const { data: batchData } = await supabase.from('article_batches').select('phase_id, projects(id, name, proposal, proposal_bibliography)').eq('id', batchId).single();
         if (!batchData?.phase_id || !batchData.projects) throw new Error("Datos del lote o proyecto no encontrados.");
 
-        const { data: items, error: itemsError } = await supabase.from('article_batch_items').select('id, articles(id, title, abstract)').eq('batch_id', batchId);
+        const { data: items, error: itemsError } = await supabase.from('article_batch_items').select('id, articles(id, title, abstract, publication_year, journal)').eq('batch_id', batchId);
         if (itemsError || !items) throw new Error("No se encontraron artículos para procesar.");
         
         const { data: dimensions, error: dimsError } = await supabase.from('preclass_dimensions').select('id, name, description, type, preclass_dimension_options(value)').eq('phase_id', batchData.phase_id).eq('status', 'active');

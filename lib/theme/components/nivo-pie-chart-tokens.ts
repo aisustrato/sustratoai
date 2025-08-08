@@ -3,15 +3,29 @@
 import type { AppColorTokens } from "../ColorToken";
 
 
-// Mapeo de nuestros IDs de estado a los 'colorScheme' del tema
-const STATUS_TO_COLOR_SCHEME_MAP: Record<string, keyof AppColorTokens> = {
-  pendientesRevision: 'neutral',
-  pendientesRevisionTraducido: 'tertiary', // ✅ Añadido el nuevo estado
-  pendientesReconciliacion: 'secondary',
-  reconciliados: 'success',
-  enDisputa: 'danger',
-  acordados: 'accent',
-  validados: 'warning', 
+// Mapeo de estados de lotes a los 'colorScheme' del tema
+const BATCH_STATUS_TO_COLOR_SCHEME_MAP: Record<string, keyof AppColorTokens> = {
+  // Estados de lotes reales
+  'PENDING': 'neutral',
+  'TRANSLATED': 'tertiary',
+  'REVIEW_PENDING': 'primary',
+  'RECONCILIATION_PENDING': 'secondary',
+  'VALIDATED': 'warning',
+  'RECONCILED': 'success',
+  'DISPUTED': 'danger',
+  'AGREED': 'accent',
+  'UNKNOWN': 'neutral',
+  
+  // Mapeo adicional para compatibilidad (minúsculas)
+  'pending': 'neutral',
+  'translated': 'tertiary',
+  'review_pending': 'primary',
+  'reconciliation_pending': 'secondary',
+  'validated': 'warning',
+  'reconciled': 'success',
+  'disputed': 'danger',
+  'agreed': 'accent',
+  'unknown': 'neutral',
 };
 
 export function generateNivoTheme(appColorTokens: AppColorTokens) {
@@ -32,8 +46,8 @@ export function generateNivoTheme(appColorTokens: AppColorTokens) {
 
   // Crea un mapa de colores Hex para las porciones del gráfico
   const colorMap: Record<string, string> = {};
-  for (const status in STATUS_TO_COLOR_SCHEME_MAP) {
-    const colorScheme = STATUS_TO_COLOR_SCHEME_MAP[status];
+  for (const status in BATCH_STATUS_TO_COLOR_SCHEME_MAP) {
+    const colorScheme = BATCH_STATUS_TO_COLOR_SCHEME_MAP[status];
     if (appColorTokens[colorScheme]) {
       colorMap[status] = appColorTokens[colorScheme].pure;
     }

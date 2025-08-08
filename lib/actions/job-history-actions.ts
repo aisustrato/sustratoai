@@ -93,6 +93,7 @@ export async function updateJobAsCompleted(payload: UpdateJobCompletedPayload): 
       .from('ai_job_history')
       .update({
         status: 'completed',
+        progress: 100, // 🎯 CRÍTICO: Asegurar progreso al 100% en BD
         completed_at: new Date().toISOString(),
         input_tokens: payload.inputTokens,
         output_tokens: payload.outputTokens,
@@ -120,6 +121,7 @@ export async function updateJobAsFailed(payload: UpdateJobFailedPayload): Promis
       .from('ai_job_history')
       .update({
         status: 'failed',
+        progress: 100, // 🎯 CRÍTICO: Asegurar progreso al 100% incluso en error
         completed_at: new Date().toISOString(),
         error_message: payload.errorMessage,
       })

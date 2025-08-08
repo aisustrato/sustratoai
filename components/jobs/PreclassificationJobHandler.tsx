@@ -1,7 +1,7 @@
 // Ruta: components/jobs/PreclassificationJobHandler.tsx
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useJobManager, type Job } from '@/app/contexts/JobManagerContext';
 import { supabase } from '@/app/auth/client';
 import { startInitialPreclassification } from '@/lib/actions/preclassification-actions';
@@ -9,6 +9,9 @@ import { StandardProgressBar } from '@/components/ui/StandardProgressBar';
 import { StandardText } from '@/components/ui/StandardText';
 import { Brain, AlertCircle, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+// 🛡️ PROTECCIÓN GLOBAL: Map para evitar ejecuciones múltiples del mismo lote
+const runningBatches = new Map<string, boolean>();
 
 interface PreclassificationJobHandlerProps {
   job: Job;
@@ -23,6 +26,17 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
 
   // 🎯 FUNCIÓN PRINCIPAL: PreclassificationJobHandler maneja TODO el flujo
   const runJob = useCallback(async () => {
+    const batchId = job.payload.batchId;
+    
+    // 🛡️ PROTECCIÓN GLOBAL CONTRA EJECUCIÓN MÚLTIPLE POR LOTE
+    if (runningBatches.get(batchId)) {
+      console.log('⚠️ [PreclassificationJobHandler] Lote ya está ejecutándose, evitando duplicación:', batchId);
+      return;
+    }
+    
+    // Marcar lote como ejecutándose
+    runningBatches.set(batchId, true);
+    
     try {
       console.log(`🚀 [PreclassificationJobHandler] Iniciando preclasificación para lote: ${job.payload.batchId}`);
       setStatusMessage('Validando lote y verificando trabajos duplicados...');
@@ -83,14 +97,23 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
               if (status === 'completed') {
                 console.log('✅ [PreclassificationJobHandler] Job completado exitosamente');
                 setJobStatus('completed');
-                setStatusMessage('Preclasificación completada exitosamente');
                 
-                // 🚀 NOTIFICAR ÉXITO: Refrescar la página para mostrar nuevos datos
-                console.log('🔄 [PreclassificationJobHandler] Refrescando página para mostrar nuevas clasificaciones...');
-                router.refresh();
+                // 🎯 GARANTIZAR PROGRESO AL 100% ANTES DE FINALIZAR
+                updateJobProgress(job.id, 100);
+                setStatusMessage('¡Preclasificación completada!');
                 
-                completeJob(job.id);
-                channel.unsubscribe();
+                // ⏱️ MENSAJE TEMPORAL: Mostrar por 2 segundos antes de finalizar
+                setTimeout(() => {
+                  // 🚀 REFRESCAR PÁGINA PARA MOSTRAR NUEVOS DATOS
+                  console.log('🔄 [PreclassificationJobHandler] Refrescando página para mostrar nuevas clasificaciones...');
+                  
+                  // 🧹 LIMPIAR PROTECCIÓN GLOBAL: Permitir futuras ejecuciones del lote
+                  runningBatches.delete(batchId);
+                  
+                  router.refresh();
+                  completeJob(job.id);
+                  channel.unsubscribe();
+                }, 2000);
                 
               } else if (status === 'failed') {
                 console.error('❌ [PreclassificationJobHandler] Job fallido detectado');
@@ -113,12 +136,21 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
                   jobId: backendJobId
                 });
                 
+                // 🎯 GARANTIZAR PROGRESO AL 100% INCLUSO EN ERROR
+                updateJobProgress(job.id, 100);
                 setStatusMessage(`Error: ${errorMessage}`);
-                failJob(job.id, errorMessage);
-                channel.unsubscribe();
                 
-                // 🚨 IMPORTANTE: NO refrescar la página en caso de error
-                // Esto evita que el usuario vea datos inconsistentes
+                // ⏱️ MENSAJE TEMPORAL: Mostrar error por 3 segundos antes de finalizar
+                setTimeout(() => {
+                  // 🧹 LIMPIAR PROTECCIÓN GLOBAL: Permitir futuras ejecuciones del lote
+                  runningBatches.delete(batchId);
+                  
+                  failJob(job.id, errorMessage);
+                  channel.unsubscribe();
+                  
+                  // 🚨 IMPORTANTE: NO refrescar la página en caso de error
+                  // Esto evita que el usuario vea datos inconsistentes
+                }, 3000);
               }
             })
         .subscribe();
@@ -131,13 +163,26 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       console.error('❌ Error en PreclassificationJobHandler:', error);
+      
+      // 🎯 GARANTIZAR PROGRESO AL 100% INCLUSO EN ERROR
+      updateJobProgress(job.id, 100);
       setStatusMessage(`Error: ${errorMessage}`);
-      failJob(job.id, errorMessage);
+      
+      // ⏱️ MENSAJE TEMPORAL: Mostrar error por 3 segundos antes de finalizar
+      setTimeout(() => {
+        // 🧹 LIMPIAR PROTECCIÓN GLOBAL: Permitir futuras ejecuciones del lote
+        runningBatches.delete(batchId);
+        
+        failJob(job.id, errorMessage);
+      }, 3000);
     }
-  }, [job.id, job.payload.batchId, updateJobProgress, completeJob, failJob, router]);
+  }, [job.id, job.payload.batchId, updateJobProgress, completeJob, failJob, router]); // 🛡️ Incluir todas las dependencias, protegido por Map global
 
-  // Iniciar el trabajo cuando el componente se monta
+  // Iniciar el trabajo cuando el componente se monta - SOLO UNA VEZ (con guard)
+  const hasStartedRef = useRef(false);
   useEffect(() => {
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
     runJob();
   }, [runJob]);
 

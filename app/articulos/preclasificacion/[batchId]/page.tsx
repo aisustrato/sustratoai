@@ -39,7 +39,7 @@ import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { NoteEditor } from "./components/NoteEditor";
 import { ArticleGroupManager } from "./components/ArticleGroupManager";
-import { KeywordHighlighter } from "./components/KeywordHighlighter";
+
 import { TextHighlighter } from "./components/TextHighlighter";
 import { ColumnDef } from "@tanstack/react-table";
 import { 
@@ -49,11 +49,10 @@ import {
 	CheckCircle,
 	Globe,
 	StickyNote,
-	Brain,
-	Search,
-	X
+	Brain
 } from "lucide-react";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 const BatchDetailPage = () => {
 	const params = useParams();
@@ -74,9 +73,6 @@ const BatchDetailPage = () => {
 	// Estados para Preclasificación
 	const [isStartingPreclassification, setIsStartingPreclassification] = useState(false);
 	
-	// Estado para resaltado de palabras clave
-	const [highlightKeyword, setHighlightKeyword] = useState<string | null>(null);
-	const [keywordHighlighterOpen, setKeywordHighlighterOpen] = useState(false);
 	
 	// 📊 Estados para Dimensiones Dinámicas
 	interface DimensionType {
@@ -319,11 +315,6 @@ const BatchDetailPage = () => {
 		setCurrentArticle(null);
 	};
 
-	// Callback para manejar el cambio de palabra clave
-	const handleKeywordChange = useCallback((keyword: string | null) => {
-		setHighlightKeyword(keyword);
-	}, []);
-
 	// Función para iniciar la preclasificación
 	const handleStartPreclassification = async () => {
 		if (!batchId || !auth.user?.id || !auth.proyectoActual?.id) {
@@ -396,7 +387,7 @@ const BatchDetailPage = () => {
 						return (
 							<TextHighlighter 
 								text="Pendiente" 
-								keyword={highlightKeyword}
+								keyword={null}
 								className="text-neutral-textShade italic"
 							/>
 						);
@@ -407,12 +398,13 @@ const BatchDetailPage = () => {
 					return (
 						<TextHighlighter 
 							text={displayValue} 
-							keyword={highlightKeyword}
+							keyword={null}
 						/>
 					);
 				},
 				meta: { 
 					isTruncatable: true,
+					enableCopyButton: true,
 					tooltipType: 'longText' as const,
 					cellVariant: (context) => {
 						const row = context.row as { original: TableRowData };
@@ -433,8 +425,13 @@ const BatchDetailPage = () => {
 				}
 			});
 			
-			// 🔄 Columna de Iteración - API NATIVA
-			columns.push({
+			// 🔄 Columna de Iteración - API NATIVA (solo si hay iteraciones ≥ 2)
+			const hasHighIterations = Object.values(dimensionClassifications).some(classification => 
+				classification && classification.iteration && classification.iteration >= 2
+			);
+			
+			if (hasHighIterations) {
+				columns.push({
 				id: `iteration_${dimension.id}`,
 				header: "I",
 				size: 50, // Columna pequeña para un solo dígito
@@ -466,7 +463,8 @@ const BatchDetailPage = () => {
 				meta: {
 					tooltipType: 'standard' as const
 				}
-			});
+				});
+			}
 			
 			// 📝 Columna de Justificación - API NATIVA
 			const dimensionAcronym = dimension.name
@@ -494,13 +492,14 @@ const BatchDetailPage = () => {
 				},
 				meta: { 
 					isTruncatable: true, 
+					enableCopyButton: true,
 					tooltipType: "longText" as const 
 				}
 			});
 		});
 		
 		return columns;
-	}, [activeDimensions, dimensionClassifications, highlightKeyword]);
+	}, [activeDimensions, dimensionClassifications]);
 
 	// 📊 Configuración final de columnas: base + dimensiones dinámicas
 	const tableColumns: ColumnDef<TableRow>[] = useMemo(() => {
@@ -793,6 +792,7 @@ const BatchDetailPage = () => {
 	// ✅ ESTRUCTURA CORREGIDA: Eliminar contenedores flex que limitan el scroll
 	// Aplicar la misma estructura que funciona en standard-table-final
 	return (
+		<StandardPageBackground variant="default">
 		<div className="p-4 sm:p-6">
 			<StandardPageTitle
 				title={`Preclasificación Lote #${batchDetails.batch_number || batchId}`}
@@ -825,31 +825,7 @@ const BatchDetailPage = () => {
 							</StandardButton>
 						)}
 						
-						{/* Botón para abrir KeywordHighlighter - solo el trigger */}
-						<StandardButton
-							leftIcon={Search}
-							styleType="outline"
-							colorScheme="accent"
-							onClick={() => setKeywordHighlighterOpen(true)}
-							tooltip="Resaltar palabra clave en valores de dimensión"
-						>
-							{highlightKeyword ?
-								`Resaltando: "${highlightKeyword}"`
-							:	"Resaltar Palabra Clave"}
-						</StandardButton>
-						
-						{highlightKeyword && (
-							<StandardButton
-								leftIcon={X}
-								styleType="ghost"
-								colorScheme="neutral"
-								size="sm"
-								onClick={() => handleKeywordChange(null)}
-								tooltip="Limpiar resaltado"
-							>
-								Limpiar
-							</StandardButton>
-						)}
+
 					</div>
 					
 					{/* Botón de inversión de vista */}
@@ -865,8 +841,10 @@ const BatchDetailPage = () => {
 					</div>
 				</div>
 
-				{/* Tabla principal - Sin contenedores flex que limiten el crecimiento */}
-				<div>
+				{/* Tabla principal - Wrapper aislado para sticky header */}
+				<div className="relative" style={{ isolation: 'isolate' }}>
+					{/* Spacer para evitar interferencia con elementos superiores */}
+					<div style={{ height: '1px', marginBottom: '8px' }} />
 					<StandardTable
 						data={tableData}
 						columns={tableColumns}
@@ -874,7 +852,11 @@ const BatchDetailPage = () => {
 						isStickyHeader={true}
 						enableTruncation={true}
 						filterPlaceholder="Buscar artículos..."
-						stickyOffset={64}
+						stickyOffset={80}
+						enableKeywordHighlighting={true}
+						keywordHighlightPlaceholder="Resaltar palabra clave..."
+						enableCsvExport={true}
+						csvFileName={`Preclasificacion_Lote_${batchDetails.batch_number || batchId}`}
 					>
 						<StandardTable.Table />
 					</StandardTable>
@@ -889,15 +871,8 @@ const BatchDetailPage = () => {
 				project={auth.proyectoActual ? { id: auth.proyectoActual.id, name: auth.proyectoActual.name } : null}
 				showOriginalAsPrimary={showOriginalAsPrimary}
 			/>
-
-			{/* KeywordHighlighter Component - Popup */}
-			<KeywordHighlighter
-				open={keywordHighlighterOpen}
-				onClose={() => setKeywordHighlighterOpen(false)}
-				onKeywordChange={handleKeywordChange}
-				currentKeyword={highlightKeyword}
-			/>
 		</div>
+		</StandardPageBackground>
 	);
 };
 
