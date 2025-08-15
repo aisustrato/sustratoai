@@ -2,7 +2,7 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
 	useForm,
 	Controller,
@@ -156,6 +156,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 		},
 		mode: "onBlur",
 		reValidateMode: "onChange",
+		// Asegura que los campos no se desregistren al desmontar (e.g., al ocultar secciones)
+		shouldUnregister: false,
 	});
 
 	const {
@@ -223,19 +225,30 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 		remove: removeExample,
 	} = useFieldArray({ control, name: "examples" });
 
+	// Evitar resets que borren cambios del usuario si hay refetch o re-render al volver al foco
+	const hasInitializedDefaults = useRef(false);
 	useEffect(() => {
-		if (valoresIniciales) {
-			form.reset({
-				name: "",
-				type: undefined,
-				description: "",
-				options: [],
-				questions: [],
-				examples: [],
-				...valoresIniciales,
-			});
+		if (!valoresIniciales) return;
+		// Solo inicializar una vez en modo editar para cargar valores del backend
+		if (modo === "editar" && !hasInitializedDefaults.current) {
+			form.reset(
+				{
+					name: "",
+					type: undefined,
+					description: "",
+					options: [],
+					questions: [],
+					examples: [],
+					...valoresIniciales,
+				},
+				{
+					// Mantener lo que el usuario ya escribió (incluye arreglos dinámicos)
+					keepDirtyValues: true,
+				}
+			);
+			hasInitializedDefaults.current = true;
 		}
-	}, [valoresIniciales, form]);
+	}, [modo, valoresIniciales, form]);
 
 	const handleFormSubmitInternal = (data: DimensionFormValues) => {
 		if (onSubmit) {
@@ -636,8 +649,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 													placeholder={`Pregunta guía ${index + 1}`}
 													readOnly={isReadOnlyEffective}
 													isEditing={modo === "editar" && !isReadOnlyEffective}
-													className="min-h-[40px]"
-													rows={1}
+													rows={3}
 													error={errors.questions?.[index]?.question?.message}
 													success={getFieldSuccessState(
 														"questions",
@@ -745,8 +757,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 													placeholder={`Ejemplo ${index + 1}`}
 													readOnly={isReadOnlyEffective}
 													isEditing={modo === "editar" && !isReadOnlyEffective}
-													className="min-h-[40px]"
-													rows={1}
+													rows={3}
 													error={errors.examples?.[index]?.example?.message}
 													success={getFieldSuccessState(
 														"examples",

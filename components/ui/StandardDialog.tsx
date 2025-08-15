@@ -72,6 +72,7 @@ const StandardDialogContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         style={cssVariables}
+        aria-describedby={undefined}
         onPointerDownOutside={(e) => {
             if (props.onPointerDownOutside === undefined && e.target instanceof Element && e.target.closest('[data-radix-popper-content-wrapper]')) {
                 e.preventDefault();
@@ -128,12 +129,16 @@ const StandardDialogFooter = ({ className, ...props }: React.HTMLAttributes<HTML
 StandardDialogFooter.displayName = "StandardDialogFooter";
 
 const StandardDialogTitle = ({ className, ...props }: React.ComponentPropsWithoutRef<typeof StandardText>) => (
-  <StandardText preset="title" asElement="h2" className={cn("text-lg", className)} {...props} />
+  <DialogPrimitive.Title>
+    <StandardText preset="title" asElement="h2" className={cn("text-lg", className)} {...props} />
+  </DialogPrimitive.Title>
 );
 StandardDialogTitle.displayName = "StandardDialogTitle";
 
 const StandardDialogDescription = ({ className, ...props }: React.ComponentPropsWithoutRef<typeof StandardText>) => (
-  <StandardText size="sm" colorScheme="neutral" colorShade="subtle" className={cn(className)} {...props} />
+  <DialogPrimitive.Description>
+    <StandardText size="sm" colorScheme="neutral" colorShade="subtle" className={cn(className)} {...props} />
+  </DialogPrimitive.Description>
 );
 StandardDialogDescription.displayName = "StandardDialogDescription";
 

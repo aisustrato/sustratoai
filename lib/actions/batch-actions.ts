@@ -21,6 +21,59 @@ export interface BatchingStatus {
     canResetBatches?: boolean;
 }
 
+// ========================================================================
+// 	ACCIÓN 1.5: VERIFICAR SI UNA FASE PERMITE MODIFICAR DIMENSIONES
+// 	Regla: Se permite modificar/eliminar dimensiones mientras NO existan
+// 	lotes de la fase en estado distinto al estado inicial.
+// 	- Fase 1: estado inicial = 'pending'
+// 	- Fases >1: estado inicial = 'translated'
+// ========================================================================
+export async function canModifyDimensionsForPhase(
+    phaseId: string
+): Promise<ResultadoOperacion<{ allowed: boolean; reason?: string }>> {
+    const opId = `CMDP-${Math.floor(Math.random() * 10000)}`;
+    console.log(`[${opId}] Verificando si la fase permite modificar dimensiones: ${phaseId}`);
+
+    try {
+        const supabase = await createSupabaseServerClient();
+
+        // Obtener el phase_number para determinar el estado inicial de sus lotes
+        const { data: phaseData, error: phaseError } = await supabase
+            .from('preclassification_phases')
+            .select('phase_number, name')
+            .eq('id', phaseId)
+            .single();
+
+        if (phaseError || !phaseData) {
+            return { success: false, error: 'Fase no encontrada para verificación.' };
+        }
+
+        const initialState = phaseData.phase_number === 1 ? 'pending' : 'translated';
+
+        // Contar lotes que NO están en el estado inicial
+        const { count: advancedCount, error: countError } = await supabase
+            .from('article_batches')
+            .select('*', { count: 'exact', head: true })
+            .eq('phase_id', phaseId)
+            .neq('status', initialState);
+
+        if (countError) {
+            return { success: false, error: 'Error al verificar estado de los lotes de la fase.' };
+        }
+
+        const hasAdvanced = (advancedCount ?? 0) > 0;
+        if (hasAdvanced) {
+            const reason = `No se puede modificar ni eliminar dimensiones de "${phaseData.name ?? 'esta fase'}" porque existen lotes en progreso (estado distinto a "${initialState}").`;
+            return { success: true, data: { allowed: false, reason } };
+        }
+
+        return { success: true, data: { allowed: true } };
+    } catch (error) {
+        console.error(`❌ [${opId}] Excepción en canModifyDimensionsForPhase:`, error);
+        return { success: false, error: `Error interno del servidor: ${(error as Error).message}` };
+    }
+}
+
 export interface CreateBatchesPayload {
 	projectId: string;
     batchSize: number;

@@ -407,7 +407,8 @@ ${articleDetails}
 }
 
 /**
- * Helper que ejecuta el trabajo de preclasificación.
+ * Helper que ejecuta el trabajo de preclasificación con mecanismo de repechaje.
+ * Implementa el principio "Todo o Nada" con integridad transaccional.
  */
 async function runPreclassificationJob(jobId: string, batchId: string, userId: string) {
     const supabase = await createSupabaseServerClient();
@@ -424,78 +425,82 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
 
         await supabase.from('ai_job_history').update({ details: { total: items.length, processed: 0, step: 'Datos preparados' } }).eq('id', jobId);
 
-        const miniBatchSize = 5;
-        let processedCount = 0;
-        for (let i = 0; i < items.length; i += miniBatchSize) {
-            const chunk = items.slice(i, i + miniBatchSize);
-            
-            await supabase.from('ai_job_history').update({
-                progress: (processedCount / items.length) * 100,
-                details: { total: items.length, processed: processedCount, step: `Procesando artículos ${i+1}-${i+chunk.length}` }
-            }).eq('id', jobId);
-
-            const prompt = buildPreclassificationPrompt(batchData.projects, dimensions as DimensionForPrompt[], chunk as ArticleForPrompt[]);
-            
-            // 📝 LOGGING: Prompt enviado
-            console.log(`\n🚀 [${jobId}] PROMPT ENVIADO A GEMINI:`);
-            console.log('=' .repeat(80));
-            console.log(prompt);
-            console.log('=' .repeat(80));
-            
-            const { result, usage } = await callGeminiAPI('gemini-1.5-flash', prompt);
-            
-            // 📝 LOGGING: Respuesta recibida
-            console.log(`\n📥 [${jobId}] RESPUESTA RECIBIDA DE GEMINI:`);
-            console.log('=' .repeat(80));
-            console.log(result);
-            console.log('=' .repeat(80));
-            
-            // 🔧 MEJORAR PARSING: Limpiar markdown si está presente
-            let cleanResult = result.trim();
-            
-            // Remover bloques de código markdown si existen
-            if (cleanResult.startsWith('```json')) {
-                cleanResult = cleanResult.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-            } else if (cleanResult.startsWith('```')) {
-                cleanResult = cleanResult.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        // 🎯 ARRAYS PARA REPECHAJE Y INTEGRIDAD TRANSACCIONAL
+        const articulosParaRepechaje: ArticleForPrompt[] = [];
+        const clasificacionesExitosasTemporales: Database['public']['Tables']['article_dimension_reviews']['Insert'][] = [];
+        
+        // 🛡️ FUNCIÓN ROBUSTA PARA MAPEAR CONFIDENCE_SCORE
+        const mapConfidenceToScore = (confidenceText: string): number => {
+            if (typeof confidenceText !== 'string') {
+                throw new Error(`Valor de confianza inválido, se esperaba un string: "${confidenceText}"`);
             }
+            const lowerConfidence = confidenceText.toLowerCase();
+            switch (lowerConfidence) {
+                case 'alta': return 3;
+                case 'media': return 2;
+                case 'baja': return 1;
+                default:
+                    throw new Error(`Valor de confianza no reconocido: "${confidenceText}"`);
+            }
+        };
+
+        // 🔧 NORMALIZAR STRINGS: Limpiar espacios y caracteres invisibles
+        const normalizeString = (str: string) => str.trim().replace(/\s+/g, ' ');
+
+        // 🎯 FUNCIÓN INTERNA PARA PROCESAR CHUNKS CON MANEJO GRANULAR
+        const processArticleChunk = async (chunk: ArticleForPrompt[], attemptNumber: number) => {
+            const chunkFailedArticles: ArticleForPrompt[] = [];
+            const chunkSuccessfulReviews: Database['public']['Tables']['article_dimension_reviews']['Insert'][] = [];
             
-            console.log(`\n🧹 [${jobId}] JSON LIMPIO PARA PARSING:`);
-            console.log('=' .repeat(50));
-            console.log(cleanResult);
-            console.log('=' .repeat(50));
-            
+            let prompt = '';
+            let rawResponse = '';
+            let cleanedResponse = '';
+
             try {
+                prompt = buildPreclassificationPrompt(batchData.projects, dimensions as DimensionForPrompt[], chunk);
+                
+                // 📝 LOGGING DETALLADO: Prompt enviado
+                console.log(`\n🚀 [${jobId}] INTENTO ${attemptNumber} - PROMPT ENVIADO A GEMINI:`);
+                console.log('=' .repeat(100));
+                console.log(prompt);
+                console.log('=' .repeat(100));
+                
+                const { result, usage } = await callGeminiAPI('gemini-1.5-flash', prompt);
+                rawResponse = result;
+                
+                // 📝 LOGGING DETALLADO: Respuesta recibida
+                console.log(`\n📥 [${jobId}] INTENTO ${attemptNumber} - RESPUESTA RECIBIDA DE GEMINI:`);
+                console.log('=' .repeat(100));
+                console.log(rawResponse);
+                console.log('=' .repeat(100));
+                
+                let cleanResult = result.trim();
+                if (cleanResult.startsWith('```json')) {
+                    cleanResult = cleanResult.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+                } else if (cleanResult.startsWith('```')) {
+                    cleanResult = cleanResult.replace(/^```\s*/, '').replace(/\s*```$/, '');
+                }
+                cleanedResponse = cleanResult;
+                
+                console.log(`\n🧹 [${jobId}] INTENTO ${attemptNumber} - JSON LIMPIO PARA PARSING:`);
+                console.log('=' .repeat(80));
+                console.log(cleanedResponse);
+                console.log('=' .repeat(80));
+                
                 const parsedResult = JSON.parse(cleanResult);
-                if (Array.isArray(parsedResult)) {
-                    const reviewsToInsert: Database['public']['Tables']['article_dimension_reviews']['Insert'][] = [];
+                if (!Array.isArray(parsedResult)) {
+                    throw new Error('La respuesta de la IA no es un array válido');
+                }
 
-                    // 🛡️ FUNCIÓN ROBUSTA PARA MAPEAR CONFIDENCE_SCORE
-                    const mapConfidenceToScore = (confidenceText: string): number => {
-                        if (typeof confidenceText !== 'string') {
-                            throw new Error(`Valor de confianza inválido, se esperaba un string: "${confidenceText}"`);
-                        }
-                        const lowerConfidence = confidenceText.toLowerCase();
-                        switch (lowerConfidence) {
-                            case 'alta': return 3;
-                            case 'media': return 2;
-                            case 'baja': return 1;
-                            default:
-                                throw new Error(`Valor de confianza no reconocido: "${confidenceText}"`);
-                        }
-                    };
-
-                    console.log(`\n🔍 [${jobId}] INICIANDO VALIDACIÓN INTELIGENTE:`);
-                    console.log('Dimensiones disponibles:', dimensions.map(d => ({ id: d.id, name: d.name, type: d.type })));
-
-                    for (const item of parsedResult) {
-                        console.log(`\n📄 [${jobId}] Procesando artículo itemId: ${item.itemId}`);
+                for (const item of parsedResult) {
+                    const currentArticle = chunk.find(art => art.id === item.itemId);
+                    if (!currentArticle) continue;
+                    
+                    try {
+                        const articleReviews: Database['public']['Tables']['article_dimension_reviews']['Insert'][] = [];
                         
                         for (const dimensionName in item.classifications) {
-                            console.log(`\n🔍 [${jobId}] Validando dimensión: "${dimensionName}"`);
-                            
-                            const foundDimension = dimensions.find(d => d.name === dimensionName);
-
+                            const foundDimension = dimensions.find(dim => dim.id === dimensionName || dim.name === dimensionName);
                             if (!foundDimension) {
                                 throw new Error(`La IA devolvió una dimensión desconocida: "${dimensionName}"`);
                             }
@@ -503,106 +508,239 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
                             const classification = item.classifications[dimensionName];
                             const valueToSave = classification.value;
 
-                            console.log(`🧠 [${jobId}] Validando valor "${valueToSave}" para dimensión "${foundDimension.name}" (tipo: ${foundDimension.type})`);
-
-                            // 🧠 LÓGICA DE VALIDACIÓN INTELIGENTE CON NORMALIZACIÓN
                             if (foundDimension.type === 'finite') {
                                 const validOptions = foundDimension.preclass_dimension_options.map(opt => opt.value);
-                                
-                                // 🔧 NORMALIZAR STRINGS: Limpiar espacios y caracteres invisibles
-                                const normalizeString = (str: string) => str.trim().replace(/\s+/g, ' ');
                                 const normalizedValue = normalizeString(valueToSave);
                                 const normalizedOptions = validOptions.map(opt => normalizeString(opt));
                                 
-                                // Verificar coincidencia exacta con normalización
                                 const exactMatchIndex = normalizedOptions.findIndex(opt => opt === normalizedValue);
                                 const isExactMatch = exactMatchIndex !== -1;
                                 
-                                // Verificar opción "Otros" inteligente
                                 const otherOption = validOptions.find(opt => normalizeString(opt).toLowerCase().startsWith('otros'));
                                 const isSmartOther = otherOption && typeof valueToSave === 'string' && normalizedValue.toLowerCase().startsWith('otros');
-
-                                console.log(`🔍 [${jobId}] Valor original: "${valueToSave}"`);
-                                console.log(`🔍 [${jobId}] Valor normalizado: "${normalizedValue}"`);
-                                console.log(`🔍 [${jobId}] Opciones válidas:`, validOptions);
-                                console.log(`🔍 [${jobId}] Opciones normalizadas:`, normalizedOptions);
-                                console.log(`🔍 [${jobId}] Coincidencia exacta: ${isExactMatch} (índice: ${exactMatchIndex}), Otros inteligente: ${isSmartOther}`);
 
                                 if (!isExactMatch && !isSmartOther) {
                                     throw new Error(`Valor "${valueToSave}" inválido para la dimensión finita "${foundDimension.name}". Opciones válidas: ${validOptions.join(', ')}`);
                                 }
                             }
 
-                            console.log(`✅ [${jobId}] Valor validado exitosamente: "${valueToSave}"`);
-
-                            reviewsToInsert.push({
+                            articleReviews.push({
                                 article_batch_item_id: item.itemId,
                                 dimension_id: foundDimension.id,
                                 reviewer_type: 'ai',
                                 reviewer_id: userId,
-                                iteration: 1,
+                                iteration: attemptNumber,
                                 classification_value: valueToSave,
                                 confidence_score: mapConfidenceToScore(classification.confidence),
                                 rationale: classification.rationale,
                             });
                         }
-                    }
 
-                    console.log(`\n💾 [${jobId}] PREPARANDO INSERCIÓN:`);
-                    console.log(`Total de clasificaciones a insertar: ${reviewsToInsert.length}`);
-                    
-                    // 🛡️ VALIDACIÓN FINAL ANTI-FALLO SILENCIOSO
-                    if (reviewsToInsert.length > 0) {
-                        console.log(`\n🚀 [${jobId}] EJECUTANDO INSERCIÓN EN article_dimension_reviews...`);
-                        const { error: insertError } = await supabase.from('article_dimension_reviews').insert(reviewsToInsert);
+                        chunkSuccessfulReviews.push(...articleReviews);
+                        console.log(`✅ [${jobId}] INTENTO ${attemptNumber} - Artículo ${item.itemId} procesado exitosamente con ${articleReviews.length} clasificaciones`);
                         
-                        if (insertError) {
-                            console.error(`❌ [${jobId}] ERROR EN INSERCIÓN:`, insertError);
-                            throw new Error(`Error de base de datos al insertar clasificaciones: ${insertError.message}`);
-                        }
+                    } catch (articleError) {
+                        // ❌ LOGGING DETALLADO: Error procesando artículo individual
+                        console.error(`\n❌ [${jobId}] INTENTO ${attemptNumber} - ERROR PROCESANDO ARTÍCULO ${item.itemId}:`);
+                        console.error('PROMPT ENVIADO:');
+                        console.error('=' .repeat(80));
+                        console.error(prompt);
+                        console.error('=' .repeat(80));
+                        console.error('RESPUESTA RECIBIDA:');
+                        console.error('=' .repeat(80));
+                        console.error(rawResponse);
+                        console.error('=' .repeat(80));
+                        console.error('JSON LIMPIO:');
+                        console.error('=' .repeat(80));
+                        console.error(cleanedResponse);
+                        console.error('=' .repeat(80));
+                        console.error('ERROR ESPECÍFICO:', articleError instanceof Error ? articleError.message : 'Error desconocido');
+                        console.error('STACK TRACE:', articleError instanceof Error ? articleError.stack : 'No disponible');
+                        console.error('=' .repeat(80));
                         
-                        console.log(`✅ [${jobId}] INSERCIÓN EXITOSA: ${reviewsToInsert.length} clasificaciones guardadas`);
-                    } else if (parsedResult.length > 0) {
-                        console.error(`❌ [${jobId}] FALLO SILENCIOSO EVITADO: Respuesta parseada pero sin clasificaciones válidas`);
-                        throw new Error('La respuesta de la IA fue parseada pero no generó ninguna clasificación válida para guardar.');
+                        chunkFailedArticles.push(currentArticle);
                     }
                 }
-            } catch (parseError) {
-                console.error(`\n❌ [${jobId}] ERROR PARSEANDO JSON DE LA IA:`);
-                console.error('=' .repeat(60));
-                console.error('Error:', parseError);
-                console.error('Respuesta original:', result);
-                console.error('JSON limpio intentado:', cleanResult);
-                console.error('=' .repeat(60));
+
+                await supabase.rpc('increment_job_tokens', {
+                    job_id: jobId,
+                    input_increment: usage?.promptTokenCount || 0,
+                    output_increment: usage?.candidatesTokenCount || 0
+                });
+
+                return {
+                    success: true,
+                    failedArticles: chunkFailedArticles,
+                    successfulReviews: chunkSuccessfulReviews
+                };
+
+            } catch (chunkError) {
+                // ❌ LOGGING DETALLADO: Error procesando chunk completo
+                console.error(`\n❌❌ [${jobId}] INTENTO ${attemptNumber} - ERROR CRÍTICO PROCESANDO CHUNK COMPLETO:`);
+                console.error('CHUNK AFECTADO:', chunk.map(art => ({ id: art.id, articles: art.articles ? { title: art.articles.title?.substring(0, 50) + '...' } : 'Sin datos' })));
+                console.error('PROMPT ENVIADO:');
+                console.error('=' .repeat(100));
+                console.error(prompt || 'No se pudo generar el prompt');
+                console.error('=' .repeat(100));
+                console.error('RESPUESTA RECIBIDA:');
+                console.error('=' .repeat(100));
+                console.error(rawResponse || 'No se recibió respuesta de la IA');
+                console.error('=' .repeat(100));
+                console.error('JSON LIMPIO:');
+                console.error('=' .repeat(100));
+                console.error(cleanedResponse || 'No se pudo limpiar la respuesta');
+                console.error('=' .repeat(100));
+                console.error('ERROR CRÍTICO:', chunkError instanceof Error ? chunkError.message : 'Error desconocido');
+                console.error('STACK TRACE:', chunkError instanceof Error ? chunkError.stack : 'No disponible');
+                console.error('TIPO DE ERROR:', chunkError instanceof Error ? chunkError.constructor.name : typeof chunkError);
+                console.error('=' .repeat(100));
+                console.error('🚨 TODOS LOS ARTÍCULOS DEL CHUNK VAN A REPECHAJE');
+                console.error('=' .repeat(100));
                 
-                const errorMsg = `Error parseando JSON: ${parseError instanceof Error ? parseError.message : 'Error desconocido'}`;
+                return {
+                    success: false,
+                    failedArticles: chunk,
+                    successfulReviews: []
+                };
+            }
+        };
+
+        // 🎯 BUCLE PRINCIPAL (PRIMER INTENTO)
+        const miniBatchSize = 5;
+        let processedCount = 0;
+        
+        console.log(`\n🚀 [${jobId}] INICIANDO PRIMER INTENTO - Procesando ${items.length} artículos en chunks de ${miniBatchSize}`);
+        
+        for (let i = 0; i < items.length; i += miniBatchSize) {
+            const chunk = items.slice(i, i + miniBatchSize) as ArticleForPrompt[];
+            
+            await supabase.from('ai_job_history').update({
+                progress: (processedCount / items.length) * 50,
+                details: { 
+                    total: items.length, 
+                    processed: processedCount, 
+                    step: `Primer intento: artículos ${i+1}-${i+chunk.length}`,
+                    phase: 'first_attempt'
+                }
+            }).eq('id', jobId);
+
+            const result = await processArticleChunk(chunk, 1);
+            
+            articulosParaRepechaje.push(...result.failedArticles);
+            clasificacionesExitosasTemporales.push(...result.successfulReviews);
+            
+            processedCount += chunk.length;
+            
+            console.log(`\n📊 [${jobId}] PROGRESO PRIMER INTENTO - Chunk ${i/miniBatchSize + 1}: ${result.successfulReviews.length} éxitos, ${result.failedArticles.length} fallos`);
+        }
+
+        console.log(`\n📊 [${jobId}] RESUMEN PRIMER INTENTO:`);
+        console.log(`- Artículos exitosos: ${items.length - articulosParaRepechaje.length}`);
+        console.log(`- Artículos para repechaje: ${articulosParaRepechaje.length}`);
+        console.log(`- Clasificaciones temporales acumuladas: ${clasificacionesExitosasTemporales.length}`);
+
+        // 🎯 BUCLE DE REPECHAJE (SEGUNDA OPORTUNIDAD)
+        if (articulosParaRepechaje.length > 0) {
+            console.log(`\n🔄 [${jobId}] INICIANDO REPECHAJE - ${articulosParaRepechaje.length} artículos necesitan segunda oportunidad`);
+            
+            const articulosFallidosDefinitivos: ArticleForPrompt[] = [];
+            
+            for (let i = 0; i < articulosParaRepechaje.length; i += miniBatchSize) {
+                const repechageChunk = articulosParaRepechaje.slice(i, i + miniBatchSize);
                 
-                // Actualizar el job con error específico
+                await supabase.from('ai_job_history').update({
+                    progress: 50 + ((i / articulosParaRepechaje.length) * 40),
+                    details: { 
+                        total: items.length, 
+                        processed: items.length - articulosParaRepechaje.length + i, 
+                        step: `Repechaje: artículos ${i+1}-${i+repechageChunk.length} de ${articulosParaRepechaje.length}`,
+                        phase: 'repechaje'
+                    }
+                }).eq('id', jobId);
+
+                const repechageResult = await processArticleChunk(repechageChunk, 2);
+                
+                clasificacionesExitosasTemporales.push(...repechageResult.successfulReviews);
+                articulosFallidosDefinitivos.push(...repechageResult.failedArticles);
+                
+                console.log(`\n📊 [${jobId}] PROGRESO REPECHAJE - Chunk ${i/miniBatchSize + 1}: ${repechageResult.successfulReviews.length} éxitos, ${repechageResult.failedArticles.length} fallos definitivos`);
+            }
+
+            console.log(`\n📊 [${jobId}] RESUMEN REPECHAJE:`);
+            console.log(`- Artículos recuperados en repechaje: ${articulosParaRepechaje.length - articulosFallidosDefinitivos.length}`);
+            console.log(`- Artículos con fallo definitivo: ${articulosFallidosDefinitivos.length}`);
+
+            // 🚨 SI HAY FALLOS DEFINITIVOS, ABORTAR TODO
+            if (articulosFallidosDefinitivos.length > 0) {
+                const failedIds = articulosFallidosDefinitivos.map(art => art.id).join(', ');
+                const errorMsg = `Fallos persistentes en ${articulosFallidosDefinitivos.length} artículos tras repechaje. IDs: ${failedIds}`;
+                
+                // 🚨 LOGGING CRÍTICO: Fallos persistentes tras repechaje
+                console.error(`\n🚨🚨🚨 [${jobId}] FALLO PERSISTENTE TRAS REPECHAJE - ABORTANDO PROCESO COMPLETO`);
+                console.error('=' .repeat(120));
+                console.error('RESUMEN DEL FALLO CRÍTICO:');
+                console.error(`- Total de artículos procesados: ${items.length}`);
+                console.error(`- Artículos exitosos: ${items.length - articulosFallidosDefinitivos.length}`);
+                console.error(`- Artículos con fallo persistente: ${articulosFallidosDefinitivos.length}`);
+                console.error(`- Clasificaciones exitosas (NO SE GUARDARÁN): ${clasificacionesExitosasTemporales.length}`);
+                console.error('=' .repeat(120));
+                console.error('ARTÍCULOS CON FALLO PERSISTENTE:');
+                articulosFallidosDefinitivos.forEach((art, index) => {
+                    console.error(`${index + 1}. ID: ${art.id} - Título: ${art.articles?.title?.substring(0, 100) || 'Sin título'}...`);
+                });
+                console.error('=' .repeat(120));
+                console.error('🚨 PRINCIPIO "TODO O NADA" ACTIVADO - NO SE INSERTARÁN DATOS PARCIALES');
+                console.error('🚨 TODOS LOS DATOS EXITOSOS SE DESCARTAN PARA MANTENER INTEGRIDAD');
+                console.error('=' .repeat(120));
+                
                 await supabase.from('ai_job_history').update({ 
                     status: 'failed', 
                     progress: 100, 
+                    error_message: errorMsg,
                     details: { 
                         error: errorMsg,
-                        originalResponse: result,
-                        step: `Error en lote ${i+1}-${i+chunk.length}`,
-                        total: items.length,
-                        processed: processedCount
+                        failedArticles: articulosFallidosDefinitivos.length,
+                        successfulClassifications: clasificacionesExitosasTemporales.length,
+                        step: 'Fallo persistente tras repechaje',
+                        failedArticleIds: failedIds,
+                        totalProcessed: items.length
                     } 
                 }).eq('id', jobId);
                 
                 throw new Error(errorMsg);
             }
-            
-            await supabase.rpc('increment_job_tokens', {
-                job_id: jobId,
-                input_increment: usage?.promptTokenCount || 0,
-                output_increment: usage?.candidatesTokenCount || 0
-            });
-            
-            processedCount += chunk.length;
         }
 
-        await supabase.from('ai_job_history').update({ status: 'completed', progress: 100, details: { total: items.length, processed: items.length, step: 'Completado' } }).eq('id', jobId);
+        // 🎯 INSERCIÓN MASIVA FINAL - PRINCIPIO "TODO O NADA"
+        console.log(`\n💾 [${jobId}] PREPARANDO INSERCIÓN MASIVA FINAL:`);
+        console.log(`Total de clasificaciones a insertar: ${clasificacionesExitosasTemporales.length}`);
+        
+        if (clasificacionesExitosasTemporales.length > 0) {
+            console.log(`\n🚀 [${jobId}] EJECUTANDO INSERCIÓN MASIVA EN article_dimension_reviews...`);
+            const { error: insertError } = await supabase.from('article_dimension_reviews').insert(clasificacionesExitosasTemporales);
+            
+            if (insertError) {
+                console.error(`❌ [${jobId}] ERROR EN INSERCIÓN MASIVA:`, insertError);
+                throw new Error(`Error de base de datos al insertar clasificaciones: ${insertError.message}`);
+            }
+            
+            console.log(`✅ [${jobId}] INSERCIÓN MASIVA EXITOSA: ${clasificacionesExitosasTemporales.length} clasificaciones guardadas`);
+        } else {
+            console.error(`❌ [${jobId}] FALLO SILENCIOSO EVITADO: Sin clasificaciones válidas para insertar`);
+            throw new Error('No se generaron clasificaciones válidas para guardar.');
+        }
+
+        await supabase.from('ai_job_history').update({ 
+            status: 'completed', 
+            progress: 100, 
+            details: { 
+                total: items.length, 
+                processed: items.length, 
+                step: 'Completado con repechaje',
+                successfulClassifications: clasificacionesExitosasTemporales.length,
+                articlesWithRepechaje: articulosParaRepechaje.length
+            } 
+        }).eq('id', jobId);
         await supabase.from('article_batches').update({ status: 'review_pending' }).eq('id', batchId);
 
     } catch (error) {

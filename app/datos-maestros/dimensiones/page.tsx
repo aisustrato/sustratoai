@@ -32,6 +32,7 @@ import { AlertTriangle, LayoutGrid, Trash2, Plus, Layers } from "lucide-react";
 import { DimensionCard } from "./components/DimensionCard"; // Tu componente DimensionCard
 import { toast as sonnerToast } from "sonner";
 import { useLoading } from "@/contexts/LoadingContext"; // Opcional, si lo usas
+// Validación de modificación por fase se hará vía fetch a la ruta API
 //#endregion ![head]
 
 // No specific types defined directly in this file, they are imported or inline.
@@ -71,6 +72,11 @@ export default function DimensionesPage() {
 		id: string;
 		name: string;
 	} | null>(null);
+  const [restrictionDialog, setRestrictionDialog] = useState<{
+    action: 'edit' | 'delete';
+    name: string;
+    reason: string;
+  } | null>(null);
 
 	const puedeGestionarDimensiones =
 		proyectoActual?.permissions?.can_manage_master_data || false;
@@ -183,13 +189,38 @@ export default function DimensionesPage() {
 		router.push(url);
 	};
 
-	const handleEditarDimension = (dimensionId: string) => {
-		// Incluir la fase activa en la URL de edición
-		const url = activePhaseId 
-			? `/datos-maestros/dimensiones/${dimensionId}/modificar?phase=${activePhaseId}`
-			: `/datos-maestros/dimensiones/${dimensionId}/modificar`;
-		router.push(url);
-	};
+  const verifyCanModify = useCallback(async (): Promise<{ allowed: boolean; reason?: string }> => {
+    if (!activePhaseId) {
+      return { allowed: false, reason: 'No hay una fase activa seleccionada.' };
+    }
+    try {
+      const res = await fetch(`/api/phases/${activePhaseId}/can-modify`, { method: 'GET' });
+      if (!res.ok) {
+        return { allowed: false, reason: `Error de verificación (${res.status}).` };
+      }
+      const json: { success: boolean; data?: { allowed: boolean; reason?: string }; error?: string } = await res.json();
+      if (!json.success) {
+        return { allowed: false, reason: json.error || 'No fue posible verificar el estado de los lotes.' };
+      }
+      return json.data ?? { allowed: false, reason: 'Respuesta inválida del servidor.' };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Error desconocido';
+      return { allowed: false, reason: `No fue posible verificar el estado de los lotes: ${msg}` };
+    }
+  }, [activePhaseId]);
+
+  const handleEditarDimension = async (dimensionId: string, dimensionName: string) => {
+    const check = await verifyCanModify();
+    if (!check.allowed) {
+      setRestrictionDialog({ action: 'edit', name: dimensionName, reason: check.reason || 'Acción no permitida.' });
+      return;
+    }
+    // Incluir la fase activa en la URL de edición
+    const url = activePhaseId 
+      ? `/datos-maestros/dimensiones/${dimensionId}/modificar?phase=${activePhaseId}`
+      : `/datos-maestros/dimensiones/${dimensionId}/modificar`;
+    router.push(url);
+  };
 
 	const handleVerDimension = (dimensionId: string) => {
 		// Incluir la fase activa en la URL de visualización
@@ -200,7 +231,7 @@ export default function DimensionesPage() {
 	};
 
 	// --- FUNCIÓN handleEliminarDimension ACTUALIZADA ---
-	const handleEliminarDimension = (
+	const handleEliminarDimension = async (
 		dimensionId: string,
 		dimensionName: string
 	) => {
@@ -210,6 +241,11 @@ export default function DimensionesPage() {
 			});
 			return;
 		}
+    const check = await verifyCanModify();
+    if (!check.allowed) {
+      setRestrictionDialog({ action: 'delete', name: dimensionName, reason: check.reason || 'Acción no permitida.' });
+      return;
+    }
 		setDialogToDelete({ id: dimensionId, name: dimensionName });
 	};
 
@@ -438,13 +474,13 @@ export default function DimensionesPage() {
 								)}
 
 								{/* Grid de dimensiones */}
-								{!isLoading && dimensions.length > 0 && (
+								{(!isLoading && dimensions.length > 0) && (
 									<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 										{dimensions.map((dim) => (
 											<DimensionCard
 												key={dim.id}
 												dimension={dim}
-												onEdit={() => handleEditarDimension(dim.id)}
+												onEdit={() => handleEditarDimension(dim.id, dim.name)}
 												onDelete={() => handleEliminarDimension(dim.id, dim.name)}
 												onViewDetails={() => handleVerDimension(dim.id)}
 												canManage={puedeGestionarDimensiones}
@@ -490,6 +526,32 @@ export default function DimensionesPage() {
 								leftIcon={Trash2}>
 								Eliminar
 							</StandardButton>
+						</StandardDialog.Footer>
+					</StandardDialog.Content>
+				</StandardDialog>
+
+				{/* Diálogo de restricción para edición/eliminación cuando hay lotes avanzados */}
+				<StandardDialog
+					open={!!restrictionDialog}
+					onOpenChange={(open: boolean) => {
+						if (!open) setRestrictionDialog(null);
+					}}
+				>
+					<StandardDialog.Content colorScheme="warning" size="md">
+						<StandardDialog.Header>
+							<StandardDialog.Title>
+								{restrictionDialog?.action === 'edit' ? 'No es posible editar' : 'No es posible eliminar'}
+							</StandardDialog.Title>
+						</StandardDialog.Header>
+						<StandardDialog.Body>
+							<StandardDialog.Description>
+								{restrictionDialog?.reason || 'La fase actual tiene lotes en progreso. No se permiten cambios en dimensiones.'}
+							</StandardDialog.Description>
+						</StandardDialog.Body>
+						<StandardDialog.Footer>
+							<StandardDialog.Close asChild>
+								<StandardButton colorScheme="warning">Entendido</StandardButton>
+							</StandardDialog.Close>
 						</StandardDialog.Footer>
 					</StandardDialog.Content>
 				</StandardDialog>
