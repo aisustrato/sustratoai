@@ -103,39 +103,44 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 				<StandardCard.Header className="p-0 mb-2">
 					<div className="flex flex-col gap-1">
 						<StandardText
-								preset="title"
-								size="md"
-								weight="semibold" // Se puede revisar si preset="title" ya lo incluye
-								truncate>
-								{dimension.name}
-							</StandardText>
-							<StandardBadge
-								size="xs"
-								colorScheme={dynamicColorScheme}
-								className="mt-1 self-start"> {/* Añadido margen superior */}
-								{tipoLabel}
-							</StandardBadge>
+							preset="title"
+							size="md"
+							weight="semibold" // Se puede revisar si preset="title" ya lo incluye
+							truncate>
+							{dimension.icon ? (
+								<span aria-hidden className="mr-1 align-middle">
+									{dimension.icon}
+								</span>
+							) : null}
+							{dimension.name}
+						</StandardText>
+						<StandardBadge
+							size="xs"
+							colorScheme={dynamicColorScheme}
+							className="mt-1 self-start"> {/* Añadido margen superior */}
+							{tipoLabel}
+						</StandardBadge>
 						{canManage && (
 							<div className="flex justify-end gap-1 mt-1">
 								<StandardButton
-										size="xs"
-										styleType="ghost"
-										onClick={(e) => { e.stopPropagation(); onEdit(); }}
-										disabled={isBeingDeleted}
-										tooltip="Editar dimensión"
-										leftIcon={PenLine}
-										iconOnly={true}
-										aria-label="Editar dimensión" />
+									size="xs"
+									styleType="ghost"
+									onClick={(e) => { e.stopPropagation(); onEdit(); }}
+									disabled={isBeingDeleted}
+									tooltip="Editar dimensión"
+									leftIcon={PenLine}
+									iconOnly={true}
+									aria-label="Editar dimensión" />
 								<StandardButton
-										size="sm"
-										styleType="ghost"
-										colorScheme="danger"
-										onClick={(e) => { e.stopPropagation(); onDelete(); }}
-										disabled={isBeingDeleted}
-										tooltip="Eliminar dimensión"
-										leftIcon={Trash2}
-										iconOnly={true}
-										aria-label="Eliminar dimensión" />
+									size="sm"
+									styleType="ghost"
+									colorScheme="danger"
+									onClick={(e) => { e.stopPropagation(); onDelete(); }}
+									disabled={isBeingDeleted}
+									tooltip="Eliminar dimensión"
+									leftIcon={Trash2}
+									iconOnly={true}
+									aria-label="Eliminar dimensión" />
 							</div>
 						)}
 					</div>
@@ -173,6 +178,9 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 											size="xs"
 											colorScheme="neutral"
 											styleType="subtle">
+											{opt.emoticon ? (
+												<span aria-hidden className="mr-1">{opt.emoticon}</span>
+											) : null}
 											{opt.value}
 										</StandardBadge>
 									)

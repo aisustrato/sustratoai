@@ -18,6 +18,11 @@ export interface GetGroupsFilters {
   userId?: string;
 }
 
+export interface GetBulkGroupsPresenceFilters {
+  articleIds: string[];
+  userId?: string;
+}
+
 export type GroupWithArticleCount = Tables<'article_groups'> & {
     article_count: number;
 };
@@ -177,8 +182,11 @@ export async function createGroupWithArticles(payload: CreateGroupPayload): Prom
             user_id: user.id
         }));
 
-        const { error: itemsError } = await supabase.from('article_group_items').insert(itemsToInsert);
-        if (itemsError) throw itemsError; // Si esto falla, el grupo ya fue creado. Se podría añadir lógica de rollback.
+        // Permitir crear grupos vacíos sin insertar ítems
+        if (itemsToInsert.length > 0) {
+            const { error: itemsError } = await supabase.from('article_group_items').insert(itemsToInsert);
+            if (itemsError) throw itemsError; // Si esto falla, el grupo ya fue creado. Se podría añadir lógica de rollback.
+        }
 
         return { success: true, data: newGroup };
     } catch (error) {
@@ -257,6 +265,48 @@ export async function removeArticleFromGroup(payload: RemoveArticlePayload): Pro
     } catch (error) {
         const msg = error instanceof Error ? error.message : "Error desconocido.";
         return { success: false, error: `No se pudo quitar el artículo del grupo: ${msg}` };
+    }
+}
+
+/**
+ * Obtiene la presencia de grupos para múltiples artículos de forma optimizada.
+ * Retorna un mapa de article_id -> boolean indicando si tiene grupos.
+ */
+export async function getBulkGroupsPresence(filters: GetBulkGroupsPresenceFilters): Promise<ResultadoOperacion<Record<string, boolean>>> {
+    try {
+        const supabase = await createSupabaseServerClient();
+        
+        if (filters.articleIds.length === 0) {
+            return { success: true, data: {} };
+        }
+
+        // Consulta optimizada: obtener todos los article_ids que tienen grupos en una sola query
+        let query = supabase
+            .from('article_group_items')
+            .select('article_id')
+            .in('article_id', filters.articleIds);
+
+        if (filters.userId) {
+            query = query.eq('user_id', filters.userId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        // Crear mapa de presencia
+        const presenceMap: Record<string, boolean> = {};
+        const articlesWithGroups = new Set(data.map(item => item.article_id));
+        
+        // Inicializar todos como false, luego marcar los que tienen grupos como true
+        filters.articleIds.forEach(articleId => {
+            presenceMap[articleId] = articlesWithGroups.has(articleId);
+        });
+
+        return { success: true, data: presenceMap };
+    } catch (error) {
+        const msg = error instanceof Error ? error.message : "Error desconocido.";
+        return { success: false, error: `No se pudo obtener la presencia de grupos: ${msg}` };
     }
 }
 

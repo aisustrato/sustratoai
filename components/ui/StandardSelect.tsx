@@ -476,7 +476,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 						)}
 					</div>
 					<div className="absolute right-1.5 top-0 h-full flex items-center gap-0.5">
-						{clearable && (
+						{hasClearButton && (
 							<button type="button" onClick={handleClear} className="rounded-full p-0.5 hover:bg-[rgba(0,0,0,0.05)] transition-colors flex items-center justify-center mr-0.5" aria-label="Limpiar selección">
 								<StandardIcon styleType="outline" size={iconInternalSize} colorScheme="primary">
 									<X />
@@ -506,6 +506,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 							ref={optionsRef}
 							tabIndex={-1}
 							role="listbox"
+							id={id ? `${id}-options` : undefined}
 							aria-multiselectable={multiple}
 							className={cn(
 								"rounded-md border shadow-lg overflow-auto outline-none",

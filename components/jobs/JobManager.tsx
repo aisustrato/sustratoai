@@ -153,7 +153,7 @@ export const JobManager = () => {
             ) : (
               <History className="h-5 w-5" />
             )}
-            <StandardText as="h3" fontSize="lg" fontWeight="bold">
+            <StandardText asElement="h3" size="lg" weight="bold">
               {hasActiveJobs ? 'Trabajos Activos' : 'Gestor de Tareas'}
             </StandardText>
           </div>
@@ -174,7 +174,7 @@ export const JobManager = () => {
           {jobs.length > 0 && (
             <div>
               <div className="p-3 bg-gray-50 dark:bg-gray-800">
-                <StandardText fontSize="sm" fontWeight="medium" colorScheme="neutral">
+                <StandardText size="sm" weight="medium" colorScheme="neutral">
                   Trabajos en Progreso ({jobs.length})
                 </StandardText>
               </div>
@@ -194,13 +194,13 @@ export const JobManager = () => {
                   className="flex items-center gap-2 mx-auto"
                 >
                   <History className="h-4 w-4" />
-                  <StandardText fontSize="sm">
+                  <StandardText size="sm">
                     Ver Historial de Trabajos
                   </StandardText>
                 </StandardButton>
                 {recentCompletedJobs.length > 0 && (
                   <StandardText 
-                    fontSize="xs" 
+                    size="xs" 
                     colorScheme="neutral"
                     className="mt-2"
                   >
@@ -215,15 +215,15 @@ export const JobManager = () => {
           {jobs.length === 0 && (
             <div className="p-6 text-center">
               <Brain className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-              <StandardText colorScheme="neutral" fontSize="sm" className="mb-3">
+              <StandardText colorScheme="neutral" size="sm" className="mb-3">
                 No hay trabajos de IA en progreso. Puedes revisar el &quot;Historial de Trabajos&quot; para ver trabajos anteriores.
               </StandardText>
-              <StandardText colorScheme="neutral" fontSize="xs" className="mb-4">
+              <StandardText colorScheme="neutral" size="xs" className="mb-4">
                 Los trabajos de IA aparecerán aquí cuando estén en ejecución.
               </StandardText>
               {recentCompletedJobs.length > 0 && (
                 <StandardText 
-                  fontSize="xs" 
+                  size="xs" 
                   colorScheme="neutral"
                   className="mb-3"
                 >
@@ -238,7 +238,7 @@ export const JobManager = () => {
                 className="flex items-center gap-2 mx-auto"
               >
                 <History className="h-4 w-4" />
-                <StandardText fontSize="sm">Ver Historial de Trabajos</StandardText>
+                <StandardText size="sm">Ver Historial de Trabajos</StandardText>
               </StandardButton>
             </div>
           )}

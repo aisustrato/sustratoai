@@ -80,7 +80,7 @@ import {
 	Download,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import tinycolor from "tinycolor2";
+// import tinycolor from "tinycolor2"; // ⚠️ Ya no se usa para el gradiente del header
 
 // Extensión de tipos de TanStack Table
 
@@ -110,6 +110,13 @@ export interface StandardTableProps<TData extends object> {
 	// 📄 CSV Export
 	enableCsvExport?: boolean;
 	csvFileName?: string;
+	// 🎛️ Toolbar visibility controls
+	showColumnSelector?: boolean;
+	showTruncationDropdown?: boolean;
+	// 🧰 Mostrar/ocultar toda la toolbar
+	showToolbar?: boolean;
+	// 🎨 Color del header (se alinea con acordeón)
+	colorScheme?: ColorSchemeVariant;
 }
 
 interface SubComponentProps<TData extends object> {
@@ -130,6 +137,9 @@ const StandardTableToolbar = <TData extends object>({
 	// 📄 CSV Export Props
 	enableCsvExport,
 	csvFileName,
+	// 🎛️ Toolbar visibility controls
+	showColumnSelector = true,
+	showTruncationDropdown = true,
 }: {
 	table: Table<TData>;
 	enableTruncation?: boolean;
@@ -143,6 +153,9 @@ const StandardTableToolbar = <TData extends object>({
 	// 📄 CSV Export Props
 	enableCsvExport?: boolean;
 	csvFileName?: string;
+	// 🎛️ Toolbar visibility controls
+	showColumnSelector?: boolean;
+	showTruncationDropdown?: boolean;
 }) => {
 	// 🔍 Estado para keyword temporal (debe estar antes del early return)
 	const [tempKeyword, setTempKeyword] = useState("");
@@ -152,15 +165,15 @@ const StandardTableToolbar = <TData extends object>({
 		if (!enableCsvExport) return;
 
 		// Obtener columnas visibles (excluyendo acciones y expansores)
-		const visibleColumns = table.getVisibleLeafColumns().filter(column => 
-			!['expander', 'actions'].includes(column.id)
-		);
+		const visibleColumns = table
+			.getVisibleLeafColumns()
+			.filter((column) => !["expander", "actions"].includes(column.id));
 
 		// Crear headers del CSV
-		const headers = visibleColumns.map(column => {
+		const headers = visibleColumns.map((column) => {
 			const headerValue = column.columnDef.header;
-			if (typeof headerValue === 'string') return headerValue;
-			if (typeof headerValue === 'function') {
+			if (typeof headerValue === "string") return headerValue;
+			if (typeof headerValue === "function") {
 				// Para headers de función, usar el id de la columna como fallback
 				return column.id;
 			}
@@ -168,15 +181,19 @@ const StandardTableToolbar = <TData extends object>({
 		});
 
 		// Obtener filas visibles
-		const rows = table.getFilteredRowModel().rows.map(row => {
-			return visibleColumns.map(column => {
+		const rows = table.getFilteredRowModel().rows.map((row) => {
+			return visibleColumns.map((column) => {
 				const cellValue = row.getValue(column.id);
 				// Convertir a string y limpiar para CSV
-				let value = String(cellValue ?? '');
+				let value = String(cellValue ?? "");
 				// Escapar comillas dobles
 				value = value.replace(/"/g, '""');
 				// Envolver en comillas si contiene comas, saltos de línea o comillas
-				if (value.includes(',') || value.includes('\n') || value.includes('"')) {
+				if (
+					value.includes(",") ||
+					value.includes("\n") ||
+					value.includes('"')
+				) {
 					value = `"${value}"`;
 				}
 				return value;
@@ -185,16 +202,16 @@ const StandardTableToolbar = <TData extends object>({
 
 		// Crear contenido CSV
 		const csvContent = [headers, ...rows]
-			.map(row => row.join(','))
-			.join('\n');
+			.map((row) => row.join(","))
+			.join("\n");
 
 		// Crear y descargar archivo
-		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-		const link = document.createElement('a');
+		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+		const link = document.createElement("a");
 		const url = URL.createObjectURL(blob);
-		link.setAttribute('href', url);
-		link.setAttribute('download', csvFileName || 'tabla-datos.csv');
-		link.style.visibility = 'hidden';
+		link.setAttribute("href", url);
+		link.setAttribute("download", csvFileName || "tabla-datos.csv");
+		link.style.visibility = "hidden";
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
@@ -235,49 +252,51 @@ const StandardTableToolbar = <TData extends object>({
 	return (
 		<div className="p-4 border-b border-[var(--table-header-borderColor)] bg-[var(--table-row-default-backgroundColor)]">
 			<div className="flex items-center justify-start gap-4">
+				{/* 🔎 Filtro global */}
 				<StandardInput
 					placeholder={filterPlaceholder}
 					value={globalFilter ?? ""}
 					onChange={(e) => table.setGlobalFilter(e.target.value)}
 					className="w-full max-w-xs"
 				/>
-					
-				{/* 🔍 Keyword Highlighting con botones de acción - Siempre presente para layout correcto */}
-				<div className={`flex items-center gap-2 mr-4 ${enableKeywordHighlighting ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+
+				{/* 🔍 Keyword Highlighting */}
+				<div
+					className={`flex items-center gap-2 mr-4 ${enableKeywordHighlighting ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
 					<StandardInput
-						placeholder={keywordHighlightPlaceholder || "Resaltar palabra clave..."}
+						placeholder={
+							keywordHighlightPlaceholder || "Resaltar palabra clave..."
+						}
 						value={tempKeyword}
 						onChange={(e) => setTempKeyword(e.target.value)}
 						className="w-80"
 						colorScheme="accent"
-							onKeyDown={(e) => {
-								if (e.key === 'Enter') {
-									e.preventDefault();
-									handleApplyKeyword();
-								}
-							}}
-						/>
-						<StandardButton
-							styleType="solid"
-							colorScheme="accent"
-							size="sm"
-							onClick={handleApplyKeyword}
-							disabled={!tempKeyword.trim()}
-						>
-							Aplicar
-						</StandardButton>
-						<StandardButton
-							styleType="outline"
-							colorScheme="neutral"
-							size="sm"
-							onClick={handleClearKeyword}
-							disabled={!keywordHighlight}
-						>
-							Limpiar
-						</StandardButton>
-					</div>
-				
-				{/* 📄 Botón de exportar CSV */}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") {
+								e.preventDefault();
+								handleApplyKeyword();
+							}
+						}}
+					/>
+					<StandardButton
+						styleType="solid"
+						colorScheme="accent"
+						size="sm"
+						onClick={handleApplyKeyword}
+						disabled={!tempKeyword.trim()}>
+						Aplicar
+					</StandardButton>
+					<StandardButton
+						styleType="outline"
+						colorScheme="neutral"
+						size="sm"
+						onClick={handleClearKeyword}
+						disabled={!keywordHighlight}>
+						Limpiar
+					</StandardButton>
+				</div>
+
+				{/* 📄 Exportar CSV */}
 				{enableCsvExport && (
 					<StandardButton
 						styleType="outline"
@@ -285,49 +304,53 @@ const StandardTableToolbar = <TData extends object>({
 						size="sm"
 						leftIcon={Download}
 						onClick={handleExportCsv}
-						tooltip="Descargar datos en CSV"
-					>
+						tooltip="Descargar datos en CSV">
 						Exportar CSV
 					</StandardButton>
 				)}
-				
-				<StandardDropdownMenu>
-					<StandardDropdownMenu.Trigger asChild>
-						<StandardButton
-							styleType="outline"
-							leftIcon={Columns}
-							size="sm"
-							tooltip="ocultar/mostrar columnas">
-							Columnas
-						</StandardButton>
-					</StandardDropdownMenu.Trigger>
-					<StandardDropdownMenu.Content align="end">
-						<StandardDropdownMenu.Label>
-							Mostrar/Ocultar Columnas
-						</StandardDropdownMenu.Label>
-						<StandardDropdownMenu.Separator />
-						{allColumns.map((column) => {
-							const canToggle =
-								column.getCanHide() &&
-								!["expander", "actions"].includes(column.id);
-							return (
-								<StandardDropdownMenu.CheckboxItem
-									key={column.id}
-									className="capitalize"
-									checked={column.getIsVisible()}
-									onCheckedChange={(value: boolean) =>
-										column.toggleVisibility(!!value)
-									}
-									disabled={!canToggle}>
-									{typeof column.columnDef.header === "string" ?
-										column.columnDef.header
-									:	column.id}
-								</StandardDropdownMenu.CheckboxItem>
-							);
-						})}
-					</StandardDropdownMenu.Content>
-				</StandardDropdownMenu>
-				{enableTruncation && (
+
+				{/* 📊 Selector de columnas */}
+				{showColumnSelector && (
+					<StandardDropdownMenu>
+						<StandardDropdownMenu.Trigger asChild>
+							<StandardButton
+								styleType="outline"
+								leftIcon={Columns}
+								size="sm"
+								tooltip="ocultar/mostrar columnas">
+								Columnas
+							</StandardButton>
+						</StandardDropdownMenu.Trigger>
+						<StandardDropdownMenu.Content align="end">
+							<StandardDropdownMenu.Label>
+								Mostrar/Ocultar Columnas
+							</StandardDropdownMenu.Label>
+							<StandardDropdownMenu.Separator />
+							{allColumns.map((column) => {
+								const canToggle =
+									column.getCanHide() &&
+									!["expander", "actions"].includes(column.id);
+								return (
+									<StandardDropdownMenu.CheckboxItem
+										key={column.id}
+										className="capitalize"
+										checked={column.getIsVisible()}
+										onCheckedChange={(value: boolean) =>
+											column.toggleVisibility(!!value)
+										}
+										disabled={!canToggle}>
+										{typeof column.columnDef.header === "string" ?
+											column.columnDef.header
+										:	column.id}
+									</StandardDropdownMenu.CheckboxItem>
+								);
+							})}
+						</StandardDropdownMenu.Content>
+					</StandardDropdownMenu>
+				)}
+
+				{/* 🧵 Truncación de filas */}
+				{enableTruncation && showTruncationDropdown && (
 					<StandardDropdownMenu>
 						<StandardDropdownMenu.Trigger asChild>
 							<StandardButton
@@ -346,7 +369,7 @@ const StandardTableToolbar = <TData extends object>({
 							{truncateOptions.map((opt) => (
 								<StandardDropdownMenu.Item
 									key={opt.label}
-									onSelect={() => onTruncateChange(opt.value)}>
+									onSelect={() => onTruncateChange?.(opt.value)}>
 									{opt.label}
 								</StandardDropdownMenu.Item>
 							))}
@@ -360,24 +383,15 @@ const StandardTableToolbar = <TData extends object>({
 
 const StandardTableHeaderCell = <TData extends object, TValue>({
 	header,
+	colorScheme,
 }: {
 	header: Header<TData, TValue>;
+	colorScheme: ColorSchemeVariant;
 }) => {
-	const { appColorTokens } = useTheme();
 	const canSort = header.column.getCanSort();
 	const meta = header.column.columnDef.meta;
 	const align = meta?.align || "left";
 	const isSticky = meta?.isSticky;
-	const headerGradientStyle = useMemo(() => {
-		if (!appColorTokens) return {};
-		const primary = appColorTokens.primary;
-		const lighter = tinycolor(primary.pure).lighten(12).toHexString();
-		const base = primary.pure;
-		const darker = tinycolor(primary.pure).darken(15).toHexString();
-		return {
-			backgroundImage: `linear-gradient(to bottom, ${lighter}, ${base} 50%, ${darker})`,
-		};
-	}, [appColorTokens]);
 	return (
 		<th
 			className={cn(
@@ -391,7 +405,11 @@ const StandardTableHeaderCell = <TData extends object, TValue>({
 				width: header.getSize(),
 				minWidth: header.getSize(),
 				maxWidth: header.getSize(),
-				...headerGradientStyle,
+				// ✅ Fondo sólido para columnas sticky derechas
+				backgroundColor:
+					isSticky === "right" ?
+						"var(--table-header-backgroundColor)"
+					:	"transparent",
 			}}
 			onClick={header.column.getToggleSortingHandler()}>
 			<div
@@ -403,7 +421,7 @@ const StandardTableHeaderCell = <TData extends object, TValue>({
 				{flexRender(header.column.columnDef.header, header.getContext())}
 				{canSort && (
 					<span className="opacity-60 group-hover:opacity-100 transition-opacity">
-						<StandardIcon colorScheme="primary" colorShade="contrastText">
+						<StandardIcon colorScheme={colorScheme} colorShade="contrastText">
 							{header.column.getIsSorted() === "asc" ?
 								<ChevronUp className="h-4 w-4" />
 							: header.column.getIsSorted() === "desc" ?
@@ -419,17 +437,25 @@ const StandardTableHeaderCell = <TData extends object, TValue>({
 
 const StandardTableHeader = <TData extends object>({
 	table,
+	colorScheme,
 }: {
 	table: Table<TData>;
+	colorScheme: ColorSchemeVariant;
 }) => {
 	return (
-		<thead className="sticky top-0 z-20 bg-[var(--table-row-default-backgroundColor)]">
+		<thead
+			className="sticky top-0 z-20"
+			style={{ backgroundImage: "var(--table-header-backgroundColor)" }}>
 			{table.getHeaderGroups().map((headerGroup) => (
 				<tr
 					key={headerGroup.id}
 					className="text-[var(--table-header-foregroundColor)]">
 					{headerGroup.headers.map((header) => (
-						<StandardTableHeaderCell key={header.id} header={header} />
+						<StandardTableHeaderCell
+							key={header.id}
+							header={header}
+							colorScheme={colorScheme}
+						/>
 					))}
 				</tr>
 			))}
@@ -470,12 +496,24 @@ const ExpandIcon = ({ isExpanded }: { isExpanded: boolean }) => {
 ExpandIcon.displayName = "StandardTable.ExpandIcon";
 
 // 🔍 Función para resaltar keywords en el texto usando tokens del sistema
-const highlightKeyword = (text: string, keyword: string, highlightTokens: { backgroundColor: string; textColor: string; borderRadius: string; padding: string; }): React.ReactNode => {
+const highlightKeyword = (
+	text: string,
+	keyword: string,
+	highlightTokens: {
+		backgroundColor: string;
+		textColor: string;
+		borderRadius: string;
+		padding: string;
+	}
+): React.ReactNode => {
 	if (!keyword.trim()) return text;
-	
-	const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+
+	const regex = new RegExp(
+		`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
+		"gi"
+	);
 	const parts = text.split(regex);
-	
+
 	return parts.map((part, index) => {
 		if (regex.test(part)) {
 			return (
@@ -486,8 +524,7 @@ const highlightKeyword = (text: string, keyword: string, highlightTokens: { back
 						color: highlightTokens.textColor,
 						borderRadius: highlightTokens.borderRadius,
 						padding: highlightTokens.padding,
-					}}
-				>
+					}}>
 					{part}
 				</mark>
 			);
@@ -510,34 +547,36 @@ const StandardTableCell = <TData extends object, TValue>({
 		meta?.cellVariant ? meta.cellVariant(cell.getContext()) : undefined;
 	const tooltipType = meta?.tooltipType || "standard";
 	const enableCopyButton = meta?.enableCopyButton || false;
-	
+
 	// 📋 Estado para feedback visual del botón de copiar
-	const [copyFeedback, setCopyFeedback] = useState<'idle' | 'copying' | 'copied'>('idle');
+	const [copyFeedback, setCopyFeedback] = useState<
+		"idle" | "copying" | "copied"
+	>("idle");
 
 	// 📋 Función para copiar contenido al clipboard con feedback visual
 	const handleCopyToClipboard = async () => {
 		const cellValue = cell.getValue();
 		const textToCopy = String(cellValue ?? "");
-		
+
 		if (textToCopy.trim()) {
-			setCopyFeedback('copying');
+			setCopyFeedback("copying");
 			try {
 				await navigator.clipboard.writeText(textToCopy);
-				setCopyFeedback('copied');
+				setCopyFeedback("copied");
 				// Resetear después de 1.5 segundos
-				setTimeout(() => setCopyFeedback('idle'), 1500);
+				setTimeout(() => setCopyFeedback("idle"), 1500);
 			} catch (err) {
-				console.warn('Error al copiar al clipboard:', err);
+				console.warn("Error al copiar al clipboard:", err);
 				// Fallback para navegadores que no soportan clipboard API
-				const textArea = document.createElement('textarea');
+				const textArea = document.createElement("textarea");
 				textArea.value = textToCopy;
 				document.body.appendChild(textArea);
 				textArea.select();
-				document.execCommand('copy');
+				document.execCommand("copy");
 				document.body.removeChild(textArea);
-				setCopyFeedback('copied');
+				setCopyFeedback("copied");
 				// Resetear después de 1.5 segundos
-				setTimeout(() => setCopyFeedback('idle'), 1500);
+				setTimeout(() => setCopyFeedback("idle"), 1500);
 			}
 		}
 	};
@@ -578,19 +617,25 @@ const StandardTableCell = <TData extends object, TValue>({
 
 	const truncateLines = cell.getContext().table.options.meta?.truncateRowsTo;
 	const shouldTruncate = truncateLines && isTruncatable;
-	
+
 	// 🔍 Obtener keyword highlighting desde el contexto de la tabla
-	const keywordHighlight = cell.getContext().table.options.meta?.keywordHighlight;
-	const enableKeywordHighlighting = cell.getContext().table.options.meta?.enableKeywordHighlighting;
-	
+	const keywordHighlight =
+		cell.getContext().table.options.meta?.keywordHighlight;
+	const enableKeywordHighlighting =
+		cell.getContext().table.options.meta?.enableKeywordHighlighting;
+
 	// 🔍 Aplicar highlighting si está habilitado y hay keyword
 	let cellContent;
 	if (enableKeywordHighlighting && keywordHighlight && appColorTokens && mode) {
 		const cellValue = cell.getValue();
-		if (typeof cellValue === 'string' && cellValue) {
+		if (typeof cellValue === "string" && cellValue) {
 			// Generar tokens para el highlighting usando el color accent
 			const tokens = generateTableTokens(appColorTokens, mode);
-			cellContent = highlightKeyword(cellValue, keywordHighlight, tokens.keywordHighlight);
+			cellContent = highlightKeyword(
+				cellValue,
+				keywordHighlight,
+				tokens.keywordHighlight
+			);
 		} else {
 			cellContent = flexRender(cell.column.columnDef.cell, cell.getContext());
 		}
@@ -624,6 +669,11 @@ const StandardTableCell = <TData extends object, TValue>({
 					width: cell.column.getSize(),
 					minWidth: cell.column.getSize(),
 					maxWidth: cell.column.getSize(),
+					// ✅ Fondo sólido para columnas sticky derechas
+					backgroundColor:
+						isSticky === "right" ?
+							"var(--table-row-default-backgroundColor)"
+						:	undefined,
 				}}>
 				{cell.row.getCanExpand() ?
 					<ExpandIcon isExpanded={cell.row.getIsExpanded()} />
@@ -663,14 +713,21 @@ const StandardTableCell = <TData extends object, TValue>({
 
 	return (
 		<td
-			className={cn(cellClasses, "group relative", { "cursor-pointer": enableCopyButton })}
+			className={cn(cellClasses, "group relative", {
+				"cursor-pointer": enableCopyButton,
+			})}
 			style={{
 				width: cell.column.getSize(),
 				minWidth: cell.column.getSize(),
 				maxWidth: cell.column.getSize(),
+				// ✅ Fondo sólido para columnas sticky derechas
+				backgroundColor:
+					isSticky === "right" ?
+						"var(--table-row-default-backgroundColor)"
+					:	undefined,
 			}}>
 			{cellContent}
-			
+
 			{/* 📋 Mini botón ghost para copiar con feedback visual */}
 			{enableCopyButton && (
 				<button
@@ -678,22 +735,35 @@ const StandardTableCell = <TData extends object, TValue>({
 					className={cn(
 						"absolute top-1 right-1 p-1 rounded transition-all duration-200",
 						{
-							"opacity-0 group-hover:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-800": copyFeedback === 'idle',
-							"opacity-100 bg-blue-100 dark:bg-blue-900": copyFeedback === 'copying',
-							"opacity-100 bg-green-100 dark:bg-green-900": copyFeedback === 'copied',
+							"opacity-0 group-hover:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-800":
+								copyFeedback === "idle",
+							"opacity-100 bg-blue-100 dark:bg-blue-900":
+								copyFeedback === "copying",
+							"opacity-100 bg-green-100 dark:bg-green-900":
+								copyFeedback === "copied",
 						}
 					)}
-					title={copyFeedback === 'copied' ? '¡Copiado!' : copyFeedback === 'copying' ? 'Copiando...' : 'Copiar contenido'}
+					title={
+						copyFeedback === "copied" ? "¡Copiado!"
+						: copyFeedback === "copying" ?
+							"Copiando..."
+						:	"Copiar contenido"
+					}
 					aria-label="Copiar contenido de la celda"
-					disabled={copyFeedback === 'copying'}
-				>
+					disabled={copyFeedback === "copying"}>
 					<StandardIcon
 						size="xs"
-						colorScheme={copyFeedback === 'copied' ? 'success' : copyFeedback === 'copying' ? 'accent' : 'neutral'}
-						colorShade={copyFeedback === 'idle' ? 'textShade' : 'pure'}
-						styleType="outline"
-					>
-						{copyFeedback === 'copied' ? <Check /> : <Copy />}
+						colorScheme={
+							copyFeedback === "copied" ? "success"
+							: copyFeedback === "copying" ?
+								"accent"
+							:	"neutral"
+						}
+						colorShade={copyFeedback === "idle" ? "textShade" : "pure"}
+						styleType="outline">
+						{copyFeedback === "copied" ?
+							<Check />
+						:	<Copy />}
 					</StandardIcon>
 				</button>
 			)}
@@ -781,12 +851,18 @@ import type { CSSProperties } from "react";
 const StandardTableTable = <TData extends object>({
 	table,
 	style,
-}: SubComponentProps<TData> & { style?: CSSProperties }) => {
+	colorScheme = "primary",
+}: SubComponentProps<TData> & {
+	style?: CSSProperties;
+	colorScheme?: ColorSchemeVariant;
+}) => {
 	if (!table) return null;
 	return (
-		<div className="w-full h-full overflow-auto" style={style}>
+		<div
+			className="w-full h-full overflow-auto relative"
+			style={{ ...style, isolation: "isolate" }}>
 			<table className="w-full border-collapse">
-				<StandardTableHeader table={table} />
+				<StandardTableHeader table={table} colorScheme={colorScheme} />
 				<StandardTableBody table={table} />
 			</table>
 		</div>
@@ -815,6 +891,13 @@ function StandardTableRoot<TData extends object>({
 	// 📄 CSV Export Props
 	enableCsvExport = false,
 	csvFileName = "tabla_datos",
+	// 🎛️ Toolbar visibility controls
+	showColumnSelector = true,
+	showTruncationDropdown = true,
+	// 🧰 Toolbar master switch
+	showToolbar = true,
+	// 🎨 Header color scheme
+	colorScheme = "primary",
 }: StandardTableProps<TData>) {
 	const { appColorTokens, mode } = useTheme();
 	const [globalFilter, setGlobalFilter] = useState("");
@@ -869,29 +952,29 @@ function StandardTableRoot<TData extends object>({
 	// 🔍 Sticky header con recalculo dinámico
 	useLayoutEffect(() => {
 		if (!isStickyHeader) return;
-		
+
 		const intersectionObserver = new IntersectionObserver(
 			([entry]) => setIsAnchored(!entry.isIntersecting),
 			{ rootMargin: `-${stickyOffset}px 0px 0px 0px`, threshold: 0 }
 		);
-		
+
 		const currentSentinel = sentinelRef.current;
 		if (currentSentinel) {
 			intersectionObserver.observe(currentSentinel);
 		}
-		
+
 		// Calcular dimensiones iniciales
 		recalculateStickyDimensions();
-		
+
 		// 🔧 ResizeObserver para recalcular cuando la tabla cambia de tamaño
 		const resizeObserver = new ResizeObserver(() => {
 			recalculateStickyDimensions();
 		});
-		
+
 		if (tableContainerRef.current) {
 			resizeObserver.observe(tableContainerRef.current);
 		}
-		
+
 		return () => {
 			if (currentSentinel) intersectionObserver.unobserve(currentSentinel);
 			resizeObserver.disconnect();
@@ -933,7 +1016,7 @@ function StandardTableRoot<TData extends object>({
 
 	const cssVariables = useMemo<React.CSSProperties>(() => {
 		if (!appColorTokens || !mode) return {};
-		const tokens = generateTableTokens(appColorTokens, mode);
+		const tokens = generateTableTokens(appColorTokens, mode, colorScheme);
 		const vars: React.CSSProperties & {
 			[key: `--${string}`]: string | number;
 		} = {};
@@ -982,7 +1065,7 @@ function StandardTableRoot<TData extends object>({
 			vars[`--table-expander-${key}`] = value;
 		});
 		return vars;
-	}, [appColorTokens, mode]);
+	}, [appColorTokens, mode, colorScheme]);
 
 	const childrenWithProps = Children.map(children, (child) => {
 		if (
@@ -992,29 +1075,38 @@ function StandardTableRoot<TData extends object>({
 		) {
 			return cloneElement(
 				child as React.ReactElement<SubComponentProps<TData>>,
-				{ table }
+				{ table, colorScheme }
 			);
 		}
 		return null;
 	});
 
 	const renderContent = () => (
-		<div className="flex flex-col h-full">
-			<StandardTableToolbar
-				table={table}
-				enableTruncation={enableTruncation}
-				onTruncateChange={handleTruncateChange}
-				truncateValue={currentTruncateValue}
-				// 🔍 Keyword Highlighting Props
-				enableKeywordHighlighting={enableKeywordHighlighting}
-				keywordHighlightPlaceholder={keywordHighlightPlaceholder}
-				onKeywordChange={handleKeywordChange}
-				keywordHighlight={keywordHighlight}
-				// 📄 CSV Export Props
-				enableCsvExport={enableCsvExport}
-				csvFileName={csvFileName}
-			/>
-			<div className="flex-grow overflow-auto">{childrenWithProps}</div>
+		<div className="flex flex-col h-full" style={{ isolation: "isolate" }}>
+			{showToolbar && (
+				<StandardTableToolbar
+					table={table}
+					enableTruncation={enableTruncation}
+					onTruncateChange={handleTruncateChange}
+					truncateValue={currentTruncateValue}
+					// 🔍 Keyword Highlighting Props
+					enableKeywordHighlighting={enableKeywordHighlighting}
+					keywordHighlightPlaceholder={keywordHighlightPlaceholder}
+					onKeywordChange={handleKeywordChange}
+					keywordHighlight={keywordHighlight}
+					// 📄 CSV Export Props
+					enableCsvExport={enableCsvExport}
+					csvFileName={csvFileName}
+					// 🎛️ Toolbar visibility controls
+					showColumnSelector={showColumnSelector}
+					showTruncationDropdown={showTruncationDropdown}
+				/>
+			)}
+			<div
+				className="flex-grow overflow-auto relative"
+				style={{ isolation: "isolate" }}>
+				{childrenWithProps}
+			</div>
 		</div>
 	);
 

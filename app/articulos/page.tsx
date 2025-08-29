@@ -9,7 +9,7 @@ import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import Link from "next/link";
-import { FileUp, LayoutGrid, FileCheck } from "lucide-react";
+import { FileCheck, MapPin, FileText } from "lucide-react";
 //#endregion ![head]
 
 //#region [main] - 🔧 COMPONENT 🔧
@@ -25,24 +25,24 @@ export default function ArticulosHome() {
       />
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-        {[ 
+        {[
           {
             href: "/articulos/preclasificacion",
             icon: FileCheck,
             title: "Preclasificación",
-            description: "Revisa y clasifica los artículos según criterios de inclusión y exclusión para tu revisión sistemática."
+            description: "Revisa y clasifica los artículos según criterios de inclusión y exclusión."
           },
           {
-            href: "/articulos/cargar",
-            icon: FileUp,
-            title: "Cargar Artículos",
-            description: "Importa artículos de forma masiva desde diferentes fuentes para incluirlos en tu revisión."
+            href: "/articulos/grupos",
+            icon: MapPin,
+            title: "Grupos",
+            description: "Gestiona y navega los grupos temáticos de tus artículos."
           },
           {
-            href: "/articulos/explorar",
-            icon: LayoutGrid,
-            title: "Explorar",
-            description: "Explora y gestiona todos los artículos de tu proyecto con filtros avanzados y búsquedas rápidas."
+            href: "/articulos/notas",
+            icon: FileText,
+            title: "Notas",
+            description: "Crea y organiza notas asociadas a tus artículos."
           },
         ].map((item, index) => (
           <Link href={item.href} key={index} className="group">

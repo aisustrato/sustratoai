@@ -23,6 +23,8 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
   const [statusMessage, setStatusMessage] = useState('Preparando preclasificación...');
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<'running' | 'completed' | 'failed'>('running');
+  // 🧹 Cleanup idempotente para desuscribir el canal y evitar fugas
+  const cleanupRef = useRef<null | (() => void)>(null);
 
   // 🎯 FUNCIÓN PRINCIPAL: PreclassificationJobHandler maneja TODO el flujo
   const runJob = useCallback(async () => {
@@ -112,7 +114,7 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
                   
                   router.refresh();
                   completeJob(job.id);
-                  channel.unsubscribe();
+                  cleanupRef.current?.();
                 }, 2000);
                 
               } else if (status === 'failed') {
@@ -146,7 +148,7 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
                   runningBatches.delete(batchId);
                   
                   failJob(job.id, errorMessage);
-                  channel.unsubscribe();
+                  cleanupRef.current?.();
                   
                   // 🚨 IMPORTANTE: NO refrescar la página en caso de error
                   // Esto evita que el usuario vea datos inconsistentes
@@ -155,10 +157,18 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
             })
         .subscribe();
 
-      // Cleanup function para desuscribirse cuando el componente se desmonte
-      return () => {
-        channel.unsubscribe();
+      // Guardar cleanup idempotente para usar en onComplete/onError y en unmount
+      cleanupRef.current = () => {
+        try {
+          channel.unsubscribe();
+        } catch {
+          // noop
+        } finally {
+          cleanupRef.current = null;
+        }
       };
+
+      // Nota: el cleanup en unmount se maneja en el retorno de useEffect
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -184,7 +194,12 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
     if (hasStartedRef.current) return;
     hasStartedRef.current = true;
     runJob();
-  }, [runJob]);
+    // Cleanup en unmount: desuscribir y liberar el guard del lote
+    return () => {
+      cleanupRef.current?.();
+      runningBatches.delete(job.payload.batchId);
+    };
+  }, [runJob, job.payload.batchId]);
 
   // 🎨 RENDERIZAR UI CON FEEDBACK VISUAL ROBUSTO
   const getStatusIcon = () => {
@@ -230,15 +245,15 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
         <div className="flex-grow min-w-0">
           <div className="flex items-center justify-between mb-2">
             <StandardText 
-              fontSize="sm" 
-              fontWeight="medium"
+              size="sm" 
+              weight="medium"
               className="truncate"
             >
               {job.title}
             </StandardText>
             {jobStatus === 'running' && (
               <StandardText 
-                fontSize="xs" 
+                size="xs" 
                 colorScheme="neutral"
               >
                 {Math.round(job.progress)}%
@@ -258,7 +273,7 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
           )}
           
           <StandardText 
-            fontSize="xs" 
+            size="xs" 
             colorScheme={jobStatus === 'failed' ? 'danger' : 'neutral'}
             className="truncate"
           >
@@ -267,7 +282,7 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
           
           {jobId && (
             <StandardText 
-              fontSize="xs" 
+              size="xs" 
               colorScheme="neutral"
               className="mt-1 opacity-70"
             >

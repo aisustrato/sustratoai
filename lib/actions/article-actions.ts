@@ -79,6 +79,50 @@ export async function uploadAndProcessArticles(
   }
 }
 
+// ========================================================================
+//  ACCIÓN 5: getLatestTranslationsForArticles
+//  Dado un arreglo de articleIds, devuelve la última traducción por artículo
+// ========================================================================
+export type LatestTranslationsMap = Record<string, Database['public']['Tables']['article_translations']['Row']>;
+
+export async function getLatestTranslationsForArticles(
+  articleIds: string[]
+): Promise<ResultadoOperacion<LatestTranslationsMap>> {
+  if (!Array.isArray(articleIds) || articleIds.length === 0) {
+    return { success: true, data: {} };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    // Obtener todas las traducciones de estos artículos ordenadas por fecha desc
+    const { data, error } = await supabase
+      .from('article_translations')
+      .select('*')
+      .in('article_id', articleIds)
+      .order('translated_at', { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    const map: LatestTranslationsMap = {};
+    for (const t of data || []) {
+      // La primera que veamos por article_id (por orden desc) es la más reciente
+      if (!map[t.article_id]) {
+        map[t.article_id] = t;
+      }
+    }
+
+    return { success: true, data: map };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido.';
+    return {
+      success: false,
+      error: `Error al obtener traducciones: ${errorMessage}`,
+      errorCode: 'INTERNAL_SERVER_ERROR',
+    };
+  }
+}
+
 // ... (Las funciones checkIfProjectHasArticles y deleteUploadedArticles permanecen igual, ya que solo necesitan el nombre de la tabla "articles" y sus tipos se actualizarán automáticamente)
 // ========================================================================
 //  ACCIÓN 2: checkIfProjectHasArticles
@@ -163,6 +207,68 @@ export async function deleteUploadedArticles(
       success: false,
       error: `Error interno del servidor: ${errorMessage}`,
       errorCode: "INTERNAL_SERVER_ERROR",
+    };
+  }
+}
+
+// ========================================================================
+//  ACCIÓN 4: getArticleWithTranslations
+// ========================================================================
+export type ArticleDetailResult = {
+  article: Database['public']['Tables']['articles']['Row'] | null;
+  translations: Database['public']['Tables']['article_translations']['Row'][];
+};
+
+export async function getArticleWithTranslations(
+  articleId: string
+): Promise<ResultadoOperacion<ArticleDetailResult>> {
+  if (!articleId) {
+    return { success: false, error: "Se requiere ID de artículo.", errorCode: "INVALID_ARTICLE_ID" };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    // Obtener artículo principal
+    const { data: article, error: articleError } = await supabase
+      .from('articles')
+      .select('*')
+      .eq('id', articleId)
+      .maybeSingle();
+
+    if (articleError) {
+      throw new Error(`Error al obtener el artículo: ${articleError.message}`);
+    }
+
+    // Si no existe el artículo, devolvemos éxito con article null y sin traducciones
+    if (!article) {
+      return { success: true, data: { article: null, translations: [] } };
+    }
+
+    // Obtener traducciones asociadas
+    const { data: translations, error: translationsError } = await supabase
+      .from('article_translations')
+      .select('*')
+      .eq('article_id', articleId)
+      .order('translated_at', { ascending: false });
+
+    if (translationsError) {
+      throw new Error(`Error al obtener traducciones: ${translationsError.message}`);
+    }
+
+    return {
+      success: true,
+      data: {
+        article,
+        translations: translations || [],
+      },
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido.';
+    return {
+      success: false,
+      error: `Error interno del servidor: ${errorMessage}`,
+      errorCode: 'INTERNAL_SERVER_ERROR',
     };
   }
 }

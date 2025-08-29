@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { supabase } from "@/app/auth/client";
 import { useAuth } from "@/app/auth-provider";
-import { getBatchDetailsForReview } from "@/lib/actions/preclassification-actions";
 import { useJobManager } from "@/app/contexts/JobManagerContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import type { BatchDetails, ArticleForReview } from "@/lib/actions/preclassification-actions";
+import type { BatchDetails, ArticleForReview } from "@/lib/types/preclassification-types";
 import type { Database } from "@/lib/database.types";
 
 type ArticleBatch = Database['public']['Tables']['article_batches']['Row'];
@@ -26,11 +25,9 @@ interface TableRowData {
 	secondaryTitle: string | null;
 	secondaryAbstract: string | null;
 	originalArticle: ArticleForReview;
+	hasNotes?: boolean;
 	subRows?: { __isGhost: true }[];
 }
-
-// TableRow se usa implícitamente en ColumnDef<TableRow> - mantener para compatibilidad
-// type TableRow = TableRowData;
 
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardTable } from "@/components/ui/StandardTable";
@@ -38,21 +35,60 @@ import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { NoteEditor } from "./components/NoteEditor";
-import { ArticleGroupManager } from "./components/ArticleGroupManager";
+import ArticleGroupManager from "./components/ArticleGroupManager";
 
 import { TextHighlighter } from "./components/TextHighlighter";
 import { ColumnDef } from "@tanstack/react-table";
 import { 
-	ClipboardList, 
-	Link, 
-	ThumbsDown, 
-	CheckCircle,
-	Globe,
-	StickyNote,
-	Brain
+    Filter, 
+    ThumbsDown, 
+    CheckCircle,
+    Globe,
+    StickyNote,
+    Brain,
+    Search
 } from "lucide-react";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+
+// Componente de celda para el botón de Notas con identidad estable
+interface NotesButtonCellProps {
+  article: ArticleForReview;
+  hasNotes: boolean;
+  onOpenNotes: (article: ArticleForReview) => void;
+}
+
+const NotesButtonCell: React.FC<NotesButtonCellProps> = memo(({ 
+  article,
+  hasNotes,
+  onOpenNotes,
+}) => {
+  const style = hasNotes ? "solid" : "outline";
+  // Log explícito de decisión de estilo del botón de notas
+  console.log('[NotesButtonCell] decisión de estilo', {
+    itemId: article.item_id,
+    hasNotes,
+    style,
+  });
+  return (
+    <StandardButton
+      styleType={style}
+      iconOnly={true}
+      onClick={() => {
+        console.log('[NotesButtonCell] click -> abrir NoteEditor', {
+          itemId: article.item_id,
+          hasNotes,
+        });
+        onOpenNotes(article);
+      }}
+      tooltip={hasNotes ? "Ver/editar notas" : "Crear nota"}
+    >
+      <StickyNote size={16} />
+    </StandardButton>
+  );
+});
+
+NotesButtonCell.displayName = "NotesButtonCell";
 
 const BatchDetailPage = () => {
 	const params = useParams();
@@ -61,9 +97,13 @@ const BatchDetailPage = () => {
 	const { startJob } = useJobManager();
 	useUserProfile(); // Se mantiene el hook por efectos secundarios
 	const batchId = params.batchId as string;
+	// Helper para timestamps ISO consistentes en logs
+	const ts = () => new Date().toISOString();
 	
 	const [batchDetails, setBatchDetails] = useState<BatchDetails | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
+	const [articlesLoading, setArticlesLoading] = useState(true);
+	const [dimsLoading, setDimsLoading] = useState(true);
+	const [classifLoading, setClassifLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [showOriginalAsPrimary, setShowOriginalAsPrimary] = useState(false);
 	// Estados para NoteEditor
@@ -72,6 +112,106 @@ const BatchDetailPage = () => {
 	
 	// Estados para Preclasificación
 	const [isStartingPreclassification, setIsStartingPreclassification] = useState(false);
+
+	// 🗒️ Presencia de notas por artículo (clave: article_batch_items.id)
+	const [notesPresenceByItemId, setNotesPresenceByItemId] = useState<Record<string, boolean>>({});
+	
+	// 📁 Presencia de grupos por artículo (clave: article_batch_items.id)
+	const [groupsPresenceByItemId, setGroupsPresenceByItemId] = useState<Record<string, boolean>>({});
+	const [isLoadingGroupsPresence, setIsLoadingGroupsPresence] = useState(false);
+
+	// Derivar presencia de notas desde batchDetails.rows[].notes_info
+	useEffect(() => {
+		if (!batchDetails?.rows) return;
+		const map: Record<string, boolean> = {};
+		for (const row of batchDetails.rows) {
+			const info = row.notes_info;
+			const hasAny = Boolean(info?.has_notes) || (Array.isArray(info?.note_ids) && info!.note_ids!.length > 0) || (typeof info?.note_count === 'number' && (info!.note_count as number) > 0);
+			map[row.item_id] = hasAny;
+		}
+		setNotesPresenceByItemId(map);
+	}, [batchDetails?.rows]);
+
+	// Función para cargar presencia de grupos de forma optimizada
+	const loadGroupsPresence = useCallback(async (articles: ArticleForReview[]) => {
+		try {
+			setIsLoadingGroupsPresence(true);
+			const t0 = performance.now();
+			console.log(`[${ts()}] [groups] Inicio carga presencia de grupos (optimizada)`, { articles: articles.length });
+			
+			const articleIds = articles.map(a => a.article_id).filter(id => id && id.trim() !== '');
+			if (articleIds.length === 0) {
+				console.warn('[groups] No hay article_ids válidos para consultar grupos');
+				setIsLoadingGroupsPresence(false);
+				return;
+			}
+
+			// Usar la nueva función optimizada que hace una sola consulta
+			const { getBulkGroupsPresence } = await import('@/lib/actions/article-group-actions');
+			const result = await getBulkGroupsPresence({ articleIds });
+			
+			if (!result.success) {
+				console.error('[groups] Error en getBulkGroupsPresence:', result.error);
+				setIsLoadingGroupsPresence(false);
+				return;
+			}
+
+			// Mapear resultados de article_id a item_id
+			const groupsMap: Record<string, boolean> = {};
+			articles.forEach(article => {
+				groupsMap[article.item_id] = result.data[article.article_id] || false;
+			});
+			
+			setGroupsPresenceByItemId(groupsMap);
+			const ms = Math.round(performance.now() - t0);
+			const withGroups = Object.values(groupsMap).filter(Boolean).length;
+			console.log(`[${ts()}] [groups] Fin carga presencia de grupos (optimizada)`, { articles: articles.length, withGroups, ms });
+		} catch (error) {
+			console.error('[groups] Error cargando presencia de grupos:', error);
+		} finally {
+			setIsLoadingGroupsPresence(false);
+		}
+	}, []);
+
+	// Función para cargar los detalles del lote
+	const loadBatchDetails = useCallback(async () => {
+		if (!batchId) return;
+		console.log(`[${ts()}] [batch] Inicio consulta detalles de lote`, { batchId });
+		setArticlesLoading(true);
+		setError(null);
+		const start = performance.now();
+		try {
+			const resp = await fetch("/api/preclassification/batch-details", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ batchId }),
+			});
+			if (!resp.ok) {
+				const { error: apiError } = (await resp.json().catch(() => ({ error: "Error desconocido" }))) as { error?: string };
+				throw new Error(apiError || `HTTP ${resp.status}`);
+			}
+			const { data } = (await resp.json()) as { data: BatchDetails };
+			setBatchDetails(data);
+			// 📁 Cargar presencia de grupos en paralelo
+			loadGroupsPresence(data.rows);
+			const ms = Math.round(performance.now() - start);
+			console.log(`[${ts()}] [batch] Fin consulta detalles de lote`, { batchId, articles: data.rows.length, ms });
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Error desconocido");
+			const ms = Math.round(performance.now() - start);
+			console.error(`[${ts()}] [batch] Excepción consulta detalles de lote`, { batchId, error: err, ms });
+		} finally {
+			setArticlesLoading(false);
+		}
+	}, [batchId, loadGroupsPresence]);
+
+	// Refrescar presencia para un artículo en particular (usado al cerrar editor)
+	const refreshNotesPresence = useCallback(async () => {
+		// Ahora recargamos los detalles del lote para obtener notes_info actualizado en bloque
+		await loadBatchDetails();
+	}, [loadBatchDetails]);
+
+	
 	
 	
 	// 📊 Estados para Dimensiones Dinámicas
@@ -102,53 +242,84 @@ const BatchDetailPage = () => {
 
 	// 📊 Función para cargar dimensiones activas de la fase
 	const loadActiveDimensions = useCallback(async () => {
-		if (!batchDetails?.id) return;
+		if (!batchId) return;
+		const t0 = performance.now();
+		console.log(`[${ts()}] [dims] Inicio carga dimensiones activas`, { batchId });
+		setDimsLoading(true);
 		
 		try {
-			// Obtener la fase activa del proyecto
-			const { getActivePhaseForProject } = await import('@/lib/actions/preclassification_phases_actions');
-			
 			// Necesitamos obtener el project_id del batch
 			const supabase = (await import('@/app/auth/client')).supabase;
+			const tb0 = performance.now();
 			const { data: batchData, error: batchError } = await supabase
 				.from('article_batches')
 				.select('project_id')
-				.eq('id', batchDetails.id)
+				.eq('id', batchId)
 				.single();
+			const tbMs = Math.round(performance.now() - tb0);
+			console.log(`[${ts()}] [dims] Consulta project_id de batch`, { batchId, ms: tbMs, ok: !batchError });
 			
 			if (batchError || !batchData) {
 				console.error('Error obteniendo project_id del batch:', batchError);
+				setDimsLoading(false);
 				return;
 			}
-			
-			// Obtener fase activa
-			const activePhaseResult = await getActivePhaseForProject(batchData.project_id);
-			if (activePhaseResult.error || !activePhaseResult.data) {
-				console.error('Error obteniendo fase activa:', activePhaseResult.error);
+
+			// Obtener fase activa vía API
+			const tf0 = performance.now();
+			const activePhaseResp = await fetch('/api/preclassification/active-phase', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ projectId: batchData.project_id }),
+			});
+			if (!activePhaseResp.ok) {
+				const { error: apiError } = (await activePhaseResp.json().catch(() => ({ error: 'Error desconocido' }))) as { error?: string };
+				throw new Error(apiError || `HTTP ${activePhaseResp.status}`);
+			}
+			const { data: activePhase } = (await activePhaseResp.json()) as { data: { id: string } | null };
+			const tfMs = Math.round(performance.now() - tf0);
+			console.log(`[${ts()}] [dims] Consulta fase activa`, { projectId: batchData.project_id, ms: tfMs, ok: Boolean(activePhase?.id) });
+			if (!activePhase?.id) {
+				console.error('Error obteniendo fase activa: no encontrada');
+				setDimsLoading(false);
 				return;
 			}
-			
-			// Cargar dimensiones activas
-			const { listDimensions } = await import('@/lib/actions/dimension-actions');
-			const dimensionsResult = await listDimensions(activePhaseResult.data.id, false);
-			
-			if (dimensionsResult.success) {
-				setActiveDimensions(dimensionsResult.data);
-				console.log('📊 Dimensiones activas cargadas:', dimensionsResult.data.length);
-			} else {
-				console.error('Error cargando dimensiones:', dimensionsResult.error);
+
+			// Cargar dimensiones activas vía API
+			const td0 = performance.now();
+			const dimsResp = await fetch('/api/preclassification/dimensions', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ phaseId: activePhase.id, includeArchived: false }),
+			});
+			if (!dimsResp.ok) {
+				const { error: apiError } = (await dimsResp.json().catch(() => ({ error: 'Error desconocido' }))) as { error?: string };
+				throw new Error(apiError || `HTTP ${dimsResp.status}`);
 			}
-			
+			const { data: dims } = (await dimsResp.json()) as { data: Array<{ id: string; name: string; type: 'finite' | 'open' }> };
+			const tdMs = Math.round(performance.now() - td0);
+
+			const mappedDims: { id: string; name: string; type: 'finite' | 'open' }[] = (dims || []).map(d => ({ id: d.id, name: d.name, type: d.type as 'finite' | 'open' }));
+			setActiveDimensions(mappedDims);
+			console.log('📊 Dimensiones activas cargadas:', mappedDims.length);
+			const totalMs = Math.round(performance.now() - t0);
+			console.log(`[${ts()}] [dims] Fin carga dimensiones activas`, { dims: mappedDims.length, listMs: tdMs, totalMs });
 		} catch (error) {
 			console.error('Error cargando dimensiones activas:', error);
+		} finally {
+			setDimsLoading(false);
 		}
-	}, [batchDetails?.id]);
+	}, [batchId]);
 	
 	// 📋 Función para cargar clasificaciones de dimensiones
 	const loadDimensionClassifications = useCallback(async () => {
 		if (!batchId) return;
+		const t0 = performance.now();
+		console.log(`[${ts()}] [classif] Inicio carga clasificaciones`, { batchId });
+		setClassifLoading(true);
 		
 		try {
+			// Obtener clasificaciones de dimensiones
 			const supabase = (await import('@/app/auth/client')).supabase;
 			const { data: classifications, error } = await supabase
 				.from('article_dimension_reviews')
@@ -176,45 +347,23 @@ const BatchDetailPage = () => {
 			
 			setDimensionClassifications(classificationMap);
 			console.log('📋 Clasificaciones cargadas:', Object.keys(classificationMap).length);
+			const ms = Math.round(performance.now() - t0);
+			console.log(`[${ts()}] [classif] Fin carga clasificaciones`, { batchId, count: Object.keys(classificationMap).length, ms });
 		} catch (error) {
 			console.error('Error cargando clasificaciones de dimensiones:', error);
-		}
-	}, [batchId]);
-
-	// Función para cargar los detalles del lote
-	const loadBatchDetails = useCallback(async () => {
-		if (!batchId) return;
-		
-		setIsLoading(true);
-		setError(null);
-		
-		try {
-			const result = await getBatchDetailsForReview(batchId);
-			
-			if (result.success) {
-				setBatchDetails(result.data);
-			} else {
-				setError(result.error);
-			}
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Error desconocido");
 		} finally {
-			setIsLoading(false);
+			setClassifLoading(false);
 		}
 	}, [batchId]);
 
-	// Cargar datos iniciales
+	// loadBatchDetails fue movida arriba para evitar TDZ
+
+	// Cargar datos iniciales en paralelo: dimensiones, clasificaciones y artículos
 	useEffect(() => {
+		loadActiveDimensions();
+		loadDimensionClassifications();
 		loadBatchDetails();
-	}, [loadBatchDetails]);
-	
-	// 📊 Cargar dimensiones cuando se cargan los detalles del batch
-	useEffect(() => {
-		if (batchDetails) {
-			loadActiveDimensions();
-			loadDimensionClassifications(); // 🔧 CORRECCIÓN CRÍTICA: Cargar clasificaciones existentes
-		}
-	}, [batchDetails, loadActiveDimensions, loadDimensionClassifications]);
+	}, [loadActiveDimensions, loadDimensionClassifications, loadBatchDetails]);
 
 	// Suscripción a cambios en tiempo real
 	useEffect(() => {
@@ -273,17 +422,7 @@ const BatchDetailPage = () => {
 	}, [batchId, router, loadDimensionClassifications]);
 
 	// Funciones de manejo de acciones
-	const handleOpenDOI = useCallback((article: ArticleForReview) => {
-		if (article.article_data?.journal) {
-			const journalData = article.article_data.journal;
-			const url = typeof journalData === 'string' && journalData.startsWith('http') 
-				? journalData 
-				: `https://doi.org/${journalData}`;
-			window.open(url, '_blank');
-		} else {
-			console.log('No DOI disponible para este artículo');
-		}
-	}, []);
+	// (Eliminado) Botón/función para abrir DOI
 
 	const handleDisagree = useCallback((article: ArticleForReview) => {
 		if (!article.item_id) {
@@ -305,15 +444,36 @@ const BatchDetailPage = () => {
 
 	// Función para abrir el editor de notas
 	const handleOpenNotes = useCallback((article: ArticleForReview) => {
-		setCurrentArticle(article);
-		setNoteDialogOpen(true);
-	}, []);
+    console.log('[Page] handleOpenNotes', {
+      itemId: article.item_id,
+      hasNotesAtClick: notesPresenceByItemId[article.item_id],
+      titleOriginal: article.article_data?.original_title,
+      titleTranslated: article.article_data?.translated_title,
+    });
+    setCurrentArticle(article);
+    setNoteDialogOpen(true);
+  }, [notesPresenceByItemId]);
 
 	// Función para cerrar el editor de notas
 	const handleCloseNotes = () => {
 		setNoteDialogOpen(false);
+		// Refrescar presencia para el artículo que estaba abierto
+		if (currentArticle) {
+			void refreshNotesPresence();
+		}
 		setCurrentArticle(null);
 	};
+
+	// Callback de NoteEditor para actualización optimista de presencia de notas
+	const handleNotesChanged = useCallback((hasNotesNow: boolean) => {
+    if (!currentArticle?.item_id) return;
+    const itemId = currentArticle.item_id;
+    console.log('[onNotesChanged] actualización optimista de hasNotes', { itemId, hasNotesNow });
+    setNotesPresenceByItemId(prev => ({
+        ...prev,
+        [itemId]: hasNotesNow,
+    }));
+}, [currentArticle]);
 
 	// Función para iniciar la preclasificación
 	const handleStartPreclassification = async () => {
@@ -516,6 +676,82 @@ const BatchDetailPage = () => {
 				size: 40, 
 				enableHiding: false 
 			},
+			// Columna de acciones (ahora sticky a la izquierda)
+			{
+				id: "actions",
+				header: "Acciones",
+				size: 200,
+				enableHiding: false,
+				meta: { 
+					align: "center",
+					isSticky: "left", 
+					size: 200
+				},
+				cell: ({ row }) => {
+					const article = row.original.originalArticle;
+					const hasNotesLive = Boolean(notesPresenceByItemId[article.item_id]);
+					
+					return (
+						<div className="flex gap-1">
+							<NotesButtonCell 
+								article={article}
+								hasNotes={hasNotesLive}
+								onOpenNotes={handleOpenNotes}
+							/>
+							<StandardButton
+								styleType="outline"
+								iconOnly={true}
+								onClick={() => {
+									const hasTranslation = Boolean(
+										article.article_data?.translated_title ||
+										article.article_data?.translated_abstract
+									);
+									const translatedParam = hasTranslation && !showOriginalAsPrimary ? "true" : "false";
+									const articleId = article.article_id;
+									if (!articleId) {
+										console.error('[Acciones] No se encontró article_id para el item', { itemId: article.item_id, articleId });
+										return;
+									}
+									const returnHref = encodeURIComponent(`/articulos/preclasificacion/${batchId}`);
+									const returnLabelRaw = `Lote #${batchDetails?.batch_number ?? ''}`;
+									const returnLabel = encodeURIComponent(returnLabelRaw);
+									window.location.href = `/articulos/detalle?articleId=${articleId}&translated=${translatedParam}&returnHref=${returnHref}&returnLabel=${returnLabel}`;
+								}}
+								tooltip="Ver detalle del artículo"
+							>
+								<Search size={16} />
+							</StandardButton>
+							<ArticleGroupManager
+								articleId={row.original.originalArticle.article_id}
+								hasGroups={groupsPresenceByItemId[row.original.originalArticle.item_id] || false}
+								isLoadingPresence={isLoadingGroupsPresence}
+								onGroupsChanged={(hasGroups) => {
+									setGroupsPresenceByItemId(prev => ({
+										...prev,
+										[row.original.originalArticle.item_id]: hasGroups
+									}));
+								}}
+							/>
+							<StandardButton
+								styleType="outline"
+								iconOnly={true}
+								onClick={() => handleDisagree(article)}
+								tooltip="Marcar desacuerdo"
+							>
+								<ThumbsDown size={16} />
+							</StandardButton>
+							<StandardButton
+								styleType="outline"
+								iconOnly={true}
+								onClick={() => handleValidate(article)}
+								tooltip="Validar"
+							>
+								<CheckCircle size={16} />
+							</StandardButton>
+						</div>
+					);
+				},
+			},
 			{
 				id: "title",
 				accessorKey: "title",
@@ -551,70 +787,28 @@ const BatchDetailPage = () => {
 				size: 200,
 				meta: { isTruncatable: true },
 			},
-			// Columna de acciones (sticky derecha)
-			{
-				id: "actions",
-				header: "Acciones",
-				size: 200,
-				meta: { isSticky: "right" as const },
-				enableHiding: false, // 🔧 CRÍTICO: Como en showroom para sticky
-				cell: ({ row }) => {
-					const article = row.original.originalArticle;
-					
-					return (
-						<div className="flex gap-1">
-							<StandardButton
-								styleType="outline"
-								iconOnly={true}
-								onClick={() => handleOpenDOI(article)}
-								tooltip="Abrir DOI"
-							>
-								<Link size={16} />
-							</StandardButton>
-							<StandardButton
-								styleType="outline"
-								iconOnly={true}
-								onClick={() => handleOpenNotes(article)}
-								tooltip="Abrir Notas"
-							>
-								<StickyNote size={16} />
-							</StandardButton>
-							<ArticleGroupManager
-								article={article}
-								project={auth.proyectoActual ? { id: auth.proyectoActual.id, name: auth.proyectoActual.name } : null}
-							/>
-							<StandardButton
-								styleType="outline"
-								iconOnly={true}
-								onClick={() => handleDisagree(article)}
-								tooltip="Marcar desacuerdo"
-							>
-								<ThumbsDown size={16} />
-							</StandardButton>
-							<StandardButton
-								styleType="outline"
-								iconOnly={true}
-								onClick={() => handleValidate(article)}
-								tooltip="Validar"
-							>
-								<CheckCircle size={16} />
-							</StandardButton>
-						</div>
-					);
-				},
-			},
 		];
 		
-		// Insertar columnas de dimensiones antes de la columna de acciones
-		const actionsColumn = baseColumns[baseColumns.length - 1]; // Última columna (acciones)
-		const otherColumns = baseColumns.slice(0, -1); // Todas excepto la última
-		
+		// Composición final de columnas
 		return [
-			...otherColumns,
+			...baseColumns,
 			...dimensionColumns,
-			actionsColumn
 		];
-	}, [createDimensionColumns, showOriginalAsPrimary, handleOpenDOI, handleOpenNotes, handleDisagree, handleValidate, auth.proyectoActual]);
+	}, [
+		createDimensionColumns,
+		showOriginalAsPrimary,
+		handleDisagree,
+		handleValidate,
+		handleOpenNotes,
+		notesPresenceByItemId,
+		// Para navegación al detalle: usamos batchId y el número de lote en el onClick
+		batchId,
+		batchDetails?.batch_number,
+		// Estado de grupos para ArticleGroupManager
+		groupsPresenceByItemId,
+		// Loading de presencia de grupos también afecta las props del cell de Acciones
+		isLoadingGroupsPresence,
+	]);
 
 	// Transformar datos para la tabla
 	const tableData: TableRow[] = batchDetails?.rows.map((article: ArticleForReview) => {
@@ -635,19 +829,30 @@ const BatchDetailPage = () => {
 		// Verificar si hay contenido secundario para mostrar el expander
 		const hasSecondaryContent = secondaryTitle || secondaryAbstract;
 
-		const rowData: TableRowData = {
-			id: article.item_id,
-			title: primaryTitle || "Sin título",
-			abstract: primaryAbstract || "Sin abstract",
-			ai_summary: article.article_data.translation_summary || "Sin resumen",
-			year: article.article_data.publication_year?.toString() || "N/A",
-			journal: article.article_data.journal || "N/A",
-			// Datos adicionales para el sub-componente
-			secondaryTitle,
-			secondaryAbstract,
-			// Referencia al artículo original para las acciones
-			originalArticle: article,
-		};
+		    // Cálculo explícito de hasNotes con log de soporte
+    const mapValue = notesPresenceByItemId[article.item_id];
+    const hasNotesComputed = Boolean(mapValue);
+    console.log('[tableData] cálculo hasNotes para fila', {
+      itemId: article.item_id,
+      mapValue,
+      hasNotesComputed,
+    });
+
+    const rowData: TableRowData = {
+      id: article.item_id,
+      title: primaryTitle || "Sin título",
+      abstract: primaryAbstract || "Sin abstract",
+      ai_summary: article.article_data.translation_summary || "Sin resumen",
+      year: article.article_data.publication_year?.toString() || "N/A",
+      journal: article.article_data.journal || "N/A",
+      // Datos adicionales para el sub-componente
+      secondaryTitle,
+      secondaryAbstract,
+      // Referencia al artículo original para las acciones
+      originalArticle: article,
+      // Presencia de notas para evitar pasar el mapa completo a la celda
+      hasNotes: hasNotesComputed,
+    };
 
 		// Agregar subRows si hay contenido secundario (para habilitar expander)
 		if (hasSecondaryContent) {
@@ -711,13 +916,13 @@ const BatchDetailPage = () => {
 	  );
 	};
 
-	if (isLoading) {
+	if (dimsLoading && activeDimensions.length === 0) {
 		return (
 			<div className="w-full h-full p-4 sm:p-6 flex flex-col">
 				<StandardPageTitle
 					title="Detalle de Lote"
-					mainIcon={ClipboardList}
-					subtitle="Cargando detalles del lote..."
+					mainIcon={Filter}
+					subtitle="Cargando estructura del lote..."
 					showBackButton={{ href: "/articulos/preclasificacion" }}
 					breadcrumbs={[
 						{ label: "Artículos", href: "/articulos" },
@@ -731,11 +936,11 @@ const BatchDetailPage = () => {
 						variant="spin-pulse"
 						speed="normal"
 						showText={true}
-						text="Cargando artículos del lote..."
+						text="Cargando columnas de dimensiones..."
 						className="mb-4"
 					/>
 					<StandardText className="text-gray-500 dark:text-gray-400">
-						Por favor espera mientras cargamos los artículos...
+						Por favor espera mientras cargamos la estructura...
 					</StandardText>
 				</div>
 			</div>
@@ -747,7 +952,7 @@ const BatchDetailPage = () => {
 			<div className="w-full h-full p-4 sm:p-6 flex flex-col">
 				<StandardPageTitle
 					title="Error"
-					mainIcon={ClipboardList}
+					mainIcon={Filter}
 					subtitle="Error al cargar el lote"
 					showBackButton={{ href: "/articulos/preclasificacion" }}
 					breadcrumbs={[
@@ -767,12 +972,12 @@ const BatchDetailPage = () => {
 		);
 	}
 
-	if (!batchDetails || batchDetails.rows.length === 0) {
+	if (!articlesLoading && (!batchDetails || batchDetails.rows.length === 0)) {
 		return (
 			<div className="w-full h-full p-4 sm:p-6 flex flex-col">
 				<StandardPageTitle
 					title="Detalle de Lote"
-					mainIcon={ClipboardList}
+					mainIcon={Filter}
 					subtitle="No hay artículos en este lote"
 					showBackButton={{ href: "/articulos/preclasificacion" }}
 					breadcrumbs={[
@@ -780,6 +985,7 @@ const BatchDetailPage = () => {
 						{ label: "Preclasificación", href: "/articulos/preclasificacion" },
 						{ label: "Detalle de Lote" },
 					]}
+					actionsPosition="left"
 				/>
 				<div className="mt-6 flex-grow flex items-center justify-center">
 					<StandardText>No hay artículos para mostrar en este lote.</StandardText>
@@ -788,59 +994,53 @@ const BatchDetailPage = () => {
 		);
 	}
 
+	const actionsBar = (
+    <div className="flex items-center gap-4">
+      {/* Botón de preclasificación - solo visible si el lote está traducido */}
+      {batchDetails?.status === 'translated' && (
+        <StandardButton
+          styleType="solid"
+          colorScheme="accent"
+          leftIcon={Brain}
+          onClick={handleStartPreclassification}
+          disabled={isStartingPreclassification}
+          className="flex items-center gap-2"
+        >
+          {isStartingPreclassification ? 'Iniciando...' : 'Iniciar Preclasificación'}
+        </StandardButton>
+      )}
+      {/* Botón de inversión de vista */}
+      <StandardButton
+        styleType="outline"
+        onClick={() => setShowOriginalAsPrimary(!showOriginalAsPrimary)}
+        className="flex items-center gap-2"
+        leftIcon={Globe}
+      >
+        {showOriginalAsPrimary ? "Idioma Español" : "Idioma Original"}
+      </StandardButton>
+    </div>
+  );
 
-	// ✅ ESTRUCTURA CORREGIDA: Eliminar contenedores flex que limitan el scroll
-	// Aplicar la misma estructura que funciona en standard-table-final
+  // ✅ ESTRUCTURA CORREGIDA: Eliminar contenedores flex que limitan el scroll
+  // Aplicar la misma estructura que funciona en standard-table-final
 	return (
 		<StandardPageBackground variant="default">
 		<div className="p-4 sm:p-6">
 			<StandardPageTitle
-				title={`Preclasificación Lote #${batchDetails.batch_number || batchId}`}
-				mainIcon={ClipboardList}
-				subtitle={`${batchDetails.rows.length} artículos en revisión`}
+				title={`Preclasificación Lote #${batchDetails?.batch_number || batchId}`}
+				mainIcon={Filter}
+				subtitle={batchDetails ? `${batchDetails.rows.length} artículos en revisión` : (articlesLoading ? 'Cargando artículos...' : ((dimsLoading || classifLoading) ? 'Cargando metadatos...' : '0 artículos'))}
 				showBackButton={{ href: "/articulos/preclasificacion" }}
 				breadcrumbs={[
 					{ label: "Artículos", href: "/articulos" },
 					{ label: "Preclasificación", href: "/articulos/preclasificacion" },
-					{ label: `Preclasificación Lote #${batchDetails.batch_number || batchId}` },
+					{ label: `Preclasificación Lote #${batchDetails?.batch_number || batchId}` },
 				]}
+				actions={actionsBar}
+				actionsPosition="left"
 			/>
 			
 			<div className="mt-6 space-y-4">
-				{/* Botones de acción */}
-				<div className="flex justify-between items-center">
-					{/* Sección izquierda: Preclasificación y Resaltado */}
-					<div className="flex items-center gap-4">
-						{/* Botón de preclasificación - solo visible si el lote está traducido */}
-						{batchDetails?.status === 'translated' && (
-							<StandardButton
-								styleType="solid"
-								colorScheme="accent"
-								leftIcon={Brain}
-								onClick={handleStartPreclassification}
-								disabled={isStartingPreclassification}
-								className="flex items-center gap-2"
-							>
-								{isStartingPreclassification ? 'Iniciando...' : 'Iniciar Preclasificación'}
-							</StandardButton>
-						)}
-						
-
-					</div>
-					
-					{/* Botón de inversión de vista */}
-					<div>
-						<StandardButton
-							styleType="outline"
-							onClick={() => setShowOriginalAsPrimary(!showOriginalAsPrimary)}
-							className="flex items-center gap-2"
-							leftIcon={Globe}
-						>
-							{showOriginalAsPrimary ? "Idioma Español" : "Idioma Original"}
-						</StandardButton>
-					</div>
-				</div>
-
 				{/* Tabla principal - Wrapper aislado para sticky header */}
 				<div className="relative" style={{ isolation: 'isolate' }}>
 					{/* Spacer para evitar interferencia con elementos superiores */}
@@ -856,7 +1056,7 @@ const BatchDetailPage = () => {
 						enableKeywordHighlighting={true}
 						keywordHighlightPlaceholder="Resaltar palabra clave..."
 						enableCsvExport={true}
-						csvFileName={`Preclasificacion_Lote_${batchDetails.batch_number || batchId}`}
+						csvFileName={`Preclasificacion_Lote_${batchDetails?.batch_number ?? batchId}`}
 					>
 						<StandardTable.Table />
 					</StandardTable>
@@ -870,6 +1070,7 @@ const BatchDetailPage = () => {
 				article={currentArticle}
 				project={auth.proyectoActual ? { id: auth.proyectoActual.id, name: auth.proyectoActual.name } : null}
 				showOriginalAsPrimary={showOriginalAsPrimary}
+				onNotesChanged={handleNotesChanged}
 			/>
 		</div>
 		</StandardPageBackground>

@@ -7,6 +7,7 @@ import { getActivePhaseForProject } from "./preclassification_phases_actions";
 // CAMBIO: Se importa la acción del otro archivo para obtener los IDs
 import { listEligibleArticlesForPhase } from "./phase-eligible-articles-actions";
 import { ResultadoOperacion } from "./types";
+import type { Enums, TablesInsert } from "@/lib/database.types";
 
 // ========================================================================
 //	INTERFACES Y TIPOS
@@ -194,7 +195,7 @@ export async function getBatchingStatusForActivePhase(
         if (existingBatches === 0) {
             return { success: true, data: { status: 'READY_FOR_BATCHING', activePhase: { id: activePhase.id, phase_number: activePhase.phase_number }, totalUniverseSize: universeSize, unbatchedArticleCount: universeSize } };
         } else {
-            const initialState = activePhase.phase_number === 1 ? 'pending' : 'translated';
+            const initialState: Enums<'batch_preclass_status'> = activePhase.phase_number === 1 ? 'pending' : 'translated';
             const { count: advancedBatchesCount, error: advancedCheckError } = await supabase
                 .from('article_batches')
                 .select('*', { count: 'exact', head: true })
@@ -306,7 +307,7 @@ export async function createBatches(
             const assignedMemberId = selectedMemberIds[i % selectedMemberIds.length];
             const assignedBatchNumber = nextBatchNumber + i;
             const batchName = batchNamePrefix ? `${batchNamePrefix} ${assignedBatchNumber}` : `Lote ${assignedBatchNumber}`;
-            const initialState = activePhase.phase_number === 1 ? 'pending' : 'translated';
+            const initialState: Enums<'batch_preclass_status'> = activePhase.phase_number === 1 ? 'pending' : 'translated';
 
             const { data: newBatch, error: batchInsertError } = await supabase.from("article_batches").insert({
                 project_id: projectId,
@@ -320,11 +321,12 @@ export async function createBatches(
             if (batchInsertError || !newBatch) return { success: false, error: `Error al crear el lote ${i+1}: ${batchInsertError?.message}` };
 
             const articleCountForThisBatch = articlesPerBatchArray[i];
-            const itemsToInsert = availableArticleIds.slice(articlePoolIndex, articlePoolIndex + articleCountForThisBatch)
+            const itemsToInsert: TablesInsert<'article_batch_items'>[] = availableArticleIds
+                .slice(articlePoolIndex, articlePoolIndex + articleCountForThisBatch)
                 .map((articleId: string) => ({
                     batch_id: newBatch.id,
                     article_id: articleId, // Ahora articleId es realmente un string UUID
-                    status: 'unreviewed' as const
+                    status: initialState,
                 }));
             
             console.log(`[${opId}] Lote ${assignedBatchNumber}: insertando ${itemsToInsert.length} artículos`);
@@ -366,7 +368,7 @@ export async function resetBatchesForPhase(
         const { data: phaseData, error: phaseError } = await supabase.from('preclassification_phases').select('phase_number').eq('id', phaseId).single();
         if (phaseError || !phaseData) return { success: false, error: "Fase no encontrada." };
 
-        const initialState = phaseData.phase_number === 1 ? 'pending' : 'translated';
+        const initialState: Enums<'batch_preclass_status'> = phaseData.phase_number === 1 ? 'pending' : 'translated';
         
         const { count: advancedCount, error: checkError } = await supabase.from('article_batches').select('*', { count: 'exact', head: true }).eq('phase_id', phaseId).neq('status', initialState);
 

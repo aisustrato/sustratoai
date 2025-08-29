@@ -6,6 +6,7 @@ import type { AppColorTokens, ColorSchemeVariant, Mode } from '@/lib/theme/Color
 export interface StandardAccordionContextValue {
   colorScheme: ColorSchemeVariant;
   size: 'sm' | 'md' | 'lg';
+  styleType: 'subtle' | 'solid';
   appColorTokens: AppColorTokens | null;
   mode: Mode;
   openItems: string[];

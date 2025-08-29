@@ -43,31 +43,30 @@ export type TableTokens = {
 };
 
 /**
- * Genera un degradado para encabezados de tabla, exactamente igual al de los botones
+ * Genera un degradado para encabezados de tabla, exactamente igual al de los botones,
+ * pero permitiendo elegir el esquema de color.
  */
-function generateHeaderGradient(appColorTokens: AppColorTokens): string {
-    const primary = appColorTokens.primary;
-    
+function generateHeaderGradient(appColorTokens: AppColorTokens, headerColorScheme: ColorSchemeVariant): string {
+    const baseColor = appColorTokens[headerColorScheme].pure;
     // Replicamos EXACTAMENTE el mismo degradado que usan los botones con el modificador 'gradient'
-    const start = tinycolor(primary.pure).lighten(10).toHexString();
-    const end = tinycolor(primary.pure).darken(10).toHexString();
-    
-    // Usamos la misma dirección diagonal que los botones: 'to bottom right'
-    return `linear-gradient(to bottom right, ${start}, ${end})`;
+    const start = tinycolor(baseColor).lighten(10).toHexString();
+    const end = tinycolor(baseColor).darken(10).toHexString();
+    // Usamos dirección vertical para que el degradado sea continuo en toda la fila del header
+    return `linear-gradient(to bottom, ${start}, ${end})`;
 }
 
-export function generateTableTokens(appColorTokens: AppColorTokens, mode: Mode): TableTokens {
+export function generateTableTokens(appColorTokens: AppColorTokens, mode: Mode, headerColorScheme: ColorSchemeVariant = "primary"): TableTokens {
     const isDark = mode === "dark";
     const neutral = appColorTokens.neutral;
 
     return {
         container: { backgroundColor: isDark ? neutral.bgShade : appColorTokens.white.bg, borderColor: isDark ? neutral.pureShade : neutral.bgShade },
         header: { 
-            backgroundColor: generateHeaderGradient(appColorTokens), 
-            foregroundColor: appColorTokens.primary.contrastText, 
-            borderColor: isDark ? appColorTokens.primary.pureShade : appColorTokens.primary.pureShade, 
-            sortIconColor: appColorTokens.primary.contrastText, 
-            sortIconHoverColor: appColorTokens.primary.contrastText 
+            backgroundColor: generateHeaderGradient(appColorTokens, headerColorScheme), 
+            foregroundColor: appColorTokens[headerColorScheme].contrastText, 
+            borderColor: isDark ? appColorTokens[headerColorScheme].pureShade : appColorTokens[headerColorScheme].pureShade, 
+            sortIconColor: appColorTokens[headerColorScheme].contrastText, 
+            sortIconHoverColor: appColorTokens[headerColorScheme].contrastText 
         },
         row: {
             default: { backgroundColor: isDark ? neutral.bgShade : appColorTokens.white.bg, foregroundColor: neutral.text, borderColor: isDark ? neutral.bg : neutral.bgShade, hoverBackgroundColor: isDark ? tinycolor(neutral.bgShade).lighten(5).toHexString() : neutral.bg, },

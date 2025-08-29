@@ -1,5 +1,5 @@
 // 📍 lib/gemini/api.ts
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 // Esta función es el nuevo "corazón" reutilizable
 export async function callGeminiAPI(model: string, text: string) {
@@ -16,11 +16,6 @@ export async function callGeminiAPI(model: string, text: string) {
         topP: 1,
         maxOutputTokens: 8192,
     };
-
-    const safetySettings = [
-        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-        // ... (resto de las categorías)
-    ];
 
     const result = await genAI.models.generateContent({
         model: model,

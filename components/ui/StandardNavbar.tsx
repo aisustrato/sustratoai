@@ -25,6 +25,7 @@ import {
 	Shield,        // Added for Roles
 	Network,       // Added for Fases de Preclasificación
 	Filter,        // Added for Preclasificación
+	MapPin,        // Added for Grupos icon (map location)
 } from "lucide-react";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -314,6 +315,16 @@ const navItems: NavItem[] = useMemo(() => {
           label: "Preclasificación",
           href: "/articulos/preclasificacion",
           icon: () => createMenuIcon(Filter),
+        },
+        {
+          label: "Grupos",
+          href: "/articulos/grupos",
+          icon: () => createMenuIcon(MapPin),
+        },
+        {
+          label: "Notas",
+          href: "/articulos/notas",
+          icon: () => createMenuIcon(FileText),
         },
       ],
     });

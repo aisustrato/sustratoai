@@ -2,7 +2,7 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
 	useForm,
 	Controller,
@@ -25,6 +25,9 @@ import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { StandardText } from "@/components/ui/StandardText";
+import { StandardDialog } from "@/components/ui/StandardDialog";
+import type { LucideIcon } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import {
 	AlertCircle,
 	HelpCircle,
@@ -32,6 +35,7 @@ import {
 	PlusCircle,
 	Trash2,
 	CheckCircle,
+	Search,
 } from "lucide-react";
 import { StandardBadge } from "@/components/ui/StandardBadge";
 //#endregion ![head]
@@ -45,6 +49,11 @@ const optionSchema = z.object({
 		.min(1, "El valor de la opción es requerido.")
 		.max(200, "Máximo 200 caracteres."),
 	ordering: z.number().int(),
+	emoticon: z
+		.string()
+		.max(20, "Máximo 20 caracteres.")
+		.optional()
+		.nullable(),
 });
 
 const questionSchema = z.object({
@@ -80,6 +89,11 @@ const dimensionFormSchema = z
 		description: z
 			.string()
 			.max(500, "La descripción no puede exceder los 500 caracteres.")
+			.optional()
+			.nullable(),
+		icon: z
+			.string()
+			.max(100, "Máximo 100 caracteres.")
 			.optional()
 			.nullable(),
 		options: z.array(optionSchema).optional(),
@@ -137,6 +151,106 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 }) => {
 	//#region [sub] - 🧰 HOOKS, STATE, FORM SETUP & EFFECTS 🧰
 	const { proyectoActual } = useAuth();
+
+	// Catálogo dinámico de íconos Lucide (filtra solo componentes funcionales)
+	const lucideIconMap = useMemo<Record<string, LucideIcon>>(() => {
+		// In lucide-react, los iconos suelen ser ForwardRefExoticComponent (typeof === 'object')
+		const entries = Object.entries(LucideIcons).filter(([name, comp]) => {
+			if (!/^[A-Z]/.test(name)) return false; // solo posibles íconos (PascalCase)
+			const t = typeof comp;
+			return t === "function" || t === "object";
+		});
+		const map: Record<string, LucideIcon> = {};
+		for (const [name, comp] of entries) map[name] = comp as LucideIcon;
+		return map;
+	}, []);
+
+	// Construye la lista priorizando una paleta curada y luego completa hasta 150 con el resto
+	const lucideIconNames = useMemo(() => {
+		const preferredCandidates = [
+			// 1. Conceptos, Ideas y Teoría
+			"BrainCircuit","Lightbulb","Atom","Dna","Puzzle","KeyRound","Sprout","Network","GitFork","BookOpenText","Gem","Scale","Anchor","Telescope","Compass",
+			// 2. Datos, Evidencia y Análisis
+			"Database","FileText","Table2","BarChart4","AreaChart","PieChart","ScanSearch","Filter","Sigma","ClipboardList","Pilcrow","Quote","Fingerprint",
+			// 3. Metodología y Proceso
+			"Workflow","Settings2","Ruler","FlaskConical","Microscope","DraftingCompass","Scissors","Layers","Repeat","RotateCw","Path","Blend","Move",
+			// 4. Resultados, Conclusiones e Impacto
+			"Target","Flag","Award","Trophy","CheckCircle2","Rocket","Mountain","Activity","TrendingUp","TrendingDown","Swords",
+			// 5. Colaboración, Contexto y Comunicación
+			"Users2","MessageSquareQuote","Link2","Share2","PenTool","Highlighter","Library","Building2","Map","CalendarDays","CircleDollarSign",
+			// 6. Estructura y Organización
+			"FolderTree","Tags","Bookmark","ListOrdered","Box","Package","LayoutGrid","Component","VennDiagram",
+			// 7. Limitaciones, Riesgos y Ética
+			"AlertTriangle","HelpCircle","XCircle","ShieldQuestion","LockKeyhole","EyeOff","Unplug","Copyright",
+			// 8. Símbolos Abstractos y Primitivas
+			"Hash","AtSign","Braces","Brackets","Parentheses","Terminal","Asterisk","Infinity",
+		];
+
+		// Filtrar por los que realmente existen en el catálogo importado
+		const preferred = preferredCandidates.filter((n) => !!lucideIconMap[n]);
+		const preferredSet = new Set(preferred);
+
+		const allNames = Object.keys(lucideIconMap);
+		const priorityRegex = /(User|Users|User\w+|Contact|Id|Badge|Briefcase|Building|Factory|Store|Graduation|School|Book|Books|Bookmark|Calendar|Clock|Timer|Alarm|History|Hourglass|Phone|Call|Mail|Message|Chat|Mic|Camera|Video|Image|Folder|File|Files|Document|Docs|Clipboard|Edit|Pen|Pencil|Write|Search|Settings|Cog|Wrench|Hammer|Tool|Shield|Lock|Key|Globe|Map|Location|Pin|Home|House|Heart|Star|Award|Trophy|Medal|Chart|Pie|Bar|Trending|Graph|Database|Cpu|Server|Cloud|Download|Upload|Link|Tag|Tags|Flag|Alert|Bell|Info|Help|Lightbulb|Sun|Moon|Sparkles|Zap|Fire|Leaf|Recycling|Wheelchair|Accessibility|Baby|Child|Handshake|Group|UsersRound|Wallet|Credit|Card)/i;
+
+		const others = allNames
+			.filter((n) => !preferredSet.has(n))
+			.sort((a, b) => {
+				const pa = priorityRegex.test(a) ? 1 : 0;
+				const pb = priorityRegex.test(b) ? 1 : 0;
+				if (pa !== pb) return pb - pa;
+				return a.localeCompare(b);
+			});
+
+		return [...preferred, ...others].slice(0, 150);
+	}, [lucideIconMap]);
+
+	// Estado para diálogo de íconos y búsqueda
+	const [iconDialogOpen, setIconDialogOpen] = useState(false);
+	const [iconSearch, setIconSearch] = useState("");
+
+	// Estado para diálogo de emoji por opción
+	const [emojiDialogIndex, setEmojiDialogIndex] = useState<number | null>(null);
+
+	const commonEmojis = useMemo(
+		() => [
+			// Caras y emociones
+			"😀","😃","😄","😁","😆","😅","😂","🙂","🙃","😉","😊","😇","😍","🥰","😘","😗","😙","😚","😋","😛","😜","🤪","🤨","🧐","🤓","😎","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","🫢","🫣","😱","😨","😰","😥","😓","🤗",
+			// Manos y gestos
+			"🤝","👍","👎","👌","✌️","🤟","🤘","👊","✊","🫶","🙏","👏","👐","💪","🦵","🦶","👣",
+			// Partes del cuerpo
+			"👀","👁️","👂","👃","🧠","🫀",
+			// Corazones y símbolos
+			"❤️","🧡","💛","💚","💙","💜","🤎","🖤","🤍","💔","💖","💗","💓","💞","💫","✨","⭐","🌟","⚡","🔥",
+			// Naturaleza y clima
+			"☀️","🌤️","⛅","🌥️","🌦️","🌧️","⛈️","🌈","🌙","⭐️","☂️","❄️","🌪️","🌊","🍃",
+			// Personas y grupos
+			"👤","👥","🧑","👨","👩","🧒","👶","🧓","👴","👵","👨‍🎓","👩‍🎓","🎓","👨‍💼","👩‍💼","💼","👨‍⚕️","👩‍⚕️","👨‍🏫","👩‍🏫","👮","👷","🧑‍🍳","🧑‍🔧","🧑‍🏭","🧑‍💻","🧑‍🔬","🧑‍🎨","🧑‍🚒","🧑‍✈️",
+			// Comunicación
+			"☎️","📞","📱","💬","🗨️","✉️","📧","📣","🔔","🔕",
+			// Tiempo y calendario
+			"⏰","⏱️","⏲️","🕒","📅","📆","🗓️","⌛","⏳",
+			// Documentos y oficina
+			"📚","📖","📝","✏️","🖊️","🖋️","📎","🗂️","📁","📂","🗃️","🗄️","📌","📍","🔖",
+			// Herramientas y configuración
+			"🛠️","🔧","🔨","⚙️","🧰","🪛",
+			// Ciencia y tecnología
+			"🧪","🔬","💻","🖥️","🖱️","🖨️","🛰️","📡",
+			// Seguridad
+			"🔒","🔓","🔑","🛡️",
+			// Ubicación y mapas
+			"🧭","🗺️","📍","🧭",
+			// Finanzas
+			"💰","💳","💵","💶","💷","💴","🏦","🧾","💱","💹","💼",
+			// Transporte
+			"🚗","🚕","🚌","🚎","🚓","🚑","🚒","🚴","🚲","✈️","🚀",
+			// Objetos generales
+			"🏠","🏢","🏫","🏥","⚖️","🏆","🎯","📈","📊","🔍","🔗","🏷️","🏳️","🏁",
+			// Salud y accesibilidad
+			"🏥","🧑‍🦽","🦼","♿",
+		],
+		[]
+	);
 	
 	// Estados para fases
 	const [phases, setPhases] = useState<Phase[]>([]);
@@ -149,6 +263,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 			phaseId: activePhaseId || "", // Pre-seleccionar la fase activa
 			type: undefined,
 			description: "",
+			icon: "",
 			options: [],
 			questions: [],
 			examples: [],
@@ -236,6 +351,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 					name: "",
 					type: undefined,
 					description: "",
+					icon: "",
 					options: [],
 					questions: [],
 					examples: [],
@@ -273,7 +389,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 
 	const addNewOption = () =>
 		appendOption(
-			{ value: "", ordering: optionFields.length },
+			{ value: "", ordering: optionFields.length, emoticon: "" },
 			{ shouldFocus: true }
 		);
 	const addNewQuestion = () =>
@@ -310,6 +426,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 
 	//#region [render] - 🎨 RENDER SECTION 🎨
 	return (
+		<>
 		<StandardCard
 			colorScheme="primary"
 			accentPlacement="none"
@@ -449,6 +566,54 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 									)}
 								/>
 							</StandardFormField>
+
+							<StandardFormField
+								label="Icono de la Dimensión (Solo íconos)"
+								htmlFor="dim-icon"
+								hint="Selecciona un ícono Lucide de la galería (sin emojis).">
+								<Controller
+									name="icon"
+									control={control}
+									render={({ field }) => (
+										<div className="flex items-center gap-2">
+											<div className="flex-1 flex items-center gap-2">
+												{(() => {
+													const Comp = field.value
+														? (lucideIconMap as Record<string, LucideIcon>)[field.value]
+													: undefined;
+													return Comp ? (
+														<StandardIcon>
+															<Comp className="h-5 w-5" />
+														</StandardIcon>
+													) : null;
+												})()}
+
+												<StandardInput
+													id="dim-icon"
+													placeholder="Selecciona desde la galería de íconos"
+													readOnly={true}
+													isEditing={false}
+													error={errors.icon?.message}
+													success={getFieldSuccessState("icon")}
+													{...field}
+													value={field.value || ""}
+												/>
+											</div>
+											{!isReadOnlyEffective && (
+												<StandardButton
+													type="button"
+													styleType="outline"
+													size="sm"
+													leftIcon={Search}
+													onClick={() => setIconDialogOpen(true)}
+												>
+													Elegir ícono
+												</StandardButton>
+											)}
+										</div>
+									)}
+								/>
+							</StandardFormField>
 						</StandardCard.Content>
 					</StandardCard>
 					{/* //#endregion [render_sub] */}
@@ -528,34 +693,71 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 										index // 'item' en lugar de 'field' para evitar confusión con field de Controller
 									) => (
 										<div key={item.id} className="flex items-center gap-2">
-											<div className="flex-grow">
+											<div className="flex-grow grid grid-cols-20 gap-2 items-center">
 												<Controller
 													name={`options.${index}.value`}
 													control={control}
-													render={(
-														{ field } // 'field' aquí se refiere al campo del Controller
+													render={
+														({ field } // 'field' aquí se refiere al campo del Controller
 													) => (
-																												<StandardInput
-															placeholder={`Valor Opción ${index + 1}`}
-															readOnly={isReadOnlyEffective}
-															isEditing={modo === "editar" && !isReadOnlyEffective}
-															error={errors.options?.[index]?.value?.message}
-															success={getFieldSuccessState(
-																"options",
-																index,
-																"value"
+															<StandardInput
+																placeholder={`Valor Opción ${index + 1}`}
+																readOnly={isReadOnlyEffective}
+																isEditing={modo === "editar" && !isReadOnlyEffective}
+																error={errors.options?.[index]?.value?.message}
+																success={getFieldSuccessState(
+																	"options",
+																	index,
+																	"value"
+																)}
+																{...field}
+																className="col-span-16"
+															/>
+														)
+													}
+												/>
+												<Controller
+													name={`options.${index}.emoticon`}
+													control={control}
+													render={({ field }) => (
+														<div className="col-span-3 flex items-center gap-2">
+															<input type="hidden" {...field} value={field.value || ""} />
+															{!isReadOnlyEffective ? (
+																<StandardButton
+																	type="button"
+																	styleType="outline"
+																	size="sm"
+																	className="w-full"
+																	onClick={() => setEmojiDialogIndex(index)}
+																>
+																	{field.value || "🙂"}
+																</StandardButton>
+															) : (
+																<StandardBadge styleType="outline" className="w-full justify-center">
+																	{field.value || "—"}
+																</StandardBadge>
 															)}
-															{...field}
-														/>
+														</div>
 													)}
 												/>
+												<div className="col-span-1" aria-hidden="true" />
 												{/* Mostrar el mensaje de error del campo específico directamente */}
 												{errors.options?.[index]?.value?.message && (
 													<StandardText
 														size="xs"
 														colorScheme="danger"
-														className="mt-1 ml-1 block">
+														className="mt-1 ml-1 block"
+													>
 														{errors.options?.[index]?.value?.message}
+													</StandardText>
+												)}
+												{errors.options?.[index]?.emoticon && (
+													<StandardText
+														size="xs"
+														colorScheme="danger"
+														className="mt-1 ml-1 block col-span-12"
+													>
+														{String(errors.options?.[index]?.emoticon?.message || "")}
 													</StandardText>
 												)}
 											</div>
@@ -823,6 +1025,90 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 				</form>
 			</StandardCard.Content>
 		</StandardCard>
+
+		{/* Dialogo Selector de Íconos Lucide */}
+		<StandardDialog open={iconDialogOpen} onOpenChange={setIconDialogOpen}>
+			<StandardDialog.Content size="lg" colorScheme="neutral">
+				<StandardDialog.Header>
+					<StandardDialog.Title>Seleccionar ícono</StandardDialog.Title>
+					<StandardDialog.Description>
+						Elige un ícono de la lista para usarlo como representación visual de la dimensión.
+					</StandardDialog.Description>
+				</StandardDialog.Header>
+				<StandardDialog.Body>
+					<div className="mb-3">
+						<StandardInput
+							placeholder="Buscar ícono por nombre..."
+							value={iconSearch}
+							onChange={(e) => setIconSearch(e.target.value)}
+						/>
+					</div>
+					<div className="grid grid-cols-6 sm:grid-cols-8 gap-3 max-h-[50vh] overflow-auto pr-1">
+						{lucideIconNames
+							.filter((name) => name.toLowerCase().includes(iconSearch.toLowerCase()))
+							.slice(0, 150)
+							.map((name) => {
+								const IconCmp = lucideIconMap[name];
+								return (
+									<button
+										key={name}
+										onClick={() => {
+											form.setValue("icon", name, { shouldDirty: true, shouldValidate: true });
+											setIconDialogOpen(false);
+										}}
+										className="flex flex-col items-center justify-center gap-2 p-3 border rounded-md hover:bg-muted/40"
+										title={name}
+										type="button"
+									>
+										<StandardIcon>
+											<IconCmp className="h-6 w-6" />
+										</StandardIcon>
+										<span className="text-[10px] text-muted-foreground truncate max-w-[90px]">{name}</span>
+									</button>
+								);
+							})}
+					</div>
+				</StandardDialog.Body>
+				<StandardDialog.Footer>
+					<StandardButton styleType="ghost" onClick={() => setIconDialogOpen(false)}>Cerrar</StandardButton>
+				</StandardDialog.Footer>
+			</StandardDialog.Content>
+		</StandardDialog>
+
+		{/* Dialogo Selector de Emoji por opción */}
+		<StandardDialog open={emojiDialogIndex !== null} onOpenChange={(open) => !open && setEmojiDialogIndex(null)}>
+			<StandardDialog.Content size="md" colorScheme="neutral">
+				<StandardDialog.Header>
+					<StandardDialog.Title>Seleccionar emoji</StandardDialog.Title>
+					<StandardDialog.Description>
+						Elige un emoji para representar esta opción.
+					</StandardDialog.Description>
+				</StandardDialog.Header>
+				<StandardDialog.Body>
+					<div className="grid grid-cols-8 gap-2 max-h-[40vh] overflow-auto pr-1">
+						{commonEmojis.map((emo) => (
+							<button
+								key={emo}
+								type="button"
+								onClick={() => {
+									if (emojiDialogIndex !== null) {
+										form.setValue(`options.${emojiDialogIndex}.emoticon` as const, emo, { shouldDirty: true, shouldValidate: true });
+									}
+									setEmojiDialogIndex(null);
+								}}
+								className="p-2 text-xl border rounded-md hover:bg-muted/40"
+							>
+								{emo}
+							</button>
+						))}
+					</div>
+				</StandardDialog.Body>
+				<StandardDialog.Footer>
+					<StandardButton styleType="ghost" onClick={() => setEmojiDialogIndex(null)}>Cerrar</StandardButton>
+				</StandardDialog.Footer>
+			</StandardDialog.Content>
+		</StandardDialog>
+		</>
 	);
 	//#endregion ![render]
 };

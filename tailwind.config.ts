@@ -53,7 +53,6 @@ const config = {
   // ✅ El único cambio está aquí, en el arreglo de plugins
   plugins: [
     require("tailwindcss-animate"),
-    require("@tailwindcss/line-clamp"), // <-- Se añade el plugin que faltaba
   ],
 } satisfies Config;
 

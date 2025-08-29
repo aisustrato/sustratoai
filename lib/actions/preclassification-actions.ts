@@ -11,7 +11,8 @@ import type {
     BatchDetails,
     SubmitHumanReviewPayload,
     TranslatedArticlePayload,
-    ClassificationReview
+    ClassificationReview,
+    NotesInfo
 } from "@/lib/types/preclassification-types";
 
 export type { ArticleForReview, BatchDetails };
@@ -88,7 +89,7 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
             .from("article_batch_items")
             .select(`
                 id, status_preclasificacion, ai_keywords, ai_process_opinion,
-                articles (id, publication_year, journal, title, abstract, article_translations(title, abstract, summary))
+                articles (id, correlativo, publication_year, journal, title, abstract, article_translations(title, abstract, summary))
             `)
             .eq("batch_id", batchId);
             
@@ -96,6 +97,92 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
         if (!batchItems) return { success: false, error: "No se encontraron artículos en el lote." };
 
         const itemIds = batchItems.map(item => item.id);
+
+        // ================= BULK NOTES INFO (RPC) =================
+        type BulkNotesRow = {
+            item_id: string;
+            article_id: string | null;
+            has_notes: boolean | null;
+            note_ids: string[] | null;
+            note_count: number | null;
+        };
+
+        let notesByItem: Record<string, NotesInfo> = {};
+        try {
+            const { data: bulkNotes, error: bulkErr } = await supabase
+                .rpc('bulk_get_notes_info_for_batch', { p_batch_id: batchId });
+
+            if (!bulkErr && Array.isArray(bulkNotes)) {
+                notesByItem = (bulkNotes as BulkNotesRow[]).reduce((acc, r) => {
+                    acc[r.item_id] = {
+                        article_id: r.article_id ?? null,
+                        has_notes: Boolean(r.has_notes ?? false),
+                        note_count: r.note_count ?? 0,
+                        note_ids: r.note_ids ?? []
+                    };
+                    return acc;
+                }, {} as Record<string, NotesInfo>);
+            } else if (bulkErr) {
+                console.warn('[getBatchDetailsForReview] bulk_get_notes_info_for_batch RPC error:', bulkErr);
+            }
+        } catch (e) {
+            console.warn('[getBatchDetailsForReview] Excepción llamando RPC bulk_get_notes_info_for_batch:', e);
+        }
+        // 🔁 Fallback: si la RPC no existe o no devolvió datos, calculamos presencia de notas por artículo
+        if (Object.keys(notesByItem).length === 0) {
+            try {
+                const articleIds = (batchItems || [])
+                    .map(item => item.articles?.id)
+                    .filter((v): v is string => Boolean(v));
+
+                if (articleIds.length > 0) {
+                    const { data: noteRows, error: notesError } = await supabase
+                        .from('article_notes')
+                        .select('id, article_id')
+                        .in('article_id', articleIds);
+
+                    if (!notesError && Array.isArray(noteRows)) {
+                        const notesByArticleId = (noteRows as { id: string; article_id: string }[]).reduce((acc, r) => {
+                            (acc[r.article_id] ||= []).push(r.id);
+                            return acc;
+                        }, {} as Record<string, string[]>);
+
+                        notesByItem = (batchItems || []).reduce((acc, item) => {
+                            const aId = item.articles?.id || null;
+                            const ids = aId ? (notesByArticleId[aId] || []) : [];
+                            acc[item.id] = {
+                                article_id: aId,
+                                has_notes: ids.length > 0,
+                                note_count: ids.length,
+                                note_ids: ids,
+                            };
+                            return acc;
+                        }, {} as Record<string, NotesInfo>);
+                        console.log('[getBatchDetailsForReview] Fallback de notas aplicado (sin RPC).');
+                    } else {
+                        console.warn('[getBatchDetailsForReview] Fallback: error/resultado inválido consultando article_notes:', notesError);
+                        // Generar estructura vacía para cada item para evitar undefineds aguas abajo
+                        notesByItem = (batchItems || []).reduce((acc, item) => {
+                            acc[item.id] = { article_id: item.articles?.id || null, has_notes: false, note_count: 0, note_ids: [] };
+                            return acc;
+                        }, {} as Record<string, NotesInfo>);
+                    }
+                } else {
+                    // No hay artículos; inicializar vacío por cada item
+                    notesByItem = (batchItems || []).reduce((acc, item) => {
+                        acc[item.id] = { article_id: item.articles?.id || null, has_notes: false, note_count: 0, note_ids: [] };
+                        return acc;
+                    }, {} as Record<string, NotesInfo>);
+                }
+            } catch (fallbackErr) {
+                console.warn('[getBatchDetailsForReview] Excepción en fallback de notas:', fallbackErr);
+                // Como último recurso, inicializar con valores vacíos
+                notesByItem = (batchItems || []).reduce((acc, item) => {
+                    acc[item.id] = { article_id: item.articles?.id || null, has_notes: false, note_count: 0, note_ids: [] };
+                    return acc;
+                }, {} as Record<string, NotesInfo>);
+            }
+        }
         const { data: allReviews = [], error: reviewsError } = await supabase
             .from("article_dimension_reviews")
             .select("*")
@@ -112,8 +199,10 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
 
             return {
                 item_id: item.id,
+                article_id: item.articles?.id || '', // 🎯 OPTIMIZACIÓN: ID directo del artículo
                 article_status: safeStatus,
                 article_data: {
+                    correlativo: ((item.articles as unknown) as { correlativo?: number | null })?.correlativo ?? null,
                     publication_year: item.articles?.publication_year || null,
                     journal: item.articles?.journal || null,
                     original_title: item.articles?.title || null,
@@ -139,14 +228,37 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
                         }));
                     }
                     return acc;
-                }, {} as Record<string, ClassificationReview[]>)
+                }, {} as Record<string, ClassificationReview[]>),
+                // Adjuntar notas si están disponibles
+                notes_info: notesByItem[item.id]
             };
         });
+
+        // Tipos estrictos para filas de dimensiones y opciones
+        type DimRow = Database['public']['Tables']['preclass_dimensions']['Row'] & {
+            preclass_dimension_options?: Database['public']['Tables']['preclass_dimension_options']['Row'][] | null;
+        };
 
         return {
             success: true,
             data: {
-                columns: dimensions.map(d => ({ id: d.id, name: d.name, type: d.type, options: d.preclass_dimension_options?.map(o => o.value) || [] })),
+                columns: (dimensions as DimRow[]).map(d => {
+                    const opts = d.preclass_dimension_options ?? [];
+                    const optionEmoticons = opts.reduce((acc: Record<string, string | null>, o) => {
+                        if (typeof o.value !== 'undefined' && o.value !== null) {
+                            acc[String(o.value)] = o.emoticon ?? null;
+                        }
+                        return acc;
+                    }, {});
+                    return {
+                        id: d.id,
+                        name: d.name,
+                        type: d.type,
+                        options: opts.map(o => o.value),
+                        icon: d.icon ?? null,
+                        optionEmoticons,
+                    };
+                }),
                 rows,
                 batch_number: batch.batch_number || 0,
                 id: batchId,
@@ -498,6 +610,10 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
                     
                     try {
                         const articleReviews: Database['public']['Tables']['article_dimension_reviews']['Insert'][] = [];
+                        const articleId = currentArticle.articles?.id;
+                        if (!articleId) {
+                            throw new Error(`No se encontró article_id para el ítem de lote ${item.itemId}`);
+                        }
                         
                         for (const dimensionName in item.classifications) {
                             const foundDimension = dimensions.find(dim => dim.id === dimensionName || dim.name === dimensionName);
@@ -525,6 +641,7 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
                             }
 
                             articleReviews.push({
+                                article_id: articleId,
                                 article_batch_item_id: item.itemId,
                                 dimension_id: foundDimension.id,
                                 reviewer_type: 'ai',
@@ -752,9 +869,16 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
 export async function submitHumanDiscrepancy(payload: SubmitHumanReviewPayload, userId: string): Promise<ResultadoOperacion<{ reviewId: string }>> {
     const supabase = await createSupabaseServerClient();
     try {
+        const articleIdResult = await getArticleIdFromBatchItemId(payload.article_batch_item_id);
+        if (!articleIdResult.success) {
+            throw new Error(articleIdResult.error);
+        }
+        const articleId = articleIdResult.data.articleId;
+
         const { data, error } = await supabase
             .from('article_dimension_reviews')
             .insert({
+                article_id: articleId,
                 article_batch_item_id: payload.article_batch_item_id,
                 dimension_id: payload.dimension_id,
                 reviewer_type: 'human',
@@ -820,6 +944,152 @@ export async function finalizeBatch(batchId: string): Promise<ResultadoOperacion
     } catch(error) {
         const msg = error instanceof Error ? error.message : "Error desconocido.";
         return { success: false, error: `Error finalizando el lote: ${msg}` };
+    }
+}
+
+// ------------------------------------------------------------------------
+// Obtener resumen de preclasificación por artículo (agrupado por fase)
+// ------------------------------------------------------------------------
+type PhaseSummary = {
+    phase: { id: string; name: string | null; phase_number: number | null };
+    batch: { id: string; batch_number: number | null; status: Database["public"]["Enums"]["batch_preclass_status"] | null };
+    item_id: string;
+    dimensions: { id: string; name: string; type: string; options: Array<string | { value: string | number; label: string }>; }[];
+    classifications: Record<string, ClassificationReview[]>;
+};
+
+export async function getPreclassificationByArticleId(articleId: string): Promise<ResultadoOperacion<PhaseSummary[]>> {
+    if (!articleId) return { success: false, error: "Se requiere el ID del artículo." };
+    try {
+        const supabase = await createSupabaseServerClient();
+
+        // 1) Ítems de lote donde participa el artículo + datos del lote
+        const { data: items, error: itemsError } = await supabase
+            .from('article_batch_items')
+            .select('id, batch_id, status_preclasificacion, article_id, article_batches(id, batch_number, status, phase_id)')
+            .eq('article_id', articleId);
+        if (itemsError) throw itemsError;
+        if (!items || items.length === 0) return { success: true, data: [] };
+
+        // Tipado explícito de los ítems y su relación con article_batches
+        type ItemsRow = {
+            id: string;
+            batch_id: string;
+            status_preclasificacion: Database["public"]["Enums"]["item_preclass_status"] | null;
+            article_id: string;
+            article_batches: {
+                id: string;
+                batch_number: number | null;
+                status: Database["public"]["Enums"]["batch_preclass_status"] | null;
+                phase_id: string | null;
+            } | null;
+        };
+        const itemsTyped = items as ItemsRow[];
+
+        // 2) Fases involucradas
+        const phaseIds = Array.from(
+            new Set(
+                (itemsTyped
+                    .map(i => i.article_batches?.phase_id)
+                    .filter((v): v is string => Boolean(v)))
+            )
+        );
+
+        // Guardar: si no hay fases asociadas, no consultar con IN [] y devolvemos vacío
+        if (phaseIds.length === 0) {
+            return { success: true, data: [] };
+        }
+
+        // 3) Datos de fases (nombre y número)
+        const { data: phasesData, error: phasesError } = await supabase
+            .from('preclassification_phases')
+            .select('id, name, phase_number')
+            .in('id', phaseIds);
+        if (phasesError) throw phasesError;
+        const phasesById = new Map((phasesData || []).map(p => [p.id, p]));
+
+        // 4) Dimensiones activas por fase
+        const { data: dimsData, error: dimsError } = await supabase
+            .from('preclass_dimensions')
+            .select('id, name, type, phase_id, preclass_dimension_options(value)')
+            .in('phase_id', phaseIds)
+            .eq('status', 'active')
+            .order('ordering');
+        if (dimsError) throw dimsError;
+        type DimOptionRow = { value: string };
+        type DimRow = {
+            id: string;
+            name: string;
+            type: Database["public"]["Enums"]["dimension_type"];
+            phase_id: string | null;
+            preclass_dimension_options?: DimOptionRow[] | null;
+        };
+        const dimsByPhase = new Map<string, DimRow[]>(phaseIds.map(id => [id, [] as DimRow[]]));
+        (dimsData as DimRow[] | null || []).forEach((d) => {
+            if (!d.phase_id) return; // null-safety: ignorar dimensiones sin fase
+            const arr = dimsByPhase.get(d.phase_id) || [];
+            arr.push(d);
+            dimsByPhase.set(d.phase_id, arr);
+        });
+
+        // 5) Clasificaciones del artículo en esos ítems
+        const itemIds = itemsTyped.map(i => i.id);
+        const { data: allReviews, error: reviewsError } = await supabase
+            .from('article_dimension_reviews')
+            .select('*')
+            .in('article_batch_item_id', itemIds)
+            .order('iteration', { ascending: false });
+        if (reviewsError) throw reviewsError;
+        const allReviewsTyped = (allReviews || []) as Database["public"]["Tables"]["article_dimension_reviews"]["Row"][];
+
+        // 6) Armar resumen por ítem (agrupado por fase)
+        const summaries: PhaseSummary[] = itemsTyped.map((item) => {
+            const batch = item.article_batches;
+            const phase = batch?.phase_id ? phasesById.get(batch.phase_id) : null;
+
+            const dims = (batch?.phase_id ? (dimsByPhase.get(batch.phase_id) || []) : []).map((d: DimRow) => ({
+                id: d.id,
+                name: d.name,
+                type: d.type,
+                options: (d.preclass_dimension_options || [])
+                    .map((o: DimOptionRow) => o?.value)
+                    .filter((v): v is string => typeof v === 'string' && v.length > 0)
+            }));
+
+            // Tomar TODAS las revisiones por dimensión, conservando orden (iteración desc)
+            const reviewsForItem = allReviewsTyped.filter(r => r.article_batch_item_id === item.id);
+            const classifications = dims.reduce((acc: Record<string, ClassificationReview[]>, d) => {
+                const list = reviewsForItem
+                    .filter(r => r.dimension_id === d.id)
+                    .map(r => ({
+                        reviewer_type: r.reviewer_type as 'ai' | 'human',
+                        reviewer_id: r.reviewer_id,
+                        iteration: r.iteration,
+                        value: r.classification_value,
+                        confidence: r.confidence_score,
+                        rationale: r.rationale,
+                    }));
+                if (list.length > 0) acc[d.id] = list;
+                return acc;
+            }, {});
+
+            return {
+                phase: { id: phase?.id || batch?.phase_id || '', name: phase?.name || null, phase_number: phase?.phase_number || null },
+                batch: { id: batch?.id || '', batch_number: batch?.batch_number ?? null, status: batch?.status ?? null },
+                item_id: item.id,
+                dimensions: dims,
+                classifications,
+            };
+        });
+
+        return { success: true, data: summaries };
+    } catch (error) {
+        // Exponer mejor el mensaje de error para diagnóstico, sin usar 'any'
+        const msg =
+            error instanceof Error
+                ? error.message
+                : (typeof error === 'string' ? error : 'Error desconocido.');
+        return { success: false, error: `Error obteniendo preclasificación del artículo: ${msg}` };
     }
 }
 

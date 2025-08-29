@@ -131,6 +131,7 @@ const PreclassificationPage = () => {
 	const { startJob } = useJobManager();
 	const { showDialog } = useDialog();
 	const { appColorTokens } = useTheme();
+	const [selectedSphereId, setSelectedSphereId] = useState<string | null>(null);
 
 	// Tipo para agrupar lotes por estado
 	type ResumenPorEstadoDeLote = Record<string, {
@@ -309,6 +310,7 @@ const PreclassificationPage = () => {
 	}, [fetchBatches]);
 
 	const handleSphereClick = useCallback((batch: BatchWithCounts) => {
+		setSelectedSphereId(batch.id);
 		// Comprobar el estado del lote
 		if (batch.status === 'pending') {
 			// Si está 'pending', ejecutar la lógica de INICIAR TRADUCCIÓN
@@ -367,6 +369,7 @@ const PreclassificationPage = () => {
 				emoticon: visuals.emoticon,
 				value: batch.batch_number,
 				colorScheme: visuals.colorScheme,
+				styleType: selectedSphereId === batch.id ? 'outline' : 'filled',
 				onClick: () => handleSphereClick(batch),
 				// Tooltip completo con todos los estados disponibles y emoticonos alineados
 				tooltip: [
@@ -387,7 +390,7 @@ const PreclassificationPage = () => {
 					: undefined,
 			};
 		});
-	}, [batches, handleSphereClick]);
+	}, [batches, handleSphereClick, selectedSphereId]);
 
 	// Título condicional basado en la existencia de lotes y la fase activa
 	const pageSubtitle = useMemo(() => {

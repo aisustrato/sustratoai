@@ -97,6 +97,7 @@ function MyComponent() {
 | `collapsible`  | `boolean`                          | `false`     | Si es `true` en modo `single`, permite cerrar el ítem que está abierto.         |
 | `colorScheme`  | `ColorSchemeVariant`               | `'neutral'` | Define la paleta de colores a usar (ej. `primary`, `secondary`, `danger`).      |
 | `size`         | `'sm'` \| `'md'` \| `'lg'`           | `'md'`      | Controla el tamaño general del componente (padding, tamaño de fuente).        |
+| `styleType`    | `'subtle'` \| `'solid'`              | `'subtle'`  | Define el estilo de fondo del trigger y contenido. `subtle` usa gradientes suaves con alpha; `solid` usa gradientes sólidos más notorios. |
 
 *Nota: Todas las demás `props` de `React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Root>` son aceptadas.*
 
@@ -110,6 +111,7 @@ La apariencia del `StandardAccordion` se controla a través de un generador de t
 
 - `colorScheme`: La paleta de colores a aplicar.
 - `size`: El tamaño del componente.
+- `styleType`: `'subtle'` o `'solid'` para seleccionar el tipo de fondo y gradiente a emplear. Por defecto `'subtle'`.
 - `isHovered`: `boolean` que indica si el cursor está sobre el `trigger`.
 - `isOpen`: `boolean` que indica si el `item` está abierto.
 - `isDisabled`: `boolean` que indica si el `item` está deshabilitado.
@@ -124,3 +126,65 @@ El generador produce un objeto con los siguientes estilos:
 - `icon`: Estilos para el ícono de chevron (color, transformación `rotate`).
 
 Este enfoque permite que la lógica del componente (`.tsx`) se mantenga limpia y separada de las definiciones de estilo, que residen en `lib/theme/components/standard-accordion-tokens.ts`.
+
+---
+
+## Estilos de Fondo y Gradientes
+
+- **`subtle` (predeterminado):**
+  - Aplica un gradiente suave (vertical) con `tinycolor`, empleando alphas bajos para una sensación más ligera.
+  - En `hover` y `open`, el gradiente se intensifica levemente para dar feedback visual.
+
+- **`solid`:**
+  - Aplica un gradiente sólido entre tonos aclarados/oscurecidos de la paleta seleccionada.
+  - En `hover`/`open`, el contraste es más notorio y el texto pasa a blanco para máxima legibilidad.
+
+---
+
+## Props del Trigger (`StandardAccordionTrigger`)
+
+| Prop         | Tipo                          | Por Defecto | Descripción |
+|--------------|-------------------------------|-------------|-------------|
+| `titleAlign` | `'left'` \| `'center'` \| `'right'` | `'left'`    | Alineación del texto del trigger. |
+
+> Además del resto de props de Radix `Accordion.Trigger`.
+
+---
+
+## Overrides por Ítem (`StandardAccordionItem`)
+
+Puedes sobrescribir el esquema y el estilo de fondo por cada ítem:
+
+```tsx
+<StandardAccordionItem value="group-1" colorScheme="primary" styleType="solid">
+  <StandardAccordionTrigger titleAlign="left">Grupo 1</StandardAccordionTrigger>
+  <StandardAccordionContent>Contenido del grupo 1</StandardAccordionContent>
+  
+</StandardAccordionItem>
+```
+
+Props adicionales en `Item`:
+
+- `colorScheme?: ColorSchemeVariant`
+- `styleType?: 'subtle' | 'solid'`
+
+> Si no se definen, heredan los del `StandardAccordion` raíz.
+
+---
+
+## Ejemplo de Ciclo de Colores por Ítem
+
+```tsx
+const cycle: ColorSchemeVariant[] = ['primary','secondary','tertiary','accent','neutral'];
+
+<StandardAccordion type="multiple" styleType="subtle">
+  {groups.map((g, idx) => (
+    <StandardAccordionItem key={g.id} value={g.id} colorScheme={cycle[idx % cycle.length]}>
+      <StandardAccordionTrigger titleAlign="left">{g.name}</StandardAccordionTrigger>
+      <StandardAccordionContent>
+        {/* ... */}
+      </StandardAccordionContent>
+    </StandardAccordionItem>
+  ))}
+</StandardAccordion>
+```

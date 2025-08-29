@@ -19,10 +19,19 @@ export interface GetNotesFilters {
   articleId?: string;
   authorId?: string;
   visibility?: Database["public"]["Enums"]["note_visibility"];
+  projectId?: string;
 }
 
 // Usamos el tipo inferido de la vista para mayor precisión
-export type DetailedNote = Tables<'detailed_article_notes'>;
+export type DetailedNote = Tables<'detailed_article_notes'> & {
+  // Enriquecimiento opcional con el título del artículo relacionado
+  article_title?: string | null;
+};
+
+// Tipo auxiliar para el JOIN con articles(title)
+type DetailedNoteJoined = Tables<'detailed_article_notes'> & {
+  articles?: { title: string | null } | null;
+};
 
 // --- INTERFAZ ACTUALIZADA ---
 export interface CreateNotePayload {
@@ -58,10 +67,14 @@ export async function getNotes(filters: GetNotesFilters): Promise<ResultadoOpera
   try {
     const supabase = await createSupabaseServerClient();
     console.log('[SERVER] Cliente Supabase creado');
+    // Obtener y loggear usuario autenticado (útil para diagnosticar RLS)
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('[SERVER] Usuario autenticado:', user ? { id: user.id, email: user.email } : 'No autenticado');
     
     let query = supabase
       .from('detailed_article_notes')
-      .select('*');
+      // Traemos también el título del artículo vía relación
+      .select('*, articles(title)');
     
     // Aplicar filtros si existen
     if (filters.noteId) {
@@ -80,6 +93,10 @@ export async function getNotes(filters: GetNotesFilters): Promise<ResultadoOpera
       console.log(`[SERVER] Aplicando filtro por visibilidad: ${filters.visibility}`);
       query = query.eq('visibility', filters.visibility);
     }
+    if (filters.projectId) {
+      console.log(`[SERVER] Aplicando filtro por ID de proyecto: ${filters.projectId}`);
+      query = query.eq('project_id', filters.projectId);
+    }
     
     console.log('[SERVER] Ejecutando consulta...');
     const { data, error } = await query.order('created_at', { ascending: false });
@@ -90,10 +107,27 @@ export async function getNotes(filters: GetNotesFilters): Promise<ResultadoOpera
     }
     
     console.log(`[SERVER] Se encontraron ${data?.length || 0} notas`);
-    return { 
-      success: true, 
-      data: (data || []) as DetailedNote[] 
-    };
+    // Mapear para aplanar articles.title -> article_title sin usar 'any'
+    const raw: DetailedNoteJoined[] = (data || []) as DetailedNoteJoined[];
+    const enriched: DetailedNote[] = raw.map((n) => {
+      const { articles, ...rest } = n;
+      const article_title = articles?.title ?? null;
+      return { ...(rest as Tables<'detailed_article_notes'>), article_title } as DetailedNote;
+    });
+
+    if (enriched.length > 0) {
+      const sample = enriched.slice(0, 3).map((n) => ({
+        id: n.id,
+        project_id: (n as Tables<'detailed_article_notes'>).project_id,
+        article_id: n.article_id,
+        user_id: n.user_id,
+        visibility: n.visibility,
+        article_title: n.article_title,
+      }));
+      console.log('[SERVER] Muestra de resultados (enriched):', sample);
+    }
+
+    return { success: true, data: enriched };
     
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Error desconocido";
@@ -248,6 +282,12 @@ export async function deleteArticleNote(noteId: string): Promise<ResultadoOperac
   console.log(`[SERVER] deleteArticleNote - Iniciando eliminación de nota con ID: ${noteId}`);
   
   try {
+    // Validación de entrada
+    if (!noteId || typeof noteId !== 'string' || noteId.trim().length === 0) {
+      console.error('[SERVER] deleteArticleNote - ID de nota inválido');
+      return { success: false, error: 'ID de nota inválido.', errorCode: 'INVALID_INPUT' };
+    }
+
     const supabase = await createSupabaseServerClient();
     console.log('[SERVER] Cliente Supabase creado');
     
@@ -270,8 +310,16 @@ export async function deleteArticleNote(noteId: string): Promise<ResultadoOperac
       .single();
 
     if (error) {
+      // Manejo específico: 0 filas encontradas (no existe o no autorizado por RLS)
+      const errMsg = error?.message || error?.details || '';
+      const errCode = error?.code || '';
+      const isNoRows = errCode === 'PGRST116' || /Results contain 0 rows/i.test(errMsg);
+      if (isNoRows) {
+        console.warn('[SERVER] Nota no encontrada o sin permisos para eliminarla');
+        return { success: false, error: 'Nota no encontrada o sin permisos para eliminarla.', errorCode: 'NOT_FOUND_OR_FORBIDDEN' };
+      }
       console.error('[SERVER] Error al eliminar la nota:', error);
-      throw error;
+      return { success: false, error: `No se pudo eliminar la nota: ${errMsg || 'Error desconocido'}`, errorCode: errCode || 'DELETE_ERROR' };
     }
     
     if (!deletedNote) {
@@ -297,5 +345,113 @@ export async function deleteArticleNote(noteId: string): Promise<ResultadoOperac
       error: `No se pudo eliminar la nota: ${errorMessage}`,
       errorCode: error instanceof Error ? error.name : 'UNKNOWN_ERROR'
     };
+  }
+}
+
+// ========================================================================
+//  RPC: get_article_notes_info_by_batch_item
+// ========================================================================
+
+export interface NotesInfoByBatchItem {
+  articleId: string | null;
+  hasNotes: boolean;
+  noteIds: string[];
+  noteCount: number;
+}
+
+/**
+ * Dado un article_batch_item_id retorna información agregada de notas del artículo
+ * asociado: articleId, hasNotes, noteIds y noteCount. Usa la RPC
+ * `get_article_notes_info_by_batch_item` definida en la base de datos.
+ */
+export async function getArticleNotesInfoByBatchItem(
+  batchItemId: string
+): Promise<ResultadoOperacion<NotesInfoByBatchItem>> {
+  if (!batchItemId || typeof batchItemId !== 'string' || batchItemId.trim().length === 0) {
+    return { success: false, error: 'Se requiere el ID del ítem del lote.' }
+  }
+  try {
+    const supabase = await createSupabaseServerClient();
+    const ts = () => new Date().toISOString();
+    const started = performance.now();
+    type RpcNotesInfoRow = {
+      article_id: string | null;
+      has_notes: boolean | null;
+      note_ids: string[] | null;
+      note_count: number | null;
+    };
+    console.log(`[${ts()}] [notes-rpc] Llamando RPC get_article_notes_info_by_batch_item`, { batchItemId });
+    const { data, error } = await supabase.rpc('get_article_notes_info_by_batch_item', {
+      batch_item_id: batchItemId,
+    });
+
+    if (!error && data) {
+      // ✅ Camino principal por RPC
+      // La RPC retorna una tabla; supabase usualmente la entrega como array de filas
+      const row = (Array.isArray(data) ? data?.[0] : data) as RpcNotesInfoRow | null;
+
+      const result: NotesInfoByBatchItem = {
+        articleId: row?.article_id ?? null,
+        hasNotes: Boolean(row?.has_notes ?? false),
+        noteIds: row?.note_ids ?? [],
+        noteCount: row?.note_count ?? 0,
+      };
+      const ms = Math.round(performance.now() - started);
+      console.log(`[${ts()}] [notes-rpc] RPC OK`, { batchItemId, ms, hasNotes: result.hasNotes, noteCount: result.noteCount });
+      return { success: true, data: result };
+    }
+
+    // 🔁 Fallback si la RPC no existe o falla (útil mientras se ejecuta el SQL en Supabase)
+    console.warn(`[${ts()}] [notes-rpc] RPC no disponible o sin datos. Activando fallback...`, {
+      rpcError: error?.message || null,
+    });
+    const fallbackStarted = performance.now();
+
+    // 1) Obtener article_id desde article_batch_items
+    const { data: abiRow, error: abiError } = await supabase
+      .from('article_batch_items')
+      .select('article_id')
+      .eq('id', batchItemId)
+      .single();
+
+    if (abiError) {
+      console.error('[SERVER] Fallback: error obteniendo article_id desde article_batch_items', abiError);
+      return { success: false, error: `No se pudo obtener el artículo del ítem: ${abiError.message}` };
+    }
+
+    const aid = (abiRow as { article_id: string | null } | null)?.article_id ?? null;
+    if (!aid) {
+      console.warn('[SERVER] Fallback: article_id no encontrado para el ítem. Retornando vacío.');
+      return { success: true, data: { articleId: null, hasNotes: false, noteIds: [], noteCount: 0 } };
+    }
+
+    // 2) Listar/contar notas visibles por RLS para ese artículo
+    const { data: notesRows, error: notesError, count } = await supabase
+      .from('article_notes')
+      .select('id', { count: 'exact' })
+      .eq('article_id', aid);
+
+    if (notesError) {
+      console.error('[SERVER] Fallback: error consultando notas del artículo', notesError);
+      return { success: false, error: `No se pudieron obtener notas del artículo: ${notesError.message}` };
+    }
+
+    const noteIds = (notesRows || []).map((r: { id: string }) => r.id);
+    const noteCount = typeof count === 'number' ? count : noteIds.length;
+
+    const fallbackResult: NotesInfoByBatchItem = {
+      articleId: aid,
+      hasNotes: noteCount > 0,
+      noteIds,
+      noteCount,
+    };
+
+    const totalMs = Math.round(performance.now() - started);
+    const fallbackMs = Math.round(performance.now() - fallbackStarted);
+    console.log(`[${ts()}] [notes-rpc] Fallback OK`, { batchItemId, totalMs, fallbackMs, hasNotes: fallbackResult.hasNotes, noteCount: fallbackResult.noteCount });
+    return { success: true, data: fallbackResult };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Error desconocido.';
+    return { success: false, error: `Error interno: ${msg}` };
   }
 }

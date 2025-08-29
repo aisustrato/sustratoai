@@ -27,10 +27,19 @@ export interface ClassificationReview {
   rationale: string | null;
 }
 
+export interface NotesInfo {
+  article_id: string | null;
+  has_notes: boolean;
+  note_count: number;
+  note_ids?: string[];
+}
+
 export interface ArticleForReview {
   item_id: string;
+  article_id: string; // 🎯 OPTIMIZACIÓN: ID directo del artículo para evitar consultas adicionales
   article_status: Database["public"]["Enums"]["item_preclass_status"];
   article_data: {
+    correlativo: number | null;
     publication_year: number | null;
     journal: string | null;
     original_title: string | null;
@@ -44,6 +53,7 @@ export interface ArticleForReview {
     process_opinion: string | null;
   };
   classifications: Record<string, ClassificationReview[]>;
+  notes_info?: NotesInfo;
 }
 
 type ColumnOption = string | {
@@ -57,6 +67,9 @@ export interface BatchDetails {
     name: string; 
     type: string; 
     options: ColumnOption[];
+    icon?: string | null;
+    // Mapa de valor de opción -> emoticon asociado (si existe)
+    optionEmoticons?: Record<string, string | null>;
   }[];
   rows: ArticleForReview[];
   batch_number: number;

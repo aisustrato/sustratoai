@@ -9,7 +9,7 @@ import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
-import { FileText, FileUp, LayoutGrid, ChevronsLeft, Filter } from "lucide-react";
+import { FileText, ChevronsLeft, Filter, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LayoutProvider } from "@/app/contexts/layout-context";
 //#endregion ![head]
@@ -22,14 +22,14 @@ const sidebarNavItems = [
     icon: Filter,
   },
   {
-    title: "Cargar Artículos",
-    href: "/articulos/cargar",
-    icon: FileUp,
+    title: "Grupos",
+    href: "/articulos/grupos",
+    icon: MapPin,
   },
   {
-    title: "Explorar",
-    href: "/articulos/explorar",
-    icon: LayoutGrid,
+    title: "Notas",
+    href: "/articulos/notas",
+    icon: FileText,
   },
 ];
 
@@ -70,8 +70,8 @@ export default function ArticulosLayout({
     // Rutas que SÍ necesitan layout dinámico (solo las principales, no sub-rutas)
     const dynamicRoutes = [
       '/articulos/preclasificacion', // Solo la página principal
-      '/articulos/cargar',
-      '/articulos/explorar'
+      '/articulos/grupos',
+      '/articulos/notas'
     ];
     
     // 🔍 DETECCIÓN DE SUB-RUTAS DINÁMICAS

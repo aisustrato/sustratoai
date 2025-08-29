@@ -389,5 +389,15 @@ StandardCard.Header = Header; StandardCard.Title = Title; StandardCard.Subtitle 
 //#endregion ![main_composition]
 
 //#region [foo] - 🔚 EXPORTS 🔚
-export { StandardCard, type StandardCardColorScheme };
+export {
+  StandardCard,
+  type StandardCardColorScheme,
+  Header as StandardCardHeader,
+  Title as StandardCardTitle,
+  Subtitle as StandardCardSubtitle,
+  Media as StandardCardMedia,
+  Content as StandardCardContent,
+  Actions as StandardCardActions,
+  Footer as StandardCardFooter,
+};
 //#endregion ![foo]

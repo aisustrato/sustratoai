@@ -17,20 +17,19 @@ import {
   getGroups, 
   getGroupDetails,
   addArticlesToGroup, 
-  createGroupWithArticles,
   type GroupWithArticleCount,
   type GroupDetails,
-  type CreateGroupPayload 
 } from '@/lib/actions/article-group-actions';
-import { getArticleIdFromBatchItemId, type ArticleForReview } from '@/lib/actions/preclassification-actions';
 import { useAuth } from '@/app/auth-provider';
-import { Plus, Lock, Globe, Grip, FolderPlus, CheckCircle } from 'lucide-react';
+import { Plus, Lock, Globe, MapPin, FolderPlus, CheckCircle } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
 
 interface ArticleGroupManagerProps {
-  article: ArticleForReview;
-  project: { id: string; name: string; } | null;
+  articleId: string;
+  hasGroups?: boolean; 
+  isLoadingPresence?: boolean;
+  onGroupsChanged?: (hasGroups: boolean) => void;
 }
 
 interface GroupArticleData {
@@ -39,7 +38,7 @@ interface GroupArticleData {
   description?: string;
 }
 
-export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ article, project }) => {
+export default function ArticleGroupManager({ articleId, hasGroups = false, isLoadingPresence = false, onGroupsChanged }: ArticleGroupManagerProps) {
   const [menuData, setMenuData] = useState<{
     articleId: string;
     allGroups: GroupWithArticleCount[];
@@ -66,26 +65,19 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   const [isAdding, setIsAdding] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreating] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   
   const { user } = useAuth();
   
   const loadMenuData = useCallback(async () => {
-    if (!article?.item_id) {
+    if (!articleId) {
       toast.error('Artículo no válido');
       return;
     }
     
     setIsLoadingMenu(true);
     try {
-      const articleIdResult = await getArticleIdFromBatchItemId(article.item_id);
-      if (!articleIdResult.success) {
-        toast.error('Error al obtener ID del artículo');
-        return;
-      }
-      
-      const articleId = articleIdResult.data.articleId;
       const allGroupsResult = await getGroups({ articleId });
 
       if (!allGroupsResult.success) {
@@ -104,25 +96,26 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
         availableGroups: availableGroupsData
       });
       
-      setMenuOpen(true);
-      setIsDropdownOpen(true); // Sincronizar estado visual
-      
     } catch {
       toast.error('Error inesperado al cargar datos');
     } finally {
       setIsLoadingMenu(false);
     }
-  }, [article?.item_id]);
+  }, [articleId]);
   
   const handleMenuOpenChange = (open: boolean) => {
-    // Actualizar estado visual inmediatamente
-    setIsDropdownOpen(open);
-    
-    if (open && !menuData) {
-      loadMenuData();
-    } else if (!open) {
+    // Abrir/cerrar menú inmediatamente para feedback instantáneo
+    if (open) {
+      setMenuOpen(true);
+      setIsDropdownOpen(true);
+      if (!menuData) {
+        // Cargar datos en segundo plano
+        setIsLoadingMenu(true);
+        loadMenuData();
+      }
+    } else {
       setMenuOpen(false);
-      setIsDropdownOpen(false); // Sincronizar estado visual al cerrar
+      setIsDropdownOpen(false);
     }
   };
 
@@ -147,6 +140,9 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
         setSelectedGroupForAdd(null);
         setMenuOpen(false);
         setIsDropdownOpen(false); // Resetear estado visual
+        
+        // 🔄 CRÍTICO: Notificar al componente padre que ahora tiene grupos
+        onGroupsChanged?.(true);
       } else {
         toast.error(`Error al agregar artículo: ${result.error}`);
       }
@@ -180,58 +176,17 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
   };
 
   const handleCreateGroup = async () => {
-    if (!newGroupName.trim() || !article || !project) return;
-    
-    if (newGroupIsPublic) {
-      setShowPublicWarning(true);
-      return;
-    }
-    
-    await executeCreateGroup();
+    // Funcionalidad de creación de grupos temporalmente deshabilitada
+    // para enfocar en la optimización de carga
+    toast.info('Funcionalidad de creación de grupos en desarrollo');
   };
 
-  const executeCreateGroup = async () => {
-    if (!newGroupName.trim() || !article || !project) return;
-    
-    setIsCreating(true);
-    try {
-      const articleIdResult = await getArticleIdFromBatchItemId(article.item_id);
-      
-      if (!articleIdResult.success) {
-        toast.error('Error al obtener el ID del artículo');
-        return;
-      }
-      
-      const articleId = articleIdResult.data.articleId;
-      
-      const payload: CreateGroupPayload = {
-        projectId: project.id,
-        name: newGroupName.trim(),
-        description: newGroupDescription.trim() || undefined,
-        visibility: newGroupIsPublic ? 'public' : 'private',
-        articleIds: [articleId]
-      };
-      
-      const result = await createGroupWithArticles(payload);
-      
-      if (result.success) {
-        toast.success(`Grupo "${newGroupName}" creado exitosamente`);
-        resetFormAndClose();
-        setMenuData(null);
-        setMenuOpen(false);
-      } else {
-        toast.error(`Error al crear grupo: ${result.error}`);
-      }
-    } catch {
-      toast.error('Error inesperado al crear grupo');
-    } finally {
-      setIsCreating(false);
-    }
-  };
+  
 
   const confirmPublicGroupFromWarning = () => {
     setShowPublicWarning(false);
-    executeCreateGroup();
+    setNewGroupIsPublic(true);
+    setHasUnsavedChanges(true);
   };
 
   const cancelPublicGroupFromWarning = () => {
@@ -263,6 +218,14 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
       setShowCloseConfirm(true);
     } else {
       resetFormAndClose();
+    }
+  };
+
+  const handleCreateGroupOpenChange = (open: boolean) => {
+    if (open) {
+      setShowCreateGroup(true);
+    } else {
+      handleCloseCreateGroup();
     }
   };
 
@@ -320,15 +283,20 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
 
   return (
     <>
-      <StandardDropdownMenu open={menuOpen || isLoadingMenu} onOpenChange={handleMenuOpenChange}>
+      <StandardDropdownMenu open={menuOpen} onOpenChange={handleMenuOpenChange}>
         <StandardDropdownMenu.Trigger asChild>
           <StandardButton
-            styleType={isDropdownOpen ? "solid" : "outline"}
+            styleType={isDropdownOpen ? "subtle" : (hasGroups ? "solid" : "outline")}
+            colorScheme={hasGroups ? "accent" : undefined}
             iconOnly={true}
-            tooltip="Gestionar Grupos"
-            disabled={isLoadingMenu}
+            tooltip={hasGroups ? "Ver/gestionar grupos" : "Asignar a grupos"}
+            disabled={isLoadingMenu || isLoadingPresence}
           >
-            <Grip size={16} />
+            {isLoadingPresence ? (
+              <SustratoLoadingLogo size={16} variant="spin" speed="fast" />
+            ) : (
+              <MapPin size={16} />
+            )}
           </StandardButton>
         </StandardDropdownMenu.Trigger>
         
@@ -500,7 +468,7 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
          </StandardPopupWindow.Content>
        </StandardPopupWindow>
 
-      <StandardPopupWindow open={showCreateGroup} onOpenChange={handleCloseCreateGroup}>
+      <StandardPopupWindow open={showCreateGroup} onOpenChange={handleCreateGroupOpenChange}>
         <StandardPopupWindow.Content size="md">
           <StandardPopupWindow.Header>
             <StandardPopupWindow.Title>Crear Nuevo Grupo</StandardPopupWindow.Title>
@@ -569,9 +537,9 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
       <StandardDialog open={showPublicWarning} onOpenChange={setShowPublicWarning}>
         <StandardDialog.Content size="sm" colorScheme="warning">
           <StandardDialog.Header>
-            <StandardDialog.Title>⚠️ Confirmar Grupo Público</StandardDialog.Title>
+            <StandardDialog.Title> Confirmar Grupo Público</StandardDialog.Title>
             <StandardDialog.Description>
-              Estás a punto de crear un grupo público visible para todo el equipo.
+              Estás a punto de marcar este grupo como público y visible para todo el equipo.
             </StandardDialog.Description>
           </StandardDialog.Header>
           <StandardDialog.Body>
@@ -602,7 +570,7 @@ export const ArticleGroupManager: React.FC<ArticleGroupManagerProps> = ({ articl
               onClick={confirmPublicGroupFromWarning}
               disabled={isCreating}
             >
-              {isCreating ? 'Creando...' : 'Sí, crear grupo público'}
+              {isCreating ? 'Creando...' : 'Sí, marcar como público'}
             </StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>

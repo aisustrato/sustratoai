@@ -30,6 +30,7 @@ export interface StandardPageTitleProps {
   showBackButton?: BackButtonProps | boolean;
   className?: string;
   actions?: React.ReactNode;
+  actionsPosition?: 'left' | 'right';
 }
 
 export function StandardPageTitle({
@@ -41,6 +42,7 @@ export function StandardPageTitle({
   showBackButton,
   className,
   actions,
+  actionsPosition = 'right',
 }: StandardPageTitleProps) {
   // Determinar si mostrar el botón de regreso y sus propiedades
   const backButton = typeof showBackButton === "boolean" 
@@ -79,12 +81,16 @@ export function StandardPageTitle({
         </div>
       )}
 
-      {/* Título principal con icono opcional */}
+      {/* Título principal y acciones */}
       <div className="flex items-center justify-between py-2">
+        {actionsPosition === 'left' && actions && (
+          <div className="flex items-center gap-2">
+            {actions}
+          </div>
+        )}
         <div className="flex items-center gap-3">
           {MainIcon && (
-            <StandardIcon styleType="inverseStroke" colorScheme="primary"
-            colorShade="pure" size="xl" className="mt-0.5">
+            <StandardIcon styleType="inverseStroke" colorScheme="primary" colorShade="pure" size="xl" className="mt-0.5">
               <MainIcon />
             </StandardIcon>
           )}
@@ -106,10 +112,9 @@ export function StandardPageTitle({
             )}
           </div>
         </div>
-        
-        {/* Acciones opcionales (botones, etc.) */}
-        {actions && (
-          <div className="flex items-center gap-2">
+
+        {actionsPosition === 'right' && actions && (
+          <div className="flex items-center gap-2 ml-auto">
             {actions}
           </div>
         )}

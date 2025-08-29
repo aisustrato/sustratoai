@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -73,6 +73,64 @@ export type Database = {
           },
         ]
       }
+      article_abstract_highlights: {
+        Row: {
+          article_id: string
+          created_at: string | null
+          highlighted_content: string
+          highlights_metadata: Json | null
+          id: string
+          project_id: string
+          updated_at: string | null
+          user_id: string
+          version_type: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string | null
+          highlighted_content: string
+          highlights_metadata?: Json | null
+          id?: string
+          project_id: string
+          updated_at?: string | null
+          user_id: string
+          version_type: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string | null
+          highlighted_content?: string
+          highlights_metadata?: Json | null
+          id?: string
+          project_id?: string
+          updated_at?: string | null
+          user_id?: string
+          version_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_abstract_highlights_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_abstract_highlights_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_articles_for_batching_view"
+            referencedColumns: ["article_id"]
+          },
+          {
+            foreignKeyName: "article_abstract_highlights_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_batch_items: {
         Row: {
           ai_keywords: string[] | null
@@ -86,7 +144,7 @@ export type Database = {
           preclassified_at: string | null
           preclassified_by: string | null
           requires_adjudication: boolean | null
-          status: Database["public"]["Enums"]["batch_item_status"]
+          status: Database["public"]["Enums"]["batch_preclass_status"]
           status_preclasificacion:
             | Database["public"]["Enums"]["item_preclass_status"]
             | null
@@ -103,7 +161,7 @@ export type Database = {
           preclassified_at?: string | null
           preclassified_by?: string | null
           requires_adjudication?: boolean | null
-          status?: Database["public"]["Enums"]["batch_item_status"]
+          status: Database["public"]["Enums"]["batch_preclass_status"]
           status_preclasificacion?:
             | Database["public"]["Enums"]["item_preclass_status"]
             | null
@@ -120,7 +178,7 @@ export type Database = {
           preclassified_at?: string | null
           preclassified_by?: string | null
           requires_adjudication?: boolean | null
-          status?: Database["public"]["Enums"]["batch_item_status"]
+          status?: Database["public"]["Enums"]["batch_preclass_status"]
           status_preclasificacion?:
             | Database["public"]["Enums"]["item_preclass_status"]
             | null
@@ -209,11 +267,13 @@ export type Database = {
       article_dimension_reviews: {
         Row: {
           article_batch_item_id: string
+          article_id: string
           classification_value: string | null
           confidence_score: number | null
           created_at: string
           dimension_id: string
           id: string
+          is_final: boolean
           iteration: number
           rationale: string | null
           reviewer_id: string
@@ -221,11 +281,13 @@ export type Database = {
         }
         Insert: {
           article_batch_item_id: string
+          article_id: string
           classification_value?: string | null
           confidence_score?: number | null
           created_at?: string
           dimension_id: string
           id?: string
+          is_final?: boolean
           iteration?: number
           rationale?: string | null
           reviewer_id: string
@@ -233,11 +295,13 @@ export type Database = {
         }
         Update: {
           article_batch_item_id?: string
+          article_id?: string
           classification_value?: string | null
           confidence_score?: number | null
           created_at?: string
           dimension_id?: string
           id?: string
+          is_final?: boolean
           iteration?: number
           rationale?: string | null
           reviewer_id?: string
@@ -257,6 +321,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "preclass_dimensions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_reviews_to_articles"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_reviews_to_articles"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_articles_for_batching_view"
+            referencedColumns: ["article_id"]
           },
         ]
       }
@@ -676,18 +754,21 @@ export type Database = {
       preclass_dimension_options: {
         Row: {
           dimension_id: string
+          emoticon: string | null
           id: string
           ordering: number
           value: string
         }
         Insert: {
           dimension_id: string
+          emoticon?: string | null
           id?: string
           ordering?: number
           value: string
         }
         Update: {
           dimension_id?: string
+          emoticon?: string | null
           id?: string
           ordering?: number
           value?: string
@@ -735,6 +816,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          icon: string | null
           id: string
           name: string
           ordering: number
@@ -747,6 +829,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          icon?: string | null
           id?: string
           name: string
           ordering?: number
@@ -759,6 +842,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          icon?: string | null
           id?: string
           name?: string
           ordering?: number
@@ -1213,6 +1297,33 @@ export type Database = {
           },
         ]
       }
+      latest_article_dimension_reviews: {
+        Row: {
+          article_batch_item_id: string | null
+          confidence_score: number | null
+          created_at: string | null
+          dimension_id: string | null
+          id: string | null
+          iteration: number | null
+          value: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_dimension_reviews_article_batch_item_id_fkey"
+            columns: ["article_batch_item_id"]
+            isOneToOne: false
+            referencedRelation: "article_batch_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_dimension_reviews_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "preclass_dimensions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _dim_project_id: {
@@ -1223,33 +1334,73 @@ export type Database = {
         Args: { pid: string }
         Returns: boolean
       }
+      bulk_get_notes_info_for_batch: {
+        Args: { p_batch_id: string }
+        Returns: {
+          article_id: string
+          has_notes: boolean
+          item_id: string
+          note_count: number
+          note_ids: string[]
+        }[]
+      }
       check_user_has_profile: {
-        Args: { uid: string; pid: string }
+        Args: { pid: string; uid: string }
         Returns: boolean
+      }
+      get_article_notes_info_by_batch_item: {
+        Args: { batch_item_id: string }
+        Returns: {
+          article_id: string
+          has_notes: boolean
+          note_count: number
+          note_ids: string[]
+        }[]
       }
       get_current_auth_context: {
         Args: Record<PropertyKey, never>
         Returns: Record<string, unknown>[]
       }
+      get_notes_info_for_batch: {
+        Args: { p_batch_id: string }
+        Returns: {
+          article_id: string
+          batch_item_id: string
+          has_notes: boolean
+          note_count: number
+        }[]
+      }
       get_phase_batches_with_details: {
         Args: { p_phase_id: string }
         Returns: {
-          id: string
-          batch_number: number
-          status: Database["public"]["Enums"]["batch_preclass_status"]
           article_count: number
           assigned_researcher_name: string
+          batch_number: number
+          id: string
+          status: Database["public"]["Enums"]["batch_preclass_status"]
+        }[]
+      }
+      get_preclass_batch_summary: {
+        Args: { p_batch_id: string }
+        Returns: {
+          article_abstract: string
+          article_id: string
+          article_title: string
+          batch_item_id: string
+          has_notes: boolean
+          latest_classifications: Json
+          note_count: number
         }[]
       }
       get_project_batches_with_assignee_names: {
         Args: { p_project_id: string }
         Returns: {
-          id: string
+          article_count: number
+          assigned_to_member_name: string
           batch_number: number
+          id: string
           name: string
           status: string
-          assigned_to_member_name: string
-          article_count: number
         }[]
       }
       get_project_id_from_article: {
@@ -1261,13 +1412,13 @@ export type Database = {
         Returns: string
       }
       get_user_batches_with_detailed_counts: {
-        Args: { p_user_id: string; p_project_id: string }
+        Args: { p_project_id: string; p_user_id: string }
         Returns: {
-          id: string
+          article_counts: Json
           batch_number: number
+          id: string
           name: string
           status: Database["public"]["Enums"]["batch_preclass_status"]
-          article_counts: Json
         }[]
       }
       get_user_by_email: {
@@ -1280,32 +1431,26 @@ export type Database = {
       }
       has_permission_in_project: {
         Args: {
-          p_user_id: string
-          p_project_id: string
           p_permission_column: string
+          p_project_id: string
+          p_user_id: string
         }
         Returns: boolean
       }
       increment_job_tokens: {
         Args: {
-          job_id: string
           input_increment: number
+          job_id: string
           output_increment: number
         }
         Returns: undefined
       }
       is_user_member_of_project: {
-        Args: { p_user_id: string; p_project_id_to_check: string }
+        Args: { p_project_id_to_check: string; p_user_id: string }
         Returns: boolean
       }
     }
     Enums: {
-      batch_item_status:
-        | "unreviewed"
-        | "ai_preclassified"
-        | "human_preclassified"
-        | "disagreement"
-        | "reconciled"
       batch_preclass_status:
         | "pending"
         | "translated"
@@ -1464,13 +1609,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      batch_item_status: [
-        "unreviewed",
-        "ai_preclassified",
-        "human_preclassified",
-        "disagreement",
-        "reconciled",
-      ],
       batch_preclass_status: [
         "pending",
         "translated",

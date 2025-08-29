@@ -9,16 +9,25 @@ import { StandardButton } from '@/components/ui/StandardButton';
 import { StandardText } from '@/components/ui/StandardText';
 import { StandardDialog } from '@/components/ui/StandardDialog';
 import { toast } from 'sonner';
-import { 
-  createArticleNote, 
-  updateArticleNote, 
-  deleteArticleNote, 
-  getNotes,
-  type DetailedNote 
-} from '@/lib/actions/article-notes-actions';
 import { useAuth } from '@/app/auth-provider';
-import { getArticleIdFromBatchItemId, type ArticleForReview } from '@/lib/actions/preclassification-actions';
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
+
+// Tipos locales mínimos para evitar importar desde módulos "use server"
+type NoteVisibility = 'public' | 'private';
+type DetailedNote = {
+  id: string;
+  title: string | null;
+  note_content: string | null;
+  visibility: NoteVisibility;
+};
+
+interface ArticleForReview {
+  item_id: string;
+  article_data: {
+    original_title?: string | null;
+    translated_title?: string | null;
+  } | null;
+}
 
 interface NoteEditorProps {
   open: boolean;
@@ -26,9 +35,11 @@ interface NoteEditorProps {
   article: ArticleForReview | null;
   project: { id: string; name: string; } | null;
   showOriginalAsPrimary: boolean;
+  // Notifica al padre que cambió la presencia de notas (true=hay nota, false=no hay)
+  onNotesChanged?: (hasNotesNow: boolean) => void;
 }
 
-export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, project, showOriginalAsPrimary }): JSX.Element => {
+export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, project, showOriginalAsPrimary, onNotesChanged }): JSX.Element => {
   const [currentNote, setCurrentNote] = useState('');
   const [currentNoteTitle, setCurrentNoteTitle] = useState('');
   const [currentNoteVisibility, setCurrentNoteVisibility] = useState<'private' | 'public'>('private');
@@ -43,16 +54,13 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
   // Estado para controlar si se está cargando una nota existente
   const [isLoadingNote, setIsLoadingNote] = useState(false);
 
-  const loadExistingNote = useCallback(async (batchItemId: string) => {
+  const loadExistingNote = useCallback(async (batchItemId: string, projectId?: string) => {
     setIsLoadingNote(true);
     try {
       console.log('[CLIENT] Cargando nota existente para batchItemId:', batchItemId);
       
-      // Primero obtenemos el articleId real
-      const articleIdResult = await getArticleIdFromBatchItemId(batchItemId);
-      
-      if (!articleIdResult.success) {
-        console.error('[CLIENT] Error al obtener el ID del artículo:', articleIdResult.error);
+      if (!projectId) {
+        console.warn('[CLIENT] No hay projectId disponible; se asume que no hay notas para cargar');
         // No mostramos error al usuario aquí, simplemente asumimos que no hay nota existente
         setExistingNote(null);
         setCurrentNote('');
@@ -63,14 +71,40 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
         return;
       }
       
-      const articleId = articleIdResult.data.articleId;
+      // Primero obtenemos el articleId real vía API
+      const articleIdResp = await fetch(`/api/article-notes/by-batch-item?batchItemId=${encodeURIComponent(batchItemId)}`);
+      const articleIdJson = await articleIdResp.json();
+      if (!articleIdResp.ok || !articleIdJson?.success) {
+        console.error('[CLIENT] Error al obtener el ID del artículo:', articleIdJson?.error || articleIdResp.statusText);
+        setExistingNote(null);
+        setCurrentNote('');
+        setCurrentNoteTitle('');
+        setCurrentNoteVisibility('private');
+        setHasUnsavedChanges(false);
+        setIsLoadingNote(false);
+        return;
+      }
+      const articleId: string | null = articleIdJson?.data?.articleId ?? null;
       console.log('[CLIENT] Buscando notas para articleId:', articleId);
       
-      // Buscamos notas existentes para este artículo
-      const result = await getNotes({ articleId });
+      if (!articleId) {
+        console.log('[CLIENT] No hay articleId asociado; no se cargarán notas');
+        setExistingNote(null);
+        setCurrentNote('');
+        setCurrentNoteTitle('');
+        setCurrentNoteVisibility('private');
+        setHasUnsavedChanges(false);
+        setIsLoadingNote(false);
+        return;
+      }
+
+      // Buscamos notas existentes para este artículo vía API related
+      const relatedUrl = `/api/article-notes/related?articleId=${encodeURIComponent(articleId)}&projectId=${encodeURIComponent(projectId)}`;
+      const notesResp = await fetch(relatedUrl);
+      const notesJson = await notesResp.json();
       
-      if (result.success && result.data && result.data.length > 0) {
-        const note = result.data[0];
+      if (notesResp.ok && notesJson?.success && Array.isArray(notesJson.data) && notesJson.data.length > 0) {
+        const note: DetailedNote = notesJson.data[0] as DetailedNote;
         console.log('[CLIENT] Nota existente encontrada:', { 
           id: note.id, 
           title: note.title,
@@ -104,10 +138,26 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
     }
   }, []);
 
+  const { user, proyectoActual: authProject } = useAuth();
+
   useEffect(() => {
+    console.group('[NoteEditor] props change/open');
+    const projectId = project?.id || authProject?.id;
+    console.log('[NoteEditor] props recibidos', {
+      open,
+      articleItemId: article?.item_id,
+      projectProp: project?.id,
+      authProject: authProject?.id,
+      resolvedProjectId: projectId,
+    });
     if (open && article) {
-      loadExistingNote(article.item_id);
+      console.log('[NoteEditor] Invocando loadExistingNote', {
+        batchItemId: article.item_id,
+        projectId,
+      });
+      void loadExistingNote(article.item_id, projectId);
     } else {
+      console.log('[NoteEditor] Popup cerrado o sin artículo: reseteando estado');
       // Reset state when closed
       setExistingNote(null);
       setCurrentNote('');
@@ -115,7 +165,21 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
       setCurrentNoteVisibility('private');
       setHasUnsavedChanges(false);
     }
-  }, [open, article, loadExistingNote]);
+    console.groupEnd();
+  }, [open, article, project, authProject, loadExistingNote]);
+
+  // Log del resultado de carga de nota
+  useEffect(() => {
+    if (!open) return;
+    console.log('[NoteEditor] estado de búsqueda de nota', {
+      isLoadingNote,
+      hasExistingNote: Boolean(existingNote),
+      existingNoteId: existingNote?.id,
+      title: existingNote?.title,
+      contentLength: existingNote?.note_content?.length || 0,
+      visibility: existingNote?.visibility,
+    });
+  }, [open, existingNote, isLoadingNote]);
 
   const handleNoteContentChange = (noteContent: string) => {
     setCurrentNote(noteContent);
@@ -140,7 +204,6 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
     setShowPublicWarning(false);
   }, []);
 
-  const { user, proyectoActual: authProject } = useAuth();
 
   const handleSaveNote = async () => {
     console.group('[CLIENT] handleSaveNote - Iniciando guardado de nota');
@@ -203,11 +266,11 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
     console.log('[CLIENT] Estado de guardado: Iniciando...');
     
     try {
-      // Obtenemos el ID real del artículo desde la base de datos
-      const articleIdResult = await getArticleIdFromBatchItemId(batchItemId);
-      
-      if (!articleIdResult.success) {
-        const errorMsg = `No se pudo obtener el ID del artículo: ${articleIdResult.error}`;
+      // Obtenemos el ID real del artículo vía API
+      const articleIdResp = await fetch(`/api/article-notes/by-batch-item?batchItemId=${encodeURIComponent(batchItemId)}`);
+      const articleIdJson = await articleIdResp.json();
+      if (!articleIdResp.ok || !articleIdJson?.success || !articleIdJson?.data?.articleId) {
+        const errorMsg = `No se pudo obtener el ID del artículo: ${articleIdJson?.error || articleIdResp.statusText}`;
         console.error('[CLIENT] Error:', errorMsg);
         toast.error(errorMsg);
         console.groupEnd();
@@ -215,7 +278,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
         return;
       }
       
-      const articleId = articleIdResult.data.articleId;
+      const articleId: string = articleIdJson.data.articleId;
       
       const noteData = {
         title: currentNoteTitle || 'sin título',
@@ -238,36 +301,48 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
         noteContent: `${currentNote.substring(0, 50)}${currentNote.length > 50 ? '...' : ''} (${currentNote.length} caracteres)`
       });
 
-      let result;
+      let fetchResp: Response;
       if (existingNote?.id) {
         console.log(`[CLIENT] Actualizando nota existente (ID: ${existingNote.id})`);
-        result = await updateArticleNote({
-          ...noteData,
-          noteId: existingNote.id
+        fetchResp = await fetch(`/api/article-notes/${encodeURIComponent(existingNote.id)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: noteData.title,
+            noteContent: noteData.noteContent,
+            visibility: noteData.visibility,
+          }),
         });
       } else {
         console.log('[CLIENT] Creando nueva nota');
-        result = await createArticleNote(noteData);
+        fetchResp = await fetch('/api/article-notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(noteData),
+        });
       }
 
-      console.log('[CLIENT] Resultado de la operación:', {
-        success: result.success,
-        error: result.success ? undefined : result.error,
-        data: result.success ? `Nota ${result.data?.id || 'sin ID'}` : undefined
-      });
+      const resultJson = await fetchResp.json();
+      console.log('[CLIENT] Resultado de la operación:', resultJson);
 
-      if (result.success) {
+      if (fetchResp.ok && resultJson?.success) {
         const successMsg = existingNote ? 'Nota actualizada correctamente' : 'Nota guardada correctamente';
         console.log(`[CLIENT] Éxito: ${successMsg}`);
         toast.success(successMsg);
         setHasUnsavedChanges(false);
         
-        if (result.data) {
+        if (resultJson.data) {
           console.log('[CLIENT] Actualizando nota existente en el estado local');
-          setExistingNote(result.data);
+          setExistingNote(resultJson.data as DetailedNote);
+        }
+        // Notificar al padre que ahora hay nota
+        try {
+          onNotesChanged?.(true);
+        } catch (e) {
+          console.warn('[CLIENT] onNotesChanged(true) lanzó una excepción no crítica:', e);
         }
       } else {
-        const errorMsg = result.error || 'Error desconocido al guardar la nota';
+        const errorMsg = resultJson?.error || 'Error desconocido al guardar la nota';
         console.error('[CLIENT] Error al guardar la nota:', errorMsg);
         toast.error(`Error al guardar la nota: ${errorMsg}`);
       }
@@ -287,12 +362,19 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
       toast.error('Error: No se puede eliminar una nota sin ID.');
       return;
     }
-    const result = await deleteArticleNote(existingNote.id);
-    if (result.success) {
+    const resp = await fetch(`/api/article-notes/${encodeURIComponent(existingNote.id)}`, { method: 'DELETE' });
+    const json = await resp.json();
+    if (resp.ok && json?.success) {
       toast.success('Nota eliminada.');
+      // Notificar al padre que ya no hay nota
+      try {
+        onNotesChanged?.(false);
+      } catch (e) {
+        console.warn('[CLIENT] onNotesChanged(false) lanzó una excepción no crítica:', e);
+      }
       onClose(); // Cerrar el editor después de eliminar
     } else {
-      toast.error(result.error || 'Error al eliminar la nota');
+      toast.error(json?.error || 'Error al eliminar la nota');
     }
   };
 
@@ -318,7 +400,9 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
             <StandardPopupWindow.Description>
               {article && (
                 <span className="text-sm">
-                  {showOriginalAsPrimary ? article.article_data.original_title : (article.article_data.translated_title || article.article_data.original_title)}
+                  {showOriginalAsPrimary
+                    ? (article.article_data?.original_title ?? 'Sin título')
+                    : (article.article_data?.translated_title ?? article.article_data?.original_title ?? 'Sin título')}
                 </span>
               )}
             </StandardPopupWindow.Description>

@@ -13,7 +13,7 @@ type PreclassDimensionUpdate = Database["public"]["Tables"]["preclass_dimensions
 
 type PreclassDimensionOptionRow = Database["public"]["Tables"]["preclass_dimension_options"]["Row"];
 type PreclassDimensionOptionInsert = Database["public"]["Tables"]["preclass_dimension_options"]["Insert"];
-// type PreclassDimensionOptionUpdate = Database["public"]["Tables"]["preclass_dimension_options"]["Update"]; // Unused
+type PreclassDimensionOptionUpdate = Database["public"]["Tables"]["preclass_dimension_options"]["Update"];
 
 type PreclassDimensionQuestionRow = Database["public"]["Tables"]["preclass_dimension_questions"]["Row"];
 type PreclassDimensionQuestionInsert = Database["public"]["Tables"]["preclass_dimension_questions"]["Insert"];
@@ -36,6 +36,7 @@ export interface DimensionOptionData {
 	id?: string;
 	value: string;
 	ordering: number;
+	emoticon?: string | null;
 }
 export interface DimensionQuestionData {
 	id?: string;
@@ -55,11 +56,12 @@ export interface FullDimension extends PreclassDimensionRow {
 
 export interface CreateDimensionPayload {
 	projectId: string;
-    phaseId: string;
+	phaseId: string;
 	name: string;
 	type: 'finite' | 'open';
 	description?: string | null;
 	ordering: number;
+	icon?: string | null;
 	options?: DimensionOptionData[];
 	questions?: DimensionQuestionData[];
 	examples?: DimensionExampleData[];
@@ -72,6 +74,7 @@ export interface UpdateDimensionPayload {
 	name?: string;
 	description?: string | null;
 	ordering?: number;
+	icon?: string | null;
 	options?: DimensionOptionData[];
 	questions?: DimensionQuestionData[];
 	examples?: DimensionExampleData[];
@@ -83,15 +86,14 @@ export interface ArchiveDimensionPayload {
 }
 
 export interface HardDeleteDimensionPayload {
-    dimensionId: string;
-    projectId: string;
+	dimensionId: string;
+	projectId: string;
 }
 
 export interface ReorderDimensionsPayload {
 	projectId: string;
 	orderedDimensionIds: string[];
 }
-
 
 // ========================================================================
 //	INTERNAL HELPER FUNCTION: VERIFY PERMISSION
@@ -121,7 +123,7 @@ async function verificarPermisoGestionDimensiones(
 // ========================================================================
 export async function listDimensions(
 	phaseId: string,
-    includeArchived: boolean = false
+	includeArchived: boolean = false
 ): Promise<ResultadoOperacion<FullDimension[]>> {
 	const opId = `LDIM-${Math.floor(Math.random() * 10000)}`;
 	console.log(`📄 [${opId}] Iniciando listDimensions para fase: ${phaseId}`);
@@ -171,7 +173,8 @@ export async function createDimension(
 	const { projectId, phaseId, name, type, description, ordering,
 			options: payloadOptions,
 			questions: payloadQuestions,
-			examples: payloadExamples
+			examples: payloadExamples,
+			icon
 		} = payload;
 	
 	console.log(`📄 [${opId}] Iniciando createDimension: ${name} en fase ${phaseId}`);
@@ -193,13 +196,19 @@ export async function createDimension(
 			project_id: projectId,
             phase_id: phaseId,
             name, type, description: description || null, ordering,
-		};
+            icon: icon ?? null,
+        };
 		const { data: nuevaDimension, error: insertDimensionError } = await supabase.from("preclass_dimensions").insert(dimensionToInsert).select().single();
 		if (insertDimensionError || !nuevaDimension) return { success: false, error: `Error al crear la dimensión: ${insertDimensionError?.message || 'No data.'}` };
 		console.log(`[${opId}] Dimensión principal creada ID: ${nuevaDimension.id}`);
 
         if (type === 'finite' && payloadOptions && payloadOptions.length > 0) {
-            const optionsToInsert: PreclassDimensionOptionInsert[] = payloadOptions.map(opt => ({ dimension_id: nuevaDimension.id, value: opt.value, ordering: opt.ordering }));
+            const optionsToInsert: PreclassDimensionOptionInsert[] = payloadOptions.map(opt => ({
+                dimension_id: nuevaDimension.id,
+                value: opt.value,
+                ordering: opt.ordering,
+                emoticon: opt.emoticon ?? null,
+            }));
             const { error: insertOptionsError } = await supabase.from("preclass_dimension_options").insert(optionsToInsert);
             if (insertOptionsError) return { success: false, error: `Error al guardar opciones: ${insertOptionsError.message}.`, errorCode: "PARTIAL_INSERT_OPTIONS" };
         }
@@ -234,7 +243,8 @@ export async function updateDimension(
 		dimensionId, projectId, name, description, ordering,
 		options: payloadOptions,
 		questions: payloadQuestions,
-		examples: payloadExamples
+		examples: payloadExamples,
+		icon
 	} = payload;
 
 	console.log(`📄 [${opId}] Iniciando updateDimension para ID: ${dimensionId} en proyecto ${projectId}`);
@@ -277,10 +287,13 @@ export async function updateDimension(
 		
 		const effectiveType = currentDimensionTyped.type;
 
-		const dimensionUpdates: PreclassDimensionUpdate = {};
-		if (name !== undefined && name !== currentDimensionTyped.name) dimensionUpdates.name = name;
-		if (description !== undefined && description !== currentDimensionTyped.description) dimensionUpdates.description = description;
-		if (ordering !== undefined && ordering !== currentDimensionTyped.ordering) dimensionUpdates.ordering = ordering;
+		const dimensionUpdates: PreclassDimensionUpdate = {} as PreclassDimensionUpdate;
+        if (name !== undefined && name !== currentDimensionTyped.name) dimensionUpdates.name = name;
+        if (description !== undefined && description !== currentDimensionTyped.description) dimensionUpdates.description = description;
+        if (ordering !== undefined && ordering !== currentDimensionTyped.ordering) dimensionUpdates.ordering = ordering;
+        if (icon !== undefined) {
+            dimensionUpdates.icon = icon ?? null;
+        }
 		
 		let updatedDimensionRow: PreclassDimensionRow = currentDimensionTyped;
 
@@ -300,20 +313,39 @@ export async function updateDimension(
 				const receivedOptionIds = (payloadOptions || []).map(opt => opt.id).filter(id => !!id) as string[];
 				const optionsToDelete = currentOptionIds.filter(id => !receivedOptionIds.includes(id));
 				if (optionsToDelete.length > 0) {
-					const { error: deleteErr } = await supabase.from("preclass_dimension_options").delete().in("id", optionsToDelete);
+					const { error: deleteErr } = await supabase
+						.from("preclass_dimension_options")
+						.delete()
+						.in("id", optionsToDelete);
 					if (deleteErr) return { success: false, error: `Error eliminando opciones antiguas: ${deleteErr.message}`, errorCode: "DELETE_OPTIONS_FAILED" };
 				}
 				for (const optPayload of (payloadOptions || [])) {
 					if (optPayload.id && currentOptionIds.includes(optPayload.id)) { // Actualizar
-						const { error: updateErr } = await supabase.from("preclass_dimension_options").update({ value: optPayload.value, ordering: optPayload.ordering }).eq("id", optPayload.id);
+						const updateBody: PreclassDimensionOptionUpdate = {
+							value: optPayload.value,
+							ordering: optPayload.ordering,
+							emoticon: optPayload.emoticon ?? null,
+						};
+						const { error: updateErr } = await supabase
+							.from("preclass_dimension_options")
+							.update(updateBody)
+							.eq("id", optPayload.id);
 						if (updateErr) return { success: false, error: `Error actualizando opción ${optPayload.id}: ${updateErr.message}`, errorCode: "UPDATE_OPTION_FAILED" };
 					} else { // Insertar
-						const { error: insertErr } = await supabase.from("preclass_dimension_options").insert({ dimension_id: dimensionId, value: optPayload.value, ordering: optPayload.ordering });
+						const insertBody: PreclassDimensionOptionInsert = {
+							dimension_id: dimensionId,
+							value: optPayload.value,
+							ordering: optPayload.ordering,
+							emoticon: optPayload.emoticon ?? null,
+						};
+						const { error: insertErr } = await supabase
+							.from("preclass_dimension_options")
+							.insert(insertBody);
 						if (insertErr) return { success: false, error: `Error insertando nueva opción: ${insertErr.message}`, errorCode: "INSERT_OPTION_FAILED" };
 					}
 				}
-				console.log(`[${opId}] Opciones (finite) procesadas.`);
 			}
+			console.log(`[${opId}] Opciones (finite) procesadas.`);
 		} else if (effectiveType === 'open' && (currentDimensionTyped.options || []).length > 0) {
 			const { error: deleteErr } = await supabase.from("preclass_dimension_options").delete().eq("dimension_id", dimensionId);
 			if (deleteErr) return { success: false, error: `Error eliminando opciones para tipo open: ${deleteErr.message}`, errorCode: "DELETE_OPEN_OPTIONS_FAILED" };
