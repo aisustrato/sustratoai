@@ -138,41 +138,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	// Este es el corazón del provider. Escucha los cambios en Supabase
 	// y actualiza el estado de la aplicación de forma reactiva.
 	// ========================================================================
-	useEffect(() => {
-		console.log(`${LOG_PREFIX} Montando listener de onAuthStateChange...`);
-
-		// Inmediatamente obtenemos la sesión actual para evitar parpadeos
-		supabase.auth.getSession().then(({ data: { session } }) => {
-			setSession(session);
-			setUser(session?.user ?? null);
-			setAuthInitialized(true);
-			setAuthLoading(false);
-			console.log(`${LOG_PREFIX} Sesión inicial cargada.`);
-		});
-
-		const { data: authListener } = supabase.auth.onAuthStateChange(
-			(event, session) => {
-				console.log(`${LOG_PREFIX} Evento de Auth recibido:`, event);
-				setSession(session);
-				setUser(session?.user ?? null);
-				setAuthInitialized(true);
-				setAuthLoading(false);
-
-				if (event === "SIGNED_OUT") {
-					// Limpiar todo el estado local al cerrar sesión
-					setProyectoActual(null);
-					setProyectosDisponibles([]);
-					router.push("/login");
-				}
-			}
-		);
-
-		// Cleanup: Desuscribirse cuando el componente se desmonte
-		return () => {
-			console.log(`${LOG_PREFIX} Desmontando listener de onAuthStateChange.`);
-			authListener?.subscription.unsubscribe();
-		};
-	}, [router]); // Dependencia de router para la redirección
+	// Eliminado efecto duplicado de onAuthStateChange.
+	// La carga inicial de sesión y la suscripción activa están manejadas por
+	// InitializeEffect y onAuthStateChangeEffect más abajo para evitar eventos dobles
+	// y re-renderizados innecesarios.
 
 	useEffect(() => {
 		userRef.current = user;
@@ -732,6 +701,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 						size={60}
 						variant="spin-pulse"
 						speed="normal"
+						colorTransition={false}
 						text={
 							loadingSignOut
 								? "Cerrando sesión..."

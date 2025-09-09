@@ -27,7 +27,7 @@ const GlobalLoadingIndicator = () => (
       variant="spin-pulse"
       speed="fast"
       breathingEffect
-      colorTransition
+      colorTransition={false}
       text="Cargando página..."
     />
   </div>

@@ -164,6 +164,7 @@ export function StandardNavbar() {
 	const { mode, appColorTokens } = useTheme();
 	const { proyectoActual } = useAuth();
 	const { width: windowWidth } = useWindowSize();
+	const scrollRafIdRef = useRef<number | null>(null);
 
 	// Determinar el estadio responsivo actual
 	const currentStage = useMemo(() => {
@@ -226,33 +227,59 @@ export function StandardNavbar() {
 	}, [appColorTokens, mode]);
 
 	const handleScroll = useCallback(() => {
-		const offset = window.scrollY;
-		if (offset > 20) {
-			setScrolled(true);
-		} else {
-			setScrolled(false);
+		if (scrollRafIdRef.current !== null) return;
+		scrollRafIdRef.current = window.requestAnimationFrame(() => {
+			const offset = window.scrollY;
+			setScrolled(offset > 20);
+			scrollRafIdRef.current = null;
+		});
+	}, [scrollRafIdRef]);
+
+	const handleClickOutside = useCallback((event: Event) => {
+		const node = event.target as Node | null;
+		if (!node) return;
+		let el: Element | null = null;
+		if (node instanceof Element) {
+			el = node;
+		} else if ((node as any).parentElement) {
+			el = (node as any).parentElement as Element;
+		}
+		const isInContent = !!el?.closest('[data-submenu="content"]');
+		// Cerrar siempre que el click NO esté dentro del contenido del submenú.
+		if (!isInContent) {
+			setOpenSubmenu(null);
 		}
 	}, []);
 
-	const handleClickOutside = useCallback((event: MouseEvent) => {
-		if (navRef.current && !navRef.current.contains(event.target as Node)) {
+	const handleKeyDown = useCallback((event: KeyboardEvent) => {
+		if (event.key === 'Escape') {
 			setOpenSubmenu(null);
 		}
 	}, []);
 
 	useEffect(() => {
-		window.addEventListener("scroll", handleScroll);
+		window.addEventListener("scroll", handleScroll, { passive: true });
 		return () => {
 			window.removeEventListener("scroll", handleScroll);
+			if (scrollRafIdRef.current !== null) {
+				cancelAnimationFrame(scrollRafIdRef.current);
+				scrollRafIdRef.current = null;
+			}
 		};
 	}, [handleScroll]);
 
 	useEffect(() => {
-		document.addEventListener("mousedown", handleClickOutside);
+		if (!openSubmenu) return;
+		const pointerOpts: AddEventListenerOptions = { capture: true, passive: true };
+		const keyOpts: AddEventListenerOptions = { capture: true };
+		const pointerEvents: Array<keyof DocumentEventMap> = ["mousedown", "touchstart", "pointerdown", "click"];
+		pointerEvents.forEach((ev) => document.addEventListener(ev, handleClickOutside as EventListener, pointerOpts));
+		document.addEventListener('keydown', handleKeyDown as EventListener, keyOpts);
 		return () => {
-			document.removeEventListener("mousedown", handleClickOutside);
+			pointerEvents.forEach((ev) => document.removeEventListener(ev, handleClickOutside as EventListener, pointerOpts));
+			document.removeEventListener('keydown', handleKeyDown as EventListener, keyOpts);
 		};
-	}, [handleClickOutside]);
+	}, [handleClickOutside, handleKeyDown, openSubmenu]);
 
 	// Función para crear íconos de menú
 const createMenuIcon = (Icon: React.ElementType, isActive = false) => (

@@ -23,7 +23,7 @@ export default function Home() {
     return (
       <StandardPageBackground variant="gradient">
         <div className="flex flex-col items-center justify-center min-h-screen">
-          <SustratoLoadingLogo size={60} text="Cargando información del proyecto..." />
+          <SustratoLoadingLogo size={60} text="Cargando información del proyecto..." colorTransition={false} />
         </div>
       </StandardPageBackground>
     );

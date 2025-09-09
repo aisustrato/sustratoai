@@ -46,7 +46,7 @@ export function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
           variant="spin-pulse"
           speed="normal"
           breathingEffect
-          colorTransition
+          colorTransition={false}
           showText
           text={loaderText} 
         />
@@ -66,7 +66,7 @@ export function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
           variant="spin-pulse"
           speed="normal"
           breathingEffect
-          colorTransition
+          colorTransition={false}
           showText
           text="Redirigiendo..." 
         />
