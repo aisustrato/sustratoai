@@ -136,6 +136,7 @@ export default function DetailClient({
     : article.abstract ?? null;
 
   const authors = Array.isArray(article.authors) ? article.authors : [];
+  const aiSummary = latest?.summary ?? null;
 
   // Manejar selección de texto y mostrar botón de resaltado
   const [showHighlightButton, setShowHighlightButton] = React.useState(false);
@@ -258,6 +259,18 @@ export default function DetailClient({
           <StandardText colorScheme="neutral" colorShade="subtle">—</StandardText>
         )}
       </div>
+
+      {/* Resumen AI (si existe en traducciones) */}
+      {aiSummary && (
+        <div>
+          <StandardText size="sm" colorScheme="neutral" colorShade="subtle" className="mt-4 mb-1">
+            Resumen AI
+          </StandardText>
+          <div className="text-base leading-relaxed" style={{ fontFamily: 'inherit' }}>
+            {aiSummary}
+          </div>
+        </div>
+      )}
 
       {/* Metadatos adicionales */}
       <div className="flex flex-wrap gap-2">

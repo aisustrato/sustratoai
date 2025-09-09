@@ -9,7 +9,10 @@ export interface BatchWithCounts {
   batch_number: number;
   name: string | null;
   status: Database["public"]["Enums"]["batch_preclass_status"];
+  assigned_to?: string | null;
   article_counts: {
+    pending?: number;
+    translated?: number;
     pending_review?: number;
     reconciliation_pending?: number;
     agreed?: number;
@@ -25,6 +28,10 @@ export interface ClassificationReview {
   value: string | null;
   confidence: number | null;
   rationale: string | null;
+  // Nuevos campos según esquema actualizado
+  option_id?: string | null;
+  prevalidated?: boolean;
+  is_final?: boolean;
 }
 
 export interface NotesInfo {
@@ -37,7 +44,7 @@ export interface NotesInfo {
 export interface ArticleForReview {
   item_id: string;
   article_id: string; // 🎯 OPTIMIZACIÓN: ID directo del artículo para evitar consultas adicionales
-  article_status: Database["public"]["Enums"]["item_preclass_status"];
+  article_status: Database["public"]["Enums"]["batch_preclass_status"];
   article_data: {
     correlativo: number | null;
     publication_year: number | null;
@@ -84,6 +91,8 @@ export interface SubmitHumanReviewPayload {
   human_value: string;
   human_rationale: string;
   human_confidence: number;
+  // Para dimensiones finitas (si corresponde). No se persiste hasta que el schema/tipos lo soporten.
+  human_option_id?: string | null;
 }
 
 export interface TranslatedArticlePayload {

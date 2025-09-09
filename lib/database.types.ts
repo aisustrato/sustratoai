@@ -145,9 +145,6 @@ export type Database = {
           preclassified_by: string | null
           requires_adjudication: boolean | null
           status: Database["public"]["Enums"]["batch_preclass_status"]
-          status_preclasificacion:
-            | Database["public"]["Enums"]["item_preclass_status"]
-            | null
         }
         Insert: {
           ai_keywords?: string[] | null
@@ -162,9 +159,6 @@ export type Database = {
           preclassified_by?: string | null
           requires_adjudication?: boolean | null
           status: Database["public"]["Enums"]["batch_preclass_status"]
-          status_preclasificacion?:
-            | Database["public"]["Enums"]["item_preclass_status"]
-            | null
         }
         Update: {
           ai_keywords?: string[] | null
@@ -179,9 +173,6 @@ export type Database = {
           preclassified_by?: string | null
           requires_adjudication?: boolean | null
           status?: Database["public"]["Enums"]["batch_preclass_status"]
-          status_preclasificacion?:
-            | Database["public"]["Enums"]["item_preclass_status"]
-            | null
         }
         Relationships: [
           {
@@ -275,6 +266,8 @@ export type Database = {
           id: string
           is_final: boolean
           iteration: number
+          option_id: string | null
+          prevalidated: boolean
           rationale: string | null
           reviewer_id: string
           reviewer_type: string
@@ -289,6 +282,8 @@ export type Database = {
           id?: string
           is_final?: boolean
           iteration?: number
+          option_id?: string | null
+          prevalidated?: boolean
           rationale?: string | null
           reviewer_id: string
           reviewer_type: string
@@ -303,6 +298,8 @@ export type Database = {
           id?: string
           is_final?: boolean
           iteration?: number
+          option_id?: string | null
+          prevalidated?: boolean
           rationale?: string | null
           reviewer_id?: string
           reviewer_type?: string
@@ -335,6 +332,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "eligible_articles_for_batching_view"
             referencedColumns: ["article_id"]
+          },
+          {
+            foreignKeyName: "fk_reviews_to_options"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "preclass_dimension_options"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1468,12 +1472,6 @@ export type Database = {
       dimension_status: "active" | "archived"
       dimension_type: "finite" | "open"
       group_visibility: "public" | "private"
-      item_preclass_status:
-        | "pending_review"
-        | "reconciliation_pending"
-        | "agreed"
-        | "reconciled"
-        | "disputed"
       job_status: "running" | "completed" | "failed"
       job_type: "TRANSLATION" | "PRECLASSIFICATION"
       note_visibility: "public" | "private"
@@ -1628,13 +1626,6 @@ export const Constants = {
       dimension_status: ["active", "archived"],
       dimension_type: ["finite", "open"],
       group_visibility: ["public", "private"],
-      item_preclass_status: [
-        "pending_review",
-        "reconciliation_pending",
-        "agreed",
-        "reconciled",
-        "disputed",
-      ],
       job_status: ["running", "completed", "failed"],
       job_type: ["TRANSLATION", "PRECLASSIFICATION"],
       note_visibility: ["public", "private"],

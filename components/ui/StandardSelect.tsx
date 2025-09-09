@@ -4,7 +4,8 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, ChevronUp, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/app/theme-provider";
@@ -94,6 +95,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 		const { appColorTokens, mode } = useTheme();
 		const [isOpen, setIsOpen] = React.useState(false);
 		const [isFocused, setIsFocused] = React.useState(false);
+		const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
 
 		const componentRootRef = React.useRef<HTMLDivElement>(null);
 		React.useImperativeHandle(forwardedRef, () => componentRootRef.current as HTMLDivElement);
@@ -122,6 +124,21 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 		//#endregion ![sub_init]
 
 		//#region [sub_effects] - 💡 EFFECTS 💡
+		React.useEffect(() => {
+			// Asegurar contenedor de portal sólo en cliente
+			if (typeof window !== "undefined") {
+				let target: HTMLElement = document.body;
+				const rootEl = componentRootRef.current;
+				// Si el Select vive dentro de un Dialog (role="dialog"), montamos allí el dropdown
+				// para evitar que el modo modal (inert/aria-hidden) bloquee interacción del dropdown
+				if (rootEl) {
+					const dialogEl = rootEl.closest('[role="dialog"]') as HTMLElement | null;
+					if (dialogEl) target = dialogEl;
+				}
+				setPortalContainer(target);
+			}
+		}, []);
+
 		React.useEffect(() => {
 			if (value !== undefined) {
 				const newSelected = Array.isArray(value) ? value : value ? [value] : [];
@@ -319,6 +336,29 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 
 		const [dropdownPosition, setDropdownPosition] = React.useState<React.CSSProperties>({});
 
+		// CSS vars necesarias para hover/selección del dropdown cuando está portalizado
+		const variantTokensForStyle = React.useMemo(
+			() => (selectTokensInternal ? selectTokensInternal.variants[effectiveColorScheme] : undefined),
+			[selectTokensInternal, effectiveColorScheme]
+		);
+
+		const dropdownStyleVars = React.useMemo((): Record<string, string> => {
+			if (!variantTokensForStyle) return {};
+			return {
+				"--select-dropdown-bg": variantTokensForStyle.dropdownBackground,
+				"--select-dropdown-border": variantTokensForStyle.dropdownBorder,
+				"--select-option-text": variantTokensForStyle.optionText,
+				"--select-option-hover-bg": variantTokensForStyle.optionHoverBackground,
+				"--select-option-selected-bg": variantTokensForStyle.optionSelectedBackground,
+				"--select-option-selected-text": variantTokensForStyle.optionSelectedText,
+			};
+		}, [variantTokensForStyle]);
+
+		const composedDropdownStyle = React.useMemo(
+			() => ({ ...dropdownPosition, ...(dropdownStyleVars as unknown as React.CSSProperties) }),
+			[dropdownPosition, dropdownStyleVars]
+		);
+
 		const dropdownVariants = React.useMemo(() => {
 			const base = {
 				hidden: { opacity: 0, y: -5, scale: 0.98, transition: { duration: 0.1, ease: "easeInOut" } },
@@ -357,13 +397,27 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 					top = rect.top - estimatedDropdownHeight - 4;
 				}
 
+				// Si el portal está montado dentro de un contenedor transformado (e.g., Dialog.Content),
+				// la posición 'fixed' se comporta como 'absolute' relativa a ese contenedor.
+				// Ajustamos coordenadas relativas al contenedor para mantener alineamiento correcto.
+				const container = portalContainer;
+				const isInsideContainer = !!(container && container !== document.body);
+				const finalPosition: React.CSSProperties['position'] = isInsideContainer ? 'absolute' : 'fixed';
+				let finalTop = top;
+				let finalLeft = rect.left;
+				if (isInsideContainer) {
+					const containerRect = container!.getBoundingClientRect();
+					finalTop = top - containerRect.top;
+					finalLeft = rect.left - containerRect.left;
+				}
+
 				setDropdownPosition({
-					position: 'fixed',
-					top: `${top}px`,
-					left: `${rect.left}px`,
+					position: finalPosition,
+					top: `${finalTop}px`,
+					left: `${finalLeft}px`,
 					width: `${rect.width}px`,
-					// Z-index alto para estar por encima de popups (2010) y dialogs (3000)
-					zIndex: 4000,
+					// Z-index MUY alto para garantizar estar por encima de overlay (2000) y content (2010)
+					zIndex: 10000,
 				});
 			};
 
@@ -375,7 +429,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 				window.removeEventListener('resize', updatePosition);
 				window.removeEventListener('scroll', updatePosition, true);
 			};
-		}, [isOpen, options.length, currentSizeTokens.dropdownMaxHeight, appColorTokens, mode]);
+		}, [isOpen, options.length, currentSizeTokens.dropdownMaxHeight, appColorTokens, mode, portalContainer]);
 		
 		const hasLeadingIcon = (leadingIcon && (!multiple || selectedOptions.length === 0) && (selectedOptions.length === 0 || !selectedOptions[0].icon)) || (selectedOptions.length > 0 && !multiple && selectedOptions[0].icon);
 		const hasClearButton = clearable && selectedValues.length > 0 && !disabled && !readOnly;
@@ -483,90 +537,155 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 								</StandardIcon>
 							</button>
 						)}
-						<div className="flex items-center justify-center p-0.5 rounded cursor-pointer" style={{ backgroundColor: "var(--select-chevron-button-bg)" }} onClick={(e) => { e.stopPropagation(); if (!disabled && !readOnly) { setIsOpen(!isOpen); if (!isOpen) selectClickableRef.current?.focus(); } }}>
-							<AnimatePresence initial={false} mode="wait">
-								<motion.div key={isOpen ? "up" : "down"}
-                                    initial={{ opacity: 0, rotate: isOpen ? 180 : -180, scale: 0.8 }}
-                                    animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                                    exit={{ opacity: 0, rotate: isOpen ? 180 : -180, scale: 0.8 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-									<StandardIcon styleType="outline" size={iconInternalSize} colorScheme={colorScheme}>
-										{isOpen ? <ChevronUp /> : <ChevronDown />}
-									</StandardIcon>
-								</motion.div>
-							</AnimatePresence>
 						</div>
 					</div>
-				</div>
 
-				<AnimatePresence>
-					{isOpen && !readOnly && (
-						<motion.div
-							ref={optionsRef}
-							tabIndex={-1}
-							role="listbox"
-							id={id ? `${id}-options` : undefined}
-							aria-multiselectable={multiple}
-							className={cn(
-								"rounded-md border shadow-lg overflow-auto outline-none",
-								currentSizeTokens.dropdownMaxHeight
-							)}
-							style={dropdownPosition}
-							initial="hidden"
-							animate="visible"
-							exit="hidden"
-							variants={dropdownVariants}
-						>
-							<div className="py-1">
-								{options.map((option, index) => {
-									const isSelected = selectedValues.includes(option.value);
-									return (
-										<motion.div key={option.value} custom={index} variants={optionVariantsBase}
-                                            initial="hidden" animate="visible" exit="hidden" role="option" aria-selected={isSelected} aria-disabled={option.disabled}
-											className={cn(
-												currentSizeTokens.optionPaddingX, currentSizeTokens.optionPaddingY,
-												"text-sm flex items-center justify-between cursor-pointer",
-												option.disabled
-													? "opacity-50 cursor-not-allowed text-[var(--select-option-text)]"
-													: isSelected
-													? "bg-[var(--select-option-selected-bg)] text-[var(--select-option-selected-text)] font-medium"
-													: "text-[var(--select-option-text)] hover:bg-[var(--select-option-hover-bg)]"
-											)}
-											onClick={() => !option.disabled && handleOptionClick(option.value)}
-                                        >
-											<div className="flex items-center flex-1 overflow-hidden gap-2">
-												{option.icon && (
-													<span className="flex-shrink-0 flex items-center">
-														<StandardIcon styleType="outline" size={iconInternalSize} colorScheme="primary" colorShade="text">
-															{React.createElement(option.icon)}
-														</StandardIcon>
-													</span>
-												)}
-												<div className="flex-1 overflow-hidden">
-													<StandardText truncate weight={!isSelected && !option.disabled ? "medium" : "normal"}>
-                                                        {option.label}
-                                                    </StandardText>
-													{option.description && (
-														<StandardText size="xs" truncate className="opacity-70">
-                                                            {option.description}
-                                                        </StandardText>
-													)}
-												</div>
-											</div>
-											{isSelected && !option.disabled && (
-												<StandardIcon 	styleType="outline" size={iconInternalSize} colorScheme={colorScheme}><Check /></StandardIcon>
-											)}
-										</motion.div>
-									);
-								})}
-							</div>
-						</motion.div>
-					)}
-				</AnimatePresence>
+					{portalContainer
+						? createPortal(
+							<AnimatePresence>
+								{isOpen && !readOnly && (
+									<motion.div
+										ref={optionsRef}
+										tabIndex={-1}
+										role="listbox"
+										id={id ? `${id}-options` : undefined}
+										aria-multiselectable={multiple}
+										data-standard-select-dropdown
+										className={cn(
+											"rounded-md border shadow-lg overflow-auto outline-none",
+											currentSizeTokens.dropdownMaxHeight
+										)}
+										style={composedDropdownStyle}
+										initial="hidden"
+										animate="visible"
+										exit="hidden"
+										variants={dropdownVariants}
+									>
+										<div className="py-1">
+											{options.map((option, index) => {
+												const isSelected = selectedValues.includes(option.value);
+												return (
+													<motion.div key={option.value} custom={index} variants={optionVariantsBase}
+														initial="hidden" animate="visible" exit="hidden" role="option" aria-selected={isSelected} aria-disabled={option.disabled}
+														className={cn(
+															currentSizeTokens.optionPaddingX, currentSizeTokens.optionPaddingY,
+															"text-sm flex items-center justify-between cursor-pointer",
+															option.disabled
+																? "opacity-50 cursor-not-allowed text-[var(--select-option-text)]"
+																: isSelected
+																? "bg-[var(--select-option-selected-bg)] text-[var(--select-option-selected-text)] font-medium"
+																: "text-[var(--select-option-text)] hover:bg-[var(--select-option-hover-bg)]"
+														)}
+														onClick={() => !option.disabled && handleOptionClick(option.value)}
+													>
+														<div className="flex items-center flex-1 overflow-hidden gap-2">
+															{option.icon && (
+																<span className="flex-shrink-0 flex items-center">
+																	<StandardIcon styleType="outline" size={iconInternalSize} colorScheme="primary" colorShade="text">
+																		{React.createElement(option.icon)}
+																	</StandardIcon>
+																</span>
+															)}
+															<div className="flex-1 overflow-hidden">
+																<StandardText truncate weight={!isSelected && !option.disabled ? "medium" : "normal"}>
+																	{option.label}
+																</StandardText>
+																{option.description && (
+																	<StandardText size="xs" truncate className="opacity-70">
+																		{option.description}
+																	</StandardText>
+																)}
+															</div>
+														</div>
+														{isSelected && !option.disabled && (
+															<StandardIcon 	styleType="outline" size={iconInternalSize} colorScheme={colorScheme}><Check /></StandardIcon>
+														)}
+													</motion.div>
+												);
+											})}
+										</div>
+									</motion.div>
+								)}
+							</AnimatePresence>,
+							portalContainer
+						)
+						: (
+							<AnimatePresence>
+								{isOpen && !readOnly && (
+									<motion.div
+										ref={optionsRef}
+										tabIndex={-1}
+										role="listbox"
+										id={id ? `${id}-options` : undefined}
+										aria-multiselectable={multiple}
+										data-standard-select-dropdown
+										className={cn(
+											"rounded-md border shadow-lg overflow-auto outline-none",
+											currentSizeTokens.dropdownMaxHeight
+										)}
+										style={composedDropdownStyle}
+										initial="hidden"
+										animate="visible"
+										exit="hidden"
+										variants={dropdownVariants}
+									>
+										<div className="py-1">
+											{options.map((option, index) => {
+												const isSelected = selectedValues.includes(option.value);
+												return (
+													<motion.div key={option.value} custom={index} variants={optionVariantsBase}
+														initial="hidden" animate="visible" exit="hidden" role="option" aria-selected={isSelected} aria-disabled={option.disabled}
+														className={cn(
+															currentSizeTokens.optionPaddingX, currentSizeTokens.optionPaddingY,
+															"text-sm flex items-center justify-between cursor-pointer",
+															option.disabled
+																? "opacity-50 cursor-not-allowed text-[var(--select-option-text)]"
+																: isSelected
+																? "bg-[var(--select-option-selected-bg)] text-[var(--select-option-selected-text)] font-medium"
+																: "text-[var(--select-option-text)] hover:bg-[var(--select-option-hover-bg)]"
+														)}
+														onClick={() => !option.disabled && handleOptionClick(option.value)}
+													>
+														<div className="flex items-center flex-1 overflow-hidden gap-2">
+															{option.icon && (
+																<span className="flex-shrink-0 flex items-center">
+																	<StandardIcon styleType="outline" size={iconInternalSize} colorScheme="primary" colorShade="text">
+																		{React.createElement(option.icon)}
+																	</StandardIcon>
+																</span>
+															)}
+															<div className="flex-1 overflow-hidden">
+																<StandardText truncate weight={!isSelected && !option.disabled ? "medium" : "normal"}>
+																	{option.label}
+																</StandardText>
+																{option.description && (
+																	<StandardText size="xs" truncate className="opacity-70">
+																		{option.description}
+																	</StandardText>
+																)}
+															</div>
+														</div>
+														{isSelected && !option.disabled && (
+															<StandardIcon 	styleType="outline" size={iconInternalSize} colorScheme={colorScheme}><Check /></StandardIcon>
+														)}
+													</motion.div>
+												);
+											})}
+										</div>
+									</motion.div>
+								)}
+							</AnimatePresence>
+						)}
 
-				<input ref={hiddenInputRef} type="hidden" name={name} value={multiple ? selectedValues.join(",") : selectedValues[0] || ""} 
-                    id={id ? `${id}-hidden-input` : undefined} aria-hidden="true" tabIndex={-1} />
+					<input
+						ref={hiddenInputRef}
+						type="hidden"
+						name={name}
+						value={multiple ? selectedValues.join(",") : selectedValues[0] || ""}
+						id={id ? `${id}-hidden-input` : undefined}
+						aria-hidden="true"
+						tabIndex={-1}
+					/>
 			</div>
 		);
 		//#endregion ![render]
@@ -574,7 +693,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 );
 //#endregion ![main]
 
-//#region [foo] - 🔚 EXPORTS 🔚
+//#region [foo] - EXPORTS 
 StandardSelect.displayName = "StandardSelect";
 export { StandardSelect };
 export { StandardSelect as Select };

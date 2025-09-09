@@ -789,9 +789,9 @@ const navItems: NavItem[] = useMemo(() => {
 				<div className="w-full h-1" style={gradientBarStyle} />
 
 				<AnimatePresence>
-					{mobileMenuOpen && (
+					{stageConfig.useMobileMenu && mobileMenuOpen && (
 						<motion.div
-							className="min-[1200px]:hidden border-b"
+							className="border-b"
 							style={{
 								backgroundColor: scrolled
 									? currentNavTokens?.background?.scrolled || (mode === "dark" ? "#1a1a27" : "#f8f9fa")

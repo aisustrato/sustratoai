@@ -7,22 +7,18 @@ import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardTooltip } from "@/components/ui/StandardTooltip";
 import type { Database } from "@/lib/database.types";
 import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
+import { DimensionDisplay } from "@/app/articulos/preclasificacion/[batchId]/components/DimensionDisplay";
+import type { ClassificationReview } from "@/lib/types/preclassification-types";
 
 // Tipos locales (evitamos importar tipos del servidor directamente)
-export type ClassificationReviewView = {
-  reviewer_type: "ai" | "human";
-  reviewer_id: string | null;
-  iteration: number | null;
-  value: string | null;
-  confidence: number | null; // 1,2,3 o null
-  rationale: string | null;
-};
 
 export type DimensionView = {
   id: string;
   name: string;
   type: string;
   options: Array<string | { value: string | number; label: string }>;
+  icon?: string | null;
+  optionEmoticons?: Record<string, string | null>;
 };
 
 export type PhaseSummaryView = {
@@ -30,7 +26,7 @@ export type PhaseSummaryView = {
   batch: { id: string; batch_number: number | null; status: Database["public"]["Enums"]["batch_preclass_status"] | null; assigned_member_name?: string | null };
   item_id: string;
   dimensions: DimensionView[];
-  classifications: Record<string, ClassificationReviewView[]>; // por dimension_id
+  classifications: Record<string, ClassificationReview[]>; // por dimension_id
 };
 
 export default function ArticlePreclassificationSummary({ summaries }: { summaries: PhaseSummaryView[] }) {
@@ -48,13 +44,6 @@ export default function ArticlePreclassificationSummary({ summaries }: { summari
     ] as const;
     if (!n || n <= 0) return schemes[0];
     return schemes[(n - 1) % schemes.length];
-  };
-
-  const confidenceToBadge = (score?: number | null): { scheme: ColorSchemeVariant; label: string } => {
-    if (score === 3) return { scheme: "success", label: "Alta" };
-    if (score === 2) return { scheme: "warning", label: "Media" };
-    if (score === 1) return { scheme: "danger", label: "Baja" };
-    return { scheme: "neutral", label: "—" };
   };
 
   return (
@@ -99,30 +88,15 @@ export default function ArticlePreclassificationSummary({ summaries }: { summari
                   {s.dimensions.map((dim) => {
                     const reviews = s.classifications[dim.id] || [];
                     const latest = reviews[0];
-                    const conf = confidenceToBadge(latest?.confidence ?? null);
-
                     return (
                       <div key={dim.id} className="rounded-md border border-black/5 dark:border-white/10 p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <StandardText size="sm" weight="medium" className="opacity-80">
-                            {dim.name}
-                          </StandardText>
-                          <StandardBadge colorScheme={conf.scheme} styleType="subtle" size="sm">
-                            Confianza: {conf.label}
-                          </StandardBadge>
-                        </div>
-                        <div className="mt-1">
-                          <StandardText size="lg" colorShade="pure" weight="semibold" colorScheme="primary">
-                            {latest?.value ?? "Sin clasificación"}
-                          </StandardText>
-                        </div>
-                        {latest?.rationale && (
-                          <div className="mt-1">
-                            <StandardText size="sm" colorScheme="neutral" colorShade="subtle" className="line-clamp-3">
-                              {latest.rationale}
-                            </StandardText>
-                          </div>
-                        )}
+                        <DimensionDisplay
+                          variant="card"
+                          dimensionName={dim.name}
+                          review={latest}
+                          dimensionIcon={dim.icon}
+                          optionEmoticons={dim.optionEmoticons}
+                        />
                         {latest && (
                           <div className="mt-2">
                             <StandardText size="xs" colorScheme="neutral" colorShade="subtle">
@@ -142,3 +116,4 @@ export default function ArticlePreclassificationSummary({ summaries }: { summari
     </div>
   );
 }
+

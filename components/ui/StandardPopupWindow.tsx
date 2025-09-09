@@ -102,10 +102,16 @@ const StandardPopupWindowContent = React.forwardRef<
           minWidth: 'auto'
         }}
         onPointerDownOutside={(e) => {
-            if (props.onPointerDownOutside === undefined && e.target instanceof Element && e.target.closest('[data-radix-popper-content-wrapper]')) {
-                e.preventDefault();
-            } else if (props.onPointerDownOutside) {
-                props.onPointerDownOutside(e);
+            const el = e.target as Element | null;
+            const isRadixPopper = !!(el && el.closest('[data-radix-popper-content-wrapper]'));
+            const isStandardSelectDropdown = !!(el && el.closest('[data-standard-select-dropdown]'));
+            // No cerrar el diálogo si el click ocurre en poppers o en nuestro dropdown portalizado
+            if (props.onPointerDownOutside === undefined && (isRadixPopper || isStandardSelectDropdown)) {
+              e.preventDefault();
+              return;
+            }
+            if (props.onPointerDownOutside) {
+              props.onPointerDownOutside(e);
             }
         }}
         className={cn(

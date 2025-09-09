@@ -609,7 +609,7 @@ export const semantic: AllSemanticColors = {
   },
 
   warning: {
-    pure: "#FFEE3D", // Amarillo advertencia
+    pure: "#E5D30C", // Amarillo advertencia (sólido, sin alpha)
     pureShade: "#BFB32F",
     text: "#6E671A", // Texto oscuro para fondo claro
     contrastText: "#3d3b27", // Texto oscuro para pure (amarillo es claro)

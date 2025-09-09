@@ -52,6 +52,18 @@ export interface StandardCardTokens {
 			};
 		};
 	};
+	/**
+	 * Overlay para estado hover. Debe respetar colorScheme y styleType
+	 * generando un oscurecimiento sutil acorde al diseño elegido.
+	 */
+	hoverOverlays: {
+		[key_type in StandardCardStyleType]?: {
+			[key_scheme in ProCardVariant]?: {
+				overlayBackground?: string; // rgba()
+				insetPx?: string; // margen interno para no "tapar" el borde visual
+			};
+		};
+	};
 	outline: {
 		[key_scheme in ProCardVariant]?: {
 			borderColor?: string;
@@ -109,6 +121,11 @@ export function generateStandardCardTokens(
 		subtle: {},
 		transparent: {},
 	};
+  const hoverOverlays: StandardCardTokens["hoverOverlays"] = {
+    filled: {},
+    subtle: {},
+    transparent: {},
+  };
 
 	allCardSchemes.forEach((scheme) => {
 		const tokenShade: ColorShade | undefined = appColorTokens[scheme]; // Este tokenShade ya es el específico del modo (light/dark)
@@ -215,6 +232,28 @@ export function generateStandardCardTokens(
 			background: "transparent",
 			color: tokenShade.text,
 		};
+
+    // --- HOVER OVERLAY (per scheme/styleType, modo-aware) ---
+    // Buscamos oscurecer el contenido respetando el esquema y estilo.
+    // En light usamos el color del esquema + mezcla con negro; en dark reforzamos con negro para mantener contraste.
+    const baseForTint = tokenShade.pureShade || tokenShade.pure || tokenShade.bgShade || tokenShade.bg;
+    const overlayLightFilled = tinycolor.mix(baseForTint, "#000", 25).setAlpha(0.10).toRgbString();
+    const overlayLightSubtle = tinycolor.mix(tokenShade.bgShade || baseForTint, "#000", 20).setAlpha(0.08).toRgbString();
+    const overlayLightTransparent = tinycolor("#000").setAlpha(0.06).toRgbString();
+    const overlayDarkFilled = tinycolor.mix(baseForTint, "#000", 45).setAlpha(0.12).toRgbString();
+    const overlayDarkSubtle = tinycolor.mix(tokenShade.bg || baseForTint, "#000", 40).setAlpha(0.10).toRgbString();
+    const overlayDarkTransparent = tinycolor("#000").setAlpha(0.10).toRgbString();
+
+    const commonInset = "2px"; // margen interior sutil y retrocompatible
+    if (mode === "light") {
+      hoverOverlays.filled![scheme] = { overlayBackground: overlayLightFilled, insetPx: commonInset };
+      hoverOverlays.subtle![scheme] = { overlayBackground: overlayLightSubtle, insetPx: commonInset };
+      hoverOverlays.transparent![scheme] = { overlayBackground: overlayLightTransparent, insetPx: commonInset };
+    } else {
+      hoverOverlays.filled![scheme] = { overlayBackground: overlayDarkFilled, insetPx: commonInset };
+      hoverOverlays.subtle![scheme] = { overlayBackground: overlayDarkSubtle, insetPx: commonInset };
+      hoverOverlays.transparent![scheme] = { overlayBackground: overlayDarkTransparent, insetPx: commonInset };
+    }
 	});
 
 	// ... (resto de los tokens: outline, accents, selected, checkbox, etc. se mantienen como en tu versión "manito de gato" ya que no eran el foco de este cambio)
@@ -333,6 +372,7 @@ export function generateStandardCardTokens(
 
 	return {
 		styleTypes,
+    hoverOverlays,
 		outline,
 		accents,
 		shadows: {

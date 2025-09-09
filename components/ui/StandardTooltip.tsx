@@ -121,6 +121,30 @@ const StandardTooltip = ({
 
     //#endregion ![sub_init]
 
+    // Mantener hover del StandardCard mientras el tooltip esté abierto
+    const triggerWrapperRef = React.useRef<HTMLSpanElement | null>(null);
+    const handleOpenChange = React.useCallback((open: boolean) => {
+        const el = triggerWrapperRef.current;
+        if (!el) return;
+        // Buscar el contenedor raíz de StandardCard por su clase de grupo
+        const cardEl = el.closest('.group\\/StandardCard') as HTMLElement | null;
+        if (!cardEl) return;
+        if (open) {
+            cardEl.setAttribute('data-force-hover', 'true');
+        } else {
+            cardEl.removeAttribute('data-force-hover');
+        }
+    }, []);
+
+    React.useEffect(() => {
+        const elAtMount = triggerWrapperRef.current;
+        return () => {
+            if (!elAtMount) return;
+            const cardEl = elAtMount.closest('.group\\/StandardCard') as HTMLElement | null;
+            cardEl?.removeAttribute('data-force-hover');
+        };
+    }, []);
+
     //#region [render] - 🖼️ JSX STRUCTURE 🖼️
     if (!currentStyleTokens) {
         // Devolvemos solo el trigger si los estilos no estan listos
@@ -129,9 +153,11 @@ const StandardTooltip = ({
 
     return (
         <TooltipPrimitive.Provider delayDuration={delayDuration}>
-            <TooltipPrimitive.Root>
+            <TooltipPrimitive.Root onOpenChange={handleOpenChange}>
                 <TooltipPrimitive.Trigger asChild>
-                    {trigger}
+                    <span ref={triggerWrapperRef} style={{ display: 'inline-flex' }}>
+                        {trigger}
+                    </span>
                 </TooltipPrimitive.Trigger>
                 <TooltipPrimitive.Portal>
                     <TooltipPrimitive.Content

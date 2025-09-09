@@ -1,7 +1,7 @@
 // lib/actions/preclassification-actions.ts
 "use server";
 
-import { createSupabaseServerClient } from "@/lib/server";
+import { createSupabaseServerClient, createSupabaseServiceRoleClient, createSupabaseUserClient } from "@/lib/server";
 import { callGeminiAPI } from "@/lib/gemini/api";
 import type { Database } from "@/lib/database.types";
 import type { ResultadoOperacion } from "./types";
@@ -16,6 +16,16 @@ import type {
 } from "@/lib/types/preclassification-types";
 
 export type { ArticleForReview, BatchDetails };
+
+// Tipo auxiliar para filas de revisiones que pueden incluir option_id (campo opcional no tipado en supabase types)
+type ReviewRowWithOptionalFields = Database['public']['Tables']['article_dimension_reviews']['Row'] & {
+  option_id?: string | null;
+};
+
+// Insert auxiliar que permite option_id opcional (no presente en tipos generados)
+type ReviewInsertWithOptionalFields = Database['public']['Tables']['article_dimension_reviews']['Insert'] & {
+  option_id?: string | null;
+};
 
 // ========================================================================
 //	ACCIONES DE LECTURA (GET)
@@ -32,6 +42,227 @@ export async function getProjectBatchesForUser(projectId: string, userId: string
         const msg = error instanceof Error ? error.message : "Error desconocido.";
         return { success: false, error: `Error interno: ${msg}` };
     }
+}
+
+/**
+ * Establece en bulk el flag `prevalidated` para TODAS las últimas revisiones AI
+ * de un lote dado. Solo se actualiza la última revisión (por mayor `iteration`)
+ * de cada par (article_batch_item_id, dimension_id).
+ */
+export async function bulkSetPrevalidatedForBatch(
+  batchId: string,
+  prevalidated: boolean
+): Promise<ResultadoOperacion<{ updated: number }>> {
+  try {
+    if (!batchId) return { success: false, error: "Se requiere 'batchId'." };
+    const supabase = await createSupabaseServerClient();
+    const admin = await createSupabaseServiceRoleClient();
+
+    // 1) Obtener items del lote
+    const { data: items, error: itemsErr } = await supabase
+      .from('article_batch_items')
+      .select('id')
+      .eq('batch_id', batchId);
+    if (itemsErr) return { success: false, error: `Error obteniendo items del lote: ${itemsErr.message}` };
+    const itemIds = (items || []).map(i => i.id);
+    if (itemIds.length === 0) return { success: true, data: { updated: 0 } };
+
+    // 2) Obtener todas las revisiones AI de esos items
+    type ReviewRow = Database['public']['Tables']['article_dimension_reviews']['Row'];
+    const { data: reviews, error: revErr } = await supabase
+      .from('article_dimension_reviews')
+      .select('id, article_batch_item_id, dimension_id, iteration, reviewer_type, prevalidated')
+      .in('article_batch_item_id', itemIds)
+      .eq('reviewer_type', 'ai');
+    if (revErr) return { success: false, error: `Error obteniendo revisiones: ${revErr.message}` };
+
+    // 3) Tomar la última por (item, dim)
+    const latestByPair = new Map<string, ReviewRow>();
+    for (const r of (reviews || []) as ReviewRow[]) {
+      const key = `${r.article_batch_item_id}__${r.dimension_id}`;
+      const current = latestByPair.get(key);
+      if (!current || (r.iteration ?? -Infinity) > (current.iteration ?? -Infinity)) {
+        latestByPair.set(key, r);
+      }
+    }
+
+    // 4) IDs a actualizar (solo si hay cambio)
+    const idsToUpdate: string[] = [];
+    for (const [, row] of latestByPair) {
+      if ((row.prevalidated ?? false) !== prevalidated) {
+        idsToUpdate.push(row.id);
+      }
+    }
+    if (idsToUpdate.length === 0) return { success: true, data: { updated: 0 } };
+
+    // 5) Actualizar en lotes para evitar límites de IN
+    const chunkSize = 500;
+    let totalUpdated = 0;
+    for (let i = 0; i < idsToUpdate.length; i += chunkSize) {
+      const slice = idsToUpdate.slice(i, i + chunkSize);
+      const { data: updRows, error: updErr } = await admin
+        .from('article_dimension_reviews')
+        .update({ prevalidated })
+        .in('id', slice)
+        .select('id');
+      if (updErr) return { success: false, error: `Error actualizando revisiones: ${updErr.message}` };
+      totalUpdated += (updRows?.length || 0);
+    }
+
+    return { success: true, data: { updated: totalUpdated } };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Error desconocido';
+    return { success: false, error: `Error interno en bulkSetPrevalidatedForBatch: ${msg}` };
+  }
+}
+
+/**
+ * Actualiza el flag `prevalidated` en la ÚLTIMA revisión AI
+ * del par (article_batch_item_id, dimension_id).
+ */
+export async function setPrevalidatedForReview(
+    articleBatchItemId: string,
+    dimensionId: string,
+    prevalidated: boolean
+): Promise<ResultadoOperacion<{ updated: number; reviewId?: string }>> {
+    try {
+        if (!articleBatchItemId || !dimensionId) {
+            return { success: false, error: "Se requieren 'articleBatchItemId' y 'dimensionId'." };
+        }
+        const supabase = await createSupabaseServerClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { success: false, error: "Usuario no autenticado." };
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return { success: false, error: 'No se pudo obtener el token de sesión.' };
+        const db = createSupabaseUserClient(session.access_token);
+
+        // Buscar la última revisión AI por iteración
+        const { data: reviewRow, error: findErr } = await supabase
+            .from('article_dimension_reviews')
+            .select('id, iteration, reviewer_type')
+            .eq('article_batch_item_id', articleBatchItemId)
+            .eq('dimension_id', dimensionId)
+            .eq('reviewer_type', 'ai')
+            .order('iteration', { ascending: false, nullsFirst: false })
+            .limit(1)
+            .single();
+
+        if (findErr || !reviewRow) {
+            return { success: false, error: `No se encontró revisión AI para el item ${articleBatchItemId} y dimensión ${dimensionId}.` };
+        }
+
+        const { data: updatedRows, error: updateErr } = await db
+            .from('article_dimension_reviews')
+            .update({ prevalidated })
+            .eq('id', reviewRow.id)
+            .select('id');
+
+        if (updateErr) {
+            return { success: false, error: `Error actualizando prevalidated: ${updateErr.message}` };
+        }
+
+        return { success: true, data: { updated: updatedRows?.length || 0, reviewId: reviewRow.id } };
+    } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Error desconocido.';
+        return { success: false, error: `Error interno estableciendo prevalidated: ${msg}` };
+    }
+}
+
+/**
+ * Registra una nueva revisión HUMANA para una dimensión de un item del lote,
+ * calculando la siguiente iteración y cambiando estados en cascada a 'reconciliation_pending'.
+ */
+export async function submitHumanReview(payload: SubmitHumanReviewPayload): Promise<ResultadoOperacion<{ reviewId: string }>> {
+  try {
+    const { article_batch_item_id, dimension_id, human_value, human_confidence, human_rationale, human_option_id } = payload || {} as SubmitHumanReviewPayload;
+
+    if (!article_batch_item_id || !dimension_id) {
+      return { success: false, error: "Faltan 'article_batch_item_id' o 'dimension_id'" };
+    }
+    if (typeof human_value !== 'string' || human_value.trim() === '') {
+      return { success: false, error: "'human_value' debe ser un string no vacío" };
+    }
+    if (![1,2,3].includes(Number(human_confidence))) {
+      return { success: false, error: "'human_confidence' debe ser 1, 2 o 3" };
+    }
+
+    // Usar cliente autenticado por sesión (RLS) para todas las operaciones en este flujo
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Usuario no autenticado.' };
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return { success: false, error: 'No se pudo obtener el token de sesión.' };
+    const db = createSupabaseUserClient(session.access_token);
+
+    // 1) Obtener datos del item para derivar article_id y batch_id
+    const { data: itemRow, error: itemErr } = await db
+      .from('article_batch_items')
+      .select('id, article_id, batch_id, status')
+      .eq('id', article_batch_item_id)
+      .single();
+    if (itemErr || !itemRow) {
+      return { success: false, error: `No se encontró el item del lote: ${itemErr?.message || 'no encontrado'}` };
+    }
+
+    // 2) Calcular siguiente iteración
+    const { data: existing, error: iterErr } = await db
+      .from('article_dimension_reviews')
+      .select('iteration')
+      .eq('article_batch_item_id', article_batch_item_id)
+      .eq('dimension_id', dimension_id);
+    if (iterErr) {
+      return { success: false, error: `Error consultando iteraciones: ${iterErr.message}` };
+    }
+    const nextIteration = (existing || []).reduce((max, r) => Math.max(max, r.iteration ?? 0), 0) + 1;
+
+    // 3) Insertar revisión humana
+    const insertRow: ReviewInsertWithOptionalFields = {
+      article_batch_item_id,
+      article_id: itemRow.article_id,
+      dimension_id,
+      classification_value: human_value.trim(),
+      option_id: human_option_id ?? null,
+      confidence_score: Number(human_confidence),
+      rationale: human_rationale ?? null,
+      reviewer_type: 'human',
+      reviewer_id: user.id,
+      iteration: nextIteration,
+      prevalidated: false,
+      is_final: false,
+    };
+
+    const { data: inserted, error: insErr } = await db
+      .from('article_dimension_reviews')
+      .insert(insertRow)
+      .select('id')
+      .single();
+    if (insErr || !inserted) {
+      return { success: false, error: `Error guardando revisión humana: ${insErr?.message}` };
+    }
+
+    // 4) Cambiar estados en cascada a 'reconciliation_pending'
+    const { error: updItemErr } = await db
+      .from('article_batch_items')
+      .update({ status: 'reconciliation_pending' })
+      .eq('id', article_batch_item_id);
+    if (updItemErr) {
+      // Registrar pero no abortar, ya hay revisión guardada
+      console.warn('[submitHumanReview] Revisión guardada, pero fallo actualizando estado del item:', updItemErr.message);
+    }
+
+    const { error: updBatchErr } = await db
+      .from('article_batches')
+      .update({ status: 'reconciliation_pending' })
+      .eq('id', itemRow.batch_id);
+    if (updBatchErr) {
+      console.warn('[submitHumanReview] Revisión guardada, pero fallo actualizando estado del lote:', updBatchErr.message);
+    }
+
+    return { success: true, data: { reviewId: inserted.id } };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Error desconocido';
+    return { success: false, error: `Error interno en submitHumanReview: ${msg}` };
+  }
 }
 
 export async function getArticlesForTranslation(batchId: string): Promise<ResultadoOperacion<{id: string, title: string | null, abstract: string | null}[]>> {
@@ -88,7 +319,7 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
         const { data: batchItems, error: itemsError } = await supabase
             .from("article_batch_items")
             .select(`
-                id, status_preclasificacion, ai_keywords, ai_process_opinion,
+                id, status, ai_keywords, ai_process_opinion,
                 articles (id, correlativo, publication_year, journal, title, abstract, article_translations(title, abstract, summary))
             `)
             .eq("batch_id", batchId);
@@ -191,11 +422,11 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
         if(reviewsError) throw new Error(`Error obteniendo revisiones: ${reviewsError.message}`);
         
         const rows: ArticleForReview[] = batchItems.map(item => {
-            const safeReviews = allReviews || [];
-            const articleStatus = item.status_preclasificacion || 'pending_review';
-            const validStatuses = ['pending_review', 'agreed', 'reconciled', 'disputed', 'reconciliation_pending'] as const;
+            const safeReviews = (allReviews || []) as ReviewRowWithOptionalFields[];
+            const articleStatus = (item as { status?: Database["public"]["Enums"]["batch_preclass_status"] | null }).status || 'pending';
+            const validStatuses = ['pending', 'translated', 'review_pending', 'reconciliation_pending', 'validated', 'reconciled', 'disputed'] as const;
             type ItemStatus = typeof validStatuses[number];
-            const safeStatus: ItemStatus = (validStatuses as readonly string[]).includes(articleStatus) ? articleStatus as ItemStatus : 'pending_review';
+            const safeStatus: ItemStatus = (validStatuses as readonly string[]).includes(articleStatus as string) ? articleStatus as ItemStatus : 'pending';
 
             return {
                 item_id: item.id,
@@ -224,7 +455,10 @@ export async function getBatchDetailsForReview(batchId: string): Promise<Resulta
                             iteration: r.iteration,
                             value: r.classification_value,
                             confidence: r.confidence_score,
-                            rationale: r.rationale
+                            rationale: r.rationale,
+                            option_id: r.option_id ?? undefined,
+                            prevalidated: r.prevalidated,
+                            is_final: r.is_final,
                         }));
                     }
                     return acc;
@@ -285,7 +519,7 @@ export async function saveBatchTranslations(
         return { success: false, error: "Se requiere ID de lote y al menos un artículo." };
     }
     try {
-        const supabase = await createSupabaseServerClient();
+        const admin = await createSupabaseServiceRoleClient();
         const translationsToUpsert = articles.map(article => ({
             article_id: article.articleId,
             title: article.title,
@@ -294,20 +528,30 @@ export async function saveBatchTranslations(
             language: 'es' // Asumimos español por ahora
         }));
 
-        const { count, error: upsertError } = await supabase
+        const { count, error: upsertError } = await admin
             .from('article_translations')
             .upsert(translationsToUpsert, { onConflict: 'article_id, language' });
 
         if (upsertError) throw upsertError;
 
         // Actualizar estado del lote a 'traducido'
-        const { error: batchUpdateError } = await supabase
+        const { error: batchUpdateError } = await admin
             .from('article_batches')
             .update({ status: 'translated' })
             .eq('id', batchId);
 
         if (batchUpdateError) {
             console.warn(`Traducciones guardadas, pero no se pudo actualizar el estado del lote ${batchId}: ${batchUpdateError.message}`);
+        }
+
+        // Sincronizar estado de todos los ítems del lote a 'translated'
+        const { error: itemsUpdateError } = await admin
+            .from('article_batch_items')
+            .update({ status: 'translated' })
+            .eq('batch_id', batchId);
+
+        if (itemsUpdateError) {
+            console.warn(`Traducciones guardadas, pero no se pudo actualizar el estado de los ítems del lote ${batchId}: ${itemsUpdateError.message}`);
         }
 
         return { success: true, data: { upsertedCount: count || 0 } };
@@ -332,10 +576,17 @@ export async function startInitialPreclassification(batchId: string): Promise<Re
     if (batchError || !batch) return { success: false, error: "Lote no encontrado." };
     if (batch.status !== 'translated') return { success: false, error: "El lote debe estar en estado 'traducido' para iniciar la preclasificación." };
     
+    // Crear cliente autenticado con RLS usando el token del usuario
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+        return { success: false, error: "No se pudo obtener el token de sesión para crear el job." };
+    }
+    const db = createSupabaseUserClient(session.access_token);
+
     // 🎯 LÓGICA ROBUSTA: Crear job primero, luego validar con UUID como llave maestra
     
     // 🚀 PASO 1: CREAR JOB Y OBTENER UUID REAL DE SUPABASE
-    const { data: job, error: jobError } = await supabase.from('ai_job_history').insert({
+    const { data: job, error: jobError } = await db.from('ai_job_history').insert({
         project_id: batch.projects!.id,
         user_id: user.id,
         job_type: 'PRECLASSIFICATION',
@@ -361,7 +612,7 @@ export async function startInitialPreclassification(batchId: string): Promise<Re
     // 🔍 PASO 2: VALIDAR SI HAY OTRO JOB RUNNING PARA ESTE LOTE (CON UUID DISTINTO)
     const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000).toISOString();
     
-    const { data: otherJobs, error: duplicateCheckError } = await supabase
+    const { data: otherJobs, error: duplicateCheckError } = await db
         .from('ai_job_history')
         .select('id, status, description')
         .eq('job_type', 'PRECLASSIFICATION')
@@ -374,7 +625,7 @@ export async function startInitialPreclassification(batchId: string): Promise<Re
     if (duplicateCheckError) {
         console.error('🚨 Error verificando duplicados:', duplicateCheckError);
         // 🚨 MARCAR JOB COMO FALLIDO Y ABORTAR
-        await supabase.from('ai_job_history')
+        await db.from('ai_job_history')
             .update({ status: 'failed', error_message: 'Error verificando duplicados', progress: 100 })
             .eq('id', jobUUID);
         return { success: false, error: "Error verificando trabajos duplicados." };
@@ -386,11 +637,11 @@ export async function startInitialPreclassification(batchId: string): Promise<Re
             jobUUID,
             lote: batchId,
             batchNumber: batch.batch_number,
-            otrosJobs: otherJobs.map(j => ({ id: j.id, status: j.status }))
+            otrosJobs: otherJobs.map((j: { id: string; status: string }) => ({ id: j.id, status: j.status }))
         });
         
         // 🚨 MARCAR JOB COMO FALLIDO POR DUPLICACIÓN
-        await supabase.from('ai_job_history')
+        await db.from('ai_job_history')
             .update({ 
                 status: 'failed', 
                 error_message: `Trabajo duplicado detectado para Lote #${batch.batch_number}`,
@@ -409,7 +660,7 @@ export async function startInitialPreclassification(batchId: string): Promise<Re
     console.log(`✅ [startInitialPreclassification] Sin duplicados, iniciando proceso para UUID: ${jobUUID}`);
     
     // 🚀 Iniciar el trabajo en background
-    runPreclassificationJob(jobUUID, batchId, user.id); 
+    runPreclassificationJob(jobUUID, batchId, user.id, session.access_token); 
     
     return { success: true, data: { jobId: jobUUID } };
 }
@@ -522,24 +773,25 @@ ${articleDetails}
  * Helper que ejecuta el trabajo de preclasificación con mecanismo de repechaje.
  * Implementa el principio "Todo o Nada" con integridad transaccional.
  */
-async function runPreclassificationJob(jobId: string, batchId: string, userId: string) {
-    const supabase = await createSupabaseServerClient();
+async function runPreclassificationJob(jobId: string, batchId: string, userId: string, accessToken: string) {
+    // Operar con cliente autenticado (RLS)
+    const db = createSupabaseUserClient(accessToken);
 
     try {
-        const { data: batchData } = await supabase.from('article_batches').select('phase_id, projects(id, name, proposal, proposal_bibliography)').eq('id', batchId).single();
+        const { data: batchData } = await db.from('article_batches').select('phase_id, projects(id, name, proposal, proposal_bibliography)').eq('id', batchId).single();
         if (!batchData?.phase_id || !batchData.projects) throw new Error("Datos del lote o proyecto no encontrados.");
 
-        const { data: items, error: itemsError } = await supabase.from('article_batch_items').select('id, articles(id, title, abstract, publication_year, journal)').eq('batch_id', batchId);
+        const { data: items, error: itemsError } = await db.from('article_batch_items').select('id, articles(id, title, abstract, publication_year, journal)').eq('batch_id', batchId);
         if (itemsError || !items) throw new Error("No se encontraron artículos para procesar.");
         
-        const { data: dimensions, error: dimsError } = await supabase.from('preclass_dimensions').select('id, name, description, type, preclass_dimension_options(value)').eq('phase_id', batchData.phase_id).eq('status', 'active');
+        const { data: dimensions, error: dimsError } = await db.from('preclass_dimensions').select('id, name, description, type, preclass_dimension_options(id, value)').eq('phase_id', batchData.phase_id).eq('status', 'active');
         if (dimsError || !dimensions) throw new Error("No se encontraron dimensiones para la fase.");
 
-        await supabase.from('ai_job_history').update({ details: { total: items.length, processed: 0, step: 'Datos preparados' } }).eq('id', jobId);
+        await db.from('ai_job_history').update({ details: { total: items.length, processed: 0, step: 'Datos preparados' } }).eq('id', jobId);
 
         // 🎯 ARRAYS PARA REPECHAJE Y INTEGRIDAD TRANSACCIONAL
         const articulosParaRepechaje: ArticleForPrompt[] = [];
-        const clasificacionesExitosasTemporales: Database['public']['Tables']['article_dimension_reviews']['Insert'][] = [];
+        const clasificacionesExitosasTemporales: ReviewInsertWithOptionalFields[] = [];
         
         // 🛡️ FUNCIÓN ROBUSTA PARA MAPEAR CONFIDENCE_SCORE
         const mapConfidenceToScore = (confidenceText: string): number => {
@@ -562,7 +814,7 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
         // 🎯 FUNCIÓN INTERNA PARA PROCESAR CHUNKS CON MANEJO GRANULAR
         const processArticleChunk = async (chunk: ArticleForPrompt[], attemptNumber: number) => {
             const chunkFailedArticles: ArticleForPrompt[] = [];
-            const chunkSuccessfulReviews: Database['public']['Tables']['article_dimension_reviews']['Insert'][] = [];
+            const chunkSuccessfulReviews: ReviewInsertWithOptionalFields[] = [];
             
             let prompt = '';
             let rawResponse = '';
@@ -609,7 +861,7 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
                     if (!currentArticle) continue;
                     
                     try {
-                        const articleReviews: Database['public']['Tables']['article_dimension_reviews']['Insert'][] = [];
+                        const articleReviews: ReviewInsertWithOptionalFields[] = [];
                         const articleId = currentArticle.articles?.id;
                         if (!articleId) {
                             throw new Error(`No se encontró article_id para el ítem de lote ${item.itemId}`);
@@ -623,20 +875,30 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
 
                             const classification = item.classifications[dimensionName];
                             const valueToSave = classification.value;
+                            let optionId: string | null = null;
 
                             if (foundDimension.type === 'finite') {
                                 const validOptions = foundDimension.preclass_dimension_options.map(opt => opt.value);
                                 const normalizedValue = normalizeString(valueToSave);
                                 const normalizedOptions = validOptions.map(opt => normalizeString(opt));
-                                
+
                                 const exactMatchIndex = normalizedOptions.findIndex(opt => opt === normalizedValue);
                                 const isExactMatch = exactMatchIndex !== -1;
-                                
+
                                 const otherOption = validOptions.find(opt => normalizeString(opt).toLowerCase().startsWith('otros'));
                                 const isSmartOther = otherOption && typeof valueToSave === 'string' && normalizedValue.toLowerCase().startsWith('otros');
 
                                 if (!isExactMatch && !isSmartOther) {
                                     throw new Error(`Valor "${valueToSave}" inválido para la dimensión finita "${foundDimension.name}". Opciones válidas: ${validOptions.join(', ')}`);
+                                }
+
+                                // Mapear option_id para dimensiones finitas
+                                const optionsWithIds = (foundDimension.preclass_dimension_options as { id?: string; value: string }[]);
+                                if (isExactMatch) {
+                                    optionId = optionsWithIds[exactMatchIndex]?.id ?? null;
+                                } else if (isSmartOther) {
+                                    const otherObj = optionsWithIds.find(o => normalizeString(o.value).toLowerCase().startsWith('otros'));
+                                    optionId = otherObj?.id ?? null;
                                 }
                             }
 
@@ -650,6 +912,9 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
                                 classification_value: valueToSave,
                                 confidence_score: mapConfidenceToScore(classification.confidence),
                                 rationale: classification.rationale,
+                                option_id: optionId,
+                                prevalidated: false,
+                                is_final: false,
                             });
                         }
 
@@ -679,7 +944,7 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
                     }
                 }
 
-                await supabase.rpc('increment_job_tokens', {
+                await db.rpc('increment_job_tokens', {
                     job_id: jobId,
                     input_increment: usage?.promptTokenCount || 0,
                     output_increment: usage?.candidatesTokenCount || 0
@@ -725,149 +990,98 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
         // 🎯 BUCLE PRINCIPAL (PRIMER INTENTO)
         const miniBatchSize = 5;
         let processedCount = 0;
-        
-        console.log(`\n🚀 [${jobId}] INICIANDO PRIMER INTENTO - Procesando ${items.length} artículos en chunks de ${miniBatchSize}`);
-        
+
         for (let i = 0; i < items.length; i += miniBatchSize) {
-            const chunk = items.slice(i, i + miniBatchSize) as ArticleForPrompt[];
-            
-            await supabase.from('ai_job_history').update({
+            const chunk = (items.slice(i, i + miniBatchSize) as ArticleForPrompt[]);
+
+            await db.from('ai_job_history').update({
                 progress: (processedCount / items.length) * 50,
-                details: { 
-                    total: items.length, 
-                    processed: processedCount, 
-                    step: `Primer intento: artículos ${i+1}-${i+chunk.length}`,
-                    phase: 'first_attempt'
+                details: {
+                    total: items.length,
+                    processed: processedCount,
+                    step: `Clasificando artículos (${processedCount}/${items.length})`
                 }
             }).eq('id', jobId);
 
             const result = await processArticleChunk(chunk, 1);
-            
-            articulosParaRepechaje.push(...result.failedArticles);
-            clasificacionesExitosasTemporales.push(...result.successfulReviews);
-            
-            processedCount += chunk.length;
-            
-            console.log(`\n📊 [${jobId}] PROGRESO PRIMER INTENTO - Chunk ${i/miniBatchSize + 1}: ${result.successfulReviews.length} éxitos, ${result.failedArticles.length} fallos`);
-        }
 
-        console.log(`\n📊 [${jobId}] RESUMEN PRIMER INTENTO:`);
-        console.log(`- Artículos exitosos: ${items.length - articulosParaRepechaje.length}`);
-        console.log(`- Artículos para repechaje: ${articulosParaRepechaje.length}`);
-        console.log(`- Clasificaciones temporales acumuladas: ${clasificacionesExitosasTemporales.length}`);
+            processedCount += chunk.length;
+
+            if (!result.success) {
+                articulosParaRepechaje.push(...result.failedArticles);
+            }
+            if (result.successfulReviews.length > 0) {
+                clasificacionesExitosasTemporales.push(...result.successfulReviews);
+            }
+        }
 
         // 🎯 BUCLE DE REPECHAJE (SEGUNDA OPORTUNIDAD)
         if (articulosParaRepechaje.length > 0) {
             console.log(`\n🔄 [${jobId}] INICIANDO REPECHAJE - ${articulosParaRepechaje.length} artículos necesitan segunda oportunidad`);
-            
-            const articulosFallidosDefinitivos: ArticleForPrompt[] = [];
-            
+
             for (let i = 0; i < articulosParaRepechaje.length; i += miniBatchSize) {
                 const repechageChunk = articulosParaRepechaje.slice(i, i + miniBatchSize);
-                
-                await supabase.from('ai_job_history').update({
+
+                await db.from('ai_job_history').update({
                     progress: 50 + ((i / articulosParaRepechaje.length) * 40),
-                    details: { 
-                        total: items.length, 
-                        processed: items.length - articulosParaRepechaje.length + i, 
-                        step: `Repechaje: artículos ${i+1}-${i+repechageChunk.length} de ${articulosParaRepechaje.length}`,
-                        phase: 'repechaje'
+                    details: {
+                        total: items.length,
+                        processed: processedCount,
+                        step: `Repechaje (${Math.min(i + miniBatchSize, articulosParaRepechaje.length)}/${articulosParaRepechaje.length})`
                     }
                 }).eq('id', jobId);
 
-                const repechageResult = await processArticleChunk(repechageChunk, 2);
-                
-                clasificacionesExitosasTemporales.push(...repechageResult.successfulReviews);
-                articulosFallidosDefinitivos.push(...repechageResult.failedArticles);
-                
-                console.log(`\n📊 [${jobId}] PROGRESO REPECHAJE - Chunk ${i/miniBatchSize + 1}: ${repechageResult.successfulReviews.length} éxitos, ${repechageResult.failedArticles.length} fallos definitivos`);
-            }
-
-            console.log(`\n📊 [${jobId}] RESUMEN REPECHAJE:`);
-            console.log(`- Artículos recuperados en repechaje: ${articulosParaRepechaje.length - articulosFallidosDefinitivos.length}`);
-            console.log(`- Artículos con fallo definitivo: ${articulosFallidosDefinitivos.length}`);
-
-            // 🚨 SI HAY FALLOS DEFINITIVOS, ABORTAR TODO
-            if (articulosFallidosDefinitivos.length > 0) {
-                const failedIds = articulosFallidosDefinitivos.map(art => art.id).join(', ');
-                const errorMsg = `Fallos persistentes en ${articulosFallidosDefinitivos.length} artículos tras repechaje. IDs: ${failedIds}`;
-                
-                // 🚨 LOGGING CRÍTICO: Fallos persistentes tras repechaje
-                console.error(`\n🚨🚨🚨 [${jobId}] FALLO PERSISTENTE TRAS REPECHAJE - ABORTANDO PROCESO COMPLETO`);
-                console.error('=' .repeat(120));
-                console.error('RESUMEN DEL FALLO CRÍTICO:');
-                console.error(`- Total de artículos procesados: ${items.length}`);
-                console.error(`- Artículos exitosos: ${items.length - articulosFallidosDefinitivos.length}`);
-                console.error(`- Artículos con fallo persistente: ${articulosFallidosDefinitivos.length}`);
-                console.error(`- Clasificaciones exitosas (NO SE GUARDARÁN): ${clasificacionesExitosasTemporales.length}`);
-                console.error('=' .repeat(120));
-                console.error('ARTÍCULOS CON FALLO PERSISTENTE:');
-                articulosFallidosDefinitivos.forEach((art, index) => {
-                    console.error(`${index + 1}. ID: ${art.id} - Título: ${art.articles?.title?.substring(0, 100) || 'Sin título'}...`);
-                });
-                console.error('=' .repeat(120));
-                console.error('🚨 PRINCIPIO "TODO O NADA" ACTIVADO - NO SE INSERTARÁN DATOS PARCIALES');
-                console.error('🚨 TODOS LOS DATOS EXITOSOS SE DESCARTAN PARA MANTENER INTEGRIDAD');
-                console.error('=' .repeat(120));
-                
-                await supabase.from('ai_job_history').update({ 
-                    status: 'failed', 
-                    progress: 100, 
-                    error_message: errorMsg,
-                    details: { 
-                        error: errorMsg,
-                        failedArticles: articulosFallidosDefinitivos.length,
-                        successfulClassifications: clasificacionesExitosasTemporales.length,
-                        step: 'Fallo persistente tras repechaje',
-                        failedArticleIds: failedIds,
-                        totalProcessed: items.length
-                    } 
-                }).eq('id', jobId);
-                
-                throw new Error(errorMsg);
+                const repeResult = await processArticleChunk(repechageChunk as ArticleForPrompt[], 2);
+                if (repeResult.successfulReviews.length > 0) {
+                    clasificacionesExitosasTemporales.push(...repeResult.successfulReviews);
+                }
+                if (!repeResult.success) {
+                    // Los que fallan aquí quedan como fallidos definitivos; no se insertan
+                }
             }
         }
 
-        // 🎯 INSERCIÓN MASIVA FINAL - PRINCIPIO "TODO O NADA"
-        console.log(`\n💾 [${jobId}] PREPARANDO INSERCIÓN MASIVA FINAL:`);
-        console.log(`Total de clasificaciones a insertar: ${clasificacionesExitosasTemporales.length}`);
-        
+        // 🚀 Persistir clasificaciones si existen; sino, marcar como fallo
         if (clasificacionesExitosasTemporales.length > 0) {
             console.log(`\n🚀 [${jobId}] EJECUTANDO INSERCIÓN MASIVA EN article_dimension_reviews...`);
-            const { error: insertError } = await supabase.from('article_dimension_reviews').insert(clasificacionesExitosasTemporales);
-            
+            const { error: insertError } = await db
+                .from('article_dimension_reviews')
+                .insert(clasificacionesExitosasTemporales);
             if (insertError) {
                 console.error(`❌ [${jobId}] ERROR EN INSERCIÓN MASIVA:`, insertError);
-                throw new Error(`Error de base de datos al insertar clasificaciones: ${insertError.message}`);
+                await db.from('ai_job_history').update({ status: 'failed', progress: 100, error_message: insertError.message }).eq('id', jobId);
+                throw insertError;
             }
-            
-            console.log(`✅ [${jobId}] INSERCIÓN MASIVA EXITOSA: ${clasificacionesExitosasTemporales.length} clasificaciones guardadas`);
         } else {
-            console.error(`❌ [${jobId}] FALLO SILENCIOSO EVITADO: Sin clasificaciones válidas para insertar`);
+            console.warn(`⚠️ [${jobId}] No se generaron filas para insertar en article_dimension_reviews (posible problema con la IA).`);
+            await db.from('ai_job_history').update({ status: 'failed', progress: 100, error_message: 'Sin clasificaciones válidas para guardar' }).eq('id', jobId);
             throw new Error('No se generaron clasificaciones válidas para guardar.');
         }
 
-        await supabase.from('ai_job_history').update({ 
-            status: 'completed', 
-            progress: 100, 
-            details: { 
-                total: items.length, 
-                processed: items.length, 
-                step: 'Completado con repechaje',
-                successfulClassifications: clasificacionesExitosasTemporales.length,
-                articlesWithRepechaje: articulosParaRepechaje.length
-            } 
+        // ✅ Completar job y actualizar estados
+        await db.from('ai_job_history').update({
+            status: 'completed',
+            progress: 100,
+            details: { total: items.length, processed: processedCount, step: 'Completado' },
+            completed_at: new Date().toISOString(),
         }).eq('id', jobId);
-        await supabase.from('article_batches').update({ status: 'review_pending' }).eq('id', batchId);
+
+        const { error: itemsToReviewError } = await db
+            .from('article_batch_items')
+            .update({ status: 'review_pending' })
+            .eq('batch_id', batchId);
+        if (itemsToReviewError) {
+            console.warn(`[${jobId}] Preclasificación completada, pero no se pudo actualizar estado de ítems a 'review_pending': ${itemsToReviewError.message}`);
+        }
+        await db.from('article_batches').update({ status: 'review_pending' }).eq('id', batchId);
 
     } catch (error) {
         const msg = error instanceof Error ? error.message : 'Error desconocido';
-        await supabase.from('ai_job_history').update({ status: 'failed', progress: 100, details: { error: msg } }).eq('id', jobId);
+        await db.from('ai_job_history').update({ status: 'failed', progress: 100, details: { error: msg } }).eq('id', jobId);
     }
 }
 
 export async function submitHumanDiscrepancy(payload: SubmitHumanReviewPayload, userId: string): Promise<ResultadoOperacion<{ reviewId: string }>> {
-    const supabase = await createSupabaseServerClient();
     try {
         const articleIdResult = await getArticleIdFromBatchItemId(payload.article_batch_item_id);
         if (!articleIdResult.success) {
@@ -875,7 +1089,9 @@ export async function submitHumanDiscrepancy(payload: SubmitHumanReviewPayload, 
         }
         const articleId = articleIdResult.data.articleId;
 
-        const { data, error } = await supabase
+        // Usar cliente admin para inserción con posible option_id
+        const admin = await createSupabaseServiceRoleClient();
+        const { data, error } = await admin
             .from('article_dimension_reviews')
             .insert({
                 article_id: articleId,
@@ -887,7 +1103,8 @@ export async function submitHumanDiscrepancy(payload: SubmitHumanReviewPayload, 
                 classification_value: payload.human_value,
                 confidence_score: payload.human_confidence,
                 rationale: payload.human_rationale,
-            })
+                option_id: payload.human_option_id ?? null,
+            } as ReviewInsertWithOptionalFields)
             .select('id')
             .single();
 
@@ -901,8 +1118,8 @@ export async function submitHumanDiscrepancy(payload: SubmitHumanReviewPayload, 
 }
 
 export async function reclassifyDiscrepancies(batchId: string): Promise<ResultadoOperacion<{ reclassifiedCount: number }>> {
-    const supabase = await createSupabaseServerClient();
-    await supabase.from('article_batches').update({ status: 'reconciliation_pending' }).eq('id', batchId);
+    const admin = await createSupabaseServiceRoleClient();
+    await admin.from('article_batches').update({ status: 'reconciliation_pending' }).eq('id', batchId);
     return { success: true, data: { reclassifiedCount: 0 } };
 }
 
@@ -910,19 +1127,20 @@ export async function finalizeBatch(batchId: string): Promise<ResultadoOperacion
     if (!batchId) return { success: false, error: "Se requiere ID de lote." };
     try {
         const supabase = await createSupabaseServerClient();
+        const admin = await createSupabaseServiceRoleClient();
         
         const { data: items, error: itemsError } = await supabase
             .from('article_batch_items')
-            .select('status_preclasificacion')
+            .select('status')
             .eq('batch_id', batchId);
         if (itemsError) throw itemsError;
 
-        const pendingItems = items.filter(item => ['pending_review', 'reconciliation_pending'].includes(item.status_preclasificacion || ''));
+        const pendingItems = items.filter(item => ['review_pending', 'reconciliation_pending'].includes((item as { status?: string | null }).status || ''));
         if (pendingItems.length > 0) {
             return { success: false, error: `Aún hay ${pendingItems.length} artículos pendientes de revisión en este lote.` };
         }
 
-        const itemStatuses = new Set(items.map(i => i.status_preclasificacion));
+        const itemStatuses = new Set(items.map(i => (i as { status?: string | null }).status));
         let finalBatchStatus: Database["public"]["Enums"]["batch_preclass_status"];
 
         if (itemStatuses.has('disputed')) {
@@ -933,7 +1151,7 @@ export async function finalizeBatch(batchId: string): Promise<ResultadoOperacion
             finalBatchStatus = 'validated';
         }
 
-        const { error: updateError } = await supabase
+        const { error: updateError } = await admin
             .from('article_batches')
             .update({ status: finalBatchStatus })
             .eq('id', batchId);
@@ -954,7 +1172,7 @@ type PhaseSummary = {
     phase: { id: string; name: string | null; phase_number: number | null };
     batch: { id: string; batch_number: number | null; status: Database["public"]["Enums"]["batch_preclass_status"] | null };
     item_id: string;
-    dimensions: { id: string; name: string; type: string; options: Array<string | { value: string | number; label: string }>; }[];
+    dimensions: { id: string; name: string; type: string; options: Array<string | { value: string | number; label: string }>; icon?: string | null; optionEmoticons?: Record<string, string | null>; }[];
     classifications: Record<string, ClassificationReview[]>;
 };
 
@@ -966,7 +1184,7 @@ export async function getPreclassificationByArticleId(articleId: string): Promis
         // 1) Ítems de lote donde participa el artículo + datos del lote
         const { data: items, error: itemsError } = await supabase
             .from('article_batch_items')
-            .select('id, batch_id, status_preclasificacion, article_id, article_batches(id, batch_number, status, phase_id)')
+            .select('id, batch_id, status, article_id, article_batches(id, batch_number, status, phase_id)')
             .eq('article_id', articleId);
         if (itemsError) throw itemsError;
         if (!items || items.length === 0) return { success: true, data: [] };
@@ -975,7 +1193,7 @@ export async function getPreclassificationByArticleId(articleId: string): Promis
         type ItemsRow = {
             id: string;
             batch_id: string;
-            status_preclasificacion: Database["public"]["Enums"]["item_preclass_status"] | null;
+            status: Database["public"]["Enums"]["batch_preclass_status"] | null;
             article_id: string;
             article_batches: {
                 id: string;
@@ -1011,17 +1229,18 @@ export async function getPreclassificationByArticleId(articleId: string): Promis
         // 4) Dimensiones activas por fase
         const { data: dimsData, error: dimsError } = await supabase
             .from('preclass_dimensions')
-            .select('id, name, type, phase_id, preclass_dimension_options(value)')
+            .select('id, name, type, phase_id, icon, preclass_dimension_options(value, emoticon)')
             .in('phase_id', phaseIds)
             .eq('status', 'active')
             .order('ordering');
         if (dimsError) throw dimsError;
-        type DimOptionRow = { value: string };
+        type DimOptionRow = { value: string; emoticon: string | null };
         type DimRow = {
             id: string;
             name: string;
             type: Database["public"]["Enums"]["dimension_type"];
             phase_id: string | null;
+            icon: string | null;
             preclass_dimension_options?: DimOptionRow[] | null;
         };
         const dimsByPhase = new Map<string, DimRow[]>(phaseIds.map(id => [id, [] as DimRow[]]));
@@ -1047,28 +1266,46 @@ export async function getPreclassificationByArticleId(articleId: string): Promis
             const batch = item.article_batches;
             const phase = batch?.phase_id ? phasesById.get(batch.phase_id) : null;
 
-            const dims = (batch?.phase_id ? (dimsByPhase.get(batch.phase_id) || []) : []).map((d: DimRow) => ({
-                id: d.id,
-                name: d.name,
-                type: d.type,
-                options: (d.preclass_dimension_options || [])
-                    .map((o: DimOptionRow) => o?.value)
-                    .filter((v): v is string => typeof v === 'string' && v.length > 0)
-            }));
+            const dims = (batch?.phase_id ? (dimsByPhase.get(batch.phase_id) || []) : []).map((d: DimRow) => {
+                const opts = (d.preclass_dimension_options || []) as DimOptionRow[];
+                const optionEmoticons = opts.reduce((acc, o) => {
+                    if (typeof o.value !== 'undefined' && o.value !== null) {
+                        acc[String(o.value)] = o.emoticon ?? null;
+                    }
+                    return acc;
+                }, {} as Record<string, string | null>);
+
+                return {
+                    id: d.id,
+                    name: d.name,
+                    type: d.type,
+                    options: opts
+                        .map((o: DimOptionRow) => o?.value)
+                        .filter((v): v is string => typeof v === 'string' && v.length > 0),
+                    icon: d.icon ?? null,
+                    optionEmoticons,
+                };
+            });
 
             // Tomar TODAS las revisiones por dimensión, conservando orden (iteración desc)
             const reviewsForItem = allReviewsTyped.filter(r => r.article_batch_item_id === item.id);
             const classifications = dims.reduce((acc: Record<string, ClassificationReview[]>, d) => {
                 const list = reviewsForItem
                     .filter(r => r.dimension_id === d.id)
-                    .map(r => ({
-                        reviewer_type: r.reviewer_type as 'ai' | 'human',
-                        reviewer_id: r.reviewer_id,
-                        iteration: r.iteration,
-                        value: r.classification_value,
-                        confidence: r.confidence_score,
-                        rationale: r.rationale,
-                    }));
+                    .map(r => {
+                        const rr = r as ReviewRowWithOptionalFields;
+                        return {
+                            reviewer_type: r.reviewer_type as 'ai' | 'human',
+                            reviewer_id: r.reviewer_id,
+                            iteration: r.iteration,
+                            value: r.classification_value,
+                            confidence: r.confidence_score,
+                            rationale: r.rationale,
+                            option_id: rr.option_id ?? undefined,
+                            prevalidated: r.prevalidated,
+                            is_final: r.is_final,
+                        };
+                    });
                 if (list.length > 0) acc[d.id] = list;
                 return acc;
             }, {});

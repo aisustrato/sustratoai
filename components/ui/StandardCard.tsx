@@ -118,6 +118,12 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 
 			vars["--sc-bg"] = styleTypeTokens?.background || "transparent";
 			vars["--sc-text-color"] = styleTypeTokens?.color || cardTokens.defaultTextColor || "currentColor";
+			// Hover overlay tokens por styleType y scheme
+			const hoverOverlay = cardTokens.hoverOverlays?.[styleType]?.[currentCardScheme]?.overlayBackground;
+			const hoverInset = cardTokens.hoverOverlays?.[styleType]?.[currentCardScheme]?.insetPx;
+			vars["--sc-hover-overlay-bg"] = hoverOverlay || "transparent";
+			// Si no hay outline, evitar dejar "hueco" interno para mantener retrocompatibilidad visual
+			vars["--sc-hover-overlay-inset"] = hasOutline ? (hoverInset || "0px") : "0px";
 			
 			const effectiveOutlineScheme = outlineColorScheme || currentCardScheme;
 			if (hasOutline) {
@@ -176,24 +182,42 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 		}, [cardTokens, colorScheme, styleType, hasOutline, outlineColorScheme, accentPlacement, accentColorScheme, selected, inactive]);
 
 		const shadowClass = cardTokens?.shadows[shadow] || "shadow-md";
-		const hoverEffectActive = !disableShadowHover && !inactive && !loading;
-		const hoverShadowClasses: Record<StandardCardShadow, string> = { none: "", sm: "hover:shadow-md", md: "hover:shadow-lg", lg: "hover:shadow-xl", xl: "hover:shadow-2xl" };
-		const dynamicHoverShadowClass = hoverEffectActive && shadow !== "none" ? hoverShadowClasses[shadow] : "";
+    const hoverEffectActive = !disableShadowHover && !inactive && !loading;
+    // Reducimos la elevación en hover (más sutil)
+    const hoverShadowClasses: Record<StandardCardShadow, string> = {
+      none: "",
+      sm: "hover:shadow-sm",
+      md: "hover:shadow-md",
+      lg: "hover:shadow-lg",
+      xl: "hover:shadow-xl",
+    };
+    const dynamicHoverShadowClass = hoverEffectActive && shadow !== "none" ? hoverShadowClasses[shadow] : "";
+    // Sombra forzada cuando un hijo (ej. Tooltip) mantiene el hover del card activo
+    const forcedHoverShadowClasses: Record<StandardCardShadow, string> = {
+      none: "",
+      sm: "data-[force-hover=true]:shadow-sm",
+      md: "data-[force-hover=true]:shadow-md",
+      lg: "data-[force-hover=true]:shadow-lg",
+      xl: "data-[force-hover=true]:shadow-xl",
+    };
+    const dynamicForcedShadowClass = shadow !== "none" ? forcedHoverShadowClasses[shadow] : "";
 		
 		const isEffectivelyDisabled = inactive || loading;
 		const showLoadingIndicator = loading && !inactive;
 		
-		const cardBaseTransition: Transition = { type: "spring", damping: 20, stiffness: 300 };
+		    // Transición más fluida
+    const cardBaseTransition: Transition = { type: "spring", damping: 22, stiffness: 260 };
 		const cardCombinedTransition: Transition = customTransition ? { ...cardBaseTransition, ...customTransition } : cardBaseTransition;
 		
-		const motionRootProps: HTMLMotionProps<"div"> & { "data-testid"?: string } = {
-			ref,
+		    const motionRootProps: HTMLMotionProps<"div"> & { "data-testid"?: string } = {
+      ref,
       // 📌 CAMBIO 3: La lógica del overflow raíz.
-			className: cn(
-        "relative rounded-lg flex flex-col", // La arquitectura flex raíz
+      className: cn(
+        "relative rounded-lg flex flex-col group/StandardCard", // La arquitectura flex raíz
         "transition-shadow duration-200 ease-out", 
         shadowClass, 
         dynamicHoverShadowClass, 
+        dynamicForcedShadowClass,
         !contentCanScroll && "overflow-hidden", // Se desactiva solo si es necesario
         { "cursor-not-allowed": isEffectivelyDisabled && !onCardClick, "cursor-pointer": onCardClick && !isEffectivelyDisabled }, 
         className
@@ -203,14 +227,15 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 			animate: animateEntrance && !showLoadingIndicator ? "visible" : false,
 			variants: animateEntrance && !showLoadingIndicator ? cardEntranceVariants : undefined,
 			transition: cardCombinedTransition,
-			whileHover: hoverEffectActive ? { scale: 1.025, transition: { type: "spring", stiffness: 350, damping: 15 } } : {},
-			whileTap: (onCardClick && !isEffectivelyDisabled) ? { scale: 0.985, transition: { type: "spring", stiffness: 400, damping: 15 } } : {},
-			onClick: !isEffectivelyDisabled && onCardClick ? (e) => { const target = e.target as HTMLElement; if (target.closest('[role="checkbox"], button, a')) { return; } onCardClick(e); } : undefined,
-			tabIndex: onCardClick && !isEffectivelyDisabled ? 0 : undefined,
-			role: onCardClick ? "button" : undefined,
-			...(isEffectivelyDisabled && !onCardClick && { onClickCapture: (e: React.MouseEvent) => e.stopPropagation() }),
-			...htmlProps,
-		};
+			      // Hover más sutil
+      whileHover: hoverEffectActive ? { scale: 1.012, transition: { type: "spring", stiffness: 280, damping: 18 } } : {},
+      whileTap: (onCardClick && !isEffectivelyDisabled) ? { scale: 0.985, transition: { type: "spring", stiffness: 400, damping: 15 } } : {},
+      onClick: !isEffectivelyDisabled && onCardClick ? (e) => { const target = e.target as HTMLElement; if (target.closest('[role="checkbox"], button, a')) { return; } onCardClick(e); } : undefined,
+      tabIndex: onCardClick && !isEffectivelyDisabled ? 0 : undefined,
+      role: onCardClick ? "button" : undefined,
+      ...(isEffectivelyDisabled && !onCardClick && { onClickCapture: (e: React.MouseEvent) => e.stopPropagation() }),
+      ...htmlProps,
+    };
 		if (dataTestId) motionRootProps["data-testid"] = dataTestId;
 
 		const renderAccent = () => {
@@ -273,6 +298,13 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
           <AnimatePresence>{selected && !inactive && renderSelectedIndicator()}</AnimatePresence>
           <AnimatePresence>{inactive && !showLoadingIndicator && renderInactiveOverlay()}</AnimatePresence>
           <AnimatePresence>{showLoadingIndicator && renderLoadingState()}</AnimatePresence>
+          {/* Overlay de hover (por esquema/estilo). Aparece en hover y oscurece sutilmente el contenido respetando tokens */}
+          {hoverEffectActive && (
+            <div
+              className="pointer-events-none absolute z-[3] rounded-lg opacity-0 transition-opacity duration-200 group-hover/StandardCard:opacity-100 group-data-[force-hover=true]/StandardCard:opacity-100"
+              style={{ background: 'var(--sc-hover-overlay-bg)', inset: 'calc(var(--sc-outline-border-width, 0px) + var(--sc-hover-overlay-inset, 0px))' }}
+            />
+          )}
         </StandardCardContext.Provider>
 			</MotionDiv>
 		);

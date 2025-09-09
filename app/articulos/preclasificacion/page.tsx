@@ -22,6 +22,7 @@ import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
 import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardSwitch } from "@/components/ui/StandardSwitch";
 import {
 	StandardPieChart,
 	type PieChartData,
@@ -72,6 +73,26 @@ const ARTICLE_STATUS_VISUALS = {
 	},
 };
 
+// Orden explícito por estatus para el grid (asegura orden estable y "nativo")
+const STATUS_ORDER = [
+    'pending',
+    'translated',
+    'pending_review',
+    'reconciliation_pending',
+    'agreed',
+    'reconciled',
+    'disputed',
+] as const;
+
+const getOrderedGroupKey = (status?: string | null) => {
+    const s = (status || '').toLowerCase();
+    const idx = STATUS_ORDER.indexOf(s as typeof STATUS_ORDER[number]);
+    // Invertir el índice para que el orden de grupos sea descendente con sort asc
+    const reversedIdx = idx >= 0 ? (STATUS_ORDER.length - 1 - idx) : 99;
+    const order = String(reversedIdx).padStart(2, '0');
+    return `${order}-${s || 'unknown'}`;
+};
+
 const getVisualsForStatus = (
 	status: string | undefined | null
 ): { emoticon: string; colorScheme: ColorSchemeVariant } => {
@@ -87,6 +108,7 @@ const getVisualsForStatus = (
 				emoticon: ARTICLE_STATUS_VISUALS.pendientesRevisionTraducido.emoticon, 
 				colorScheme: ARTICLE_STATUS_VISUALS.pendientesRevisionTraducido.colorScheme as ColorSchemeVariant 
 			};
+
 		case "REVIEW_PENDING":
 			return { 
 				emoticon: ARTICLE_STATUS_VISUALS.pendientesRevision.emoticon, 
@@ -131,73 +153,54 @@ const PreclassificationPage = () => {
 	const { startJob } = useJobManager();
 	const { showDialog } = useDialog();
 	const { appColorTokens } = useTheme();
+    const [groupByStatus, setGroupByStatus] = useState<boolean>(true);
 	const [selectedSphereId, setSelectedSphereId] = useState<string | null>(null);
 
-	// Tipo para agrupar lotes por estado
-	type ResumenPorEstadoDeLote = Record<string, {
-		cantidadLotes: number;
-		totalArticulos: number;
-		label: string;
-		emoticon: string;
-		colorScheme: ColorSchemeVariant;
-	}>;
+	// (Eliminado) Tipo y función de etiquetas por estado de lote ya no son necesarios en la UI actual
 
-	// Función auxiliar para obtener etiquetas legibles de estados de lote
-	const getEstadoLoteLabel = (estado: string): string => {
-		switch (estado.toUpperCase()) {
-			case 'PENDING': return 'Pend. Revisión';
-			case 'TRANSLATED': return 'Pend. Revisión (Traducido)';
-			case 'REVIEW_PENDING': return 'Pend. Revisión';
-			case 'RECONCILIATION_PENDING': return 'Pend. Reconciliación';
-			case 'VALIDATED': return 'Validados';
-			case 'RECONCILED': return 'Reconciliados';
-			case 'DISPUTED': return 'En Disputa';
-			case 'AGREED': return 'Acordados';
-			default: return estado;
+	// Normaliza conteos por estado de artículos para evitar problemas de typing
+	const normalizeCounts = (counts: BatchWithCounts['article_counts']): Record<string, number> => ({
+		pending: counts?.pending ?? 0,
+		translated: counts?.translated ?? 0,
+		pending_review: counts?.pending_review ?? 0,
+		reconciliation_pending: counts?.reconciliation_pending ?? 0,
+		agreed: counts?.agreed ?? 0,
+		reconciled: counts?.reconciled ?? 0,
+		disputed: counts?.disputed ?? 0,
+	});
+
+
+
+
+	// NUEVO: Resumen agregado por estados de artículos (usa claves de la RPC)
+	const resumenPorEstadoDeArticulo = useMemo(() => {
+		const agg: Record<string, { label: string; emoticon: string; value: number }> = {
+			pending: { label: 'Pendientes (Inicial)', emoticon: '🕒', value: 0 },
+			translated: { label: ARTICLE_STATUS_VISUALS.pendientesRevisionTraducido.label, emoticon: ARTICLE_STATUS_VISUALS.pendientesRevisionTraducido.emoticon, value: 0 },
+			pending_review: { label: ARTICLE_STATUS_VISUALS.pendientesRevision.label, emoticon: ARTICLE_STATUS_VISUALS.pendientesRevision.emoticon, value: 0 },
+			reconciliation_pending: { label: ARTICLE_STATUS_VISUALS.pendientesReconciliacion.label, emoticon: ARTICLE_STATUS_VISUALS.pendientesReconciliacion.emoticon, value: 0 },
+			agreed: { label: ARTICLE_STATUS_VISUALS.acordados.label, emoticon: ARTICLE_STATUS_VISUALS.acordados.emoticon, value: 0 },
+			reconciled: { label: ARTICLE_STATUS_VISUALS.reconciliados.label, emoticon: ARTICLE_STATUS_VISUALS.reconciliados.emoticon, value: 0 },
+			disputed: { label: ARTICLE_STATUS_VISUALS.enDisputa.label, emoticon: ARTICLE_STATUS_VISUALS.enDisputa.emoticon, value: 0 },
+		};
+
+		for (const lote of batches) {
+			const c = lote.article_counts || {} as Record<string, number>;
+			agg.pending.value += c.pending || 0;
+			agg.translated.value += c.translated || 0;
+			agg.pending_review.value += c.pending_review || 0;
+			agg.reconciliation_pending.value += c.reconciliation_pending || 0;
+			agg.agreed.value += c.agreed || 0;
+			agg.reconciled.value += c.reconciled || 0;
+			agg.disputed.value += c.disputed || 0;
 		}
-	};
 
-	// Agrupación de lotes por su estado (no por estados de artículos individuales)
-	const resumenPorEstadoDeLote: ResumenPorEstadoDeLote = useMemo(() => {
-		const grupos: ResumenPorEstadoDeLote = {};
-		
-		batches.forEach((lote) => {
-			const estado = lote.status || 'UNKNOWN';
-			const visuals = getVisualsForStatus(estado);
-			
-			// Calcular total de artículos en este lote
-			const counts = lote.article_counts;
-			const totalArticulosEnLote = 
-				(counts?.pending_review || 0) +
-				(counts?.reconciliation_pending || 0) +
-				(counts?.agreed || 0) +
-				(counts?.reconciled || 0) +
-				(counts?.disputed || 0);
-			
-			// Inicializar grupo si no existe
-			if (!grupos[estado]) {
-				grupos[estado] = {
-					cantidadLotes: 0,
-					totalArticulos: 0,
-					label: getEstadoLoteLabel(estado),
-					emoticon: visuals.emoticon,
-					colorScheme: visuals.colorScheme,
-				};
-			}
-			
-			// Sumar lote y sus artículos al grupo
-			grupos[estado].cantidadLotes += 1;
-			grupos[estado].totalArticulos += totalArticulosEnLote;
-		});
-		
-		return grupos;
+		return agg;
 	}, [batches]);
-	
-
 
 	const totalValue = useMemo(() => {
-		return Object.values(resumenPorEstadoDeLote).reduce((sum, grupo) => sum + grupo.totalArticulos, 0);
-	}, [resumenPorEstadoDeLote]);
+		return Object.values(resumenPorEstadoDeArticulo).reduce((sum, item) => sum + (item.value || 0), 0);
+	}, [resumenPorEstadoDeArticulo]);
 
 	const sphereGridTitle = useMemo(() => {
 		const userName = auth.user?.user_metadata?.full_name || "Investigador";
@@ -208,21 +211,19 @@ const PreclassificationPage = () => {
 	}, [auth.user, batches, isLoading]);
 
 	const pieChartData: PieChartData[] = useMemo(() => {
-		// Convertir resumenPorEstadoDeLote a formato PieChartData
-		const data = Object.entries(resumenPorEstadoDeLote)
-			.filter(([, grupo]) => grupo.totalArticulos > 0)
-			.map(([estado, grupo]) => ({
-				id: estado,
-				value: grupo.totalArticulos,
-				label: grupo.label,
-				emoticon: grupo.emoticon,
+		// Construir el pie por ESTADOS DE ARTÍCULO agregados
+		const data = Object.entries(resumenPorEstadoDeArticulo)
+			.filter(([, item]) => (item.value || 0) > 0)
+			.map(([key, item]) => ({
+				id: key,
+				value: item.value,
+				label: item.label,
+				emoticon: item.emoticon,
 			}));
 
-		// Ordenar por cantidad de artículos (mayor a menor) para mejor visualización
 		data.sort((a, b) => b.value - a.value);
-
 		return data;
-	}, [resumenPorEstadoDeLote]);
+	}, [resumenPorEstadoDeArticulo]);
 	const { width: windowWidth } = useWindowSize();
 	const { sidebarWidth, layoutGap, globalXPadding } = useLayout();
 
@@ -353,19 +354,21 @@ const PreclassificationPage = () => {
 	const sphereData: SphereItemData[] = useMemo(() => {
 		return batches.map((batch) => {
 			const visuals = getVisualsForStatus(batch.status);
-			const counts = batch.article_counts;
+			const counts = normalizeCounts(batch.article_counts);
 			
 			// Calcular total incluyendo TODOS los estados disponibles
 			const totalArticles =
-				(counts?.pending_review || 0) +
-				(counts?.reconciliation_pending || 0) +
-				(counts?.agreed || 0) +
-				(counts?.reconciled || 0) +
-				(counts?.disputed || 0);
+				counts.pending +
+				counts.translated +
+				counts.pending_review +
+				counts.reconciliation_pending +
+				counts.agreed +
+				counts.reconciled +
+				counts.disputed;
 
 			return {
 				id: batch.id,
-				keyGroup: batch.status,
+				keyGroup: getOrderedGroupKey(batch.status as string),
 				emoticon: visuals.emoticon,
 				value: batch.batch_number,
 				colorScheme: visuals.colorScheme,
@@ -375,19 +378,14 @@ const PreclassificationPage = () => {
 				tooltip: [
 					`*Lote:* ${batch.batch_number} - *Total:* ${totalArticles}`,
 					"---",
-					`${ARTICLE_STATUS_VISUALS.pendientesRevision.emoticon} *Pend. Revisión:* ${counts?.pending_review || 0}`,
-					`${ARTICLE_STATUS_VISUALS.pendientesReconciliacion.emoticon} *Pend. Reconciliación:* ${counts?.reconciliation_pending || 0}`,
-					`${ARTICLE_STATUS_VISUALS.acordados.emoticon} *Acordados:* ${counts?.agreed || 0}`,
-					`${ARTICLE_STATUS_VISUALS.reconciliados.emoticon} *Reconciliados:* ${counts?.reconciled || 0}`,
-					`${ARTICLE_STATUS_VISUALS.enDisputa.emoticon} *En Disputa:* ${counts?.disputed || 0}`,
+					`🕒 *Pendientes:* ${counts.pending}`,
+					`${ARTICLE_STATUS_VISUALS.pendientesRevisionTraducido.emoticon} *Pend. Revisión (Traducido):* ${counts.translated}`,
+					`${ARTICLE_STATUS_VISUALS.pendientesRevision.emoticon} *Pend. Revisión:* ${counts.pending_review}`,
+					`${ARTICLE_STATUS_VISUALS.pendientesReconciliacion.emoticon} *Pend. Reconciliación:* ${counts.reconciliation_pending}`,
+					`${ARTICLE_STATUS_VISUALS.acordados.emoticon} *Acordados:* ${counts.agreed}`,
+					`${ARTICLE_STATUS_VISUALS.reconciliados.emoticon} *Reconciliados:* ${counts.reconciled}`,
+					`${ARTICLE_STATUS_VISUALS.enDisputa.emoticon} *En Disputa:* ${counts.disputed}`,
 				].join("\n"),
-				statusBadge: counts?.pending_review
-					? {
-							text: counts.pending_review.toString(),
-							colorScheme: "warning",
-							tooltip: `${counts.pending_review} artículos pendientes de revisión`,
-					  }
-					: undefined,
 			};
 		});
 	}, [batches, handleSphereClick, selectedSphereId]);
@@ -463,22 +461,35 @@ const PreclassificationPage = () => {
 					</StandardCard>
 				) : (
 					/* Mostrar SphereGrid solo cuando hay lotes o está cargando */
-					<div className="w-full" style={{ height: `${gridHeight}px` }}>
-						{containerWidth && (
-							<StandardSphereGrid
-								items={sphereData}
-								containerWidth={containerWidth}
-								containerHeight={containerHeight}
-								groupByKeyGroup
-								forceBadge={true}
-								title={sphereGridTitle}
-								isLoading={isLoading}
-								loadingMessage="Cargando lotes..."
-								emptyStateText={
-									error ? `Error: ${error}` : "No hay lotes disponibles."
-								}
+					<div className="w-full">
+						{/* Toggle de agrupación por estatus */}
+						<div className="flex items-center justify-end mb-2">
+							<StandardText size="sm" className="mr-2">Agrupar por estatus</StandardText>
+							<StandardSwitch
+								checked={groupByStatus}
+								onCheckedChange={(v) => setGroupByStatus(Boolean(v))}
+								colorScheme="primary"
 							/>
-						)}
+						</div>
+						<div style={{ height: `${gridHeight}px` }}>
+							{containerWidth && (
+								<StandardSphereGrid
+									items={sphereData}
+									containerWidth={containerWidth}
+									containerHeight={containerHeight}
+									sortBy="value"
+									sortDirection="asc"
+									groupByKeyGroup={groupByStatus}
+									forceBadge={false}
+									title={sphereGridTitle}
+									isLoading={isLoading}
+									loadingMessage="Cargando lotes..."
+									emptyStateText={
+										error ? `Error: ${error}` : "No hay lotes disponibles."
+									}
+								/>
+							)}
+						</div>
 					</div>
 				)}
 
@@ -498,18 +509,17 @@ const PreclassificationPage = () => {
 						<StandardCard title="Leyenda">
 							<StandardCard.Content>
 								<div className="flex flex-col space-y-3">
-								{Object.entries(resumenPorEstadoDeLote).map(
-									([estado, grupo]) => {
-										const count = grupo.totalArticulos;
+								{Object.entries(resumenPorEstadoDeArticulo).map(
+									([key, item]) => {
+										const count = item.value;
 										const percentage =
 											totalValue > 0
 												? ((count / totalValue) * 100).toFixed(1)
 												: "0.0";
 										const color =
-											colorMap[estado] || appColorTokens.neutral.text;
-
-											return (
-											<div key={estado} className="flex items-center space-x-3">
+											colorMap[key] || appColorTokens.neutral.text;
+										return (
+											<div key={key} className="flex items-center space-x-3">
 												<div
 													className="w-4 h-4 rounded-full"
 													style={{ backgroundColor: color }}
@@ -518,7 +528,7 @@ const PreclassificationPage = () => {
 													size="sm"
 													className="flex items-baseline">
 													<span>
-														{grupo.emoticon} {grupo.label} ({count})
+														{item.emoticon} {item.label} ({count})
 													</span>
 														{parseFloat(percentage) > 0 && (
 															<span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
