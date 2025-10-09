@@ -5,13 +5,10 @@ import { StandardDropdownMenu } from '@/components/ui/StandardDropdownMenu';
 import { StandardButton } from '@/components/ui/StandardButton';
 import { StandardDialog } from '@/components/ui/StandardDialog';
 import { StandardPopupWindow } from '@/components/ui/StandardPopupWindow';
-import { StandardInput } from '@/components/ui/StandardInput';
-import { StandardTextarea } from '@/components/ui/StandardTextarea';
-import { StandardCheckbox } from '@/components/ui/StandardCheckbox';
 import { StandardText } from '@/components/ui/StandardText';
 import { StandardIcon } from '@/components/ui/StandardIcon';
 import { StandardTable } from '@/components/ui/StandardTable';
-import { StandardFormField } from '@/components/ui/StandardFormField';
+import CreateGroupPopup from '@/app/articulos/grupos/CreateGroupPopup';
 import { toast } from 'sonner';
 import { 
   getGroups, 
@@ -52,20 +49,12 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showAddConfirm, setShowAddConfirm] = useState(false);
   const [showGroupDetails, setShowGroupDetails] = useState(false);
-  const [showPublicWarning, setShowPublicWarning] = useState(false);
-  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   
   const [selectedGroupForAdd, setSelectedGroupForAdd] = useState<GroupWithArticleCount | null>(null);
   const [selectedGroupForDetails, setSelectedGroupForDetails] = useState<GroupWithArticleCount | null>(null);
   const [groupDetails, setGroupDetails] = useState<GroupDetails | null>(null);
   
-  const [newGroupName, setNewGroupName] = useState('');
-  const [newGroupDescription, setNewGroupDescription] = useState('');
-  const [newGroupIsPublic, setNewGroupIsPublic] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  
   const [isAdding, setIsAdding] = useState(false);
-  const [isCreating] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   
   const { user } = useAuth();
@@ -175,76 +164,7 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
     }
   };
 
-  const handleCreateGroup = async () => {
-    // Funcionalidad de creación de grupos temporalmente deshabilitada
-    // para enfocar en la optimización de carga
-    toast.info('Funcionalidad de creación de grupos en desarrollo');
-  };
-
-  
-
-  const confirmPublicGroupFromWarning = () => {
-    setShowPublicWarning(false);
-    setNewGroupIsPublic(true);
-    setHasUnsavedChanges(true);
-  };
-
-  const cancelPublicGroupFromWarning = () => {
-    setShowPublicWarning(false);
-    setNewGroupIsPublic(false);
-  };
-
-  const handleGroupNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewGroupName(e.target.value);
-    setHasUnsavedChanges(true);
-  };
-
-  const handleGroupDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNewGroupDescription(e.target.value);
-    setHasUnsavedChanges(true);
-  };
-
-  const handleGroupVisibilityChange = (checked: boolean) => {
-    if (checked) {
-      setShowPublicWarning(true);
-    } else {
-      setNewGroupIsPublic(false);
-      setHasUnsavedChanges(true);
-    }
-  };
-
-  const handleCloseCreateGroup = () => {
-    if (hasUnsavedChanges) {
-      setShowCloseConfirm(true);
-    } else {
-      resetFormAndClose();
-    }
-  };
-
-  const handleCreateGroupOpenChange = (open: boolean) => {
-    if (open) {
-      setShowCreateGroup(true);
-    } else {
-      handleCloseCreateGroup();
-    }
-  };
-
-  const confirmClose = () => {
-    setShowCloseConfirm(false);
-    resetFormAndClose();
-  };
-
-  const cancelClose = () => {
-    setShowCloseConfirm(false);
-  };
-
-  const resetFormAndClose = () => {
-    setNewGroupName('');
-    setNewGroupDescription('');
-    setNewGroupIsPublic(false);
-    setHasUnsavedChanges(false);
-    setShowCreateGroup(false);
-  };
+  // Crear grupo: se maneja con CreateGroupPopup
 
   const groupArticlesColumns: ColumnDef<GroupArticleData>[] = [
     {
@@ -468,139 +388,18 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
          </StandardPopupWindow.Content>
        </StandardPopupWindow>
 
-      <StandardPopupWindow open={showCreateGroup} onOpenChange={handleCreateGroupOpenChange}>
-        <StandardPopupWindow.Content size="md">
-          <StandardPopupWindow.Header>
-            <StandardPopupWindow.Title>Crear Nuevo Grupo</StandardPopupWindow.Title>
-            <StandardPopupWindow.Description>
-              Crea un nuevo grupo y agrega este artículo automáticamente
-            </StandardPopupWindow.Description>
-          </StandardPopupWindow.Header>
-          
-          <StandardPopupWindow.Body className="space-y-4">
-            <StandardFormField label="Nombre del grupo" htmlFor="group-name" isRequired>
-              <StandardInput
-                id="group-name"
-                placeholder="Ej: Artículos sobre metodología cualitativa"
-                value={newGroupName}
-                onChange={handleGroupNameChange}
-              />
-            </StandardFormField>
-            
-            <StandardFormField label="Descripción (opcional)" htmlFor="group-description">
-              <StandardTextarea
-                id="group-description"
-                placeholder="Describe el propósito o criterios de este grupo..."
-                value={newGroupDescription}
-                onChange={handleGroupDescriptionChange}
-                rows={3}
-              />
-            </StandardFormField>
-            
-            <div>
-              <StandardCheckbox
-                label="Hacer este grupo público"
-                description="Los grupos públicos son visibles para todo el equipo del proyecto"
-                checked={newGroupIsPublic}
-                onChange={(e) => handleGroupVisibilityChange(e.target.checked)}
-              />
-            </div>
-          </StandardPopupWindow.Body>
-          
-          <StandardPopupWindow.Footer>
-            <div className="flex justify-between items-center w-full">
-              <StandardText size="sm" colorShade="subtle">
-                El artículo actual se agregará automáticamente
-              </StandardText>
-              <div className="flex gap-2">
-                <StandardButton 
-                  styleType="outline" 
-                  onClick={handleCloseCreateGroup}
-                  disabled={isCreating}
-                >
-                  Cancelar
-                </StandardButton>
-                <StandardButton 
-                  styleType="solid" 
-                  colorScheme="primary" 
-                  onClick={handleCreateGroup}
-                  disabled={!newGroupName.trim() || isCreating}
-                >
-                  {isCreating ? 'Creando...' : 'Crear Grupo'}
-                </StandardButton>
-              </div>
-            </div>
-          </StandardPopupWindow.Footer>
-        </StandardPopupWindow.Content>
-      </StandardPopupWindow>
-
-      <StandardDialog open={showPublicWarning} onOpenChange={setShowPublicWarning}>
-        <StandardDialog.Content size="sm" colorScheme="warning">
-          <StandardDialog.Header>
-            <StandardDialog.Title> Confirmar Grupo Público</StandardDialog.Title>
-            <StandardDialog.Description>
-              Estás a punto de marcar este grupo como público y visible para todo el equipo.
-            </StandardDialog.Description>
-          </StandardDialog.Header>
-          <StandardDialog.Body>
-            <div className="space-y-3">
-              <StandardText size="sm" className="text-gray-600 dark:text-gray-400">
-                Un grupo público significa que:
-              </StandardText>
-              <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 dark:text-gray-400 ml-4">
-                <li>Todos los miembros del equipo podrán verlo</li>
-                <li>Aparecerá en las vistas compartidas del proyecto</li>
-                <li>Otros miembros podrán agregar artículos al grupo</li>
-                <li>Podrás cambiarlo a privado más tarde si lo deseas</li>
-              </ul>
-            </div>
-          </StandardDialog.Body>
-          <StandardDialog.Footer>
-            <StandardButton 
-              styleType="outline" 
-              colorScheme="neutral" 
-              onClick={cancelPublicGroupFromWarning}
-              disabled={isCreating}
-            >
-              Cancelar
-            </StandardButton>
-            <StandardButton 
-              styleType="solid" 
-              colorScheme="warning" 
-              onClick={confirmPublicGroupFromWarning}
-              disabled={isCreating}
-            >
-              {isCreating ? 'Creando...' : 'Sí, marcar como público'}
-            </StandardButton>
-          </StandardDialog.Footer>
-        </StandardDialog.Content>
-      </StandardDialog>
-
-      <StandardDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
-        <StandardDialog.Content size="sm">
-          <StandardDialog.Header>
-            <StandardDialog.Title>Cambios sin Guardar</StandardDialog.Title>
-            <StandardDialog.Description>
-              Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar?
-            </StandardDialog.Description>
-          </StandardDialog.Header>
-          <StandardDialog.Footer>
-            <StandardButton 
-              styleType="outline" 
-              onClick={cancelClose}
-            >
-              Cancelar
-            </StandardButton>
-            <StandardButton 
-              styleType="solid" 
-              colorScheme="primary" 
-              onClick={confirmClose}
-            >
-              Cerrar sin Guardar
-            </StandardButton>
-          </StandardDialog.Footer>
-        </StandardDialog.Content>
-      </StandardDialog>
+      {/* Popup de creación de grupo reutilizable */}
+      <CreateGroupPopup
+        open={showCreateGroup}
+        onClose={() => setShowCreateGroup(false)}
+        articleId={articleId}
+        onCreated={() => {
+          // Notificar presencia y cerrar menús
+          onGroupsChanged?.(true);
+          setMenuOpen(false);
+          setIsDropdownOpen(false);
+        }}
+      />
     </>
   );
 };

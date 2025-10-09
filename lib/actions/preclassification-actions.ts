@@ -829,7 +829,7 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
                 console.log(prompt);
                 console.log('=' .repeat(100));
                 
-                const { result, usage } = await callGeminiAPI('gemini-1.5-flash', prompt);
+                const { result, usage } = await callGeminiAPI('gemini-2.5-pro', prompt);
                 rawResponse = result;
                 
                 // 📝 LOGGING DETALLADO: Respuesta recibida

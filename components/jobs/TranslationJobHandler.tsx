@@ -63,22 +63,36 @@ export function TranslationJobHandler({ job }: { job: Job }) {
   const MAX_RETRIES_PER_ARTICLE = 2;
 
   const runJob = useCallback(async () => {
+    console.log('[TranslationJobHandler] Iniciando job de traducción', {
+      jobId: job.id,
+      batchId: job.payload.batchId,
+      projectId: job.payload.projectId,
+    });
+
     // ✅ 2. INICIA EL LOG Y GUARDA EL ID DEL HISTORIAL
     const jobLogResult = await startJobLog({
       projectId: job.payload.projectId,
       userId: job.payload.userId,
       jobType: 'TRANSLATION',
       description: job.title,
-      aiModel: 'gemini-2.5-flash', // Hardcodeado por ahora
+      aiModel: 'gemini-2.5-pro', // Hardcodeado por ahora
     });
 
     if (!jobLogResult.success) {
       const errorMessage = `No se pudo iniciar el log: ${jobLogResult.error}`;
       setStatusMessage(errorMessage);
       failJob(job.id, errorMessage);
+      console.error('[TranslationJobHandler] Error al iniciar log del historial', {
+        jobId: job.id,
+        jobLogResult,
+      });
       return;
     }
     const historyJobId = jobLogResult.data.jobId;
+    console.log('[TranslationJobHandler] Log del historial iniciado correctamente', {
+      jobId: job.id,
+      historyJobId,
+    });
 
     // Variables para acumular tokens
     let totalInputTokens = 0;
@@ -91,6 +105,11 @@ export function TranslationJobHandler({ job }: { job: Job }) {
 
       const articlesToTranslate = articlesResult.data;
       const totalArticles = articlesToTranslate.length;
+      console.log('[TranslationJobHandler] Artículos obtenidos para traducción', {
+        jobId: job.id,
+        historyJobId,
+        totalArticles,
+      });
       const translatedArticlesPayload = [];
 
       for (let i = 0; i < totalArticles; i++) {
@@ -166,8 +185,30 @@ export function TranslationJobHandler({ job }: { job: Job }) {
       }
 
       setStatusMessage('Guardando traducciones...');
+      console.log('[TranslationJobHandler] Guardando traducciones en base de datos', {
+        jobId: job.id,
+        historyJobId,
+        batchId: job.payload.batchId,
+        totalArticles: translatedArticlesPayload.length,
+        totalInputTokens,
+        totalOutputTokens,
+        previewPayload: translatedArticlesPayload.slice(0, 3),
+      });
       const saveResult = await saveBatchTranslations(job.payload.batchId, translatedArticlesPayload);
-      if (!saveResult.success) throw new Error(saveResult.error || "Error desconocido al guardar.");
+      if (!saveResult.success) {
+        console.error('[TranslationJobHandler] Fallo al guardar traducciones', {
+          jobId: job.id,
+          historyJobId,
+          batchId: job.payload.batchId,
+          saveResult,
+        });
+        throw new Error(saveResult.error || "Error desconocido al guardar.");
+      }
+      console.log('[TranslationJobHandler] Traducciones guardadas correctamente', {
+        jobId: job.id,
+        historyJobId,
+        batchId: job.payload.batchId,
+      });
 
       // ✅ 4. SI TODO FUE BIEN, ACTUALIZA EL LOG COMO COMPLETADO
       await updateJobAsCompleted({
@@ -188,6 +229,12 @@ export function TranslationJobHandler({ job }: { job: Job }) {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       console.error(`Fallo el trabajo de traducción: ${errorMessage}`);
+      console.error('[TranslationJobHandler] Error completo del trabajo de traducción', {
+        jobId: job.id,
+        batchId: job.payload.batchId,
+        historyJobId,
+        error,
+      });
       // ✅ 5. SI ALGO FALLA, ACTUALIZA EL LOG COMO FALLIDO
       await updateJobAsFailed({
         jobId: historyJobId,

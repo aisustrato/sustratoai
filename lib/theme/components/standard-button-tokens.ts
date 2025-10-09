@@ -72,9 +72,15 @@ export function generateStandardButtonTokens(
 			recipe.background = 'transparent'; recipe.color = palette.pure;
 			recipe.border = `1px solid ${palette.pure}`; break;
 		case 'ghost':
-			recipe.background = 'transparent'; recipe.color = palette.pure; break;
+			recipe.background = 'transparent'; recipe.color = palette.pure;
+			// Asegurar contraste en warning: texto amarillo puro no contrasta sobre fondos claros/transparente
+			if (colorScheme === 'warning') { recipe.color = palette.textShade; recipe.iconColorShade = 'textShade'; }
+			break;
 		case 'subtle':
-			recipe.background = palette.bg; recipe.color = palette.pure;
+			recipe.background = palette.bg; 
+			// En warning, privilegiar texto más oscuro (textShade) sobre bg claro para accesibilidad
+			recipe.color = colorScheme === 'warning' ? palette.textShade : palette.pure;
+			if (colorScheme === 'warning') { recipe.iconColorShade = 'textShade'; }
 			recipe.border = `1px solid ${palette.bg}`; break;
 		case 'link':
 			recipe.background = 'transparent'; recipe.color = palette.pure;

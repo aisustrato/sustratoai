@@ -9,13 +9,18 @@ import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
-import { FileText, ChevronsLeft, Filter, MapPin } from "lucide-react";
+import { FileText, ChevronsLeft, Filter, MapPin, Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LayoutProvider } from "@/app/contexts/layout-context";
 //#endregion ![head]
 
 //#region [main] - 🔧 COMPONENT 🔧
 const sidebarNavItems = [
+  {
+    title: "Base Original",
+    href: "/articulos/base-original",
+    icon: Database,
+  },
   {
     title: "Preclasificación",
     href: "/articulos/preclasificacion",
@@ -69,6 +74,7 @@ export default function ArticulosLayout({
     
     // Rutas que SÍ necesitan layout dinámico (solo las principales, no sub-rutas)
     const dynamicRoutes = [
+      '/articulos/base-original',
       '/articulos/preclasificacion', // Solo la página principal
       '/articulos/grupos',
       '/articulos/notas'

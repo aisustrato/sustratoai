@@ -9,7 +9,7 @@ import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import Link from "next/link";
-import { FileCheck, MapPin, FileText } from "lucide-react";
+import { FileCheck, MapPin, FileText, Database } from "lucide-react";
 //#endregion ![head]
 
 //#region [main] - 🔧 COMPONENT 🔧
@@ -26,6 +26,12 @@ export default function ArticulosHome() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {[
+          {
+            href: "/articulos/base-original",
+            icon: Database,
+            title: "Base Original",
+            description: "Visualiza todos los artículos cargados en su estado original."
+          },
           {
             href: "/articulos/preclasificacion",
             icon: FileCheck,

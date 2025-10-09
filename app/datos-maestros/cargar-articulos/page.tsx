@@ -22,8 +22,7 @@ import { StandardBadge } from '@/components/ui/StandardBadge';
 import { FileUp, Save, Trash2, Link as LinkIcon, FileText, FileCheck } from 'lucide-react';
 import { SustratoLoadingLogo } from '@/components/ui/sustrato-loading-logo';
 import { StandardProgressBar } from "@/components/ui/StandardProgressBar";
-// Link no se está utilizando actualmente
-// import Link from 'next/link';
+import Link from 'next/link';
 import { uploadAndProcessArticles, ArticleFromCsv, deleteUploadedArticles, checkIfProjectHasArticles } from '@/lib/actions/article-actions';
 import { StandardPageTitle } from '@/components/ui/StandardPageTitle';
 import { StandardRadioGroup } from '@/components/ui/StandardRadioGroup';
@@ -68,6 +67,7 @@ export default function CargarArticulosPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [statusMessage, setStatusMessage] = useState("");
+    const [uploadComplete, setUploadComplete] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -125,17 +125,18 @@ export default function CargarArticulosPage() {
                 setUploadProgress(progress);
             }
 
-            setStatusMessage(`¡Carga completada! Se han procesado ${fullArticlesPayload.length} artículos.`);
+            setStatusMessage(`✅ Carga completada con éxito`);
             setUploadProgress(100);
-            toast.success('¡Todos los artículos fueron guardados con éxito!');
+            setUploadComplete(true);
+            toast.success(`¡${fullArticlesPayload.length} artículos fueron guardados con éxito!`);
 
+            // Limpiar datos después de mostrar el mensaje
             setTimeout(() => {
                 setPreviewArticles([]);
                 setFullArticlesPayload([]);
                 setFileName(null);
-                setIsSaving(false);
                 setDataAlreadyExists(true);
-            }, 2000);
+            }, 1000);
 
         } catch (e: unknown) {
             const errorMessage = e instanceof Error ? e.message : "Error inesperado durante la carga.";
@@ -349,7 +350,16 @@ export default function CargarArticulosPage() {
                             </StandardText>
                         </div>
                     </StandardCard.Content>
-                    <StandardCard.Actions className="justify-end">
+                    <StandardCard.Actions className="justify-between">
+                        <Link href="/articulos/base-original">
+                            <StandardButton 
+                                colorScheme="primary" 
+                                styleType="outline"
+                                leftIcon={FileCheck}
+                            >
+                                Ver artículos en la base original
+                            </StandardButton>
+                        </Link>
                         <StandardDialog>
                             <StandardDialog.Trigger>
                                 <StandardButton colorScheme="danger" styleType="outline" loading={isDeleting} leftIcon={Trash2} >
@@ -384,10 +394,42 @@ export default function CargarArticulosPage() {
             {isSaving && (
                 <div className="absolute inset-0 bg-white/90 dark:bg-black/90 flex flex-col items-center justify-center z-50 p-8 backdrop-blur-sm">
                     <div className="w-full max-w-md bg-white dark:bg-neutral-900 p-6 rounded-lg shadow-2xl border border-neutral-200 dark:border-neutral-700">
-                        <StandardProgressBar value={uploadProgress} label={statusMessage} showValue={true} size="lg" colorScheme="primary" animated={true} />
-                        <StandardText as="p" size="sm" className="text-center mt-3 text-neutral-600 dark:text-neutral-400">
-                            Por favor, no cierres esta ventana hasta que el proceso finalice.
-                        </StandardText>
+                        <StandardProgressBar value={uploadProgress} label={statusMessage} showValue={true} size="lg" colorScheme="primary" animated={uploadProgress < 100} />
+                        
+                        {!uploadComplete && (
+                            <StandardText as="p" size="sm" className="text-center mt-3 text-neutral-600 dark:text-neutral-400">
+                                Por favor, no cierres esta ventana hasta que el proceso finalice.
+                            </StandardText>
+                        )}
+                        
+                        {uploadComplete && (
+                            <div className="flex flex-col gap-3 mt-4">
+                                <StandardText as="p" size="sm" className="text-center text-neutral-600 dark:text-neutral-400">
+                                    Los artículos han sido cargados exitosamente en la base de datos.
+                                </StandardText>
+                                <Link href="/articulos/base-original" className="w-full">
+                                    <StandardButton 
+                                        className="w-full" 
+                                        colorScheme="primary"
+                                        leftIcon={FileCheck}
+                                    >
+                                        Ver artículos en la base original
+                                    </StandardButton>
+                                </Link>
+                                <StandardButton 
+                                    styleType="outline" 
+                                    className="w-full"
+                                    onClick={() => {
+                                        setIsSaving(false);
+                                        setUploadComplete(false);
+                                        setUploadProgress(0);
+                                        setStatusMessage("");
+                                    }}
+                                >
+                                    Cerrar
+                                </StandardButton>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

@@ -75,12 +75,9 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
   const [disagreementOpen, setDisagreementOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<TableLikeViewArticle | null>(null);
   const [selectedDimId, setSelectedDimId] = useState<string | null>(null);
+  // Delay para que el usuario vea el cierre del popup antes del efecto de rechazo
+  const REJECTION_EFFECT_DELAY_MS = 450;
 
-  const openDisagreementModal = useCallback((article: TableLikeViewArticle, dimId: string) => {
-    setSelectedArticle(article);
-    setSelectedDimId(dimId);
-    setDisagreementOpen(true);
-  }, []);
   // Estado local: aprobación/rechazo por dimensión a nivel UI (no persistente)
   // articleId -> dimId -> 'none' | 'approved' | 'rejected'
   const [dimensionStatusByArticle, setDimensionStatusByArticle] = useState<Record<string, Record<string, 'none' | 'approved' | 'rejected'>>>({});
@@ -148,6 +145,12 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
     status: 'none' | 'approved' | 'rejected',
   ) => {
     const prev = dimensionStatusByArticle[articleId]?.[dimId] || 'none';
+    // 🛡️ Reglas:
+    // - Una vez rechazado, no se puede aprobar ni volver a neutral desde UI normal
+    if (prev === 'rejected' && (status === 'approved' || status === 'none')) {
+      toast.info('Una dimensión rechazada no puede aprobarse ni volver a neutral desde aquí.');
+      return;
+    }
     // Update optimista
     setDimensionStatus(articleId, dimId, status);
     const shouldPrevalidate = status === 'approved';
@@ -159,6 +162,29 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
       console.error('[prevalidate] Error persistiendo cambio', { articleId, dimId, status, error: result.error });
     }
   }, [dimensionStatusByArticle, persistPrevalidated, setDimensionStatus]);
+
+  // Handler para clic en botón Aprobar con regla de transición
+  const handleApproveClick = useCallback(async (articleId: string, dimId: string, isApproved: boolean) => {
+    const prev = dimensionStatusByArticle[articleId]?.[dimId] || 'none';
+    if (isApproved) {
+      // Quitar aprobación => volver a neutral
+      await setAndPersistDimensionStatus(articleId, dimId, 'none');
+      return;
+    }
+    // Si venimos de rechazado, primero neutral
+    if (prev === 'rejected') {
+      toast.info('No puedes aprobar una dimensión rechazada. Edita el desacuerdo si necesitas cambiar detalles.');
+      return;
+    }
+    await setAndPersistDimensionStatus(articleId, dimId, 'approved');
+  }, [dimensionStatusByArticle, setAndPersistDimensionStatus]);
+
+  // Abrir modal de desacuerdo: no alteramos estado aquí; al cerrar (submit) pasará a 'rejected'
+  const openDisagreementModal = useCallback((article: TableLikeViewArticle, dimId: string) => {
+    setSelectedArticle(article);
+    setSelectedDimId(dimId);
+    setDisagreementOpen(true);
+  }, []);
 
   // Aprobar todas las dimensiones para un artículo específico (acción por fila)
   const approveAllForArticle = useCallback(async (articleId: string) => {
@@ -479,6 +505,10 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
                               styleType={isApproved || isRejected ? 'filled' : 'subtle'}
                               hasOutline={false}
                               disableShadowHover={false}
+                              approved={isApproved}
+                              approvedColorScheme="success"
+                              approvalAnimation="flipY"
+                              animateOnChangeKey={dimStatus}
                             >
                               {/* Badge unificado: Iteración con tooltip de historial (hover sobre el badge) */}
                               <div className="absolute left-2 bottom-2 flex items-center gap-2 z-20">
@@ -506,7 +536,7 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
                                   colorScheme="success"
                                   styleType={isApproved ? 'solid' : 'outline'} 
                                   tooltip={isApproved ? 'Quitar aprobación' : 'Aprobar'}
-                                  onClick={() => void setAndPersistDimensionStatus(article.id, dimId, isApproved ? 'none' : 'approved')}
+                                  onClick={() => void handleApproveClick(article.id, dimId, isApproved)}
                                 >
                                   <Check size={14} />
                                 </StandardButton>
@@ -556,8 +586,10 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
         optionEmoticonsMap={selectedDimId ? (optionEmoticonsByDimId[selectedDimId] ?? {}) : {}}
         onSubmitted={(ok) => {
           if (ok && selectedArticle && selectedDimId) {
-            // Estado local como rechazado; un INSERT en realtime refrescará luego
-            setAndPersistDimensionStatus(selectedArticle.id, selectedDimId, 'rejected');
+            // Aplicar rechazo con un pequeño delay para que el cierre del popup sea visible
+            setTimeout(() => {
+              setAndPersistDimensionStatus(selectedArticle.id!, selectedDimId!, 'rejected');
+            }, REJECTION_EFFECT_DELAY_MS);
           }
         }}
       />

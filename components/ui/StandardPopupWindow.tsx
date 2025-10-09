@@ -150,8 +150,9 @@ StandardPopupWindowHeader.displayName = "StandardPopupWindowHeader";
 
 const StandardPopupWindowBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div 
+    data-standard-dialog-body
     className={cn(
-      "p-6 flex-1 overflow-auto", // flex-1 para que ocupe el espacio disponible, overflow-auto para scroll
+      "p-6 flex-1 overflow-auto relative", // relative para anclar posicionamiento absoluto de dropdowns
       className
     )} 
     {...props} 

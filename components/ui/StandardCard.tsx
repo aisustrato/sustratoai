@@ -23,167 +23,173 @@ type CardTextGradient = StandardTextGradient;
 type CardTextColorShade = StandardTextColorShade;
 
 export interface StandardCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onAnimationStart" | "onDragStart" | "onDragEnd" | "onDrag" | "title"> {
-	title?: React.ReactNode;
-	contentCanScroll?: boolean;
-	colorScheme?: StandardCardColorScheme;
-	styleType?: StandardCardStyleType;
-	shadow?: StandardCardShadow;
-	hasOutline?: boolean;
-	outlineColorScheme?: StandardCardColorScheme;
-	accentPlacement?: StandardCardAccentPlacement;
-	accentColorScheme?: StandardCardColorScheme;
-	selected?: boolean;
-	loading?: boolean;
-	inactive?: boolean;
-	className?: string;
-	children?: React.ReactNode;
-	noPadding?: boolean;
-	disableShadowHover?: boolean;
-	animateEntrance?: boolean;
-	showSelectionCheckbox?: boolean;
-	onSelectionChange?: (selected: boolean) => void;
-	customTransition?: Transition;
-	"data-testid"?: string;
-	onCardClick?: React.MouseEventHandler<HTMLDivElement>;
-	loaderSize?: number;
-	loadingText?: string;
-	loadingVariant?: SustratoLoadingLogoProps['variant'];
+  title?: React.ReactNode;
+  contentCanScroll?: boolean;
+  colorScheme?: StandardCardColorScheme;
+  styleType?: StandardCardStyleType;
+  shadow?: StandardCardShadow;
+  hasOutline?: boolean;
+  outlineColorScheme?: StandardCardColorScheme;
+  accentPlacement?: StandardCardAccentPlacement;
+  accentColorScheme?: StandardCardColorScheme;
+  selected?: boolean;
+  loading?: boolean;
+  inactive?: boolean;
+  className?: string;
+  children?: React.ReactNode;
+  noPadding?: boolean;
+  disableShadowHover?: boolean;
+  animateEntrance?: boolean;
+  showSelectionCheckbox?: boolean;
+  onSelectionChange?: (selected: boolean) => void;
+  customTransition?: Transition;
+  "data-testid"?: string;
+  onCardClick?: React.MouseEventHandler<HTMLDivElement>;
+  loaderSize?: number;
+  loadingText?: string;
+  loadingVariant?: SustratoLoadingLogoProps['variant'];
+  approved?: boolean;
+  approvedColorScheme?: StandardCardColorScheme;
+  approvalAnimation?: "spin" | "flipY" | "flipX";
+  // Disparador genérico de animación: cuando esta clave cambia, la tarjeta rota
+  animateOnChangeKey?: string | number | boolean;
 }
 
 interface StandardCardHeaderProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
 interface StandardCardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> { className?: string; children?: React.ReactNode; size?: CardTextSize; colorScheme?: StandardCardColorScheme; colorShade?: CardTextColorShade; weight?: CardTextWeight; applyGradient?: CardTextGradient; truncate?: boolean; }
 interface StandardCardSubtitleProps extends React.HTMLAttributes<HTMLParagraphElement> { className?: string; children?: React.ReactNode; size?: CardTextSize; colorScheme?: StandardCardColorScheme; colorShade?: CardTextColorShade; weight?: CardTextWeight; applyGradient?: CardTextGradient; truncate?: boolean; }
 interface StandardCardMediaProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
-// 📌 CAMBIO 1: La prop `contentCanScroll` se pasa al contexto, por lo que ya no es necesaria aquí directamente.
 interface StandardCardContentProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
 interface StandardCardActionsProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
 interface StandardCardFooterProps extends React.HTMLAttributes<HTMLDivElement> { className?: string; children?: React.ReactNode; }
 
 interface StandardCardComposition extends React.ForwardRefExoticComponent<StandardCardProps & React.RefAttributes<HTMLDivElement>> {
-	Header: React.FC<StandardCardHeaderProps>;
-	Title: React.FC<StandardCardTitleProps>;
-	Subtitle: React.FC<StandardCardSubtitleProps>;
-	Media: React.FC<StandardCardMediaProps>;
-	Content: React.ForwardRefExoticComponent<StandardCardContentProps & React.RefAttributes<HTMLDivElement>>;
-	Actions: React.FC<StandardCardActionsProps>;
-	Footer: React.FC<StandardCardFooterProps>;
+  Header: React.FC<StandardCardHeaderProps>;
+  Title: React.FC<StandardCardTitleProps>;
+  Subtitle: React.FC<StandardCardSubtitleProps>;
+  Media: React.FC<StandardCardMediaProps>;
+  Content: React.ForwardRefExoticComponent<StandardCardContentProps & React.RefAttributes<HTMLDivElement>>;
+  Actions: React.FC<StandardCardActionsProps>;
+  Footer: React.FC<StandardCardFooterProps>;
 }
 
-// 📌 CAMBIO 2: Creamos un contexto para comunicar la decisión del scroll a los hijos.
 const StandardCardContext = createContext<{
   noPadding: boolean;
   contentCanScroll: boolean;
 }>({ noPadding: false, contentCanScroll: false });
 
-
-const cardEntranceVariants: Variants = { hidden: { opacity: 0, y: 20, scale: 0.98 }, visible: { opacity: 1, y: 0, scale: 1 }, };
 const overlayVariants: Variants = { hidden: { opacity: 0 }, visible: { opacity: 1 }, exit: { opacity: 0 } };
 const MotionDiv = motion.div;
 //#endregion ![def]
 
-
 //#region [main_root] - 🧱 ROOT CARD COMPONENT 🧱
 const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
-	(
-		{
-			colorScheme = "primary",
-			styleType = "subtle",
-			shadow = "md",
-			disableShadowHover = true,
-			animateEntrance = true,
+  (
+    {
+      colorScheme = "primary",
+      styleType = "subtle",
+      shadow = "md",
+      disableShadowHover = true,
+      animateEntrance = true,
       hasOutline = false,
-			accentPlacement = "none",
-			outlineColorScheme,
-			accentColorScheme,
-			selected = false, loading = false, inactive = false,
-			className, children, noPadding = false, contentCanScroll = false,
-			showSelectionCheckbox = false, onSelectionChange, customTransition, style,
-			onCardClick, loaderSize = 32, loadingText, loadingVariant = "spin-pulse",
-			"data-testid": dataTestId, title, ...htmlProps
-		},
-		ref,
-	) => {
-		const { appColorTokens, mode } = useTheme();
+      accentPlacement = "none",
+      outlineColorScheme,
+      accentColorScheme,
+      selected = false, loading = false, inactive = false,
+      className, children, noPadding = false, contentCanScroll = false,
+      showSelectionCheckbox = false, onSelectionChange, customTransition, style,
+      onCardClick, loaderSize = 32, loadingText, loadingVariant = "spin-pulse",
+      approved = false, approvedColorScheme, approvalAnimation = "spin", animateOnChangeKey,
+      "data-testid": dataTestId, title, ...htmlProps
+    },
+    ref,
+  ) => {
+    const { appColorTokens, mode } = useTheme();
 
-		const cardTokens = useMemo(() => {
-			if (appColorTokens && mode) return generateStandardCardTokens(appColorTokens, mode);
-			return null;
-		}, [appColorTokens, mode]);
+    const cardTokens = useMemo(() => {
+      if (appColorTokens && mode) return generateStandardCardTokens(appColorTokens, mode);
+      return null;
+    }, [appColorTokens, mode]);
 
-		const cssVariables = useMemo(() => {
-			if (!cardTokens) return {};
-			const currentCardScheme = colorScheme || "neutral";
-			const vars: React.CSSProperties & { [key: `--${string}`]: string | number; } = {};
-			const styleTypeTokens = cardTokens.styleTypes[styleType]?.[currentCardScheme] || cardTokens.styleTypes[styleType]?.neutral;
+    const cssVariables = useMemo(() => {
+      if (!cardTokens) return {};
+      const currentCardScheme = (approved ? (approvedColorScheme || "success") : colorScheme) || "neutral";
+      const vars: React.CSSProperties & { [key: `--${string}`]: string | number; } = {};
+      const styleTypeTokens = cardTokens.styleTypes[styleType]?.[currentCardScheme] || cardTokens.styleTypes[styleType]?.neutral;
 
-			vars["--sc-bg"] = styleTypeTokens?.background || "transparent";
-			vars["--sc-text-color"] = styleTypeTokens?.color || cardTokens.defaultTextColor || "currentColor";
-			// Hover overlay tokens por styleType y scheme
-			const hoverOverlay = cardTokens.hoverOverlays?.[styleType]?.[currentCardScheme]?.overlayBackground;
-			const hoverInset = cardTokens.hoverOverlays?.[styleType]?.[currentCardScheme]?.insetPx;
-			vars["--sc-hover-overlay-bg"] = hoverOverlay || "transparent";
-			// Si no hay outline, evitar dejar "hueco" interno para mantener retrocompatibilidad visual
-			vars["--sc-hover-overlay-inset"] = hasOutline ? (hoverInset || "0px") : "0px";
-			
-			const effectiveOutlineScheme = outlineColorScheme || currentCardScheme;
-			if (hasOutline) {
-				const outlineTokens = cardTokens.outline[effectiveOutlineScheme] || cardTokens.outline.neutral;
-				if (outlineTokens) {
-					vars["--sc-outline-border-color"] = outlineTokens.borderColor || "currentColor";
-					vars["--sc-outline-border-width"] = outlineTokens.borderWidth || "1px";
-					vars["--sc-outline-border-style"] = outlineTokens.borderStyle || "solid";
-				}
-			} else {
-				vars["--sc-outline-border-width"] = "0px";
-				vars["--sc-outline-border-style"] = "none";
-			}
+      vars["--sc-bg"] = styleTypeTokens?.background || "transparent";
+      // Texto: si el esquema 'filled' no define color, usar un fallback de alto contraste según el modo
+      if (styleType === 'filled') {
+        const rawTokenText = styleTypeTokens?.color;
+        const isTransparent = !rawTokenText || String(rawTokenText).trim().toLowerCase() === 'transparent' || String(rawTokenText).trim().toLowerCase() === 'rgba(0,0,0,0)';
+        const tokenText = isTransparent ? undefined : rawTokenText;
+        vars["--sc-text-color"] = tokenText || (mode === 'dark' ? '#ffffff' : '#111111');
+      } else {
+        vars["--sc-text-color"] = styleTypeTokens?.color || cardTokens.defaultTextColor || "currentColor";
+      }
+      const hoverOverlay = cardTokens.hoverOverlays?.[styleType]?.[currentCardScheme]?.overlayBackground;
+      const hoverInset = cardTokens.hoverOverlays?.[styleType]?.[currentCardScheme]?.insetPx;
+      vars["--sc-hover-overlay-bg"] = hoverOverlay || "transparent";
+      vars["--sc-hover-overlay-inset"] = hasOutline ? (hoverInset || "0px") : "0px";
 
-			const mainCardScheme = currentCardScheme;
-			const effectiveAccentColorScheme = accentColorScheme || mainCardScheme;
-			const accentTokenDefinitions = cardTokens.accents[accentPlacement]?.[effectiveAccentColorScheme];
+      const effectiveOutlineScheme = outlineColorScheme || currentCardScheme;
+      if (hasOutline) {
+        const outlineTokens = cardTokens.outline[effectiveOutlineScheme] || cardTokens.outline.neutral;
+        if (outlineTokens) {
+          vars["--sc-outline-border-color"] = outlineTokens.borderColor || "currentColor";
+          vars["--sc-outline-border-width"] = outlineTokens.borderWidth || "1px";
+          vars["--sc-outline-border-style"] = outlineTokens.borderStyle || "solid";
+        }
+      } else {
+        vars["--sc-outline-border-width"] = "0px";
+        vars["--sc-outline-border-style"] = "none";
+      }
 
-			if (accentPlacement !== "none" && accentTokenDefinitions) {
-				if (accentColorScheme === "accent") {
-					if (mainCardScheme === "accent") {
-						vars["--sc-accent-bg"] = cardTokens.accents[accentPlacement]?.accent?.duotoneMagicBackground || "currentColor";
-					} else {
-						vars["--sc-accent-bg"] = cardTokens.accents[accentPlacement]?.[mainCardScheme]?.duotoneMagicBackground || accentTokenDefinitions.standardBackground || "currentColor";
-					}
-				} else {
-					vars["--sc-accent-bg"] = accentTokenDefinitions.standardBackground || "currentColor";
-				}
-				if (!vars["--sc-accent-bg"]) vars["--sc-accent-bg"] = "currentColor";
-				vars["--sc-accent-dimension-h"] = accentTokenDefinitions.height || "100%";
-				vars["--sc-accent-dimension-w"] = accentTokenDefinitions.width || "100%";
-			} else {
-				vars["--sc-accent-bg"] = "transparent";
-			}
-			
-			if (selected && !inactive) {
-				const selectedTokens = cardTokens.selected[currentCardScheme] || cardTokens.selected.neutral;
-				if (selectedTokens) {
-					vars["--sc-selected-border-color"] = selectedTokens.borderColor || "currentColor";
-					vars["--sc-selected-border-width"] = selectedTokens.borderWidth || "2px";
-					vars["--sc-selected-overlay-bg"] = selectedTokens.overlayBackground || "rgba(0,0,0,0.1)";
-				}
-			}
+      const mainCardScheme = currentCardScheme;
+      const effectiveAccentColorScheme = accentColorScheme || mainCardScheme;
+      const accentTokenDefinitions = cardTokens.accents[accentPlacement]?.[effectiveAccentColorScheme];
 
-			const checkboxTokens = cardTokens.checkbox[currentCardScheme] || cardTokens.checkbox.neutral;
-			if (checkboxTokens) {
-				vars["--sc-checkbox-border-color"] = checkboxTokens.borderColor || "currentColor";
-				vars["--sc-checkbox-icon-color"] = checkboxTokens.iconColor || "currentColor";
-				vars["--sc-checkbox-focus-ring-color"] = checkboxTokens.focusRingColor || "currentColor";
-			}
-			
-			vars['--sc-inactive-overlay-bg'] = cardTokens.inactiveOverlayBackground || "rgba(255,255,255,0.7)";
-			vars['--sc-loading-overlay-bg'] = cardTokens.loadingOverlayBackground || "rgba(255,255,255,0.9)";
+      if (accentPlacement !== "none" && accentTokenDefinitions) {
+        if (accentColorScheme === "accent") {
+          if (mainCardScheme === "accent") {
+            vars["--sc-accent-bg"] = cardTokens.accents[accentPlacement]?.accent?.duotoneMagicBackground || "currentColor";
+          } else {
+            vars["--sc-accent-bg"] = cardTokens.accents[accentPlacement]?.[mainCardScheme]?.duotoneMagicBackground || accentTokenDefinitions.standardBackground || "currentColor";
+          }
+        } else {
+          vars["--sc-accent-bg"] = accentTokenDefinitions.standardBackground || "currentColor";
+        }
+        if (!vars["--sc-accent-bg"]) vars["--sc-accent-bg"] = "currentColor";
+        vars["--sc-accent-dimension-h"] = accentTokenDefinitions.height || "100%";
+        vars["--sc-accent-dimension-w"] = accentTokenDefinitions.width || "100%";
+      } else {
+        vars["--sc-accent-bg"] = "transparent";
+      }
 
-			return vars;
-		}, [cardTokens, colorScheme, styleType, hasOutline, outlineColorScheme, accentPlacement, accentColorScheme, selected, inactive]);
+      if (selected && !inactive) {
+        const selectedTokens = cardTokens.selected[currentCardScheme] || cardTokens.selected.neutral;
+        if (selectedTokens) {
+          vars["--sc-selected-border-color"] = selectedTokens.borderColor || "currentColor";
+          vars["--sc-selected-border-width"] = selectedTokens.borderWidth || "2px";
+          vars["--sc-selected-overlay-bg"] = selectedTokens.overlayBackground || "rgba(0,0,0,0.1)";
+        }
+      }
 
-		const shadowClass = cardTokens?.shadows[shadow] || "shadow-md";
+      const checkboxTokens = cardTokens.checkbox[currentCardScheme] || cardTokens.checkbox.neutral;
+      if (checkboxTokens) {
+        vars["--sc-checkbox-border-color"] = checkboxTokens.borderColor || "currentColor";
+        vars["--sc-checkbox-icon-color"] = checkboxTokens.iconColor || "currentColor";
+        vars["--sc-checkbox-focus-ring-color"] = checkboxTokens.focusRingColor || "currentColor";
+      }
+
+      vars['--sc-inactive-overlay-bg'] = cardTokens.inactiveOverlayBackground || "rgba(255,255,255,0.7)";
+      vars['--sc-loading-overlay-bg'] = cardTokens.loadingOverlayBackground || "rgba(255,255,255,0.9)";
+
+      return vars;
+    }, [cardTokens, colorScheme, approved, approvedColorScheme, styleType, hasOutline, outlineColorScheme, accentPlacement, accentColorScheme, selected, inactive, mode]);
+
+    const shadowClass = cardTokens?.shadows[shadow] || "shadow-md";
     const hoverEffectActive = !disableShadowHover && !inactive && !loading;
-    // Reducimos la elevación en hover (más sutil)
     const hoverShadowClasses: Record<StandardCardShadow, string> = {
       none: "",
       sm: "hover:shadow-sm",
@@ -192,7 +198,6 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
       xl: "hover:shadow-xl",
     };
     const dynamicHoverShadowClass = hoverEffectActive && shadow !== "none" ? hoverShadowClasses[shadow] : "";
-    // Sombra forzada cuando un hijo (ej. Tooltip) mantiene el hover del card activo
     const forcedHoverShadowClasses: Record<StandardCardShadow, string> = {
       none: "",
       sm: "data-[force-hover=true]:shadow-sm",
@@ -201,33 +206,64 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
       xl: "data-[force-hover=true]:shadow-xl",
     };
     const dynamicForcedShadowClass = shadow !== "none" ? forcedHoverShadowClasses[shadow] : "";
-		
-		const isEffectivelyDisabled = inactive || loading;
-		const showLoadingIndicator = loading && !inactive;
-		
-		    // Transición más fluida
+
+    const isEffectivelyDisabled = inactive || loading;
+    const showLoadingIndicator = loading && !inactive;
+
     const cardBaseTransition: Transition = { type: "spring", damping: 22, stiffness: 260 };
-		const cardCombinedTransition: Transition = customTransition ? { ...cardBaseTransition, ...customTransition } : cardBaseTransition;
-		
-		    const motionRootProps: HTMLMotionProps<"div"> & { "data-testid"?: string } = {
+    const cardCombinedTransition: Transition = customTransition ? { ...cardBaseTransition, ...customTransition } : cardBaseTransition;
+
+    const [approvalRotation, setApprovalRotation] = React.useState(0);
+    const didMountRef = React.useRef(false);
+    React.useEffect(() => {
+      if (!didMountRef.current) { didMountRef.current = true; return; }
+      if (!isEffectivelyDisabled) {
+        // 360° siempre para que la carta regrese al frente con el nuevo color (flip sin dejar el dorso)
+        const delta = 360;
+        setApprovalRotation((r) => r + delta);
+      }
+    }, [approved, approvalAnimation, isEffectivelyDisabled, animateOnChangeKey]);
+
+    const rotationAnim = approvalAnimation === "flipY"
+      ? { rotateY: approvalRotation }
+      : approvalAnimation === "flipX"
+      ? { rotateX: approvalRotation }
+      : { rotateZ: approvalRotation };
+
+    const rotationInitial = approvalAnimation === "flipY"
+      ? { rotateY: 0 }
+      : approvalAnimation === "flipX"
+      ? { rotateX: 0 }
+      : { rotateZ: 0 };
+
+    // Contra-rotación para mantener el contenido legible mientras el contenedor gira
+    const invertAnim = approvalAnimation === "flipY"
+      ? { rotateY: -approvalRotation }
+      : approvalAnimation === "flipX"
+      ? { rotateX: -approvalRotation }
+      : { rotateZ: -approvalRotation };
+    const invertInitial = approvalAnimation === "flipY"
+      ? { rotateY: 0 }
+      : approvalAnimation === "flipX"
+      ? { rotateX: 0 }
+      : { rotateZ: 0 };
+
+    const motionRootProps: HTMLMotionProps<"div"> & { "data-testid"?: string } = {
       ref,
-      // 📌 CAMBIO 3: La lógica del overflow raíz.
       className: cn(
         "relative rounded-lg flex flex-col group/StandardCard", // La arquitectura flex raíz
-        "transition-shadow duration-200 ease-out", 
-        shadowClass, 
-        dynamicHoverShadowClass, 
+        "transition-shadow transition-colors duration-200 ease-out",
+        shadowClass,
+        dynamicHoverShadowClass,
         dynamicForcedShadowClass,
         !contentCanScroll && "overflow-hidden", // Se desactiva solo si es necesario
-        { "cursor-not-allowed": isEffectivelyDisabled && !onCardClick, "cursor-pointer": onCardClick && !isEffectivelyDisabled }, 
+        { "cursor-not-allowed": isEffectivelyDisabled && !onCardClick, "cursor-pointer": onCardClick && !isEffectivelyDisabled },
         className
       ),
-			style: { ...cssVariables, background: 'var(--sc-bg)', color: 'var(--sc-text-color)', borderColor: hasOutline ? 'var(--sc-outline-border-color)' : undefined, borderWidth: hasOutline ? 'var(--sc-outline-border-width)' : undefined, borderStyle: hasOutline ? 'var(--sc-outline-border-style)' : undefined, ...style } as React.CSSProperties,
-			initial: animateEntrance && !showLoadingIndicator ? "hidden" : false,
-			animate: animateEntrance && !showLoadingIndicator ? "visible" : false,
-			variants: animateEntrance && !showLoadingIndicator ? cardEntranceVariants : undefined,
-			transition: cardCombinedTransition,
-			      // Hover más sutil
+      style: { ...cssVariables, background: 'var(--sc-bg)', color: 'var(--sc-text-color)', borderColor: hasOutline ? 'var(--sc-outline-border-color)' : undefined, borderWidth: hasOutline ? 'var(--sc-outline-border-width)' : undefined, borderStyle: hasOutline ? 'var(--sc-outline-border-style)' : undefined, perspective: '1000px', transformStyle: 'preserve-3d', ...style } as React.CSSProperties,
+      initial: animateEntrance && !showLoadingIndicator ? { opacity: 0, y: 20, scale: 0.98, ...rotationInitial } : undefined,
+      animate: animateEntrance && !showLoadingIndicator ? { opacity: 1, y: 0, scale: 1, ...rotationAnim } : { ...rotationAnim },
+      transition: cardCombinedTransition,
       whileHover: hoverEffectActive ? { scale: 1.012, transition: { type: "spring", stiffness: 280, damping: 18 } } : {},
       whileTap: (onCardClick && !isEffectivelyDisabled) ? { scale: 0.985, transition: { type: "spring", stiffness: 400, damping: 15 } } : {},
       onClick: !isEffectivelyDisabled && onCardClick ? (e) => { const target = e.target as HTMLElement; if (target.closest('[role="checkbox"], button, a')) { return; } onCardClick(e); } : undefined,
@@ -236,41 +272,41 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
       ...(isEffectivelyDisabled && !onCardClick && { onClickCapture: (e: React.MouseEvent) => e.stopPropagation() }),
       ...htmlProps,
     };
-		if (dataTestId) motionRootProps["data-testid"] = dataTestId;
+    if (dataTestId) motionRootProps["data-testid"] = dataTestId;
 
-		const renderAccent = () => {
-			const accentBgValue = cssVariables["--sc-accent-bg"];
-			if (accentPlacement === "none" || !cardTokens || !accentBgValue || String(accentBgValue).trim() === "transparent") { return null; }
-			const commonPositionClasses = "absolute z-[2]";
-			const accentStyle: React.CSSProperties = {
-				backgroundImage: String(accentBgValue),
-				height: cssVariables["--sc-accent-dimension-h"],
-				width: cssVariables["--sc-accent-dimension-w"],
-			};
-			switch (accentPlacement) {
-				case "top": return <div className={cn(commonPositionClasses, "top-0 left-0 right-0")} style={accentStyle} />;
-				case "left": return <div className={cn(commonPositionClasses, "top-0 bottom-0 left-0")} style={accentStyle} />;
-				case "right": return <div className={cn(commonPositionClasses, "top-0 bottom-0 right-0")} style={accentStyle} />;
-				case "bottom": return <div className={cn(commonPositionClasses, "bottom-0 left-0 right-0")} style={accentStyle} />;
-				default: return null;
-			}
-		};
+    const renderAccent = () => {
+      const accentBgValue = cssVariables["--sc-accent-bg"];
+      if (accentPlacement === "none" || !cardTokens || !accentBgValue || String(accentBgValue).trim() === "transparent") { return null; }
+      const commonPositionClasses = "absolute z-[2]";
+      const accentStyle: React.CSSProperties = {
+        backgroundImage: String(accentBgValue),
+        height: cssVariables["--sc-accent-dimension-h"],
+        width: cssVariables["--sc-accent-dimension-w"],
+      };
+      switch (accentPlacement) {
+        case "top": return <div className={cn(commonPositionClasses, "top-0 left-0 right-0")} style={accentStyle} />;
+        case "left": return <div className={cn(commonPositionClasses, "top-0 bottom-0 left-0")} style={accentStyle} />;
+        case "right": return <div className={cn(commonPositionClasses, "top-0 bottom-0 right-0")} style={accentStyle} />;
+        case "bottom": return <div className={cn(commonPositionClasses, "bottom-0 left-0 right-0")} style={accentStyle} />;
+        default: return null;
+      }
+    };
 
-		const renderSelectedIndicator = () => { if (!selected || inactive) return null; return <MotionDiv key="selected-indicator" className="absolute inset-0 z-[0] rounded-lg pointer-events-none" style={{ borderWidth: "var(--sc-selected-border-width)", borderStyle: "solid", borderColor: "var(--sc-selected-border-color)", backgroundColor: "var(--sc-selected-overlay-bg)", }} variants={overlayVariants} initial="hidden" animate="visible" exit="hidden" transition={{ duration: 0.2 }} />; };
-		
-		const renderLoadingState = () => {
-			if (!showLoadingIndicator) return null;
-			return (
-				<>
-					<MotionDiv key="loading-overlay" variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-[4] backdrop-blur-sm rounded-lg" style={{ backgroundColor: "var(--sc-loading-overlay-bg)" }} />
-					<div className="absolute inset-0 z-[5] flex flex-col items-center justify-center pointer-events-none">
-						<SustratoLoadingLogo size={loaderSize} variant={loadingVariant} text={loadingText} showText={!!loadingText} />
-					</div>
-				</>
-			);
-		};
-		
-		const renderInactiveOverlay = () => { if (!inactive || showLoadingIndicator) return null; return <MotionDiv key="inactive-overlay" variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-[5] backdrop-blur-sm rounded-lg pointer-events-auto" style={{ backgroundColor: "var(--sc-inactive-overlay-bg)" }} /> };
+    const renderSelectedIndicator = () => { if (!selected || inactive) return null; return <MotionDiv key="selected-indicator" className="absolute inset-0 z-[0] rounded-lg pointer-events-none" style={{ borderWidth: "var(--sc-selected-border-width)", borderStyle: "solid", borderColor: "var(--sc-selected-border-color)", backgroundColor: "var(--sc-selected-overlay-bg)", }} variants={overlayVariants} initial="hidden" animate="visible" exit="hidden" transition={{ duration: 0.2 }} />; };
+    
+    const renderLoadingState = () => {
+      if (!showLoadingIndicator) return null;
+      return (
+        <>
+          <MotionDiv key="loading-overlay" variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-[4] backdrop-blur-sm rounded-lg" style={{ backgroundColor: "var(--sc-loading-overlay-bg)" }} />
+          <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center pointer-events-none">
+            <SustratoLoadingLogo size={loaderSize} variant={loadingVariant} text={loadingText} showText={!!loadingText} />
+          </div>
+        </>
+      );
+    };
+    
+    const renderInactiveOverlay = () => { if (!inactive || showLoadingIndicator) return null; return <MotionDiv key="inactive-overlay" variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-[5] backdrop-blur-sm rounded-lg pointer-events-auto" style={{ backgroundColor: "var(--sc-inactive-overlay-bg)" }} /> };
 
 		return (
 			<MotionDiv {...motionRootProps}>
@@ -284,17 +320,23 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
               {selected ? <Check size={18} className="text-[var(--sc-checkbox-icon-color)]" /> : <Square size={18} className="text-[var(--sc-checkbox-border-color)]" />}
             </motion.button>
           )}
-          {/* 📌 CAMBIO 4: La estructura interna se simplifica. El div z-10 es ahora el contenedor flex principal de los children. */}
-          <div className="relative z-[1] flex flex-col flex-grow h-full w-full">
+          {/* Contenedor interno contra-rotado para mantener el texto legible */}
+          <MotionDiv
+            className="relative z-[1] flex flex-col flex-grow h-full w-full"
+            initial={animateEntrance && !showLoadingIndicator ? invertInitial : undefined}
+            animate={invertAnim}
+            transition={cardCombinedTransition}
+            style={{ backfaceVisibility: 'hidden', transformStyle: 'preserve-3d', willChange: 'transform' }}
+          >
             {title && (
               <Header>
-                <Title colorScheme='primary' weight='semibold'>
+                <Title weight='semibold'>
                   {title}
                 </Title>
               </Header>
             )}
             {children}
-          </div>
+          </MotionDiv>
           <AnimatePresence>{selected && !inactive && renderSelectedIndicator()}</AnimatePresence>
           <AnimatePresence>{inactive && !showLoadingIndicator && renderInactiveOverlay()}</AnimatePresence>
           <AnimatePresence>{showLoadingIndicator && renderLoadingState()}</AnimatePresence>

@@ -54,12 +54,13 @@ export function generateStandardBadgeTokens(appColorTokens: AppColorTokens): Bad
         },
         subtle: {
           bg: colorSet.bgShade,
-          text: colorSet.text,
+          text: key === 'warning' ? colorSet.textShade : colorSet.text,
           border: 'transparent',
         },
         outline: {
           bg: 'transparent',
-          text: colorSet.pure,
+          // En 'warning', usar un tono de texto más oscuro para contraste en fondos claros/transparente
+          text: key === 'warning' ? colorSet.textShade : colorSet.pure,
           border: colorSet.pure,
         },
       };

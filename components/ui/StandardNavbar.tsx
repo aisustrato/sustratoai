@@ -159,7 +159,6 @@ export function StandardNavbar() {
 	const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [scrolled, setScrolled] = useState(false);
-	const navRef = useRef<HTMLElement>(null);
 	const ripple = useRipple();
 	const { mode, appColorTokens } = useTheme();
 	const { proyectoActual } = useAuth();
@@ -241,8 +240,9 @@ export function StandardNavbar() {
 		let el: Element | null = null;
 		if (node instanceof Element) {
 			el = node;
-		} else if ((node as any).parentElement) {
-			el = (node as any).parentElement as Element;
+		} else if (typeof (node as { parentElement?: unknown }).parentElement !== 'undefined') {
+			const parentEl = (node as Node & { parentElement: Element | null }).parentElement;
+			if (parentEl) el = parentEl;
 		}
 		const isInContent = !!el?.closest('[data-submenu="content"]');
 		// Cerrar siempre que el click NO esté dentro del contenido del submenú.

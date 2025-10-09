@@ -129,11 +129,15 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 			if (typeof window !== "undefined") {
 				let target: HTMLElement = document.body;
 				const rootEl = componentRootRef.current;
-				// Si el Select vive dentro de un Dialog (role="dialog"), montamos allí el dropdown
-				// para evitar que el modo modal (inert/aria-hidden) bloquee interacción del dropdown
+				// Preferimos portalizar dentro del cuerpo del diálogo si existe
 				if (rootEl) {
-					const dialogEl = rootEl.closest('[role="dialog"]') as HTMLElement | null;
-					if (dialogEl) target = dialogEl;
+					const dialogBodyEl = rootEl.closest('[data-standard-dialog-body]') as HTMLElement | null;
+					if (dialogBodyEl) {
+						target = dialogBodyEl;
+					} else {
+						const dialogEl = rootEl.closest('[role="dialog"]') as HTMLElement | null;
+						if (dialogEl) target = dialogEl;
+					}
 				}
 				setPortalContainer(target);
 			}
@@ -386,29 +390,37 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 				if (!selectClickableRef.current) return;
 
 				const rect = selectClickableRef.current.getBoundingClientRect();
-				const spaceBelow = window.innerHeight - rect.bottom - 8;
-				
-				const maxHeightRem = parseInt(currentSizeTokens.dropdownMaxHeight.replace('max-h-', ''));
-				const maxHeightPx = maxHeightRem * 16;
-				const estimatedDropdownHeight = Math.min(options.length * 44 + 8, maxHeightPx || 240);
+				const container = portalContainer;
+				const isInsideContainer = !!(container && container !== document.body);
+				const containerRect = isInsideContainer ? container!.getBoundingClientRect() : null;
+				// Espacios disponibles arriba/abajo según el contexto (ventana o contenedor)
+				const spaceBelow = isInsideContainer
+					? (containerRect!.bottom - rect.bottom - 8)
+					: (window.innerHeight - rect.bottom - 8);
+				const spaceAbove = isInsideContainer
+					? (rect.top - containerRect!.top - 8)
+					: (rect.top - 8);
+				// Estimación conservadora del alto del dropdown: filas*44 + margen
+				const estimatedDropdownHeight = Math.min(options.length * 44 + 8, 280);
 
 				let top = rect.bottom + 4;
-				if (spaceBelow < estimatedDropdownHeight && rect.top > spaceBelow) {
+				if (spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow) {
 					top = rect.top - estimatedDropdownHeight - 4;
 				}
 
 				// Si el portal está montado dentro de un contenedor transformado (e.g., Dialog.Content),
 				// la posición 'fixed' se comporta como 'absolute' relativa a ese contenedor.
 				// Ajustamos coordenadas relativas al contenedor para mantener alineamiento correcto.
-				const container = portalContainer;
-				const isInsideContainer = !!(container && container !== document.body);
 				const finalPosition: React.CSSProperties['position'] = isInsideContainer ? 'absolute' : 'fixed';
 				let finalTop = top;
 				let finalLeft = rect.left;
 				if (isInsideContainer) {
 					const containerRect = container!.getBoundingClientRect();
-					finalTop = top - containerRect.top;
-					finalLeft = rect.left - containerRect.left;
+					const cs = window.getComputedStyle(container!);
+					const paddingTop = parseFloat(cs.paddingTop || '0');
+					const paddingLeft = parseFloat(cs.paddingLeft || '0');
+					finalTop = top - containerRect.top + (container as HTMLElement).scrollTop - paddingTop;
+					finalLeft = rect.left - containerRect.left + (container as HTMLElement).scrollLeft - paddingLeft;
 				}
 
 				setDropdownPosition({
@@ -424,12 +436,32 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 			updatePosition();
 			window.addEventListener('resize', updatePosition);
 			window.addEventListener('scroll', updatePosition, true);
+			// Si el dropdown está dentro de un contenedor scrolleable, escuchar su scroll
+			const container = portalContainer;
+			const isInsideContainer = !!(container && container !== document.body);
+			let resizeObs: ResizeObserver | null = null;
+			if (isInsideContainer) {
+				container!.addEventListener('scroll', updatePosition, { passive: true });
+				// Observar cambios de tamaño del contenedor o del trigger
+				if (typeof ResizeObserver !== 'undefined') {
+					resizeObs = new ResizeObserver(() => updatePosition());
+					resizeObs.observe(container!);
+					if (selectClickableRef.current) resizeObs.observe(selectClickableRef.current);
+				}
+			}
 
 			return () => {
 				window.removeEventListener('resize', updatePosition);
 				window.removeEventListener('scroll', updatePosition, true);
+				if (isInsideContainer) {
+					container!.removeEventListener('scroll', updatePosition);
+				}
+				if (resizeObs) {
+					resizeObs.disconnect();
+					resizeObs = null;
+				}
 			};
-		}, [isOpen, options.length, currentSizeTokens.dropdownMaxHeight, appColorTokens, mode, portalContainer]);
+		}, [isOpen, options.length, appColorTokens, mode, portalContainer]);
 		
 		const hasLeadingIcon = (leadingIcon && (!multiple || selectedOptions.length === 0) && (selectedOptions.length === 0 || !selectedOptions[0].icon)) || (selectedOptions.length > 0 && !multiple && selectedOptions[0].icon);
 		const hasClearButton = clearable && selectedValues.length > 0 && !disabled && !readOnly;

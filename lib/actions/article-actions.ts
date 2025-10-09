@@ -272,3 +272,80 @@ export async function getArticleWithTranslations(
     };
   }
 }
+
+// ========================================================================
+//  ACCIÓN 6: getPaginatedArticlesForProject
+//  Obtiene artículos paginados para un proyecto con conteo total
+// ========================================================================
+export type PaginatedArticlesResult = {
+  articles: Database['public']['Tables']['articles']['Row'][];
+  totalCount: number;
+  currentPage: number;
+  totalPages: number;
+  itemsPerPage: number;
+};
+
+export async function getPaginatedArticlesForProject(
+  projectId: string,
+  page: number = 1,
+  limit: number = 10
+): Promise<ResultadoOperacion<PaginatedArticlesResult>> {
+  if (!projectId) {
+    return { success: false, error: "Se requiere ID de proyecto.", errorCode: "INVALID_PROJECT_ID" };
+  }
+
+  if (page < 1 || limit < 1) {
+    return { success: false, error: "Página y límite deben ser mayores a 0.", errorCode: "INVALID_PAGINATION_PARAMS" };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    // Obtener conteo total
+    const { count: totalCount, error: countError } = await supabase
+      .from('articles')
+      .select('id', { count: 'exact', head: true })
+      .eq('project_id', projectId);
+
+    if (countError) {
+      throw new Error(`Error al obtener conteo de artículos: ${countError.message}`);
+    }
+
+    const total = totalCount || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    // Calcular offset
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    // Obtener artículos paginados
+    const { data: articles, error: articlesError } = await supabase
+      .from('articles')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('correlativo', { ascending: true })
+      .range(from, to);
+
+    if (articlesError) {
+      throw new Error(`Error al obtener artículos: ${articlesError.message}`);
+    }
+
+    return {
+      success: true,
+      data: {
+        articles: articles || [],
+        totalCount: total,
+        currentPage: page,
+        totalPages,
+        itemsPerPage: limit,
+      },
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido.';
+    return {
+      success: false,
+      error: `Error interno del servidor: ${errorMessage}`,
+      errorCode: 'INTERNAL_SERVER_ERROR',
+    };
+  }
+}

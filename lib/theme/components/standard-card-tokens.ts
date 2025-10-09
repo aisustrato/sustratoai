@@ -145,7 +145,9 @@ export function generateStandardCardTokens(
 					filledMid,
 					filledEnd
 				),
-				color: tokenShade.contrastText,
+				// Importante: en light, el fondo de 'filled' usa bg/bgShade (claros),
+				// por lo que debemos usar un color de texto oscuro (tokenShade.text) para alto contraste.
+				color: tokenShade.text,
 			};
 		} else {
 			// Dark Mode for 'filled'
@@ -155,7 +157,8 @@ export function generateStandardCardTokens(
 			// Esto debería dar profundidad sin perder el tinte oscuro.
 			styleTypes.filled[scheme] = {
 				background: createAccentBarGradient(tokenShade.bgShade, tokenShade.bg), // De más oscuro a un poco menos oscuro del scheme
-				color: tokenShade.contrastText, // Ya es un color de texto claro para fondos oscuros
+				// En dark, mantenemos texto claro (tokenShade.text) ya definido para fondos oscuros.
+				color: tokenShade.text,
 			};
 			// Casos especiales para neutral y white en dark mode filled, como los tenías
 			if (scheme === "neutral" || scheme === "white") {
