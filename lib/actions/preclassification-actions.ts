@@ -1351,3 +1351,889 @@ export async function getArticleIdFromBatchItemId(batchItemId: string): Promise<
         return { success: false, error: `Error interno: ${msg}` };
     }
 }
+
+// ========================================================================
+//	SISTEMA DE TRADUCCIÓN CONTROLADO POR BACKEND
+// ========================================================================
+
+/**
+ * Inicia el proceso de traducción de un lote en el backend.
+ * Retorna inmediatamente con un ID de trabajo para monitoreo vía Realtime.
+ */
+export async function startBatchTranslation(batchId: string): Promise<ResultadoOperacion<{ jobId: string }>> {
+    const supabase = await createSupabaseServerClient();
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Usuario no autenticado." };
+    
+    const { data: batch, error: batchError } = await supabase
+        .from('article_batches')
+        .select('*, projects(id)')
+        .eq('id', batchId)
+        .single();
+    
+    if (batchError || !batch) return { success: false, error: "Lote no encontrado." };
+    
+    // Verificar que el lote esté en estado válido para traducción
+    if (batch.status !== 'pending') {
+        return { 
+            success: false, 
+            error: `El lote debe estar en estado 'pendiente' para iniciar la traducción. Estado actual: ${batch.status}` 
+        };
+    }
+    
+    // Crear cliente autenticado con RLS usando el token del usuario
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+        return { success: false, error: "No se pudo obtener el token de sesión para crear el job." };
+    }
+    const db = createSupabaseUserClient(session.access_token);
+
+    // 🎯 PASO 1: CREAR JOB Y OBTENER UUID REAL DE SUPABASE
+    const { data: job, error: jobError } = await db.from('ai_job_history').insert({
+        project_id: batch.projects!.id,
+        user_id: user.id,
+        job_type: 'TRANSLATION',
+        status: 'running',
+        description: `Traduciendo Lote #${batch.batch_number}`,
+        progress: 0,
+        details: { 
+            batchId: batchId,
+            total: 0, 
+            processed: 0, 
+            step: 'Iniciando traducción...' 
+        }
+    }).select('id').single();
+    
+    if (jobError || !job) {
+        console.error('🚨 [startBatchTranslation] Error creando el job:', jobError);
+        return { success: false, error: `No se pudo crear el registro del job: ${jobError?.message}` };
+    }
+    
+    const jobUUID = job.id;
+    console.log(`✅ [startBatchTranslation] Job creado con UUID: ${jobUUID}`);
+    
+    // 🔍 PASO 2: VALIDAR SI HAY OTRO JOB RUNNING PARA ESTE LOTE
+    const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    
+    const { data: otherJobs, error: duplicateCheckError } = await db
+        .from('ai_job_history')
+        .select('id, status, description')
+        .eq('job_type', 'TRANSLATION')
+        .eq('project_id', batch.projects!.id)
+        .eq('status', 'running')
+        .gte('started_at', twentyMinutesAgo)
+        .ilike('description', `%Lote #${batch.batch_number}%`)
+        .neq('id', jobUUID);
+    
+    if (duplicateCheckError) {
+        console.error('🚨 [startBatchTranslation] Error verificando duplicados:', duplicateCheckError);
+        await db.from('ai_job_history')
+            .update({ status: 'failed', error_message: 'Error verificando duplicados', progress: 100 })
+            .eq('id', jobUUID);
+        return { success: false, error: "Error verificando trabajos duplicados." };
+    }
+    
+    // 🚨 PASO 3: SI HAY DUPLICADOS, MARCAR COMO FALLIDO Y ABORTAR
+    if (otherJobs && otherJobs.length > 0) {
+        console.warn(`🚨 [startBatchTranslation] Duplicado detectado, abortando job ${jobUUID}:`, {
+            jobUUID,
+            lote: batchId,
+            batchNumber: batch.batch_number,
+            otrosJobs: otherJobs.map((j: { id: string; status: string }) => ({ id: j.id, status: j.status }))
+        });
+        
+        await db.from('ai_job_history')
+            .update({ 
+                status: 'failed', 
+                error_message: `Trabajo duplicado detectado para Lote #${batch.batch_number}`,
+                progress: 100,
+                completed_at: new Date().toISOString()
+            })
+            .eq('id', jobUUID);
+            
+        return { 
+            success: false, 
+            error: `Ya existe un trabajo de traducción en curso para el Lote #${batch.batch_number}. Por favor, espera a que termine.` 
+        };
+    }
+    
+    // ✅ PASO 4: NO HAY DUPLICADOS, INICIAR PROCESO
+    console.log(`✅ [startBatchTranslation] Sin duplicados, iniciando proceso para UUID: ${jobUUID}`);
+    
+    // 🚀 Iniciar el trabajo en background
+    runTranslationJob(jobUUID, batchId, user.id, session.access_token);
+    
+    return { success: true, data: { jobId: jobUUID } };
+}
+
+/**
+ * Helper que construye el prompt de traducción.
+ */
+function buildTranslationPrompt(title: string, abstract: string): string {
+    return `Eres un traductor experto y un sintetizador académico. Tu tarea tiene dos partes:
+1. Traduce el título (title) y el resumen (abstract) del siguiente texto científico del inglés al español de forma profesional.
+2. Crea un resumen muy conciso del abstract traducido, en español, con un máximo de 250 caracteres, que capture la esencia del texto.
+
+Debes devolver el resultado ÚNICAMENTE como un objeto JSON válido con tres claves: "translatedTitle", "translatedAbstract" y "translatedSummary".
+
+Texto a procesar:
+"""
+Title: ${title}
+
+Abstract: ${abstract}
+"""`;
+}
+
+/**
+ * Ejecuta el trabajo de traducción completo en el backend.
+ * Actualiza progreso en tiempo real vía ai_job_history.
+ */
+async function runTranslationJob(jobId: string, batchId: string, userId: string, accessToken: string) {
+    console.log(`🎬 [runTranslationJob] INICIANDO ejecución - JobID: ${jobId}, BatchID: ${batchId}`);
+    
+    const db = createSupabaseUserClient(accessToken);
+
+    try {
+        // 1️⃣ OBTENER ARTÍCULOS DEL LOTE
+        console.log(`📊 [runTranslationJob] Obteniendo datos del lote ${batchId}...`);
+        const { data: batchData } = await db
+            .from('article_batches')
+            .select('batch_number, projects(id, name)')
+            .eq('id', batchId)
+            .single();
+        
+        if (!batchData?.projects) throw new Error("Datos del lote o proyecto no encontrados.");
+
+        const { data: items, error: itemsError } = await db
+            .from('article_batch_items')
+            .select('id, articles(id, title, abstract)')
+            .eq('batch_id', batchId);
+        
+        if (itemsError || !items) throw new Error("No se encontraron artículos para traducir.");
+        
+        const totalArticles = items.length;
+        console.log(`📊 [runTranslationJob] Iniciando traducción de ${totalArticles} artículos para job ${jobId}`);
+        
+        await db.from('ai_job_history').update({ 
+            details: { 
+                batchId,
+                total: totalArticles, 
+                processed: 0, 
+                step: `Preparado para traducir ${totalArticles} artículos` 
+            },
+            progress: 5
+        }).eq('id', jobId);
+
+        // 2️⃣ VARIABLES PARA TRACKING
+        let totalInputTokens = 0;
+        let totalOutputTokens = 0;
+        const translatedArticlesPayload: TranslatedArticlePayload[] = [];
+        const MAX_RETRIES_PER_ARTICLE = 2;
+
+        // 3️⃣ PROCESAR CADA ARTÍCULO
+        for (let i = 0; i < totalArticles; i++) {
+            const item = items[i];
+            const article = item.articles;
+            
+            if (!article) {
+                console.warn(`⚠️ [runTranslationJob] Artículo sin datos en item ${item.id}, saltando...`);
+                continue;
+            }
+
+            console.log(`🔄 [runTranslationJob] Traduciendo artículo ${i + 1}/${totalArticles} (ID: ${article.id})`);
+            
+            // Actualizar progreso
+            const currentProgress = 5 + ((i / totalArticles) * 90);
+            await db.from('ai_job_history').update({
+                progress: Math.round(currentProgress),
+                details: {
+                    batchId,
+                    total: totalArticles,
+                    processed: i,
+                    step: `Traduciendo artículo ${i + 1} de ${totalArticles}...`
+                }
+            }).eq('id', jobId);
+
+            // Lógica de reintentos
+            let success = false;
+            let retryCount = 0;
+            let lastError = '';
+
+            while (!success && retryCount <= MAX_RETRIES_PER_ARTICLE) {
+                try {
+                    const prompt = buildTranslationPrompt(article.title || '', article.abstract || '');
+                    
+                    console.log(`📤 [runTranslationJob] Enviando prompt a Gemini (intento ${retryCount + 1}/${MAX_RETRIES_PER_ARTICLE + 1})`);
+                    
+                    const { result, usage } = await callGeminiAPI('gemini-2.5-flash', prompt);
+                    
+                    // Acumular tokens
+                    totalInputTokens += usage?.promptTokenCount || 0;
+                    totalOutputTokens += usage?.candidatesTokenCount || 0;
+
+                    // Parsear respuesta
+                    const cleanedString = result.replace(/`{3}json\n?/, '').replace(/\n?`{3}$/, '');
+                    const parsedResult = JSON.parse(cleanedString);
+                    
+                    if (!parsedResult.translatedTitle || !parsedResult.translatedAbstract) {
+                        throw new Error("El JSON de respuesta no contiene las claves esperadas.");
+                    }
+
+                    // Guardamos la traducción exitosa
+                    translatedArticlesPayload.push({
+                        articleId: article.id,
+                        title: parsedResult.translatedTitle,
+                        abstract: parsedResult.translatedAbstract,
+                        summary: parsedResult.translatedSummary,
+                        translated_by: userId,
+                        translator_system: 'gemini-2.5-flash',
+                    });
+
+                    success = true;
+                    console.log(`✅ [runTranslationJob] Artículo ${i + 1} traducido exitosamente`);
+
+                } catch (error) {
+                    retryCount++;
+                    lastError = error instanceof Error ? error.message : 'Error desconocido';
+                    console.error(`❌ [runTranslationJob] Error en artículo ${i + 1}, intento ${retryCount}:`, lastError);
+                    
+                    if (retryCount > MAX_RETRIES_PER_ARTICLE) {
+                        // Agotamos reintentos, fallar el job completo
+                        throw new Error(`Artículo ${i + 1} falló después de ${MAX_RETRIES_PER_ARTICLE} reintentos: ${lastError}`);
+                    }
+                    
+                    // Esperar un poco antes de reintentar
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            }
+        }
+
+        // 4️⃣ GUARDAR TRADUCCIONES EN BASE DE DATOS
+        console.log(`💾 [runTranslationJob] Guardando ${translatedArticlesPayload.length} traducciones en BD`);
+        
+        await db.from('ai_job_history').update({
+            progress: 95,
+            details: {
+                batchId,
+                total: totalArticles,
+                processed: totalArticles,
+                step: 'Guardando traducciones en base de datos...'
+            }
+        }).eq('id', jobId);
+
+        const saveResult = await saveBatchTranslations(batchId, translatedArticlesPayload);
+        
+        if (!saveResult.success) {
+            throw new Error(saveResult.error || "Error desconocido al guardar traducciones.");
+        }
+
+        console.log(`✅ [runTranslationJob] Traducciones guardadas exitosamente`);
+
+        // 5️⃣ COMPLETAR JOB CON ÉXITO
+        await db.from('ai_job_history').update({
+            status: 'completed',
+            progress: 100,
+            completed_at: new Date().toISOString(),
+            input_tokens: totalInputTokens,
+            output_tokens: totalOutputTokens,
+            details: {
+                batchId,
+                total: totalArticles,
+                processed: totalArticles,
+                step: '¡Traducción completada exitosamente!'
+            }
+        }).eq('id', jobId);
+
+        console.log(`🎉 [runTranslationJob] Job ${jobId} completado exitosamente`);
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        console.error(`❌ [runTranslationJob] Error en job ${jobId}:`, error);
+
+        // Marcar job como fallido
+        await db.from('ai_job_history').update({
+            status: 'failed',
+            progress: 100,
+            error_message: errorMessage,
+            completed_at: new Date().toISOString(),
+            details: {
+                batchId,
+                error: errorMessage,
+                step: 'Error durante la traducción'
+            }
+        }).eq('id', jobId);
+
+        console.error(`💥 [runTranslationJob] Job ${jobId} marcado como fallido`);
+    }
+}
+
+// ========================================================================
+//	ACCIÓN: getPreclassifiedArticlesForAnalysis
+//	Obtiene todos los artículos con datos de preclasificación para análisis
+// ========================================================================
+
+export interface PreclassifiedArticleForAnalysis {
+    item_id: string; // 🎯 ID del article_batch_items (necesario para notas)
+    article_id: string;
+    correlativo: number | null;
+    title: string | null;
+    abstract: string | null;
+    authors: string[] | null;
+    publication_year: number | null;
+    journal: string | null;
+    translated_title: string | null;
+    translated_abstract: string | null;
+    translation_summary: string | null;
+    batch_number: number | null;
+    batch_name: string | null;
+    batch_status: Database["public"]["Enums"]["batch_preclass_status"] | null;
+    item_status: Database["public"]["Enums"]["batch_preclass_status"] | null;
+    // Clasificaciones por dimensión: { dimension_id: { value, confidence, rationale, iteration } }
+    classifications: Record<string, {
+        dimension_name: string;
+        value: string | null;
+        confidence: number | null;
+        rationale: string | null;
+        iteration: number | null;
+        reviewer_type: 'ai' | 'human';
+    }>;
+}
+
+export interface PreclassifiedArticlesAnalysisResult {
+    articles: PreclassifiedArticleForAnalysis[];
+    dimensions: {
+        id: string;
+        name: string;
+        type: string;
+        icon: string | null;
+        options: {
+            value: string;
+            emoticon: string | null;
+        }[];
+    }[];
+    totalCount: number;
+    currentPage: number;
+    totalPages: number;
+}
+
+/**
+ * Obtiene TODOS los artículos preclasificados sin paginación
+ * Útil para exportaciones CSV
+ */
+export async function getAllPreclassifiedArticlesForAnalysis(
+    projectId: string,
+    phaseId: string
+): Promise<ResultadoOperacion<PreclassifiedArticlesAnalysisResult>> {
+    if (!projectId || !phaseId) {
+        return { success: false, error: "Se requiere projectId y phaseId." };
+    }
+
+    try {
+        const supabase = await createSupabaseServerClient();
+
+        // 1. Obtener dimensiones de la fase con opciones
+        const { data: dimensions, error: dimError } = await supabase
+            .from('preclass_dimensions')
+            .select(`
+                id, 
+                name, 
+                type, 
+                icon,
+                preclass_dimension_options (
+                    value,
+                    emoticon,
+                    ordering
+                )
+            `)
+            .eq('phase_id', phaseId)
+            .eq('status', 'active')
+            .order('ordering');
+
+        if (dimError) throw new Error(`Error obteniendo dimensiones: ${dimError.message}`);
+
+        // Formatear dimensiones con opciones ordenadas
+        const dimensionsData = (dimensions || []).map(dim => ({
+            id: dim.id,
+            name: dim.name,
+            type: dim.type,
+            icon: dim.icon,
+            options: (dim.preclass_dimension_options || [])
+                .sort((a, b) => a.ordering - b.ordering)
+                .map(opt => ({
+                    value: opt.value,
+                    emoticon: opt.emoticon
+                }))
+        }));
+        const dimensionIds = dimensionsData.map(d => d.id);
+
+        // 2. Obtener todos los article_batch_items SIN PAGINACIÓN
+        const { data: batchesInPhase, error: batchesError } = await supabase
+            .from('article_batches')
+            .select('id')
+            .eq('phase_id', phaseId);
+
+        if (batchesError) throw new Error(`Error obteniendo lotes: ${batchesError.message}`);
+
+        const batchIds = (batchesInPhase || []).map(b => b.id);
+        if (batchIds.length === 0) {
+            return {
+                success: true,
+                data: {
+                    articles: [],
+                    dimensions: dimensionsData,
+                    totalCount: 0,
+                    currentPage: 1,
+                    totalPages: 0
+                }
+            };
+        }
+
+        // Obtener TODOS los items con paginación automática
+        console.log('[getAllPreclassifiedArticlesForAnalysis] 🔄 Obteniendo items de lotes (con paginación)...');
+        let allItems: any[] = [];
+        let page = 0;
+        const pageSize = 1000; // Supabase default limit
+        let hasMoreItems = true;
+
+        while (hasMoreItems) {
+            const { data: itemsPage, error: itemsError } = await supabase
+                .from('article_batch_items')
+                .select(`
+                    id,
+                    batch_id,
+                    status,
+                    articles!inner (
+                        id,
+                        title,
+                        abstract,
+                        authors,
+                        publication_year,
+                        journal,
+                        correlativo,
+                        article_translations (
+                            title,
+                            abstract,
+                            summary
+                        )
+                    ),
+                    article_batches!inner (
+                        batch_number,
+                        name,
+                        status
+                    )
+                `)
+                .in('batch_id', batchIds)
+                .range(page * pageSize, (page + 1) * pageSize - 1);
+
+            if (itemsError) throw new Error(`Error obteniendo items (página ${page}): ${itemsError.message}`);
+
+            if (itemsPage && itemsPage.length > 0) {
+                allItems = allItems.concat(itemsPage);
+                console.log(`[getAllPreclassifiedArticlesForAnalysis] ✓ Página ${page + 1}: ${itemsPage.length} items (Total acumulado: ${allItems.length})`);
+                
+                // Si obtuvimos menos del tamaño de página, ya no hay más
+                if (itemsPage.length < pageSize) {
+                    hasMoreItems = false;
+                } else {
+                    page++;
+                }
+            } else {
+                hasMoreItems = false;
+            }
+        }
+
+        console.log(`[getAllPreclassifiedArticlesForAnalysis] 🎯 Total items obtenidos: ${allItems.length}`);
+
+        const items = allItems;
+        if (!items || items.length === 0) {
+            return {
+                success: true,
+                data: {
+                    articles: [],
+                    dimensions: dimensionsData,
+                    totalCount: 0,
+                    currentPage: 1,
+                    totalPages: 0
+                }
+            };
+        }
+
+        const itemIds = items.map(i => i.id);
+
+        // 3. Obtener clasificaciones con paginación automática
+        console.log('[getAllPreclassifiedArticlesForAnalysis] 🔄 Obteniendo clasificaciones (con paginación)...');
+        let allReviews: any[] = [];
+        let reviewPage = 0;
+        const reviewPageSize = 1000;
+        let hasMoreReviews = true;
+
+        while (hasMoreReviews) {
+            const { data: reviewsPage, error: reviewsError } = await supabase
+                .from('article_dimension_reviews')
+                .select('*')
+                .in('article_batch_item_id', itemIds)
+                .in('dimension_id', dimensionIds)
+                .order('iteration', { ascending: false })
+                .range(reviewPage * reviewPageSize, (reviewPage + 1) * reviewPageSize - 1);
+
+            if (reviewsError) throw new Error(`Error obteniendo clasificaciones (página ${reviewPage}): ${reviewsError.message}`);
+
+            if (reviewsPage && reviewsPage.length > 0) {
+                allReviews = allReviews.concat(reviewsPage);
+                console.log(`[getAllPreclassifiedArticlesForAnalysis] ✓ Página ${reviewPage + 1}: ${reviewsPage.length} reviews (Total acumulado: ${allReviews.length})`);
+                
+                if (reviewsPage.length < reviewPageSize) {
+                    hasMoreReviews = false;
+                } else {
+                    reviewPage++;
+                }
+            } else {
+                hasMoreReviews = false;
+            }
+        }
+
+        console.log(`[getAllPreclassifiedArticlesForAnalysis] 🎯 Total clasificaciones obtenidas: ${allReviews.length}`);
+        const reviews = allReviews;
+
+        const reviewsByItemAndDimension: Record<string, Record<string, typeof reviews[0]>> = {};
+        (reviews || []).forEach(review => {
+            if (!reviewsByItemAndDimension[review.article_batch_item_id]) {
+                reviewsByItemAndDimension[review.article_batch_item_id] = {};
+            }
+            if (!reviewsByItemAndDimension[review.article_batch_item_id][review.dimension_id]) {
+                reviewsByItemAndDimension[review.article_batch_item_id][review.dimension_id] = review;
+            }
+        });
+
+        // 4. Construir resultado y ordenar por article_number
+        const articlesFormatted: PreclassifiedArticleForAnalysis[] = items
+            .map(item => {
+                const article = item.articles as any;
+                const batch = item.article_batches as any;
+                const translation = Array.isArray(article.article_translations) && article.article_translations.length > 0
+                    ? article.article_translations[0]
+                    : null;
+
+                const classifications: Record<string, {
+                    dimension_name: string;
+                    value: string | null;
+                    confidence: number | null;
+                    rationale: string | null;
+                    iteration: number | null;
+                    reviewer_type: 'ai' | 'human';
+                }> = {};
+
+                const reviewsForItem = reviewsByItemAndDimension[item.id] || {};
+                Object.entries(reviewsForItem).forEach(([dimId, review]) => {
+                    const dimension = dimensionsData.find(d => d.id === dimId);
+                    classifications[dimId] = {
+                        dimension_name: dimension?.name || 'Desconocida',
+                        value: review.classification_value,
+                        confidence: review.confidence_score,
+                        rationale: review.rationale,
+                        iteration: review.iteration,
+                        reviewer_type: review.reviewer_type as 'ai' | 'human'
+                    };
+                });
+
+                return {
+                    item_id: item.id,
+                    article_id: article.id,
+                    correlativo: article.correlativo || null,
+                    title: article.title,
+                    abstract: article.abstract,
+                    translated_title: translation?.title || null,
+                    translated_abstract: translation?.abstract || null,
+                    translation_summary: translation?.summary || null,
+                    authors: article.authors || [],
+                    publication_year: article.publication_year,
+                    journal: article.journal,
+                    batch_number: batch?.batch_number || null,
+                    batch_name: batch?.name || null,
+                    batch_status: batch?.status || null,
+                    item_status: item.status || null,
+                    classifications
+                } as PreclassifiedArticleForAnalysis;
+            })
+            .sort((a, b) => {
+                // Ordenar por correlativo
+                if (a.correlativo === null) return 1;
+                if (b.correlativo === null) return -1;
+                return a.correlativo - b.correlativo;
+            });
+
+        return {
+            success: true,
+            data: {
+                articles: articlesFormatted,
+                dimensions: dimensionsData,
+                totalCount: articlesFormatted.length,
+                currentPage: 1,
+                totalPages: 1
+            }
+        };
+
+    } catch (error) {
+        console.error('[getAllPreclassifiedArticlesForAnalysis] Error:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Error desconocido al obtener artículos"
+        };
+    }
+}
+
+export async function getPreclassifiedArticlesForAnalysis(
+    projectId: string,
+    phaseId: string,
+    page: number = 1,
+    limit: number = 25
+): Promise<ResultadoOperacion<PreclassifiedArticlesAnalysisResult>> {
+    if (!projectId || !phaseId) {
+        return { success: false, error: "Se requiere projectId y phaseId." };
+    }
+
+    if (page < 1 || limit < 1) {
+        return { success: false, error: "Página y límite deben ser mayores a 0." };
+    }
+
+    try {
+        const supabase = await createSupabaseServerClient();
+
+        // 1. Obtener dimensiones de la fase con opciones
+        const { data: dimensions, error: dimError } = await supabase
+            .from('preclass_dimensions')
+            .select(`
+                id, 
+                name, 
+                type, 
+                icon,
+                preclass_dimension_options (
+                    value,
+                    emoticon,
+                    ordering
+                )
+            `)
+            .eq('phase_id', phaseId)
+            .eq('status', 'active')
+            .order('ordering');
+
+        if (dimError) throw new Error(`Error obteniendo dimensiones: ${dimError.message}`);
+
+        // Formatear dimensiones con opciones ordenadas
+        const dimensionsData = (dimensions || []).map(dim => ({
+            id: dim.id,
+            name: dim.name,
+            type: dim.type,
+            icon: dim.icon,
+            options: (dim.preclass_dimension_options || [])
+                .sort((a, b) => a.ordering - b.ordering)
+                .map(opt => ({
+                    value: opt.value,
+                    emoticon: opt.emoticon
+                }))
+        }));
+        const dimensionIds = dimensionsData.map(d => d.id);
+
+        // 2. Obtener todos los article_batch_items que tienen clasificaciones en esta fase
+        // (los items pertenecen a batches de esta fase)
+        const { data: batchesInPhase, error: batchesError } = await supabase
+            .from('article_batches')
+            .select('id')
+            .eq('phase_id', phaseId);
+
+        if (batchesError) throw new Error(`Error obteniendo lotes: ${batchesError.message}`);
+
+        const batchIds = (batchesInPhase || []).map(b => b.id);
+
+        if (batchIds.length === 0) {
+            return {
+                success: true,
+                data: {
+                    articles: [],
+                    dimensions: dimensionsData,
+                    totalCount: 0,
+                    currentPage: page,
+                    totalPages: 0
+                }
+            };
+        }
+
+        // 3. Obtener artículos únicos que tienen clasificaciones
+        const { data: reviewedArticles, error: reviewsError } = await supabase
+            .from('article_dimension_reviews')
+            .select('article_id')
+            .in('dimension_id', dimensionIds);
+
+        if (reviewsError) throw new Error(`Error obteniendo revisiones: ${reviewsError.message}`);
+
+        // Artículos únicos
+        const uniqueArticleIds = [...new Set((reviewedArticles || []).map(r => r.article_id))];
+
+        const totalCount = uniqueArticleIds.length;
+        const totalPages = Math.ceil(totalCount / limit);
+
+        if (totalCount === 0) {
+            return {
+                success: true,
+                data: {
+                    articles: [],
+                    dimensions: dimensionsData,
+                    totalCount: 0,
+                    currentPage: page,
+                    totalPages: 0
+                }
+            };
+        }
+
+        // Paginación de artículos
+        const from = (page - 1) * limit;
+        const to = from + limit;
+        const paginatedArticleIds = uniqueArticleIds.slice(from, to);
+
+        // 4. Obtener datos completos de artículos
+        const { data: articles, error: articlesError } = await supabase
+            .from('articles')
+            .select(`
+                id,
+                correlativo,
+                title,
+                abstract,
+                authors,
+                publication_year,
+                journal
+            `)
+            .eq('project_id', projectId)
+            .in('id', paginatedArticleIds);
+
+        if (articlesError) throw new Error(`Error obteniendo artículos: ${articlesError.message}`);
+
+        // 5. Obtener traducciones más recientes
+        const { data: translations, error: transError } = await supabase
+            .from('article_translations')
+            .select('article_id, title, abstract, summary, translated_at')
+            .in('article_id', paginatedArticleIds)
+            .order('translated_at', { ascending: false });
+
+        if (transError) throw new Error(`Error obteniendo traducciones: ${transError.message}`);
+
+        // Mapear última traducción por artículo
+        const latestTranslationByArticle: Record<string, typeof translations[0]> = {};
+        (translations || []).forEach(t => {
+            if (!latestTranslationByArticle[t.article_id]) {
+                latestTranslationByArticle[t.article_id] = t;
+            }
+        });
+
+        // 6. Obtener batch items para estos artículos
+        const { data: batchItems, error: itemsError} = await supabase
+            .from('article_batch_items')
+            .select('id, article_id, batch_id, status, article_batches(batch_number, name, status)')
+            .in('article_id', paginatedArticleIds)
+            .in('batch_id', batchIds);
+
+        if (itemsError) throw new Error(`Error obteniendo items de lote: ${itemsError.message}`);
+
+        // Mapear batch info por artículo (tomar el más reciente)
+        const batchInfoByArticle: Record<string, typeof batchItems[0]> = {};
+        (batchItems || []).forEach(item => {
+            batchInfoByArticle[item.article_id] = item;
+        });
+
+        // 7. Obtener todas las clasificaciones (última iteración por dimensión)
+        const { data: allReviews, error: allReviewsError } = await supabase
+            .from('article_dimension_reviews')
+            .select(`
+                article_id,
+                dimension_id,
+                classification_value,
+                confidence_score,
+                rationale,
+                iteration,
+                reviewer_type
+            `)
+            .in('article_id', paginatedArticleIds)
+            .in('dimension_id', dimensionIds)
+            .order('iteration', { ascending: false });
+
+        if (allReviewsError) throw new Error(`Error obteniendo clasificaciones: ${allReviewsError.message}`);
+
+        // Agrupar clasificaciones por artículo y dimensión (última iteración)
+        const classificationsByArticle: Record<string, Record<string, typeof allReviews[0]>> = {};
+        (allReviews || []).forEach(review => {
+            if (!classificationsByArticle[review.article_id]) {
+                classificationsByArticle[review.article_id] = {};
+            }
+            // Solo guardar si no existe o esta iteración es mayor
+            const existing = classificationsByArticle[review.article_id][review.dimension_id];
+            if (!existing || (review.iteration ?? 0) > (existing.iteration ?? 0)) {
+                classificationsByArticle[review.article_id][review.dimension_id] = review;
+            }
+        });
+
+        // 8. Construir resultado
+        const result: PreclassifiedArticleForAnalysis[] = (articles || []).map(article => {
+            const translation = latestTranslationByArticle[article.id];
+            const batchInfo = batchInfoByArticle[article.id];
+            const classifications = classificationsByArticle[article.id] || {};
+
+            // Mapear clasificaciones a formato esperado
+            const classificationsFormatted: Record<string, {
+                dimension_name: string;
+                value: string | null;
+                confidence: number | null;
+                rationale: string | null;
+                iteration: number | null;
+                reviewer_type: 'ai' | 'human';
+            }> = {};
+            Object.entries(classifications).forEach(([dimId, review]) => {
+                const dimension = dimensionsData.find(d => d.id === dimId);
+                classificationsFormatted[dimId] = {
+                    dimension_name: dimension?.name || 'Desconocida',
+                    value: review.classification_value,
+                    confidence: review.confidence_score,
+                    rationale: review.rationale,
+                    iteration: review.iteration,
+                    reviewer_type: review.reviewer_type as 'ai' | 'human'
+                };
+            });
+
+            return {
+                item_id: batchInfo?.id || '', // 🎯 ID del article_batch_items (necesario para notas)
+                article_id: article.id,
+                correlativo: article.correlativo,
+                title: article.title,
+                abstract: article.abstract,
+                authors: article.authors,
+                publication_year: article.publication_year,
+                journal: article.journal,
+                translated_title: translation?.title || null,
+                translated_abstract: translation?.abstract || null,
+                translation_summary: translation?.summary || null,
+                batch_number: batchInfo?.article_batches?.batch_number || null,
+                batch_name: batchInfo?.article_batches?.name || null,
+                batch_status: batchInfo?.article_batches?.status || null,
+                item_status: batchInfo?.status || null,
+                classifications: classificationsFormatted
+            };
+        });
+
+        return {
+            success: true,
+            data: {
+                articles: result,
+                dimensions: dimensionsData,
+                totalCount,
+                currentPage: page,
+                totalPages
+            }
+        };
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        return {
+            success: false,
+            error: `Error interno obteniendo artículos preclasificados: ${errorMessage}`
+        };
+    }
+}
