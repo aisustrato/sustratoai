@@ -344,6 +344,11 @@ const navItems: NavItem[] = useMemo(() => {
           icon: () => createMenuIcon(Filter),
         },
         {
+          label: "Análisis Preclasificación",
+          href: "/articulos/analisis-preclasificacion",
+          icon: () => createMenuIcon(LayoutDashboard),
+        },
+        {
           label: "Grupos",
           href: "/articulos/grupos",
           icon: () => createMenuIcon(MapPin),

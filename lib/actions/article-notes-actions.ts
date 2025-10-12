@@ -455,3 +455,52 @@ export async function getArticleNotesInfoByBatchItem(
     return { success: false, error: `Error interno: ${msg}` };
   }
 }
+
+// ========================================================================
+//  FUNCIÓN: getNotesPresenceForArticles
+//  Obtiene la presencia de notas para múltiples artículos
+// ========================================================================
+
+export async function getNotesPresenceForArticles(
+  articleIds: string[]
+): Promise<ResultadoOperacion<Record<string, boolean>>> {
+  if (!Array.isArray(articleIds) || articleIds.length === 0) {
+    return { success: true, data: {} };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    // Obtener todas las notas de estos artículos
+    const { data: notes, error } = await supabase
+      .from('article_notes')
+      .select('article_id')
+      .in('article_id', articleIds);
+
+    if (error) {
+      throw new Error(`Error obteniendo notas: ${error.message}`);
+    }
+
+    // Crear mapa de presencia
+    const presenceMap: Record<string, boolean> = {};
+    
+    // Inicializar todos como false
+    articleIds.forEach(id => {
+      presenceMap[id] = false;
+    });
+
+    // Marcar como true los que tienen notas
+    (notes || []).forEach(note => {
+      presenceMap[note.article_id] = true;
+    });
+
+    return { success: true, data: presenceMap };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    return {
+      success: false,
+      error: `Error obteniendo presencia de notas: ${errorMessage}`,
+      errorCode: 'INTERNAL_ERROR'
+    };
+  }
+}

@@ -9,7 +9,7 @@ import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import Link from "next/link";
-import { FileCheck, MapPin, FileText, Database } from "lucide-react";
+import { FileCheck, MapPin, FileText, Database, BarChart3 } from "lucide-react";
 //#endregion ![head]
 
 //#region [main] - 🔧 COMPONENT 🔧
@@ -37,6 +37,12 @@ export default function ArticulosHome() {
             icon: FileCheck,
             title: "Preclasificación",
             description: "Revisa y clasifica los artículos según criterios de inclusión y exclusión."
+          },
+          {
+            href: "/articulos/analisis-preclasificacion",
+            icon: BarChart3,
+            title: "Análisis de Preclasificación",
+            description: "Visualiza y analiza los resultados de la preclasificación con gráficos interactivos."
           },
           {
             href: "/articulos/grupos",

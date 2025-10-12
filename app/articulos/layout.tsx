@@ -9,7 +9,7 @@ import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
-import { FileText, ChevronsLeft, Filter, MapPin, Database } from "lucide-react";
+import { FileText, ChevronsLeft, Filter, MapPin, Database, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LayoutProvider } from "@/app/contexts/layout-context";
 //#endregion ![head]
@@ -25,6 +25,11 @@ const sidebarNavItems = [
     title: "Preclasificación",
     href: "/articulos/preclasificacion",
     icon: Filter,
+  },
+  {
+    title: "Análisis Preclasificación",
+    href: "/articulos/analisis-preclasificacion",
+    icon: BarChart3,
   },
   {
     title: "Grupos",
