@@ -10,7 +10,7 @@ import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardIcon } from "@/components/ui/StandardIcon";
-import { Brain, StickyNote, Filter, BarChart3, X, Download, ExternalLink } from "lucide-react";
+import { Brain, StickyNote, Filter, BarChart3, X, Download, ExternalLink, TrendingUp } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import ArticleGroupManagerSimple from "./components/ArticleGroupManagerSimple";
 import { UniverseVisualization } from "./components/UniverseVisualization";
@@ -845,12 +845,12 @@ export default function AnalisisPreclasificacionPage() {
 
       {/* Panel de filtros */}
       {showFilters && dimensions.some(d => d.options.length > 0) && (
-        <StandardCard styleType="outline" className="mb-6">
+        <StandardCard styleType="subtle" hasOutline={true} className="mb-6">
           <div className="space-y-4">
             {/* Filtro por Nivel de Confianza */}
             <div className="border-b border-neutral-border pb-4">
               <div className="flex items-center gap-2 mb-3">
-                <StandardIcon iconName="TrendingUp" size={16} />
+                <TrendingUp className="w-4 h-4" />
                 <StandardText size="sm" weight="semibold">
                   Nivel de Confianza
                 </StandardText>
