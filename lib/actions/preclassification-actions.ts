@@ -1510,24 +1510,53 @@ async function runTranslationJob(jobId: string, batchId: string, userId: string)
         
         // 1️⃣ OBTENER ARTÍCULOS DEL LOTE
         console.log(`📊 [runTranslationJob] Obteniendo datos del lote ${batchId}...`);
-        const { data: batchData, error: batchError } = await admin
+        
+        // Timeout de 8 segundos para la consulta
+        const batchQueryPromise = admin
             .from('article_batches')
             .select('batch_number, projects(id, name)')
             .eq('id', batchId)
             .single();
         
-        console.log(`🔍 [runTranslationJob] Respuesta de article_batches:`, { batchData, batchError });
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout: Consulta a article_batches tardó más de 8 segundos')), 8000)
+        );
+        
+        const { data: batchData, error: batchError } = await Promise.race([
+            batchQueryPromise,
+            timeoutPromise
+        ]) as any;
+        
+        console.log(`🔍 [runTranslationJob] Respuesta de article_batches:`, { 
+            batchData: batchData ? 'Recibido' : 'null', 
+            batchError: batchError?.message || 'null',
+            projectsPresent: !!batchData?.projects 
+        });
         
         if (batchError) throw new Error(`Error obteniendo lote: ${batchError.message}`);
         if (!batchData?.projects) throw new Error("Datos del lote o proyecto no encontrados.");
 
         console.log(`📋 [runTranslationJob] Obteniendo artículos del lote...`);
-        const { data: items, error: itemsError } = await admin
+        
+        // Timeout de 8 segundos para la consulta
+        const itemsQueryPromise = admin
             .from('article_batch_items')
             .select('id, articles(id, title, abstract)')
             .eq('batch_id', batchId);
         
-        console.log(`🔍 [runTranslationJob] Respuesta de article_batch_items:`, { itemsCount: items?.length, itemsError });
+        const itemsTimeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout: Consulta a article_batch_items tardó más de 8 segundos')), 8000)
+        );
+        
+        const { data: items, error: itemsError } = await Promise.race([
+            itemsQueryPromise,
+            itemsTimeoutPromise
+        ]) as any;
+        
+        console.log(`🔍 [runTranslationJob] Respuesta de article_batch_items:`, { 
+            itemsCount: items?.length || 0, 
+            itemsError: itemsError?.message || 'null' 
+        });
         
         if (itemsError) throw new Error(`Error obteniendo artículos: ${itemsError.message}`);
         if (!items || items.length === 0) throw new Error("No se encontraron artículos para traducir.");
