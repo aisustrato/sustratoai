@@ -774,8 +774,10 @@ ${articleDetails}
  * Implementa el principio "Todo o Nada" con integridad transaccional.
  */
 async function runPreclassificationJob(jobId: string, batchId: string, userId: string, accessToken: string) {
-    // Operar con cliente autenticado (RLS)
+    // 🔐 LECTURAS: Cliente autenticado con RLS
     const db = createSupabaseUserClient(accessToken);
+    // ✍️ ESCRITURAS: Service role client (bypass RLS para operaciones en background)
+    const admin = await createSupabaseServiceRoleClient();
 
     try {
         const { data: batchData } = await db.from('article_batches').select('phase_id, projects(id, name, proposal, proposal_bibliography)').eq('id', batchId).single();
@@ -787,7 +789,7 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
         const { data: dimensions, error: dimsError } = await db.from('preclass_dimensions').select('id, name, description, type, preclass_dimension_options(id, value)').eq('phase_id', batchData.phase_id).eq('status', 'active');
         if (dimsError || !dimensions) throw new Error("No se encontraron dimensiones para la fase.");
 
-        await db.from('ai_job_history').update({ details: { total: items.length, processed: 0, step: 'Datos preparados' } }).eq('id', jobId);
+        await admin.from('ai_job_history').update({ details: { total: items.length, processed: 0, step: 'Datos preparados' } }).eq('id', jobId);
 
         // 🎯 ARRAYS PARA REPECHAJE Y INTEGRIDAD TRANSACCIONAL
         const articulosParaRepechaje: ArticleForPrompt[] = [];
@@ -944,7 +946,7 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
                     }
                 }
 
-                await db.rpc('increment_job_tokens', {
+                await admin.rpc('increment_job_tokens', {
                     job_id: jobId,
                     input_increment: usage?.promptTokenCount || 0,
                     output_increment: usage?.candidatesTokenCount || 0
@@ -994,7 +996,7 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
         for (let i = 0; i < items.length; i += miniBatchSize) {
             const chunk = (items.slice(i, i + miniBatchSize) as ArticleForPrompt[]);
 
-            await db.from('ai_job_history').update({
+            await admin.from('ai_job_history').update({
                 progress: (processedCount / items.length) * 50,
                 details: {
                     total: items.length,
@@ -1022,7 +1024,7 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
             for (let i = 0; i < articulosParaRepechaje.length; i += miniBatchSize) {
                 const repechageChunk = articulosParaRepechaje.slice(i, i + miniBatchSize);
 
-                await db.from('ai_job_history').update({
+                await admin.from('ai_job_history').update({
                     progress: 50 + ((i / articulosParaRepechaje.length) * 40),
                     details: {
                         total: items.length,
@@ -1044,40 +1046,41 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
         // 🚀 Persistir clasificaciones si existen; sino, marcar como fallo
         if (clasificacionesExitosasTemporales.length > 0) {
             console.log(`\n🚀 [${jobId}] EJECUTANDO INSERCIÓN MASIVA EN article_dimension_reviews...`);
-            const { error: insertError } = await db
+            const { error: insertError } = await admin
                 .from('article_dimension_reviews')
                 .insert(clasificacionesExitosasTemporales);
             if (insertError) {
                 console.error(`❌ [${jobId}] ERROR EN INSERCIÓN MASIVA:`, insertError);
-                await db.from('ai_job_history').update({ status: 'failed', progress: 100, error_message: insertError.message }).eq('id', jobId);
+                await admin.from('ai_job_history').update({ status: 'failed', progress: 100, error_message: insertError.message }).eq('id', jobId);
                 throw insertError;
             }
         } else {
             console.warn(`⚠️ [${jobId}] No se generaron filas para insertar en article_dimension_reviews (posible problema con la IA).`);
-            await db.from('ai_job_history').update({ status: 'failed', progress: 100, error_message: 'Sin clasificaciones válidas para guardar' }).eq('id', jobId);
+            await admin.from('ai_job_history').update({ status: 'failed', progress: 100, error_message: 'Sin clasificaciones válidas para guardar' }).eq('id', jobId);
             throw new Error('No se generaron clasificaciones válidas para guardar.');
         }
 
         // ✅ Completar job y actualizar estados
-        await db.from('ai_job_history').update({
+        await admin.from('ai_job_history').update({
             status: 'completed',
             progress: 100,
             details: { total: items.length, processed: processedCount, step: 'Completado' },
             completed_at: new Date().toISOString(),
         }).eq('id', jobId);
 
-        const { error: itemsToReviewError } = await db
+        const { error: itemsToReviewError } = await admin
             .from('article_batch_items')
             .update({ status: 'review_pending' })
             .eq('batch_id', batchId);
         if (itemsToReviewError) {
             console.warn(`[${jobId}] Preclasificación completada, pero no se pudo actualizar estado de ítems a 'review_pending': ${itemsToReviewError.message}`);
         }
-        await db.from('article_batches').update({ status: 'review_pending' }).eq('id', batchId);
+        await admin.from('article_batches').update({ status: 'review_pending' }).eq('id', batchId);
 
     } catch (error) {
         const msg = error instanceof Error ? error.message : 'Error desconocido';
-        await db.from('ai_job_history').update({ status: 'failed', progress: 100, details: { error: msg } }).eq('id', jobId);
+        const admin = await createSupabaseServiceRoleClient();
+        await admin.from('ai_job_history').update({ status: 'failed', progress: 100, details: { error: msg } }).eq('id', jobId);
     }
 }
 
@@ -1492,7 +1495,10 @@ Abstract: ${abstract}
 async function runTranslationJob(jobId: string, batchId: string, userId: string, accessToken: string) {
     console.log(`🎬 [runTranslationJob] INICIANDO ejecución - JobID: ${jobId}, BatchID: ${batchId}`);
     
+    // 🔐 LECTURAS: Cliente autenticado con RLS
     const db = createSupabaseUserClient(accessToken);
+    // ✍️ ESCRITURAS: Service role client (bypass RLS para operaciones en background)
+    const admin = await createSupabaseServiceRoleClient();
 
     try {
         // 1️⃣ OBTENER ARTÍCULOS DEL LOTE
@@ -1515,7 +1521,7 @@ async function runTranslationJob(jobId: string, batchId: string, userId: string,
         const totalArticles = items.length;
         console.log(`📊 [runTranslationJob] Iniciando traducción de ${totalArticles} artículos para job ${jobId}`);
         
-        await db.from('ai_job_history').update({ 
+        await admin.from('ai_job_history').update({ 
             details: { 
                 batchId,
                 total: totalArticles, 
@@ -1545,7 +1551,7 @@ async function runTranslationJob(jobId: string, batchId: string, userId: string,
             
             // Actualizar progreso
             const currentProgress = 5 + ((i / totalArticles) * 90);
-            await db.from('ai_job_history').update({
+            await admin.from('ai_job_history').update({
                 progress: Math.round(currentProgress),
                 details: {
                     batchId,
@@ -1612,7 +1618,7 @@ async function runTranslationJob(jobId: string, batchId: string, userId: string,
         // 4️⃣ GUARDAR TRADUCCIONES EN BASE DE DATOS
         console.log(`💾 [runTranslationJob] Guardando ${translatedArticlesPayload.length} traducciones en BD`);
         
-        await db.from('ai_job_history').update({
+        await admin.from('ai_job_history').update({
             progress: 95,
             details: {
                 batchId,
@@ -1631,7 +1637,7 @@ async function runTranslationJob(jobId: string, batchId: string, userId: string,
         console.log(`✅ [runTranslationJob] Traducciones guardadas exitosamente`);
 
         // 5️⃣ COMPLETAR JOB CON ÉXITO
-        await db.from('ai_job_history').update({
+        await admin.from('ai_job_history').update({
             status: 'completed',
             progress: 100,
             completed_at: new Date().toISOString(),
@@ -1652,7 +1658,7 @@ async function runTranslationJob(jobId: string, batchId: string, userId: string,
         console.error(`❌ [runTranslationJob] Error en job ${jobId}:`, error);
 
         // Marcar job como fallido
-        await db.from('ai_job_history').update({
+        await admin.from('ai_job_history').update({
             status: 'failed',
             progress: 100,
             error_message: errorMessage,
