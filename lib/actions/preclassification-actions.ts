@@ -660,7 +660,7 @@ export async function startInitialPreclassification(batchId: string): Promise<Re
     console.log(`✅ [startInitialPreclassification] Sin duplicados, iniciando proceso para UUID: ${jobUUID}`);
     
     // 🚀 Iniciar el trabajo en background
-    runPreclassificationJob(jobUUID, batchId, user.id, session.access_token); 
+    runPreclassificationJob(jobUUID, batchId, user.id); 
     
     return { success: true, data: { jobId: jobUUID } };
 }
@@ -773,23 +773,20 @@ ${articleDetails}
  * Helper que ejecuta el trabajo de preclasificación con mecanismo de repechaje.
  * Implementa el principio "Todo o Nada" con integridad transaccional.
  */
-async function runPreclassificationJob(jobId: string, batchId: string, userId: string, accessToken: string) {
-    // 🔐 LECTURAS: Cliente autenticado con RLS
-    const db = createSupabaseUserClient(accessToken);
-
+async function runPreclassificationJob(jobId: string, batchId: string, userId: string) {
     try {
-        // ✍️ ESCRITURAS: Service role client (bypass RLS para operaciones en background)
+        // 🔑 CLIENTE ADMINISTRATIVO: Procesos de background usan service role para evitar problemas de RLS
         console.log(`🔑 [${jobId}] Creando cliente de Service Role...`);
         const admin = await createSupabaseServiceRoleClient();
         console.log(`✅ [${jobId}] Cliente de Service Role creado exitosamente`);
         
-        const { data: batchData } = await db.from('article_batches').select('phase_id, projects(id, name, proposal, proposal_bibliography)').eq('id', batchId).single();
+        const { data: batchData } = await admin.from('article_batches').select('phase_id, projects(id, name, proposal, proposal_bibliography)').eq('id', batchId).single();
         if (!batchData?.phase_id || !batchData.projects) throw new Error("Datos del lote o proyecto no encontrados.");
 
-        const { data: items, error: itemsError } = await db.from('article_batch_items').select('id, articles(id, title, abstract, publication_year, journal)').eq('batch_id', batchId);
+        const { data: items, error: itemsError } = await admin.from('article_batch_items').select('id, articles(id, title, abstract, publication_year, journal)').eq('batch_id', batchId);
         if (itemsError || !items) throw new Error("No se encontraron artículos para procesar.");
         
-        const { data: dimensions, error: dimsError } = await db.from('preclass_dimensions').select('id, name, description, type, preclass_dimension_options(id, value)').eq('phase_id', batchData.phase_id).eq('status', 'active');
+        const { data: dimensions, error: dimsError } = await admin.from('preclass_dimensions').select('id, name, description, type, preclass_dimension_options(id, value)').eq('phase_id', batchData.phase_id).eq('status', 'active');
         if (dimsError || !dimensions) throw new Error("No se encontraron dimensiones para la fase.");
 
         await admin.from('ai_job_history').update({ details: { total: items.length, processed: 0, step: 'Datos preparados' } }).eq('id', jobId);
@@ -1475,7 +1472,7 @@ export async function startBatchTranslation(batchId: string): Promise<ResultadoO
     console.log(`✅ [startBatchTranslation] Sin duplicados, iniciando proceso para UUID: ${jobUUID}`);
     
     // 🚀 Iniciar el trabajo en background
-    runTranslationJob(jobUUID, batchId, user.id, session.access_token);
+    runTranslationJob(jobUUID, batchId, user.id);
     
     return { success: true, data: { jobId: jobUUID } };
 }
@@ -1502,34 +1499,38 @@ Abstract: ${abstract}
  * Ejecuta el trabajo de traducción completo en el backend.
  * Actualiza progreso en tiempo real vía ai_job_history.
  */
-async function runTranslationJob(jobId: string, batchId: string, userId: string, accessToken: string) {
+async function runTranslationJob(jobId: string, batchId: string, userId: string) {
     console.log(`🎬 [runTranslationJob] INICIANDO ejecución - JobID: ${jobId}, BatchID: ${batchId}`);
-    
-    // 🔐 LECTURAS: Cliente autenticado con RLS
-    const db = createSupabaseUserClient(accessToken);
 
     try {
-        // ✍️ ESCRITURAS: Service role client (bypass RLS para operaciones en background)
+        // 🔑 CLIENTE ADMINISTRATIVO: Procesos de background usan service role para evitar problemas de RLS
         console.log(`🔑 [${jobId}] Creando cliente de Service Role...`);
         const admin = await createSupabaseServiceRoleClient();
         console.log(`✅ [${jobId}] Cliente de Service Role creado exitosamente`);
         
         // 1️⃣ OBTENER ARTÍCULOS DEL LOTE
         console.log(`📊 [runTranslationJob] Obteniendo datos del lote ${batchId}...`);
-        const { data: batchData } = await db
+        const { data: batchData, error: batchError } = await admin
             .from('article_batches')
             .select('batch_number, projects(id, name)')
             .eq('id', batchId)
             .single();
         
+        console.log(`🔍 [runTranslationJob] Respuesta de article_batches:`, { batchData, batchError });
+        
+        if (batchError) throw new Error(`Error obteniendo lote: ${batchError.message}`);
         if (!batchData?.projects) throw new Error("Datos del lote o proyecto no encontrados.");
 
-        const { data: items, error: itemsError } = await db
+        console.log(`📋 [runTranslationJob] Obteniendo artículos del lote...`);
+        const { data: items, error: itemsError } = await admin
             .from('article_batch_items')
             .select('id, articles(id, title, abstract)')
             .eq('batch_id', batchId);
         
-        if (itemsError || !items) throw new Error("No se encontraron artículos para traducir.");
+        console.log(`🔍 [runTranslationJob] Respuesta de article_batch_items:`, { itemsCount: items?.length, itemsError });
+        
+        if (itemsError) throw new Error(`Error obteniendo artículos: ${itemsError.message}`);
+        if (!items || items.length === 0) throw new Error("No se encontraron artículos para traducir.");
         
         const totalArticles = items.length;
         console.log(`📊 [runTranslationJob] Iniciando traducción de ${totalArticles} artículos para job ${jobId}`);
