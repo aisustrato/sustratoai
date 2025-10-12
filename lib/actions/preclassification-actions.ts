@@ -776,10 +776,13 @@ ${articleDetails}
 async function runPreclassificationJob(jobId: string, batchId: string, userId: string, accessToken: string) {
     // 🔐 LECTURAS: Cliente autenticado con RLS
     const db = createSupabaseUserClient(accessToken);
-    // ✍️ ESCRITURAS: Service role client (bypass RLS para operaciones en background)
-    const admin = await createSupabaseServiceRoleClient();
 
     try {
+        // ✍️ ESCRITURAS: Service role client (bypass RLS para operaciones en background)
+        console.log(`🔑 [${jobId}] Creando cliente de Service Role...`);
+        const admin = await createSupabaseServiceRoleClient();
+        console.log(`✅ [${jobId}] Cliente de Service Role creado exitosamente`);
+        
         const { data: batchData } = await db.from('article_batches').select('phase_id, projects(id, name, proposal, proposal_bibliography)').eq('id', batchId).single();
         if (!batchData?.phase_id || !batchData.projects) throw new Error("Datos del lote o proyecto no encontrados.");
 
@@ -1079,8 +1082,15 @@ async function runPreclassificationJob(jobId: string, batchId: string, userId: s
 
     } catch (error) {
         const msg = error instanceof Error ? error.message : 'Error desconocido';
-        const admin = await createSupabaseServiceRoleClient();
-        await admin.from('ai_job_history').update({ status: 'failed', progress: 100, details: { error: msg } }).eq('id', jobId);
+        console.error(`❌ [${jobId}] Error en preclasificación:`, msg);
+        console.error(`🔍 [${jobId}] Stack trace:`, error instanceof Error ? error.stack : 'No disponible');
+        
+        try {
+            const admin = await createSupabaseServiceRoleClient();
+            await admin.from('ai_job_history').update({ status: 'failed', progress: 100, details: { error: msg } }).eq('id', jobId);
+        } catch (adminError) {
+            console.error(`❌ [${jobId}] Error al marcar job como fallido:`, adminError);
+        }
     }
 }
 
@@ -1497,10 +1507,13 @@ async function runTranslationJob(jobId: string, batchId: string, userId: string,
     
     // 🔐 LECTURAS: Cliente autenticado con RLS
     const db = createSupabaseUserClient(accessToken);
-    // ✍️ ESCRITURAS: Service role client (bypass RLS para operaciones en background)
-    const admin = await createSupabaseServiceRoleClient();
 
     try {
+        // ✍️ ESCRITURAS: Service role client (bypass RLS para operaciones en background)
+        console.log(`🔑 [${jobId}] Creando cliente de Service Role...`);
+        const admin = await createSupabaseServiceRoleClient();
+        console.log(`✅ [${jobId}] Cliente de Service Role creado exitosamente`);
+        
         // 1️⃣ OBTENER ARTÍCULOS DEL LOTE
         console.log(`📊 [runTranslationJob] Obteniendo datos del lote ${batchId}...`);
         const { data: batchData } = await db
@@ -1656,21 +1669,27 @@ async function runTranslationJob(jobId: string, batchId: string, userId: string,
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         console.error(`❌ [runTranslationJob] Error en job ${jobId}:`, error);
+        console.error(`🔍 [runTranslationJob] Stack trace:`, error instanceof Error ? error.stack : 'No disponible');
 
         // Marcar job como fallido
-        await admin.from('ai_job_history').update({
-            status: 'failed',
-            progress: 100,
-            error_message: errorMessage,
-            completed_at: new Date().toISOString(),
-            details: {
-                batchId,
-                error: errorMessage,
-                step: 'Error durante la traducción'
-            }
-        }).eq('id', jobId);
+        try {
+            const admin = await createSupabaseServiceRoleClient();
+            await admin.from('ai_job_history').update({
+                status: 'failed',
+                progress: 100,
+                error_message: errorMessage,
+                completed_at: new Date().toISOString(),
+                details: {
+                    batchId,
+                    error: errorMessage,
+                    step: 'Error durante la traducción'
+                }
+            }).eq('id', jobId);
 
-        console.error(`💥 [runTranslationJob] Job ${jobId} marcado como fallido`);
+            console.error(`💥 [runTranslationJob] Job ${jobId} marcado como fallido`);
+        } catch (adminError) {
+            console.error(`❌ [runTranslationJob] Error al marcar job como fallido:`, adminError);
+        }
     }
 }
 
