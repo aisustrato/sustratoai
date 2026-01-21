@@ -17,7 +17,7 @@ import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function SignUpPage() {
 	return (
-		<StandardPageBackground variant="dots" bubbles={true}>
+		<StandardPageBackground variant="gradient" bubbles={true}>
 			<div className="flex items-center justify-center min-h-screen p-4">
 				<StandardCard 
                     className="max-w-3xl w-full" 
