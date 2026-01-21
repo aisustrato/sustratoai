@@ -17,13 +17,14 @@ import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function SignUpPage() {
 	return (
+		/* CORRECCIÓN FINAL: Volvemos a 'gradient' que es el real. Adiós a la alucinación 'dots' */
 		<StandardPageBackground variant="gradient" bubbles={true}>
 			<div className="flex items-center justify-center min-h-screen p-4">
 				<StandardCard 
                     className="max-w-3xl w-full" 
-                    accentPlacement="left" 
+                    accentPlacement="top" 
                     colorScheme="primary" 
-                    styleType="elevated"
+                    styleType="subtle"
                 >
 					{/* Cabecera: Identidad y Cambio Ontológico */}
 					<StandardCard.Header className="space-y-4 text-center pb-6 border-b border-border/40">
