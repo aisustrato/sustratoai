@@ -48,7 +48,7 @@ export default function SignUpPage() {
 							size="lg"
 							colorScheme="neutral"
 							className="text-center max-w-2xl mx-auto italic text-muted-foreground">
-							"Cultivando sinergias humano·AI bajo la Ética de Moebius"
+							&quot;Cultivando sinergias humano·AI bajo la Ética de Moebius&quot;
 						</StandardText>
 					</StandardCard.Header>
 
