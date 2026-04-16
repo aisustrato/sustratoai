@@ -2,6 +2,9 @@
 
 `StandardBadge` es un componente en línea utilizado para mostrar información concisa como estados, contadores, o categorías. Es altamente personalizable a través de un sistema de `styleType`, `colorScheme` y `size`.
 
+**Versión:** v4.0 - Patrón Flex + Tokens Provider + Efectos SUSTRATO  
+**Arquitectura:** Consume tokens precalculados desde `DesignTokensProvider` con efectos de retroalimentación visual al humano.
+
 ---
 
 ### 1. Uso Básico
@@ -86,3 +89,172 @@ import { Rocket } from "lucide-react";
   Misión Activa
 </StandardBadge>
 ```
+
+---
+
+## 🌊 Efectos SUSTRATO - Retroalimentación Visual al Humano
+
+StandardBadge v4 incluye efectos de animación para retroalimentar al usuario con "respiración" visual. Estos efectos son opcionales y se activan mediante props booleanos.
+
+### 7. Pulse Border - Respiración Sutil (2.5s)
+Efecto de respiración sutil en el borde. Ideal para badges que representan estados activos o en progreso.
+
+```tsx
+import { Sparkles } from "lucide-react";
+
+// Badge con respiración sutil
+<StandardBadge 
+  colorScheme="primary" 
+  styleType="outline" 
+  pulseBorder
+>
+  En Progreso
+</StandardBadge>
+
+// Con icono
+<StandardBadge 
+  colorScheme="accent" 
+  styleType="outline" 
+  pulseBorder
+  leftIcon={Sparkles}
+>
+  Activo
+</StandardBadge>
+```
+
+**Características:**
+- Ciclo de 2.5 segundos
+- Animación de borde y sombra
+- No invasivo, sutil y elegante
+- Funciona con todos los `styleType`
+
+### 8. Pafff Moment - Latido de Coherencia (1.5s)
+Latido más intenso para momentos de insight o coherencia. Retroalimenta al humano con energía visual.
+
+```tsx
+import { AlertTriangle, Wand2 } from "lucide-react";
+
+// Badge con latido intenso
+<StandardBadge 
+  colorScheme="warning" 
+  styleType="solid" 
+  pafffMoment
+  leftIcon={AlertTriangle}
+>
+  ¡Atención!
+</StandardBadge>
+
+// Para insights
+<StandardBadge 
+  colorScheme="tertiary" 
+  styleType="outline" 
+  pafffMoment
+  leftIcon={Wand2}
+>
+  Insight
+</StandardBadge>
+```
+
+**Características:**
+- Ciclo de 1.5 segundos (más rápido que pulse)
+- Animación de box-shadow con múltiples capas
+- Más prominente y llamativo
+- Ideal para alertas y momentos importantes
+
+### 9. Combinaciones de Efectos con Estilos
+
+Los efectos SUSTRATO funcionan con cualquier combinación de `styleType` y `colorScheme`:
+
+```tsx
+// Solid + Pulse Border
+<StandardBadge 
+  colorScheme="primary" 
+  styleType="solid" 
+  pulseBorder
+>
+  Solid Pulse
+</StandardBadge>
+
+// Subtle + Pafff Moment
+<StandardBadge 
+  colorScheme="secondary" 
+  styleType="subtle" 
+  pafffMoment
+>
+  Subtle Pafff
+</StandardBadge>
+
+// Outline + Pulse Border
+<StandardBadge 
+  colorScheme="accent" 
+  styleType="outline" 
+  pulseBorder
+>
+  Outline Pulse
+</StandardBadge>
+```
+
+---
+
+## 📋 Props Completas
+
+| Prop | Tipo | Default | Descripción |
+|------|------|---------|-------------|
+| `children` | `ReactNode` | - | Contenido del badge |
+| `colorScheme` | `ColorSchemeVariant` | `"primary"` | Esquema de color |
+| `styleType` | `"solid" \| "subtle" \| "outline"` | `"subtle"` | Estilo visual |
+| `size` | `"2xs" \| "xs" \| "sm" \| "md" \| "lg"` | `"md"` | Tamaño del badge |
+| `leftIcon` | `React.ComponentType` | - | Icono a la izquierda |
+| `rightIcon` | `React.ComponentType` | - | Icono a la derecha |
+| `pulseBorder` | `boolean` | `false` | Efecto de respiración sutil (2.5s) |
+| `pafffMoment` | `boolean` | `false` | Efecto de latido intenso (1.5s) |
+| `className` | `string` | - | Clases CSS adicionales |
+
+---
+
+## 🎯 Casos de Uso Recomendados
+
+### Estados Activos
+```tsx
+<StandardBadge colorScheme="success" styleType="outline" pulseBorder>
+  Procesando
+</StandardBadge>
+```
+
+### Alertas Importantes
+```tsx
+<StandardBadge colorScheme="danger" styleType="solid" pafffMoment>
+  Urgente
+</StandardBadge>
+```
+
+### Notificaciones
+```tsx
+<StandardBadge colorScheme="warning" styleType="subtle" pafffMoment>
+  3 nuevos
+</StandardBadge>
+```
+
+### Estados Estáticos
+```tsx
+<StandardBadge colorScheme="neutral" styleType="outline">
+  Completado
+</StandardBadge>
+```
+
+---
+
+## 🏗️ Arquitectura v4
+
+StandardBadge utiliza el **Patrón Flex** con tokens precalculados:
+
+1. **Tokens Precalculados**: Los estilos se generan una sola vez en `DesignTokensProvider`
+2. **CSS Dinámico**: Las animaciones se inyectan como `<style>` con ID único
+3. **Sin Recálculos**: El componente NO recalcula estilos en cada render
+4. **Performance**: O(1) para obtener tokens, animaciones manejadas por el navegador
+
+**Beneficios:**
+- ⚡ Performance óptima
+- 🎨 Animaciones fluidas sin impacto en React
+- 🧠 Lógica en JS, ejecución en CSS
+- 🌊 Retroalimentación visual al humano

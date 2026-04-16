@@ -12,6 +12,7 @@ import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardSelect } from "@/components/ui/StandardSelect";
 import { StandardInput } from "@/components/ui/StandardInput";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 // --- ⚠️ Componentes Legacy (Standard aún no existe) ---
 import { StandardSlider } from "@/components/ui/StandardSlider";
@@ -28,7 +29,7 @@ import {
 import { TabsContent as StandardTabsContent } from "@radix-ui/react-tabs";
 // --- FIN DE LA CORRECCIÓN ---
 
-import { Palette, Play, ToggleLeft, Type, Scaling } from "lucide-react";
+import { Palette, Play, ToggleLeft, Type, Scaling, PartyPopper } from "lucide-react";
 
 // --- Opciones para los Controles ---
 const progressBarColorSchemes: NonNullable<
@@ -94,6 +95,9 @@ export default function StandardProgressBarShowroomPage() {
 
 	// --- Estado para la demo de auto-llenado ---
 	const [fillingValue, setFillingValue] = useState(0);
+	// --- Estado para demo de celebración ---
+	const [celebrationValue, setCelebrationValue] = useState(0);
+	const [showCelebration, setShowCelebration] = useState(false);
 
 	useEffect(() => {
 		if (activeTab === "states") {
@@ -105,7 +109,25 @@ export default function StandardProgressBarShowroomPage() {
 		}
 	}, [activeTab]);
 
+	// Auto-llenado para demo de celebración
+	useEffect(() => {
+		if (activeTab === "celebration") {
+			setCelebrationValue(0);
+			const interval = setInterval(() => {
+				setCelebrationValue((prev) => {
+					if (prev >= 100) {
+						clearInterval(interval);
+						return 100;
+					}
+					return prev + 2;
+				});
+			}, 100);
+			return () => clearInterval(interval);
+		}
+	}, [activeTab]);
+
 	return (
+		<StandardPageBackground variant="minimal">
 		<div className="container mx-auto py-10 px-4">
 			<header className="mb-12 text-center">
 				<StandardText
@@ -137,16 +159,19 @@ export default function StandardProgressBarShowroomPage() {
                 colorScheme="warning"
                 styleType="line"
             >
-				<StandardTabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8">
+				<StandardTabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-8">
 					<StandardTabsTrigger value="interactive">
 						Interactivo
 					</StandardTabsTrigger>
 					<StandardTabsTrigger value="schemes">
 						Esquemas y Estilos
 					</StandardTabsTrigger>
-                    {/* CORRECCIÓN: Trigger "code" cambiado a "sizes" para coincidir con el contenido. */}
 					<StandardTabsTrigger value="sizes">Tamaños</StandardTabsTrigger>
 					<StandardTabsTrigger value="states">Estados</StandardTabsTrigger>
+					<StandardTabsTrigger value="celebration">
+						<PartyPopper size={16} className="inline mr-1" />
+						Celebración
+					</StandardTabsTrigger>
 				</StandardTabsList>
 
 				<AnimatePresence mode="wait">
@@ -252,18 +277,23 @@ export default function StandardProgressBarShowroomPage() {
 									</StandardButton>
 								</div>
 
-								<div className="mt-8 pt-8 border-t border-dashed">
-									<StandardProgressBar
-										key={`${demoColorScheme}-${demoStyleType}-${demoSize}-${demoLabel}-${showDemoValue}-${isIndeterminate}`}
-										colorScheme={demoColorScheme}
-										styleType={demoStyleType}
-										size={demoSize}
-										value={demoValue}
-										label={demoLabel}
-										showValue={showDemoValue}
-										indeterminate={isIndeterminate}
-										animated={isAnimated}
-									/>
+								<div className="mt-8 pt-8 border-t border-dashed space-y-6">
+									<div>
+										<StandardText asElement="p" size="sm" colorScheme="neutral" colorShade="text" className="mb-2">
+											💡 Observa la animación sutil cada 25% mientras ajustas el slider
+										</StandardText>
+										<StandardProgressBar
+											key={`${demoColorScheme}-${demoStyleType}-${demoSize}-${demoLabel}-${showDemoValue}-${isIndeterminate}`}
+											colorScheme={demoColorScheme}
+											styleType={demoStyleType}
+											size={demoSize}
+											value={demoValue}
+											label={demoLabel}
+											showValue={showDemoValue}
+											indeterminate={isIndeterminate}
+											animated={isAnimated}
+										/>
+									</div>
 								</div>
 							</motion.section>
 						</StandardTabsContent>
@@ -394,13 +424,18 @@ export default function StandardProgressBarShowroomPage() {
 										Progreso Animado (Auto-llenado){" "}
 										<Play size={16} className="inline-block ml-2" />
 									</StandardText>
-									<StandardProgressBar
-										value={fillingValue}
-										colorScheme="success"
-										styleType="gradient"
-										showValue
-										label="Cargando datos..."
-									/>
+									<div className="space-y-2">
+										<StandardText asElement="p" size="sm" colorScheme="neutral" colorShade="text">
+											✨ Observa las animaciones cada 25% (25%, 50%, 75%)
+										</StandardText>
+										<StandardProgressBar
+											value={fillingValue}
+											colorScheme="success"
+											styleType="gradient"
+											showValue
+											label="Cargando datos..."
+										/>
+									</div>
 								</div>
 								<div>
 									<StandardText
@@ -421,8 +456,110 @@ export default function StandardProgressBarShowroomPage() {
 							</motion.section>
 						</StandardTabsContent>
 					)}
+
+					{activeTab === "celebration" && (
+						<StandardTabsContent forceMount value="celebration" asChild>
+							<motion.section
+								key="celebration"
+								variants={tabContentVariants}
+								initial="hidden"
+								animate="visible"
+								exit="exit"
+								className="space-y-10">
+								<div>
+									<StandardText
+										asElement="h3"
+										size="lg"
+										weight="medium"
+										className="mb-3">
+										Efecto PAFFF al 100% 🎉
+										<PartyPopper size={16} className="inline-block ml-2" />
+									</StandardText>
+									<StandardText asElement="p" size="sm" colorScheme="neutral" colorShade="text" className="mb-4">
+										Cuando el progreso llega al 100%, se activa una celebración animada. Usa la prop <code className="px-1.5 py-0.5 bg-neutral-200 dark:bg-neutral-700 rounded text-xs">celebrateOnComplete</code>.
+									</StandardText>
+									<div className="space-y-6">
+										<div>
+											<StandardText asElement="p" size="sm" weight="medium" className="mb-2">
+												Demo Auto-llenado (observa al llegar al 100%):
+											</StandardText>
+											<StandardProgressBar
+												value={celebrationValue}
+												colorScheme="success"
+												styleType="gradient"
+												showValue
+												label="Completando tarea..."
+												celebrateOnComplete={true}
+											/>
+										</div>
+
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+											<StandardButton
+												size="sm"
+												colorScheme="primary"
+												onClick={() => setCelebrationValue(0)}>
+												Reiniciar
+											</StandardButton>
+											<StandardButton
+												size="sm"
+												colorScheme="success"
+												onClick={() => setCelebrationValue(100)}>
+												Completar Ahora
+											</StandardButton>
+										</div>
+									</div>
+								</div>
+
+								<div>
+									<StandardText
+										asElement="h3"
+										size="lg"
+										weight="medium"
+										className="mb-3">
+										Ejemplos con diferentes estilos:
+									</StandardText>
+									<div className="space-y-4">
+										<div>
+											<StandardText asElement="p" size="sm" colorScheme="neutral" colorShade="text" className="mb-2">
+												Thermometer con celebración:
+											</StandardText>
+											<StandardProgressBar
+												value={100}
+												colorScheme="primary"
+												styleType="thermometer"
+												showValue
+												label="Temperatura óptima alcanzada"
+												celebrateOnComplete={showCelebration}
+												size="lg"
+											/>
+										</div>
+										<div>
+											<StandardText asElement="p" size="sm" colorScheme="neutral" colorShade="text" className="mb-2">
+												Accent gradient con celebración:
+											</StandardText>
+											<StandardProgressBar
+												value={100}
+												colorScheme="accent"
+												styleType="accent-gradient"
+												showValue
+												label="Proyecto finalizado"
+												celebrateOnComplete={showCelebration}
+											/>
+										</div>
+										<StandardButton
+											size="sm"
+											colorScheme="warning"
+											onClick={() => setShowCelebration(!showCelebration)}>
+											{showCelebration ? 'Ocultar' : 'Mostrar'} Celebración
+										</StandardButton>
+									</div>
+								</div>
+							</motion.section>
+						</StandardTabsContent>
+					)}
 				</AnimatePresence>
 			</StandardTabs>
 		</div>
+		</StandardPageBackground>
 	);
 }

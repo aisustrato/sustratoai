@@ -4,7 +4,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Check, Loader2 } from "lucide-react"; // Añadido Loader2 para feedback visual
+import { LogOut, Check, Loader2, Plus } from "lucide-react"; // Añadido Loader2 para feedback visual y Plus para crear proyecto
 import { StandardIcon } from "@/components/ui/StandardIcon"; // Added StandardIcon import
 import { useTheme } from "@/app/theme-provider";
 import { useAuth } from "@/app/auth-provider";
@@ -16,9 +16,12 @@ import {
 } from "@/components/ui/StandardSelect"; // Assuming SelectOption type is compatible or similar
 import { generateUserAvatarTokens } from "@/lib/theme/components/user-avatar-tokens";
 import { actualizarProyectoActivo } from "@/lib/actions/project-dashboard-actions"; // Importar server action y tipo
+import { createMinimalProject } from "@/lib/actions/project-actions";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
-import { FontThemeSwitcher } from "@/components/ui/font-theme-switcher";
+import { StandardFontThemeSwitcher } from "@/components/ui/StandardFontThemeSwitcher";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useRouter } from "next/navigation";
+import { StandardButton } from "@/components/ui/StandardButton";
 
 // Traducciones amigables para los nombres de permisos (sin cambios)
 const permissionTranslations = {
@@ -33,9 +36,9 @@ interface UserAvatarProps {
 	showThemeSwitcher?: boolean;
 }
 
-export function UserAvatar({ 
-	showFontSwitcher = false, 
-	showThemeSwitcher = false 
+export function UserAvatar({
+	showFontSwitcher = false,
+	showThemeSwitcher = false,
 }: UserAvatarProps = {}) {
 	const {
 		user,
@@ -47,13 +50,15 @@ export function UserAvatar({
 	const { mode, appColorTokens } = useTheme();
 	const [isOpen, setIsOpen] = useState(false);
 	const [isChangingProject, setIsChangingProject] = useState(false); // NUEVO: Estado de carga local
+	const [isCreatingProject, setIsCreatingProject] = useState(false); // Estado para creación de proyecto
 	const menuRef = useRef<HTMLDivElement>(null);
 	const buttonRef = useRef<HTMLButtonElement>(null);
+	const router = useRouter();
 
 	const avatarTokens = useMemo(() => {
-		return appColorTokens
-			? generateUserAvatarTokens(appColorTokens, mode)
-			: null;
+		return appColorTokens ?
+				generateUserAvatarTokens(appColorTokens, mode)
+			:	null;
 	}, [appColorTokens, mode]);
 
 	const hasTokens = !!avatarTokens;
@@ -119,7 +124,7 @@ export function UserAvatar({
 			await logout();
 			setIsOpen(false);
 			console.log(
-				"[UserAvatar v1.1] Logout completado, toast manejado por AuthProvider."
+				"[UserAvatar v1.1] Logout completado, toast manejado por AuthProvider.",
 			);
 		} catch (error) {
 			console.error("[UserAvatar v1.1] Error al llamar a auth.logout:", error);
@@ -127,9 +132,78 @@ export function UserAvatar({
 		}
 	};
 
+	// Handler para crear nuevo proyecto
+	const handleCreateProject = async () => {
+		if (!user?.id) {
+			toast.error("Error de autenticación.");
+			return;
+		}
+
+		setIsOpen(false);
+		setIsCreatingProject(true);
+		toast.loading("Creando proyecto...", { id: "creating-project-toast" });
+
+		try {
+			const result = await createMinimalProject("Nuevo Proyecto");
+			if (result.success) {
+				const newProjectId = result.data.project.id;
+				console.log(`[UserAvatar] Proyecto creado con ID: ${newProjectId}`);
+
+				// Activar el proyecto recién creado
+				toast.loading("Activando proyecto...", {
+					id: "creating-project-toast",
+				});
+				const activateResult = await actualizarProyectoActivo(
+					user.id,
+					newProjectId,
+				);
+
+				if (activateResult.success) {
+					toast.success("Proyecto creado y activado. Redirigiendo...", {
+						id: "creating-project-toast",
+					});
+
+					// Redirigir a la página de datos maestros del proyecto
+					router.push(`/datos-maestros/proyecto?id=${newProjectId}`);
+
+					// Refrescar la página para que el AuthProvider cargue el nuevo proyecto
+					setTimeout(() => {
+						window.location.reload();
+					}, 500);
+				} else {
+					toast.error(
+						"Proyecto creado pero no se pudo activar. Recarga la página.",
+						{
+							id: "creating-project-toast",
+						},
+					);
+					console.error(
+						"[UserAvatar] Error al activar proyecto:",
+						activateResult.error,
+					);
+				}
+			} else {
+				toast.error(result.error || "Error al crear el proyecto.", {
+					id: "creating-project-toast",
+				});
+				console.error(
+					"[UserAvatar] Error desde createMinimalProject:",
+					result.error,
+				);
+			}
+		} catch (error) {
+			console.error("[UserAvatar] Excepción al crear proyecto:", error);
+			toast.error("Se produjo una excepción al crear el proyecto.", {
+				id: "creating-project-toast",
+			});
+		} finally {
+			setIsCreatingProject(false);
+		}
+	};
+
 	// REFACTORIZADO: handleProjectChange
 	const handleProjectChange = async (
-		selectedProjectIdValue: string | string[] | undefined
+		selectedProjectIdValue: string | string[] | undefined,
 	) => {
 		setIsOpen(false); // Cerrar el menú independientemente del resultado
 
@@ -146,21 +220,21 @@ export function UserAvatar({
 
 		if (!projectIdToProcess) {
 			console.warn(
-				"[UserAvatar v1.1] No se proporcionó un ID de proyecto válido."
+				"[UserAvatar v1.1] No se proporcionó un ID de proyecto válido.",
 			);
 			return;
 		}
 
 		if (projectIdToProcess === proyectoActual?.id) {
 			console.log(
-				"[UserAvatar v1.1] El proyecto seleccionado ya es el actual. No se necesita cambio."
+				"[UserAvatar v1.1] El proyecto seleccionado ya es el actual. No se necesita cambio.",
 			);
 			return;
 		}
 
 		if (!user?.id) {
 			console.error(
-				"[UserAvatar v1.1] User ID no disponible. No se puede cambiar el proyecto."
+				"[UserAvatar v1.1] User ID no disponible. No se puede cambiar el proyecto.",
 			);
 			toast.error("Error de autenticación al cambiar proyecto.");
 			return;
@@ -168,12 +242,12 @@ export function UserAvatar({
 
 		const finalProjectId = projectIdToProcess;
 		const proyectoSeleccionado = proyectosDisponibles.find(
-			(p) => p.id === finalProjectId
+			(p) => p.id === finalProjectId,
 		);
 
 		if (!proyectoSeleccionado) {
 			console.error(
-				`[UserAvatar v1.1] Proyecto con ID ${finalProjectId} no encontrado en proyectosDisponibles.`
+				`[UserAvatar v1.1] Proyecto con ID ${finalProjectId} no encontrado en proyectosDisponibles.`,
 			);
 			toast.error("Error: Proyecto no encontrado en la lista disponible.");
 			return;
@@ -190,7 +264,7 @@ export function UserAvatar({
 					id: "changing-project-toast",
 				});
 				console.log(
-					`[UserAvatar v1.1] Proyecto cambiado a ${proyectoSeleccionado.name} via setProyectoActivoLocal.`
+					`[UserAvatar v1.1] Proyecto cambiado a ${proyectoSeleccionado.name} via setProyectoActivoLocal.`,
 				);
 			} else {
 				toast.error(result.error || "Error al cambiar de proyecto.", {
@@ -198,13 +272,13 @@ export function UserAvatar({
 				});
 				console.error(
 					"[UserAvatar v1.1] Error desde actualizarProyectoActivo:",
-					result.error
+					result.error,
 				);
 			}
 		} catch (error) {
 			console.error(
 				"[UserAvatar v1.1] Excepción al cambiar de proyecto:",
-				error
+				error,
 			);
 			toast.error("Se produjo una excepción al cambiar de proyecto.", {
 				id: "changing-project-toast",
@@ -219,14 +293,15 @@ export function UserAvatar({
 			value: proyecto.id,
 			label: proyecto.name,
 			disabled: isChangingProject, // Deshabilitar opciones mientras se cambia
-		})
+		}),
 	);
 
-	const activePermissions = proyectoActual?.permissions
-		? Object.entries(proyectoActual.permissions)
+	const activePermissions =
+		proyectoActual?.permissions ?
+			Object.entries(proyectoActual.permissions)
 				.filter(([key, value]) => value === true && key !== "role_name")
 				.map(([key]) => key as keyof typeof permissionTranslations)
-		: [];
+		:	[];
 
 	const shouldShowProjectSelector = proyectosDisponibles.length > 0; // Mostrar siempre si hay proyectos, incluso si solo hay uno para ver el rol.
 
@@ -239,16 +314,19 @@ export function UserAvatar({
 
 	// Obtener el nombre completo del usuario desde el perfil extendido o los metadatos
 	const userDisplayName = useMemo(() => {
-		if (userProfile?.public_display_name) return userProfile.public_display_name;
+		if (userProfile?.public_display_name)
+			return userProfile.public_display_name;
 		if (userProfile?.first_name) {
-			return userProfile.last_name 
-				? `${userProfile.first_name} ${userProfile.last_name}`
-			: userProfile.first_name;
+			return userProfile.last_name ?
+					`${userProfile.first_name} ${userProfile.last_name}`
+				:	userProfile.first_name;
 		}
-		return user?.user_metadata?.public_display_name ||
+		return (
+			user?.user_metadata?.public_display_name ||
 			user?.user_metadata?.name ||
 			user?.email ||
-			"Usuario";
+			"Usuario"
+		);
 	}, [user, userProfile]);
 
 	return (
@@ -261,48 +339,47 @@ export function UserAvatar({
 				className="flex items-center justify-center rounded-full border transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
 				style={{
 					background:
-						hasTokens && avatarTokens
-							? avatarTokens.avatar.backgroundGradient
-							: defaultBackgroundColor,
+						hasTokens && avatarTokens ?
+							avatarTokens.avatar.backgroundGradient
+						:	defaultBackgroundColor,
 					borderColor:
-						hasTokens && avatarTokens
-							? avatarTokens.avatar.borderColor
-							: defaultBorderColor,
+						hasTokens && avatarTokens ?
+							avatarTokens.avatar.borderColor
+						:	defaultBorderColor,
 					width: "36px",
 					height: "36px",
 					color:
-						hasTokens && avatarTokens
-							? avatarTokens.avatar.textColor
-							: defaultTextColor,
+						hasTokens && avatarTokens ?
+							avatarTokens.avatar.textColor
+						:	defaultTextColor,
 					transition:
-						hasTokens && avatarTokens
-							? avatarTokens.avatar.transition
-							: "all 0.2s ease-in-out",
+						hasTokens && avatarTokens ?
+							avatarTokens.avatar.transition
+						:	"all 0.2s ease-in-out",
 				}}
 				aria-label="Menú de usuario"
 				aria-expanded={isOpen}
 				aria-haspopup="true"
 				disabled={isChangingProject} // Deshabilitar botón mientras se cambia
 			>
-				{isChangingProject ? (
+				{isChangingProject ?
 					<StandardIcon>
 						<Loader2 className="h-4 w-4 animate-spin" />
 					</StandardIcon>
-				) : (
-					<StandardText
+				:	<StandardText
 						size="2xl"
 						weight="bold"
 						colorScheme="primary"
 						colorShade="text"
 						style={{
 							fontWeight:
-								hasTokens && avatarTokens
-									? avatarTokens.avatar.fontWeight
-									: "700",
+								hasTokens && avatarTokens ?
+									avatarTokens.avatar.fontWeight
+								:	"700",
 						}}>
 						{getInitial()}
 					</StandardText>
-				)}
+				}
 			</motion.button>
 
 			<AnimatePresence>
@@ -313,25 +390,25 @@ export function UserAvatar({
 							className="absolute right-0 top-full z-50 mt-1 w-72 rounded-lg border"
 							style={{
 								backgroundColor:
-									hasTokens && avatarTokens
-										? avatarTokens.menu.backgroundColor
-										: "#ffffff",
+									hasTokens && avatarTokens ?
+										avatarTokens.menu.backgroundColor
+									:	"#ffffff",
 								borderColor:
-									hasTokens && avatarTokens
-										? avatarTokens.menu.borderColor
-										: defaultBorderColor,
+									hasTokens && avatarTokens ?
+										avatarTokens.menu.borderColor
+									:	defaultBorderColor,
 								boxShadow:
-									hasTokens && avatarTokens
-										? avatarTokens.menu.boxShadow
-										: "0 4px 12px rgba(0, 0, 0, 0.1)",
+									hasTokens && avatarTokens ?
+										avatarTokens.menu.boxShadow
+									:	"0 4px 12px rgba(0, 0, 0, 0.1)",
 								padding:
-									hasTokens && avatarTokens
-										? avatarTokens.menu.padding
-										: "0.75rem",
+									hasTokens && avatarTokens ?
+										avatarTokens.menu.padding
+									:	"0.75rem",
 								borderRadius:
-									hasTokens && avatarTokens
-										? avatarTokens.menu.borderRadius
-										: "0.75rem",
+									hasTokens && avatarTokens ?
+										avatarTokens.menu.borderRadius
+									:	"0.75rem",
 							}}
 							variants={menuVariants}
 							initial="hidden"
@@ -342,9 +419,9 @@ export function UserAvatar({
 								className="mb-3 px-2 py-1 border-b pb-3"
 								style={{
 									borderColor:
-										hasTokens && avatarTokens
-											? avatarTokens.menuHeader.borderColor
-											: "rgba(150, 150, 150, 0.3)",
+										hasTokens && avatarTokens ?
+											avatarTokens.menuHeader.borderColor
+										:	"rgba(150, 150, 150, 0.3)",
 								}}>
 								<StandardText
 									preset="title"
@@ -354,9 +431,9 @@ export function UserAvatar({
 									colorShade="text"
 									style={{
 										color:
-											hasTokens && avatarTokens
-												? avatarTokens.menuHeader.titleColor
-												: undefined,
+											hasTokens && avatarTokens ?
+												avatarTokens.menuHeader.titleColor
+											:	undefined,
 									}}>
 									{userDisplayName}
 								</StandardText>
@@ -367,16 +444,16 @@ export function UserAvatar({
 									className="opacity-70"
 									style={{
 										color:
-											hasTokens && avatarTokens
-												? avatarTokens.menuHeader.subtitleColor
-												: undefined,
+											hasTokens && avatarTokens ?
+												avatarTokens.menuHeader.subtitleColor
+											:	undefined,
 									}}>
 									{user?.email}
 								</StandardText>
 							</div>
 
 							{/* Proyecto actual */}
-							{shouldShowProjectSelector ? (
+							{shouldShowProjectSelector ?
 								<div className="mb-3">
 									<StandardText
 										size="xs"
@@ -410,10 +487,27 @@ export function UserAvatar({
 													</span>
 												</div>
 											)}
+										<div className="mt-3">
+											<StandardButton
+												size="sm"
+												colorScheme="primary"
+												styleType="solid"
+												onClick={handleCreateProject}
+												disabled={isCreatingProject || isChangingProject}
+												className="w-full">
+												<StandardIcon size="sm">
+													{isCreatingProject ?
+														<Loader2 className="h-4 w-4 animate-spin" />
+													:	<Plus className="h-4 w-4" />}
+												</StandardIcon>
+												<StandardText size="sm" weight="medium">
+													{isCreatingProject ? "Creando..." : "Crear Proyecto"}
+												</StandardText>
+											</StandardButton>
+										</div>
 									</div>
 								</div>
-							) : (
-								proyectoActual && ( // Mostrar solo si hay un proyecto actual y no hay selector
+							:	proyectoActual && ( // Mostrar solo si hay un proyecto actual y no hay selector
 									<div className="mb-3">
 										<StandardText
 											size="xs"
@@ -447,7 +541,7 @@ export function UserAvatar({
 										</div>
 									</div>
 								)
-							)}
+							}
 
 							{/* Permisos activos */}
 							{activePermissions.length > 0 && (
@@ -485,13 +579,13 @@ export function UserAvatar({
 								className="h-px w-full bg-gray-200 dark:bg-gray-700 my-2" // Separador visual
 								style={{
 									backgroundColor:
-										hasTokens && avatarTokens
-											? avatarTokens.menuDivider.color
-											: undefined,
+										hasTokens && avatarTokens ?
+											avatarTokens.menuDivider.color
+										:	undefined,
 									margin:
-										hasTokens && avatarTokens
-											? avatarTokens.menuDivider.margin
-											: undefined,
+										hasTokens && avatarTokens ?
+											avatarTokens.menuDivider.margin
+										:	undefined,
 								}}></div>
 
 							{/* Controles de tema cuando se requieren en el avatar */}
@@ -502,7 +596,7 @@ export function UserAvatar({
 											<StandardText size="sm" colorScheme="neutral">
 												Fuente
 											</StandardText>
-											<FontThemeSwitcher />
+											<StandardFontThemeSwitcher />
 										</div>
 									)}
 									{showThemeSwitcher && (
@@ -522,13 +616,13 @@ export function UserAvatar({
 									className="h-px w-full bg-gray-200 dark:bg-gray-700 my-2"
 									style={{
 										backgroundColor:
-											hasTokens && avatarTokens
-												? avatarTokens.menuDivider.color
-												: undefined,
+											hasTokens && avatarTokens ?
+												avatarTokens.menuDivider.color
+											:	undefined,
 										margin:
-											hasTokens && avatarTokens
-												? avatarTokens.menuDivider.margin
-												: undefined,
+											hasTokens && avatarTokens ?
+												avatarTokens.menuDivider.margin
+											:	undefined,
 									}}></div>
 							)}
 

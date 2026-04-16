@@ -1,0 +1,394 @@
+{
+  "meta": {
+    "version": "1.0",
+    "description": "👁️🍄 Arqueología Forense: Civilizaciones en Generaciones (F0 continuo)",
+    "generationYears": 27,
+    "note": "Generaciones ~25-30 años por generación humana"
+  },
+  "regions": [
+    {
+      "id": "mesoamerica",
+      "name": "Mesoamérica",
+      "emoji": "🌽",
+      "color": "#10B981"
+    },
+    {
+      "id": "andes",
+      "name": "Andes",
+      "emoji": "🏔️",
+      "color": "#8B5CF6"
+    },
+    {
+      "id": "africa",
+      "name": "África",
+      "emoji": "🌍",
+      "color": "#F59E0B"
+    },
+    {
+      "id": "asia",
+      "name": "Asia",
+      "emoji": "🐉",
+      "color": "#EF4444"
+    },
+    {
+      "id": "europe",
+      "name": "Europa",
+      "emoji": "🏛️",
+      "color": "#3B82F6"
+    }
+  ],
+  "civilizations": [
+    {
+      "id": "olmeca",
+      "name": "Olmeca",
+      "subtitle": "Cultura Madre",
+      "regionId": "mesoamerica",
+      "emoji": "🗿",
+      "generations": 60,
+      "startBCE": 1500,
+      "endBCE": 400,
+      "location": "Costa del Golfo, México",
+      "technologies": [
+        "Cabezas colosales (80+ km transporte)",
+        "Escritura glífica",
+        "Astronomía",
+        "Juego de pelota"
+      ],
+      "contemporaries": ["zhou", "asiria"],
+      "anomaly": "Aparecen 'de la nada' con arquitectura monumental ya desarrollada",
+      "anomalyLevel": "high",
+      "isomorphisms": ["piramides", "astronomia", "felinos"]
+    },
+    {
+      "id": "maya",
+      "name": "Maya",
+      "subtitle": "Señores del Tiempo",
+      "regionId": "mesoamerica",
+      "emoji": "🌟",
+      "generations": 100,
+      "startBCE": 2000,
+      "endCE": 1500,
+      "location": "Yucatán, Guatemala, Honduras",
+      "technologies": [
+        "Astronomía (Venus: error 2h en 500 años)",
+        "Matemática con cero",
+        "Escritura compleja",
+        "Pirámides escalonadas"
+      ],
+      "contemporaries": ["roma", "han", "gupta"],
+      "anomaly": "Sistema numérico con cero independiente (también India, Babilonia)",
+      "anomalyLevel": "medium",
+      "isomorphisms": ["piramides", "astronomia", "cero", "escritura"]
+    },
+    {
+      "id": "azteca",
+      "name": "Azteca (Mexica)",
+      "subtitle": "El Imperio Relámpago",
+      "regionId": "mesoamerica",
+      "emoji": "🦅",
+      "generations": 8,
+      "startCE": 1325,
+      "endCE": 1521,
+      "location": "Valle de México",
+      "technologies": [
+        "Chinampas (agricultura acuática)",
+        "Astronomía",
+        "Arquitectura urbana",
+        "Tenochtitlán: 200k+ habitantes"
+      ],
+      "contemporaries": ["ming", "renacimiento", "otomano"],
+      "anomaly": "Imperio de 200k+ habitantes en 8 generaciones - MUY rápido para pre-industrial",
+      "anomalyLevel": "critical",
+      "isomorphisms": ["piramides", "astronomia"]
+    },
+    {
+      "id": "chavin",
+      "name": "Chavín",
+      "subtitle": "Cultura Madre Andina",
+      "regionId": "andes",
+      "emoji": "🐆",
+      "generations": 40,
+      "startBCE": 1500,
+      "endBCE": 300,
+      "location": "Andes centrales, Perú",
+      "technologies": [
+        "Arquitectura lítica",
+        "Canales hidráulicos subterráneos",
+        "Iconografía felina"
+      ],
+      "contemporaries": ["olmeca", "zhou"],
+      "anomaly": "Aparición súbita de arquitectura compleja",
+      "anomalyLevel": "high",
+      "isomorphisms": ["megalitos", "felinos", "astronomia"]
+    },
+    {
+      "id": "moche",
+      "name": "Moche",
+      "subtitle": "Maestros del Metal",
+      "regionId": "andes",
+      "emoji": "⚱️",
+      "generations": 30,
+      "startCE": 100,
+      "endCE": 800,
+      "location": "Costa norte, Perú",
+      "technologies": [
+        "Metalurgia avanzada (oro, plata, cobre)",
+        "Cerámica realista",
+        "Huaca del Sol: 140M ladrillos"
+      ],
+      "contemporaries": ["roma_tardio", "teotihuacan", "gupta"],
+      "anomaly": "Pirámides masivas SIN escritura formal - ¿cómo coordinaron?",
+      "anomalyLevel": "critical",
+      "isomorphisms": ["piramides", "metalurgia"]
+    },
+    {
+      "id": "tiwanaku",
+      "name": "Tiwanaku",
+      "subtitle": "Gigantes de la Altura",
+      "regionId": "andes",
+      "emoji": "🌄",
+      "generations": 60,
+      "startCE": 300,
+      "endCE": 1000,
+      "location": "Altiplano boliviano (3800+ msnm)",
+      "technologies": [
+        "Bloques megalíticos (precisión milimétrica)",
+        "Astronomía",
+        "Sistemas agrícolas en altura"
+      ],
+      "contemporaries": ["maya_clasico", "bizantino"],
+      "anomaly": "Bloques de 100+ toneladas transportados km en altura extrema",
+      "anomalyLevel": "critical",
+      "isomorphisms": ["megalitos", "astronomia", "precision"]
+    },
+    {
+      "id": "inca",
+      "name": "Inca (Tawantinsuyu)",
+      "subtitle": "El Imperio Imposible",
+      "regionId": "andes",
+      "emoji": "☀️",
+      "generations": 4,
+      "startCE": 1438,
+      "endCE": 1532,
+      "location": "Andes (6 países)",
+      "technologies": [
+        "Quipu (único sistema de nudos)",
+        "Arquitectura sísmica (Machu Picchu)",
+        "Red vial: 40,000 km",
+        "Mampostería sin mortero"
+      ],
+      "contemporaries": ["azteca", "ming", "renacimiento"],
+      "anomaly": "10M personas, 40,000 km caminos en 4 GENERACIONES - físicamente imposible con tecnología oficial",
+      "anomalyLevel": "critical",
+      "isomorphisms": ["megalitos", "precision", "vial"]
+    },
+    {
+      "id": "egipto",
+      "name": "Egipto Antiguo",
+      "subtitle": "Reino de las Pirámides",
+      "regionId": "africa",
+      "emoji": "🔺",
+      "generations": 20,
+      "startBCE": 2686,
+      "endBCE": 2181,
+      "location": "Valle del Nilo",
+      "technologies": [
+        "Gran Pirámide: 2.3M bloques",
+        "Momificación",
+        "Astronomía",
+        "Escritura jeroglífica"
+      ],
+      "contemporaries": ["sumeria", "harappa"],
+      "anomaly": "Giza en ~60 años = 1 bloque cada 2 minutos 24/7",
+      "anomalyLevel": "critical",
+      "isomorphisms": ["piramides", "momificacion", "astronomia", "megalitos", "precision"]
+    },
+    {
+      "id": "kush",
+      "name": "Kush/Nubia",
+      "subtitle": "El Egipto Olvidado",
+      "regionId": "africa",
+      "emoji": "🏹",
+      "generations": 100,
+      "startBCE": 2500,
+      "endCE": 350,
+      "location": "Sur de Egipto, Sudán",
+      "technologies": [
+        "Más pirámides que Egipto",
+        "Metalurgia del hierro",
+        "Arquería avanzada"
+      ],
+      "contemporaries": ["egipto", "roma"],
+      "anomaly": null,
+      "anomalyLevel": "low",
+      "isomorphisms": ["piramides", "metalurgia"]
+    },
+    {
+      "id": "chinchorro",
+      "name": "Chinchorro",
+      "subtitle": "Los Primeros Momificadores",
+      "regionId": "andes",
+      "emoji": "💀",
+      "generations": 80,
+      "startBCE": 5000,
+      "endBCE": 1500,
+      "location": "Norte de Chile",
+      "technologies": [
+        "Momificación (2000 años antes que Egipto)",
+        "Pesca especializada"
+      ],
+      "contemporaries": ["pre_egipto"],
+      "anomaly": "Momificación más antigua del mundo - casi no se enseña",
+      "anomalyLevel": "high",
+      "isomorphisms": ["momificacion"]
+    },
+    {
+      "id": "harappa",
+      "name": "Harappa (Valle del Indo)",
+      "subtitle": "La Ciudad Perfecta",
+      "regionId": "asia",
+      "emoji": "🛁",
+      "generations": 30,
+      "startBCE": 3300,
+      "endBCE": 1300,
+      "location": "Pakistán, noroeste India",
+      "technologies": [
+        "Planificación urbana perfecta",
+        "Drenaje y baños públicos",
+        "Pesos/medidas estandarizados",
+        "Escritura no descifrada"
+      ],
+      "contemporaries": ["egipto", "sumeria"],
+      "anomaly": "Colapso súbito sin explicación clara",
+      "anomalyLevel": "high",
+      "isomorphisms": ["escritura", "precision", "urbano"]
+    },
+    {
+      "id": "sumeria",
+      "name": "Sumeria/Babilonia",
+      "subtitle": "Cuna de la Escritura",
+      "regionId": "asia",
+      "emoji": "📜",
+      "generations": 60,
+      "startBCE": 4500,
+      "endBCE": 539,
+      "location": "Mesopotamia (Irak)",
+      "technologies": [
+        "Escritura cuneiforme",
+        "Astronomía/astrología",
+        "Matemática sexagesimal (base 60)",
+        "Código legal"
+      ],
+      "contemporaries": ["egipto", "harappa"],
+      "anomaly": null,
+      "anomalyLevel": "low",
+      "isomorphisms": ["escritura", "astronomia", "piramides"]
+    },
+    {
+      "id": "shang",
+      "name": "Shang",
+      "subtitle": "Huesos Oraculares",
+      "regionId": "asia",
+      "emoji": "🐢",
+      "generations": 20,
+      "startBCE": 1600,
+      "endBCE": 1046,
+      "location": "China central",
+      "technologies": [
+        "Escritura oracle bones",
+        "Bronce avanzado",
+        "Seda"
+      ],
+      "contemporaries": ["olmeca", "egipto_nuevo"],
+      "anomaly": null,
+      "anomalyLevel": "low",
+      "isomorphisms": ["escritura", "metalurgia"]
+    }
+  ],
+  "isomorphisms": [
+    {
+      "id": "piramides",
+      "name": "Pirámides Escalonadas",
+      "emoji": "🔺",
+      "description": "Estructura escalonada hacia cielo, orientación astronómica, función ritual",
+      "civilizations": ["egipto", "sumeria", "olmeca", "maya", "azteca", "moche", "chavin"],
+      "anomalyNote": "Misma topología en civilizaciones 'sin contacto'"
+    },
+    {
+      "id": "momificacion",
+      "name": "Momificación",
+      "emoji": "💀",
+      "description": "Preservación corporal, creencia en vida post-muerte",
+      "civilizations": ["chinchorro", "egipto", "inca"],
+      "anomalyNote": "Chinchorro 2000 años antes que Egipto"
+    },
+    {
+      "id": "megalitos",
+      "name": "Megalitismo de Precisión",
+      "emoji": "🪨",
+      "description": "Bloques 2-100+ toneladas, juntas milimétricas",
+      "civilizations": ["egipto", "tiwanaku", "inca"],
+      "anomalyNote": "Desafía explicación con herramientas de bronce/piedra"
+    },
+    {
+      "id": "astronomia",
+      "name": "Astronomía Precisa",
+      "emoji": "⭐",
+      "description": "Ciclos Venus/Sol/Luna, alineaciones, calendarios",
+      "civilizations": ["maya", "egipto", "sumeria", "olmeca", "chavin", "tiwanaku"],
+      "anomalyNote": "Precisión que rivaliza con instrumentos modernos"
+    },
+    {
+      "id": "cero",
+      "name": "Concepto del Cero",
+      "emoji": "0️⃣",
+      "description": "Invención independiente del cero matemático",
+      "civilizations": ["maya", "harappa"],
+      "anomalyNote": "Aparición 'simultánea' en continentes aislados"
+    },
+    {
+      "id": "felinos",
+      "name": "Iconografía Felina",
+      "emoji": "🐆",
+      "description": "Jaguar/León/Puma como símbolo de poder",
+      "civilizations": ["olmeca", "chavin", "egipto"],
+      "anomalyNote": "Patrón transcontinental"
+    },
+    {
+      "id": "precision",
+      "name": "Precisión Milimétrica",
+      "emoji": "📐",
+      "description": "Juntas perfectas sin mortero, geometría compleja",
+      "civilizations": ["egipto", "tiwanaku", "inca", "harappa"],
+      "anomalyNote": "Sin herramientas de medición conocidas"
+    },
+    {
+      "id": "escritura",
+      "name": "Sistemas de Escritura",
+      "emoji": "✍️",
+      "description": "Escritura compleja independiente",
+      "civilizations": ["sumeria", "egipto", "maya", "harappa", "shang"],
+      "anomalyNote": "Múltiples invenciones independientes"
+    }
+  ],
+  "collapses": [
+    {
+      "id": "bronze_collapse",
+      "name": "Colapso del Bronce",
+      "emoji": "💥",
+      "dateBCE": 1200,
+      "description": "Múltiples civilizaciones mediterráneas caen simultáneamente",
+      "affected": ["egipto", "harappa"],
+      "anomalyNote": "Sin explicación satisfactoria"
+    },
+    {
+      "id": "spanish_conquest",
+      "name": "Conquista Española",
+      "emoji": "⚔️",
+      "dateCE": 1521,
+      "description": "Imperios de millones 'caen' en meses por 200 soldados",
+      "affected": ["azteca", "inca"],
+      "anomalyNote": "Colapso sistémico sospechosamente rápido"
+    }
+  ]
+}

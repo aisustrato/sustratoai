@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { SustratoLogo } from "./sustrato-logo";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/app/theme-provider";
-import { generateSustratoLoadingLogoTokens } from "@/lib/theme/components/sustrato-loading-logo-tokens";
+import { useDesignTokens } from "@/app/providers/DesignTokensProvider";
 import { StandardText } from "./StandardText";
 
 export interface SustratoLoadingLogoProps {
@@ -32,16 +31,14 @@ export function SustratoLoadingLogo({
   breathingEffect = true,
   colorTransition = true,
 }: SustratoLoadingLogoProps) {
-  const { appColorTokens } = useTheme();
+  const { tokens } = useDesignTokens();
   const [progress, setProgress] = useState(0);
   const [colorPhase, setColorPhase] = useState(0);
 
-  // Generate component-specific tokens
+  // Get component-specific tokens
   const componentTokens = useMemo(() => {
-    return appColorTokens
-      ? generateSustratoLoadingLogoTokens(appColorTokens)
-      : null;
-  }, [appColorTokens]);
+    return tokens ? tokens.loadingLogo : null;
+  }, [tokens]);
 
   // Use generated tokens with overrides
   const actualPrimaryColor =
@@ -91,7 +88,7 @@ export function SustratoLoadingLogo({
       bg: componentTokens?.colors?.accent?.bg || "#e0b7ff",
       pure: componentTokens?.colors?.accent?.pure || "#9333ea",
       text: componentTokens?.colors?.accent?.text || "#6b21a8",
-      dark: componentTokens?.colors?.accent.textShade || "#581c87",
+      dark: componentTokens?.colors?.accent?.textShade || "#581c87",
     }),
     [componentTokens]
   );

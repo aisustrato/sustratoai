@@ -1,0 +1,65 @@
+/* 📍 styles/standard-sphere-animations.css
+ * 🎯 Animaciones estáticas para StandardSphere
+ * 🔧 ANTES: Se inyectaban ~60 líneas de CSS por cada instancia de sphere
+ * 🔧 AHORA: Un solo archivo estático, valores dinámicos via CSS variables
+ * 📋 Importar en layout.tsx o globals.css:
+ *    @import './standard-sphere-animations.css';
+ */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ✨ Shimmer                                   */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@keyframes sphere-shimmer {
+	0% { background-position: -200% 0; }
+	100% { background-position: 200% 0; }
+}
+
+.sphere-shimmer::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+	background-size: 200% 100%;
+	animation: sphere-shimmer 2s ease-in-out infinite;
+	pointer-events: none;
+	border-radius: inherit;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* 🌸 Breathing                                 */
+/* Usa CSS variables para colores dinámicos:    */
+/*   --sphere-breathe-color-start (rgba con alpha 0.4) */
+/*   --sphere-breathe-color-end   (rgba con alpha 0)   */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@keyframes sphere-breathe {
+	0%, 100% {
+		box-shadow: 0 0 0 0 var(--sphere-breathe-color-start, rgba(59,130,246,0.4));
+		transform: scale(1);
+	}
+	50% {
+		box-shadow: 0 0 0 8px var(--sphere-breathe-color-end, rgba(59,130,246,0));
+		transform: scale(1.05);
+	}
+}
+
+.sphere-breathing {
+	animation: sphere-breathe 3s ease-in-out infinite;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* 💫 Subtle Pulse                              */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@keyframes sphere-subtle {
+	0%, 100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.85;
+		transform: scale(0.98);
+	}
+}
+
+.sphere-subtle {
+	animation: sphere-subtle 2.5s ease-in-out infinite;
+}

@@ -16,7 +16,7 @@ import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { KeyRound, ArrowLeft, CheckCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { SustratoLogoWithFixedText } from "@/components/ui/sustrato-logo-with-fixed-text";
+import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustratoLogoWithFixedText";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function UpdatePasswordPage() {
@@ -25,8 +25,8 @@ export default function UpdatePasswordPage() {
 	const [sessionError, setSessionError] = useState<string | null>(null);
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const token = searchParams.get('token');
-	const type = searchParams.get('type');
+	const token = searchParams.get("token");
+	const type = searchParams.get("type");
 
 	// Configuración del formulario con react-hook-form y Zod
 	const {
@@ -48,19 +48,24 @@ export default function UpdatePasswordPage() {
 		const checkSession = async () => {
 			try {
 				// Verificar si hay un token en la URL (para el flujo de recuperación de contraseña)
-				if (token && type === 'recovery') {
+				if (token && type === "recovery") {
 					setSessionLoading(false);
 					return;
 				}
 
 				// Si no hay token, verificar si ya hay una sesión válida
-				const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-				
+				const {
+					data: { session },
+					error: sessionError,
+				} = await supabase.auth.getSession();
+
 				if (sessionError || !session) {
-					toast.error("Enlace inválido o expirado. Por favor, solicita un nuevo enlace de recuperación.");
+					toast.error(
+						"Enlace inválido o expirado. Por favor, solicita un nuevo enlace de recuperación.",
+					);
 					setSessionError("Sesión inválida o expirada");
 					setTimeout(() => {
-						router.push('/reset-password');
+						router.push("/reset-password");
 					}, 3000);
 					return;
 				}
@@ -68,7 +73,9 @@ export default function UpdatePasswordPage() {
 				setSessionLoading(false);
 			} catch (err) {
 				console.error("Error al verificar sesión:", err);
-				setSessionError("Error al verificar la sesión. Por favor, intenta de nuevo.");
+				setSessionError(
+					"Error al verificar la sesión. Por favor, intenta de nuevo.",
+				);
 				setSessionLoading(false);
 			}
 		};
@@ -77,17 +84,26 @@ export default function UpdatePasswordPage() {
 	}, [router, token, type]);
 
 	// Función para obtener el estado de éxito de un campo
-	const getSuccessState = (fieldName: keyof UpdatePasswordFormValues): boolean => {
-		if (errors[fieldName] || (!touchedFields[fieldName] && !dirtyFields[fieldName])) {
+	const getSuccessState = (
+		fieldName: keyof UpdatePasswordFormValues,
+	): boolean => {
+		if (
+			errors[fieldName] ||
+			(!touchedFields[fieldName] && !dirtyFields[fieldName])
+		) {
 			return false;
 		}
 		return true;
 	};
 
 	// Handler para envío válido del formulario
-	const onValidSubmit: SubmitHandler<UpdatePasswordFormValues> = async (data) => {
+	const onValidSubmit: SubmitHandler<UpdatePasswordFormValues> = async (
+		data,
+	) => {
 		console.log("UpdatePassword_OnSubmit (Válido):", { password: "[HIDDEN]" });
-		toast.success("Actualizando contraseña...", { description: "Validaciones exitosas." });
+		toast.success("Actualizando contraseña...", {
+			description: "Validaciones exitosas.",
+		});
 
 		try {
 			// Actualizar la contraseña en Supabase
@@ -97,9 +113,9 @@ export default function UpdatePasswordPage() {
 
 			if (updateError) {
 				// Si hay error de servidor, mostrarlo en el campo de contraseña
-				setError("password", { 
-					type: "server", 
-					message: updateError.message || "Error al actualizar la contraseña" 
+				setError("password", {
+					type: "server",
+					message: updateError.message || "Error al actualizar la contraseña",
 				});
 				toast.error("Error del servidor", { description: updateError.message });
 				return;
@@ -107,8 +123,8 @@ export default function UpdatePasswordPage() {
 
 			// Éxito: mostrar mensaje y preparar redirección
 			setSuccess(true);
-			toast.success("¡Contraseña actualizada con éxito!", { 
-				description: "Redirigiendo al inicio de sesión..." 
+			toast.success("¡Contraseña actualizada con éxito!", {
+				description: "Redirigiendo al inicio de sesión...",
 			});
 
 			// Cerrar sesión después de actualizar la contraseña
@@ -118,10 +134,10 @@ export default function UpdatePasswordPage() {
 			setTimeout(() => {
 				router.push("/login?password_updated=true");
 			}, 1500);
-
 		} catch (err: unknown) {
 			console.error("Error al actualizar la contraseña:", err);
-			const errorMessage = err instanceof Error ? err.message : "Ocurrió un error inesperado.";
+			const errorMessage =
+				err instanceof Error ? err.message : "Ocurrió un error inesperado.";
 			setError("password", { type: "server", message: errorMessage });
 			toast.error("Error inesperado", { description: errorMessage });
 		}
@@ -132,8 +148,8 @@ export default function UpdatePasswordPage() {
 	// Handler para envío inválido del formulario
 	const onInvalidSubmit = () => {
 		console.log("UpdatePassword_OnSubmit (Inválido):", errors);
-		toast.error("El formulario tiene errores.", { 
-			description: "Por favor, revisa los campos marcados." 
+		toast.error("El formulario tiene errores.", {
+			description: "Por favor, revisa los campos marcados.",
 		});
 	};
 
@@ -147,7 +163,7 @@ export default function UpdatePasswordPage() {
 					styleType="filled">
 					<StandardCard.Header className="space-y-2 text-center">
 						<div className="flex justify-center mb-2">
-							<SustratoLogoWithFixedText
+							<StandardSustratoLogoWithFixedText
 								size={50}
 								variant="vertical"
 								speed="normal"
@@ -166,43 +182,43 @@ export default function UpdatePasswordPage() {
 							asElement="p"
 							colorScheme="neutral"
 							className="text-center text-muted-foreground">
-							{!success
-								? "Ingresa tu nueva contraseña. Debe cumplir con los requisitos de seguridad."
-								: "Contraseña actualizada. Serás redirigido al inicio de sesión."}
+							{!success ?
+								"Ingresa tu nueva contraseña. Debe cumplir con los requisitos de seguridad."
+							:	"Contraseña actualizada. Serás redirigido al inicio de sesión."}
 						</StandardText>
 					</StandardCard.Header>
 
 					<StandardCard.Content>
-						{sessionLoading ? (
+						{sessionLoading ?
 							<div className="flex flex-col items-center justify-center py-8">
 								<Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
 								<StandardText>Verificando tu enlace...</StandardText>
 							</div>
-						) : sessionError ? (
+						: sessionError ?
 							<div className="text-center py-6 space-y-4">
 								<StandardText colorScheme="destructive" className="mb-4">
 									{sessionError}
 								</StandardText>
 								<StandardButton
-									onClick={() => window.location.href = '/reset-password'}
+									onClick={() => (window.location.href = "/reset-password")}
 									leftIcon={ArrowLeft}
-									colorScheme="primary"
-								>
+									colorScheme="primary">
 									Volver a recuperar contraseña
 								</StandardButton>
 							</div>
-						) : !success ? (
-							<form onSubmit={handleSubmit(onValidSubmit, onInvalidSubmit)} className="space-y-4">
+						: !success ?
+							<form
+								onSubmit={handleSubmit(onValidSubmit, onInvalidSubmit)}
+								className="space-y-4">
 								<StandardFormField
 									label="Nueva contraseña"
 									htmlFor="password"
 									hint="Mínimo 8 caracteres, una mayúscula, un número y un símbolo"
 									error={errors.password?.message}
-									isRequired
-								>
-									<Controller 
-										name="password" 
-										control={control} 
+									isRequired>
+									<Controller
+										name="password"
+										control={control}
 										render={({ field, fieldState }) => (
 											<StandardInput
 												id="password"
@@ -223,11 +239,10 @@ export default function UpdatePasswordPage() {
 									htmlFor="confirmPassword"
 									hint="Vuelve a escribir la misma contraseña"
 									error={errors.confirmPassword?.message}
-									isRequired
-								>
-									<Controller 
-										name="confirmPassword" 
-										control={control} 
+									isRequired>
+									<Controller
+										name="confirmPassword"
+										control={control}
 										render={({ field, fieldState }) => (
 											<StandardInput
 												id="confirmPassword"
@@ -251,23 +266,21 @@ export default function UpdatePasswordPage() {
 									colorScheme="primary"
 									leftIcon={KeyRound}
 									className="mt-6"
-									disabled={isSubmitting}
-								>
+									disabled={isSubmitting}>
 									Actualizar contraseña
 								</StandardButton>
 							</form>
-						) : (
-							<div className="text-center py-4 flex flex-col items-center">
+						:	<div className="text-center py-4 flex flex-col items-center">
 								<CheckCircle className="h-16 w-16 text-green-500 mb-4" />
 								<StandardText
 									colorScheme="positive"
 									size="sm"
 									className="text-sm">
-									¡Todo listo! Tu acceso ha sido restaurado. En breves
-									momentos te llevaremos al inicio de sesión.
+									¡Todo listo! Tu acceso ha sido restaurado. En breves momentos
+									te llevaremos al inicio de sesión.
 								</StandardText>
 							</div>
-						)}
+						}
 					</StandardCard.Content>
 
 					<StandardCard.Footer className="text-center">

@@ -1,137 +1,160 @@
 "use client";
 
 import * as React from "react";
-import { cva } from "class-variance-authority";
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/app/theme-provider";
-import {
-  generateStandardBadgeTokens,
-  type StandardBadgeStyleType,
-  type StandardBadgeSize, // Importamos el tipo de tamaño unificado
-  BADGE_SIZE_DEFINITIONS,  // 📌 Importamos el nuevo mapa de tamaños
-} from "@/lib/theme/components/standard-badge-tokens";
-import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
+import { useDesignTokens } from "@/app/providers/DesignTokensProvider";
 import { StandardText } from "./StandardText";
 import { StandardIcon } from "./StandardIcon";
+import type {
+	StandardBadgeSize,
+	StandardBadgeStyleType,
+} from "@/lib/theme/components/standard-badge-tokens";
+import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
+import tinycolor from "tinycolor2";
 
-// 📌 El 'cva' ahora solo se ocupa de la estructura base, no del tamaño.
-const badgeBaseVariants = cva(
-  "inline-flex items-center justify-center gap-x-1.5 rounded-full border font-medium"
-);
-
-export interface StandardBadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  colorScheme?: ColorSchemeVariant;
-  styleType?: StandardBadgeStyleType;
-  size?: StandardBadgeSize; // Usamos nuestro tipo de tamaño unificado
-  leftIcon?: React.ComponentType<{ className?: string }>;
-  rightIcon?: React.ComponentType<{ className?: string }>;
-  iconClassName?: string;
-  children: React.ReactNode;
+// 🎯 Extensión para CSS Properties personalizadas del Badge
+interface CustomCSSProperties extends React.CSSProperties {
+	"--badge-base-border"?: string;
+	"--badge-glow-color"?: string;
+	"--badge-light-border"?: string;
+	"--badge-light-border-5"?: string;
 }
 
+// 📌 Re-exportamos tipos para consumidores
+export type { StandardBadgeStyleType, StandardBadgeSize };
+
+export interface StandardBadgeProps
+	extends React.HTMLAttributes<HTMLDivElement> {
+	colorScheme?: ColorSchemeVariant;
+	styleType?: StandardBadgeStyleType;
+	size?: StandardBadgeSize;
+	leftIcon?: React.ComponentType<{ className?: string }>;
+	rightIcon?: React.ComponentType<{ className?: string }>;
+	iconClassName?: string;
+	children: React.ReactNode;
+	// 🌊 Efectos SUSTRATO - Retroalimentación visual al humano
+	pulseBorder?: boolean; // Respiración sutil del borde (2.5s ciclo)
+	pafffMoment?: boolean; // Latido de coherencia (1.5s ciclo)
+}
+
+// 💎 CORE: Componente StandardBadge (v4 - Patrón Flex + Tokens Provider)
 const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
-  (
-    {
-      className,
-      colorScheme = "primary",
-      styleType = "subtle",
-      size = "md", // El default se mantiene
-      leftIcon: LeftIcon,
-      rightIcon: RightIcon,
-      iconClassName,
-      children,
-      ...props
-    },
-    ref
-  ) => {
-    const { appColorTokens, mode } = useTheme();
-    const hasTheme = appColorTokens && mode;
+	(
+		{
+			className,
+			colorScheme = "primary",
+			styleType = "subtle",
+			size = "md",
+			leftIcon: LeftIcon,
+			rightIcon: RightIcon,
+			iconClassName,
+			children,
+			pulseBorder = false,
+			pafffMoment = false,
+			...props
+		},
+		ref,
+	) => {
+		// 1. 🌉 THE BRIDGE: Consumir tokens precalculados
+		const { tokens } = useDesignTokens();
 
-    const cssVariables = React.useMemo(() => {
-      const allTokens = generateStandardBadgeTokens(appColorTokens);
-      const styleSet = allTokens[colorScheme]?.[styleType] || allTokens.primary.solid;
-      return {
-        '--badge-bg': styleSet.bg,
-        '--badge-text-color': styleSet.text,
-        '--badge-border-color': styleSet.border,
-      } as React.CSSProperties;
-    }, [appColorTokens, colorScheme, styleType]);
+		// 2. 🛡️ SAFEGUARDS: Fallback seguro si los tokens no están listos (ej. SSR o error de provider)
+		const sizeTokens = tokens?.badge.sizes[size];
+		const styleTokens = tokens?.badge.styles[colorScheme]?.[styleType];
 
-    if (!children) {
-      return (
-        <div
-          className={cn(
-            badgeBaseVariants({ className }),
-            "opacity-0",
-            className
-          )}
-          style={cssVariables}
-          {...props}
-        >
-          <span className="opacity-0">{children}</span>
-        </div>
-      );
-    }
+		// 3. 🎨 INLINE STYLES COMPUTADOS (patrón StandardSelect v4.3)
+		const computedStyle = useMemo((): CustomCSSProperties => {
+			if (!sizeTokens || !styleTokens) return {};
 
-    if (!hasTheme) {
-      const fallbackSizeInfo = BADGE_SIZE_DEFINITIONS[size];
-      return (
-        <div
-          ref={ref}
-          className={cn(
-            badgeBaseVariants(),
-            fallbackSizeInfo.padding,
-            "bg-gray-200 border-transparent animate-pulse",
-            className
-          )}
-          {...props}
-        >
-          <span className="opacity-0">{children}</span>
-        </div>
-      );
-    }
+			// 🧠 Lógica JS determinando colores derivados para animaciones
+			const baseBackground = styleTokens.background;
+			const baseBorder =
+				styleTokens.border.includes("transparent") ?
+					tinycolor(baseBackground).toRgbString()
+				:	styleTokens.border.replace(/^1px solid /, "");
+			const glowColor = tinycolor(baseBorder).setAlpha(0.4).toRgbString();
 
-    const sizeInfo = BADGE_SIZE_DEFINITIONS[size];
+			return {
+				// 📐 Dimensiones estructurales
+				height: sizeTokens.height,
+				padding: sizeTokens.padding,
+				fontSize: sizeTokens.fontSize,
+				gap: sizeTokens.gap,
+				// 🎨 Colores base
+				backgroundColor: styleTokens.background,
+				color: styleTokens.color,
+				border: styleTokens.border,
+				// CSS Variables para animaciones
+				"--badge-base-border": baseBorder,
+				"--badge-glow-color": glowColor,
+				"--badge-light-border": tinycolor(baseBorder).lighten(10).toRgbString(),
+				"--badge-light-border-5": tinycolor(baseBorder)
+					.lighten(5)
+					.toRgbString(),
+			};
+		}, [sizeTokens, styleTokens]);
 
-    return (
-      <div
-        ref={ref}
-        style={cssVariables}
-        className={cn(
-          badgeBaseVariants(),
-          sizeInfo.padding, // Aplicamos el padding desde los tokens
-          "bg-[var(--badge-bg)] border-[var(--badge-border-color)] text-[var(--badge-text-color)]",
-          className
-        )}
-        {...props}
-      >
-        {LeftIcon && (
-          <StandardIcon
-            size={sizeInfo.iconSize}
-            colorScheme={colorScheme}
-            colorShade={styleType === "solid" ? "contrastText" : "pure"}
-            className={cn("-ml-0.5", iconClassName)}
-          >
-            <LeftIcon />
-          </StandardIcon>
-        )}
-        <StandardText asElement="span" size={sizeInfo.textSize} weight="medium" className="leading-none">
-          {children}
-        </StandardText>
-        {RightIcon && (
-          <StandardIcon
-            size={sizeInfo.iconSize}
-            colorScheme={colorScheme}
-            color={styleType === "solid" ? "contrastText" : "pure"}
-            className={cn("-mr-0.5", iconClassName)}
-          >
-            <RightIcon />
-          </StandardIcon>
-        )}
-      </div>
-    );
-  }
+		// 🔄 FALLBACK VISUAL: Skeleton o estado base si no hay tokens
+		if (!sizeTokens || !styleTokens) {
+			return (
+				<div
+					ref={ref}
+					className={cn(
+						"inline-flex items-center justify-center rounded-full bg-neutral-200 animate-pulse h-6 w-16",
+						className,
+					)}
+					{...props}
+				/>
+			);
+		}
+
+		return (
+			<div
+				ref={ref}
+				className={cn(
+					// Clases base utilitarias (Layout & Shape)
+					"inline-flex items-center justify-center rounded-full font-medium transition-colors duration-200",
+					// 🌊 Efectos SUSTRATO - Retroalimentación visual al humano (solo animaciones)
+					pulseBorder && "badge-pulse-border",
+					pafffMoment && "badge-pafff-moment",
+					// Estilos específicos inyectados
+					className,
+				)}
+				style={computedStyle}
+				{...props}>
+				{LeftIcon && (
+					<StandardIcon
+						size={sizeTokens.iconSize}
+						colorScheme={colorScheme}
+						colorShade={styleTokens.iconColorShade}
+						className={cn("-ml-0.5", iconClassName)}>
+						<LeftIcon />
+					</StandardIcon>
+				)}
+
+				{/* El texto hereda el color del contenedor (establecido por CSS inyectado) */}
+				<StandardText
+					asElement="span"
+					size={size === "2xs" ? "4xs" : size}
+					className="leading-none text-inherit">
+					{children}
+				</StandardText>
+
+				{RightIcon && (
+					<StandardIcon
+						size={sizeTokens.iconSize}
+						colorScheme={colorScheme}
+						colorShade={styleTokens.iconColorShade}
+						className={cn("-mr-0.5", iconClassName)}>
+						<RightIcon />
+					</StandardIcon>
+				)}
+			</div>
+		);
+	},
 );
+
 StandardBadge.displayName = "StandardBadge";
 
 export { StandardBadge };

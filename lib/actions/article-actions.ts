@@ -349,3 +349,62 @@ export async function getPaginatedArticlesForProject(
     };
   }
 }
+
+// ========================================================================
+//  ACCIÓN 7: getRandomArticleAbstract
+//  Obtiene un abstract aleatorio de un proyecto para calibración
+// ========================================================================
+export async function getRandomArticleAbstract(
+  projectId: string
+): Promise<ResultadoOperacion<{ abstract: string }>> {
+  if (!projectId) {
+    return { success: false, error: "Se requiere ID de proyecto.", errorCode: "INVALID_PROJECT_ID" };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    
+    // No podemos usar random() nativo fácilmente en supabase-js sin rpc,
+    // así que haremos un truco: Contamos total, y luego offset aleatorio.
+    // Ojo: En bases muy grandes esto puede ser lento, pero para < 10k artículos está bien.
+
+    const { count, error: countError } = await supabase
+      .from('articles')
+      .select('id', { count: 'exact', head: true })
+      .eq('project_id', projectId)
+      .not('abstract', 'is', null); // Solo artículos que tengan abstract
+
+    if (countError) throw new Error(countError.message);
+    
+    if (!count || count === 0) {
+        return { success: false, error: "No hay artículos con abstract en este proyecto.", errorCode: "NO_ABSTRACTS_FOUND" };
+    }
+
+    const randomOffset = Math.floor(Math.random() * count);
+
+    const { data, error } = await supabase
+      .from('articles')
+      .select('abstract')
+      .eq('project_id', projectId)
+      .not('abstract', 'is', null)
+      .limit(1)
+      .range(randomOffset, randomOffset)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (!data?.abstract) {
+         // Fallback raro si justo falla el offset
+         return { success: false, error: "No se pudo obtener un abstract.", errorCode: "FETCH_ERROR" };
+    }
+
+    return { success: true, data: { abstract: data.abstract } };
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido.';
+    return {
+      success: false,
+      error: `Error al obtener abstract aleatorio: ${errorMessage}`,
+      errorCode: 'INTERNAL_SERVER_ERROR',
+    };
+  }
+}

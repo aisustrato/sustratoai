@@ -1,0 +1,39 @@
+/* 🌊 PULSE BORDER - Respiración sutil del borde */
+@keyframes textarea-pulse-border {
+	0%, 100% {
+		border-color: var(--ta-border);
+		box-shadow: 0 0 0 0 transparent;
+	}
+	50% {
+		border-color: var(--ta-focus-border);
+		box-shadow: 0 0 8px 0 var(--ta-focus-ring);
+	}
+}
+
+.textarea-pulse-border {
+	animation: textarea-pulse-border 2.5s ease-in-out infinite;
+}
+
+.textarea-pulse-border:focus {
+	animation: none;
+}
+
+/* 🪩 PAFFF MOMENT - Borde destacado para insight/coherencia */
+@keyframes textarea-pafff-moment {
+	0%, 100% {
+		box-shadow: inset 0 0 0 1px var(--ta-focus-border), 0 0 0 2px var(--ta-focus-ring);
+	}
+	50% {
+		box-shadow: inset 0 0 0 2px var(--ta-focus-border), 0 0 0 4px var(--ta-focus-ring), 0 0 12px 0 var(--ta-focus-ring);
+	}
+}
+
+.textarea-pafff-moment {
+	animation: textarea-pafff-moment 1.5s ease-in-out infinite;
+	border-color: var(--ta-focus-border);
+}
+
+.textarea-pafff-moment:focus {
+	outline: none;
+	/* La animación SIGUE - el focus ring está integrado en la animación */
+}

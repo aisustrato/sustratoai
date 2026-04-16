@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/StandardText";
 import { StandardSelect } from "@/components/ui/StandardSelect";
 import { StandardInput } from "@/components/ui/StandardInput";
+import { StandardCard } from "@/components/ui/StandardCard";
+import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 // --- Componentes de UI Generales ---
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
@@ -95,21 +97,22 @@ export default function StandardTextShowroomPage() {
 		useState<StandardTextColorShade>("text");
 
 	return (
-		<div className="container mx-auto py-10 px-4">
-			<header className="mb-12 text-center">
-				<StandardText preset="heading" asElement="h1">
-					StandardText Showroom
-				</StandardText>
-				<StandardText
-					preset="subtitle"
-					asElement="p"
-					className="max-w-2xl mx-auto">
-					El componente fundamental para toda la tipografía del sistema.
-				</StandardText>
-				<div className="mt-4">
-					<ThemeSwitcher />
-				</div>
-			</header>
+		<StandardPageBackground variant="minimal">
+			<div className="min-h-screen p-8 mx-auto py-10 px-4">
+				<header className="mb-12 text-center">
+					<StandardText preset="heading" asElement="h1">
+						StandardText Showroom
+					</StandardText>
+					<StandardText
+						preset="subtitle"
+						asElement="p"
+						className="max-w-2xl mx-auto">
+						El componente fundamental para toda la tipografía del sistema.
+					</StandardText>
+					<div className="mt-4">
+						<ThemeSwitcher />
+					</div>
+				</header>
 
 			<StandardTabs
 				defaultValue="presets"
@@ -118,7 +121,7 @@ export default function StandardTextShowroomPage() {
                 colorScheme="secondary"
                 styleType="line"
             >
-				<StandardTabsList className="grid w-full grid-cols-2 md:grid-cols-3 mb-8">
+				<StandardTabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8">
 					<StandardTabsTrigger value="presets">Presets</StandardTabsTrigger>
 					<StandardTabsTrigger value="interactive">
 						Control Granular
@@ -126,6 +129,7 @@ export default function StandardTextShowroomPage() {
 					<StandardTabsTrigger value="features">
 						Características
 					</StandardTabsTrigger>
+					<StandardTabsTrigger value="i18n">🌍 i18n</StandardTabsTrigger>
 				</StandardTabsList>
 
 				<AnimatePresence mode="wait">
@@ -150,7 +154,7 @@ export default function StandardTextShowroomPage() {
 											colorShade="subtle"
 											className="mb-1">{`preset="${p}"`}</StandardText>
 										<div className="p-4 border rounded-lg">
-											<StandardText preset={p}>
+											<StandardText preset={p} colorScheme="neutral" colorShade="text">
 												El rápido zorro marrón salta sobre el perro perezoso.
 											</StandardText>
 										</div>
@@ -314,8 +318,101 @@ export default function StandardTextShowroomPage() {
 							</motion.section>
 						</StandardTabsContent>
 					)}
+
+					{/* 🌍 Pestaña i18n */}
+					{activeTab === "i18n" && (
+						<StandardTabsContent forceMount value="i18n" asChild>
+							<motion.section
+								key="i18n"
+								variants={tabContentVariants}
+								initial="hidden"
+								animate="visible"
+								exit="exit">
+								<StandardText preset="heading" className="mb-6">
+									🌍 Internacionalización (i18n)
+								</StandardText>
+								<StandardText size="md" className="mb-8 max-w-2xl" colorScheme="neutral" colorShade="text">
+									StandardText puede traducir automáticamente usando <code className="bg-neutral-100 dark:bg-neutral-800 px-1 rounded">i18nKey</code>.
+									Las traducciones se cargan desde <code className="bg-neutral-100 dark:bg-neutral-800 px-1 rounded">messages/[locale].json</code>.
+								</StandardText>
+
+								{/* Ejemplo básico */}
+								<StandardCard colorScheme="neutral" styleType="filled" className="mb-8">
+									<StandardText preset="subheading" className="mb-4" colorScheme="neutral" colorShade="text">
+										Traducción Simple
+									</StandardText>
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+										<div className="space-y-2">
+											<StandardText size="sm" colorScheme="neutral" colorShade="textShade" className="font-mono">
+												i18nKey=&quot;common.save&quot;
+											</StandardText>
+											<StandardText i18nKey="common.save" preset="title" colorScheme="neutral" colorShade="text" />
+										</div>
+										<div className="space-y-2">
+											<StandardText size="sm" colorScheme="neutral" colorShade="textShade" className="font-mono">
+												i18nKey=&quot;common.cancel&quot;
+											</StandardText>
+											<StandardText i18nKey="common.cancel" preset="title" colorScheme="neutral" colorShade="text" />
+										</div>
+										<div className="space-y-2">
+											<StandardText size="sm" colorScheme="neutral" colorShade="textShade" className="font-mono">
+												i18nKey=&quot;auth.login&quot;
+											</StandardText>
+											<StandardText i18nKey="auth.login" preset="title" colorScheme="neutral" colorShade="text" />
+										</div>
+										<div className="space-y-2">
+											<StandardText size="sm" colorScheme="neutral" colorShade="textShade" className="font-mono">
+												i18nKey=&quot;errors.required&quot;
+											</StandardText>
+											<StandardText i18nKey="errors.required" colorScheme="danger" colorShade="text" />
+										</div>
+									</div>
+								</StandardCard>
+
+								{/* Combinando con estilos */}
+								<StandardCard colorScheme="neutral" styleType="filled" className="mb-8">
+									<StandardText preset="subheading" className="mb-4" colorScheme="neutral" colorShade="text">
+										i18n + Estilos
+									</StandardText>
+									<div className="space-y-4">
+										<div>
+											<StandardText size="sm" colorScheme="neutral" colorShade="textShade" className="font-mono mb-1">
+												i18nKey + preset=&quot;heading&quot; + applyGradient
+											</StandardText>
+											<StandardText i18nKey="showroom.standardButton.title" preset="heading" applyGradient />
+										</div>
+										<div>
+											<StandardText size="sm" colorScheme="neutral" colorShade="textShade" className="font-mono mb-1">
+												i18nKey + colorScheme=&quot;success&quot;
+											</StandardText>
+											<StandardText i18nKey="common.confirm" colorScheme="success" size="lg" weight="semibold" />
+										</div>
+									</div>
+								</StandardCard>
+
+								{/* Prioridad children */}
+								<StandardCard colorScheme="neutral" styleType="filled">
+									<StandardText preset="subheading" className="mb-4" colorScheme="neutral" colorShade="text">
+										Prioridad: children &gt; i18nKey
+									</StandardText>
+									<StandardText size="md" className="mb-4" colorScheme="neutral" colorShade="text">
+										Si hay <code className="bg-neutral-100 dark:bg-neutral-800 px-1 rounded">children</code>, siempre gana sobre <code className="bg-neutral-100 dark:bg-neutral-800 px-1 rounded">i18nKey</code> (escape hatch):
+									</StandardText>
+									<div className="space-y-2">
+										<StandardText size="sm" colorScheme="neutral" colorShade="textShade" className="font-mono">
+											i18nKey=&quot;common.save&quot; + children=&quot;Override Manual&quot;
+										</StandardText>
+										<StandardText i18nKey="common.save" preset="title" colorScheme="neutral" colorShade="text">
+											Override Manual
+										</StandardText>
+									</div>
+								</StandardCard>
+							</motion.section>
+						</StandardTabsContent>
+					)}
 				</AnimatePresence>
 			</StandardTabs>
 		</div>
+		</StandardPageBackground>
 	);
 }

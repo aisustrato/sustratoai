@@ -2,25 +2,36 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/server";
+import { callDeepSeekAPI } from "@/lib/deepseek/api";
 import type { Database } from "@/lib/database.types";
 
 // ========================================================================
 //	TYPE ALIASES FROM DATABASE SCHEMA
 // ========================================================================
-export type PreclassDimensionRow = Database["public"]["Tables"]["preclass_dimensions"]["Row"];
-type PreclassDimensionInsert = Database["public"]["Tables"]["preclass_dimensions"]["Insert"];
-type PreclassDimensionUpdate = Database["public"]["Tables"]["preclass_dimensions"]["Update"];
+export type PreclassDimensionRow =
+	Database["public"]["Tables"]["preclass_dimensions"]["Row"];
+type PreclassDimensionInsert =
+	Database["public"]["Tables"]["preclass_dimensions"]["Insert"];
+type PreclassDimensionUpdate =
+	Database["public"]["Tables"]["preclass_dimensions"]["Update"];
 
-type PreclassDimensionOptionRow = Database["public"]["Tables"]["preclass_dimension_options"]["Row"];
-type PreclassDimensionOptionInsert = Database["public"]["Tables"]["preclass_dimension_options"]["Insert"];
-type PreclassDimensionOptionUpdate = Database["public"]["Tables"]["preclass_dimension_options"]["Update"];
+type PreclassDimensionOptionRow =
+	Database["public"]["Tables"]["preclass_dimension_options"]["Row"];
+type PreclassDimensionOptionInsert =
+	Database["public"]["Tables"]["preclass_dimension_options"]["Insert"];
+type PreclassDimensionOptionUpdate =
+	Database["public"]["Tables"]["preclass_dimension_options"]["Update"];
 
-type PreclassDimensionQuestionRow = Database["public"]["Tables"]["preclass_dimension_questions"]["Row"];
-type PreclassDimensionQuestionInsert = Database["public"]["Tables"]["preclass_dimension_questions"]["Insert"];
+type PreclassDimensionQuestionRow =
+	Database["public"]["Tables"]["preclass_dimension_questions"]["Row"];
+type PreclassDimensionQuestionInsert =
+	Database["public"]["Tables"]["preclass_dimension_questions"]["Insert"];
 // type PreclassDimensionQuestionUpdate = Database["public"]["Tables"]["preclass_dimension_questions"]["Update"]; // Unused
 
-type PreclassDimensionExampleRow = Database["public"]["Tables"]["preclass_dimension_examples"]["Row"];
-type PreclassDimensionExampleInsert = Database["public"]["Tables"]["preclass_dimension_examples"]["Insert"];
+type PreclassDimensionExampleRow =
+	Database["public"]["Tables"]["preclass_dimension_examples"]["Row"];
+type PreclassDimensionExampleInsert =
+	Database["public"]["Tables"]["preclass_dimension_examples"]["Insert"];
 // type PreclassDimensionExampleUpdate = Database["public"]["Tables"]["preclass_dimension_examples"]["Update"]; // Unused
 
 // ========================================================================
@@ -58,7 +69,7 @@ export interface CreateDimensionPayload {
 	projectId: string;
 	phaseId: string;
 	name: string;
-	type: 'finite' | 'open';
+	type: "finite" | "open";
 	description?: string | null;
 	ordering: number;
 	icon?: string | null;
@@ -101,7 +112,7 @@ export interface ReorderDimensionsPayload {
 async function verificarPermisoGestionDimensiones(
 	supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
 	userId: string,
-	projectId: string
+	projectId: string,
 ): Promise<boolean> {
 	const { data: tienePermiso, error: rpcError } = await supabase.rpc(
 		"has_permission_in_project",
@@ -109,10 +120,12 @@ async function verificarPermisoGestionDimensiones(
 			p_user_id: userId,
 			p_project_id: projectId,
 			p_permission_column: PERMISO_GESTIONAR_DIMENSIONES,
-		}
+		},
 	);
 	if (rpcError) {
-		console.error(`[AUTH_CHECK_ERROR] RPC has_permission_in_project (dimensiones): ${rpcError.message}`);
+		console.error(
+			`[AUTH_CHECK_ERROR] RPC has_permission_in_project (dimensiones): ${rpcError.message}`,
+		);
 		return false;
 	}
 	return tienePermiso === true;
@@ -123,43 +136,62 @@ async function verificarPermisoGestionDimensiones(
 // ========================================================================
 export async function listDimensions(
 	phaseId: string,
-	includeArchived: boolean = false
+	includeArchived: boolean = false,
 ): Promise<ResultadoOperacion<FullDimension[]>> {
 	const opId = `LDIM-${Math.floor(Math.random() * 10000)}`;
 	console.log(`📄 [${opId}] Iniciando listDimensions para fase: ${phaseId}`);
-	if (!phaseId) return { success: false, error: "Se requiere un ID de fase válido." };
+	if (!phaseId)
+		return { success: false, error: "Se requiere un ID de fase válido." };
 
 	try {
 		const supabase = await createSupabaseServerClient();
 		let query = supabase
 			.from("preclass_dimensions")
-			.select(`*, options:preclass_dimension_options (*), questions:preclass_dimension_questions (*), examples:preclass_dimension_examples (*)`)
+			.select(
+				`*, options:preclass_dimension_options (*), questions:preclass_dimension_questions (*), examples:preclass_dimension_examples (*)`,
+			)
 			.eq("phase_id", phaseId);
-        
-        if (!includeArchived) {
-            query = query.eq('status', 'active');
-        }
 
-		const { data: dimensionsDataFromDb, error: dimensionsError } = await query.order("ordering", { ascending: true });
+		if (!includeArchived) {
+			query = query.eq("status", "active");
+		}
+
+		const { data: dimensionsDataFromDb, error: dimensionsError } =
+			await query.order("ordering", { ascending: true });
 
 		if (dimensionsError) {
-			console.error(`❌ [${opId}] Error al obtener dimensiones:`, dimensionsError);
-			return { success: false, error: `Error al obtener dimensiones: ${dimensionsError.message}` };
+			console.error(
+				`❌ [${opId}] Error al obtener dimensiones:`,
+				dimensionsError,
+			);
+			return {
+				success: false,
+				error: `Error al obtener dimensiones: ${dimensionsError.message}`,
+			};
 		}
 		if (!dimensionsDataFromDb) return { success: true, data: [] };
 
-		const fullDimensions: FullDimension[] = dimensionsDataFromDb.map(dim => ({
-            ...dim,
-            options: (dim.options || []).sort((a, b) => a.ordering - b.ordering),
-            questions: (dim.questions || []).sort((a, b) => a.ordering - b.ordering),
-            examples: (dim.examples || []),
-        }));
-        
-		console.log(`🎉 [${opId}] ÉXITO: ${fullDimensions.length} dimensiones obtenidas.`);
+		const fullDimensions: FullDimension[] = dimensionsDataFromDb.map((dim) => ({
+			...dim,
+			options: (dim.options || []).sort(
+				(a, b) => (a.ordering ?? 0) - (b.ordering ?? 0),
+			),
+			questions: (dim.questions || []).sort(
+				(a, b) => (a.ordering ?? 0) - (b.ordering ?? 0),
+			),
+			examples: dim.examples || [],
+		}));
+
+		console.log(
+			`🎉 [${opId}] ÉXITO: ${fullDimensions.length} dimensiones obtenidas.`,
+		);
 		return { success: true, data: fullDimensions };
 	} catch (error) {
 		console.error(`❌ [${opId}] Excepción en listDimensions:`, error);
-		return { success: false, error: `Error interno del servidor: ${(error as Error).message}`};
+		return {
+			success: false,
+			error: `Error interno del servidor: ${(error as Error).message}`,
+		};
 	}
 }
 
@@ -167,67 +199,167 @@ export async function listDimensions(
 //	ACTION 2: CREAR UNA NUEVA DIMENSIÓN
 // ========================================================================
 export async function createDimension(
-	payload: CreateDimensionPayload
+	payload: CreateDimensionPayload,
 ): Promise<ResultadoOperacion<PreclassDimensionRow>> {
 	const opId = `CDIM-${Math.floor(Math.random() * 10000)}`;
-	const { projectId, phaseId, name, type, description, ordering,
-			options: payloadOptions,
-			questions: payloadQuestions,
-			examples: payloadExamples,
-			icon
-		} = payload;
-	
-	console.log(`📄 [${opId}] Iniciando createDimension: ${name} en fase ${phaseId}`);
+	const {
+		projectId,
+		phaseId,
+		name,
+		type,
+		description,
+		ordering,
+		options: payloadOptions,
+		questions: payloadQuestions,
+		examples: payloadExamples,
+		icon,
+	} = payload;
 
-	if (!projectId || !phaseId || !name || !type) return { success: false, error: "Faltan datos requeridos (projectId, phaseId, name, type).", errorCode: "MISSING_REQUIRED_FIELDS" };
-	if (type === 'finite' && (!payloadOptions || payloadOptions.length === 0)) return { success: false, error: "Las dimensiones de tipo 'finite' deben tener al menos una opción.", errorCode: "FINITE_REQUIRES_OPTIONS" };
+	console.log(
+		`📄 [${opId}] Iniciando createDimension: ${name} en fase ${phaseId}`,
+	);
+
+	if (!projectId || !phaseId || !name || !type)
+		return {
+			success: false,
+			error: "Faltan datos requeridos (projectId, phaseId, name, type).",
+			errorCode: "MISSING_REQUIRED_FIELDS",
+		};
+	if (type === "finite" && (!payloadOptions || payloadOptions.length === 0))
+		return {
+			success: false,
+			error:
+				"Las dimensiones de tipo 'finite' deben tener al menos una opción.",
+			errorCode: "FINITE_REQUIRES_OPTIONS",
+		};
 
 	try {
 		const supabase = await createSupabaseServerClient();
-		const { data: { user: currentUser } } = await supabase.auth.getUser();
-		if (!currentUser) return { success: false, error: "Usuario no autenticado.", errorCode: "UNAUTHENTICATED" };
-		if (!(await verificarPermisoGestionDimensiones(supabase, currentUser.id, projectId))) return { success: false, error: "No tienes permiso para crear dimensiones.", errorCode: "FORBIDDEN" };
-		
-		const { data: existingDimension, error: checkError } = await supabase.from("preclass_dimensions").select("id").eq("phase_id", phaseId).eq("name", name).maybeSingle();
-		if (checkError) return { success: false, error: `Error al verificar dimensión: ${checkError.message}` };
-		if (existingDimension) return { success: false, error: `Ya existe una dimensión con el nombre "${name}" en esta fase.`, errorCode: "DUPLICATE_DIMENSION_NAME" };
+		const {
+			data: { user: currentUser },
+		} = await supabase.auth.getUser();
+		if (!currentUser)
+			return {
+				success: false,
+				error: "Usuario no autenticado.",
+				errorCode: "UNAUTHENTICATED",
+			};
+		if (
+			!(await verificarPermisoGestionDimensiones(
+				supabase,
+				currentUser.id,
+				projectId,
+			))
+		)
+			return {
+				success: false,
+				error: "No tienes permiso para crear dimensiones.",
+				errorCode: "FORBIDDEN",
+			};
+
+		const { data: existingDimension, error: checkError } = await supabase
+			.from("preclass_dimensions")
+			.select("id")
+			.eq("phase_id", phaseId)
+			.eq("name", name)
+			.maybeSingle();
+		if (checkError)
+			return {
+				success: false,
+				error: `Error al verificar dimensión: ${checkError.message}`,
+			};
+		if (existingDimension)
+			return {
+				success: false,
+				error: `Ya existe una dimensión con el nombre "${name}" en esta fase.`,
+				errorCode: "DUPLICATE_DIMENSION_NAME",
+			};
 
 		const dimensionToInsert: PreclassDimensionInsert = {
 			project_id: projectId,
-            phase_id: phaseId,
-            name, type, description: description || null, ordering,
-            icon: icon ?? null,
-        };
-		const { data: nuevaDimension, error: insertDimensionError } = await supabase.from("preclass_dimensions").insert(dimensionToInsert).select().single();
-		if (insertDimensionError || !nuevaDimension) return { success: false, error: `Error al crear la dimensión: ${insertDimensionError?.message || 'No data.'}` };
-		console.log(`[${opId}] Dimensión principal creada ID: ${nuevaDimension.id}`);
+			phase_id: phaseId,
+			name,
+			type,
+			description: description || null,
+			ordering,
+			icon: icon ?? null,
+		};
+		const { data: nuevaDimension, error: insertDimensionError } = await supabase
+			.from("preclass_dimensions")
+			.insert(dimensionToInsert)
+			.select()
+			.single();
+		if (insertDimensionError || !nuevaDimension)
+			return {
+				success: false,
+				error: `Error al crear la dimensión: ${insertDimensionError?.message || "No data."}`,
+			};
+		console.log(
+			`[${opId}] Dimensión principal creada ID: ${nuevaDimension.id}`,
+		);
 
-        if (type === 'finite' && payloadOptions && payloadOptions.length > 0) {
-            const optionsToInsert: PreclassDimensionOptionInsert[] = payloadOptions.map(opt => ({
-                dimension_id: nuevaDimension.id,
-                value: opt.value,
-                ordering: opt.ordering,
-                emoticon: opt.emoticon ?? null,
-            }));
-            const { error: insertOptionsError } = await supabase.from("preclass_dimension_options").insert(optionsToInsert);
-            if (insertOptionsError) return { success: false, error: `Error al guardar opciones: ${insertOptionsError.message}.`, errorCode: "PARTIAL_INSERT_OPTIONS" };
-        }
-        if (payloadQuestions && payloadQuestions.length > 0) {
-            const questionsToInsert: PreclassDimensionQuestionInsert[] = payloadQuestions.map(q => ({ dimension_id: nuevaDimension.id, question: q.question, ordering: q.ordering }));
-            const { error: insertQuestionsError } = await supabase.from("preclass_dimension_questions").insert(questionsToInsert);
-            if (insertQuestionsError) return { success: false, error: `Error al guardar preguntas: ${insertQuestionsError.message}.`, errorCode: "PARTIAL_INSERT_QUESTIONS" };
-        }
-        if (payloadExamples && payloadExamples.length > 0) {
-            const examplesToInsert: PreclassDimensionExampleInsert[] = payloadExamples.map(ex => ({ dimension_id: nuevaDimension.id, example: ex.example }));
-            const { error: insertExamplesError } = await supabase.from("preclass_dimension_examples").insert(examplesToInsert);
-            if (insertExamplesError) return { success: false, error: `Error al guardar ejemplos: ${insertExamplesError.message}.`, errorCode: "PARTIAL_INSERT_EXAMPLES" };
-        }
-		
-		console.log(`🎉 [${opId}] ÉXITO: Dimensión creada ID: ${nuevaDimension.id}`);
+		if (type === "finite" && payloadOptions && payloadOptions.length > 0) {
+			const optionsToInsert: PreclassDimensionOptionInsert[] =
+				payloadOptions.map((opt) => ({
+					dimension_id: nuevaDimension.id,
+					value: opt.value,
+					ordering: opt.ordering,
+					emoticon: opt.emoticon ?? null,
+				}));
+			const { error: insertOptionsError } = await supabase
+				.from("preclass_dimension_options")
+				.insert(optionsToInsert);
+			if (insertOptionsError)
+				return {
+					success: false,
+					error: `Error al guardar opciones: ${insertOptionsError.message}.`,
+					errorCode: "PARTIAL_INSERT_OPTIONS",
+				};
+		}
+		if (payloadQuestions && payloadQuestions.length > 0) {
+			const questionsToInsert: PreclassDimensionQuestionInsert[] =
+				payloadQuestions.map((q) => ({
+					dimension_id: nuevaDimension.id,
+					question: q.question,
+					ordering: q.ordering,
+				}));
+			const { error: insertQuestionsError } = await supabase
+				.from("preclass_dimension_questions")
+				.insert(questionsToInsert);
+			if (insertQuestionsError)
+				return {
+					success: false,
+					error: `Error al guardar preguntas: ${insertQuestionsError.message}.`,
+					errorCode: "PARTIAL_INSERT_QUESTIONS",
+				};
+		}
+		if (payloadExamples && payloadExamples.length > 0) {
+			const examplesToInsert: PreclassDimensionExampleInsert[] =
+				payloadExamples.map((ex) => ({
+					dimension_id: nuevaDimension.id,
+					example: ex.example,
+				}));
+			const { error: insertExamplesError } = await supabase
+				.from("preclass_dimension_examples")
+				.insert(examplesToInsert);
+			if (insertExamplesError)
+				return {
+					success: false,
+					error: `Error al guardar ejemplos: ${insertExamplesError.message}.`,
+					errorCode: "PARTIAL_INSERT_EXAMPLES",
+				};
+		}
+
+		console.log(
+			`🎉 [${opId}] ÉXITO: Dimensión creada ID: ${nuevaDimension.id}`,
+		);
 		return { success: true, data: nuevaDimension };
 	} catch (error) {
 		console.error(`❌ [${opId}] Excepción en createDimension:`, error);
-		return { success: false, error: `Error interno del servidor: ${(error as Error).message}` };
+		return {
+			success: false,
+			error: `Error interno del servidor: ${(error as Error).message}`,
+		};
 	}
 }
 
@@ -236,41 +368,75 @@ export async function createDimension(
 // ========================================================================
 // CORRECCIÓN: Cuerpo de la función incluido completamente.
 export async function updateDimension(
-	payload: UpdateDimensionPayload
+	payload: UpdateDimensionPayload,
 ): Promise<ResultadoOperacion<PreclassDimensionRow>> {
 	const opId = `UDIM-${Math.floor(Math.random() * 10000)}`;
 	const {
-		dimensionId, projectId, name, description, ordering,
+		dimensionId,
+		projectId,
+		name,
+		description,
+		ordering,
 		options: payloadOptions,
 		questions: payloadQuestions,
 		examples: payloadExamples,
-		icon
+		icon,
 	} = payload;
 
-	console.log(`📄 [${opId}] Iniciando updateDimension para ID: ${dimensionId} en proyecto ${projectId}`);
+	console.log(
+		`📄 [${opId}] Iniciando updateDimension para ID: ${dimensionId} en proyecto ${projectId}`,
+	);
 
 	if (!dimensionId || !projectId) {
-		return { success: false, error: "Faltan IDs requeridos (dimensionId, projectId).", errorCode: "MISSING_IDS" };
+		return {
+			success: false,
+			error: "Faltan IDs requeridos (dimensionId, projectId).",
+			errorCode: "MISSING_IDS",
+		};
 	}
 
 	try {
 		const supabase = await createSupabaseServerClient();
-		const { data: { user: currentUser } } = await supabase.auth.getUser();
+		const {
+			data: { user: currentUser },
+		} = await supabase.auth.getUser();
 
-		if (!currentUser) return { success: false, error: "Usuario no autenticado.", errorCode: "UNAUTHENTICATED" };
-		if (!(await verificarPermisoGestionDimensiones(supabase, currentUser.id, projectId))) return { success: false, error: "No tienes permiso para modificar dimensiones.", errorCode: "FORBIDDEN" };
-		
+		if (!currentUser)
+			return {
+				success: false,
+				error: "Usuario no autenticado.",
+				errorCode: "UNAUTHENTICATED",
+			};
+		if (
+			!(await verificarPermisoGestionDimensiones(
+				supabase,
+				currentUser.id,
+				projectId,
+			))
+		)
+			return {
+				success: false,
+				error: "No tienes permiso para modificar dimensiones.",
+				errorCode: "FORBIDDEN",
+			};
+
 		const { data: currentDimensionData, error: fetchError } = await supabase
 			.from("preclass_dimensions")
-			.select("*, options:preclass_dimension_options(*), questions:preclass_dimension_questions(*), examples:preclass_dimension_examples(*)")
+			.select(
+				"*, options:preclass_dimension_options(*), questions:preclass_dimension_questions(*), examples:preclass_dimension_examples(*)",
+			)
 			.eq("id", dimensionId)
 			.eq("project_id", projectId)
 			.single();
 
 		if (fetchError || !currentDimensionData) {
-			return { success: false, error: `Dimensión no encontrada o error al obtenerla: ${fetchError?.message || 'No data'}.`, errorCode: "DIMENSION_NOT_FOUND" };
+			return {
+				success: false,
+				error: `Dimensión no encontrada o error al obtenerla: ${fetchError?.message || "No data"}.`,
+				errorCode: "DIMENSION_NOT_FOUND",
+			};
 		}
-		
+
 		const currentDimensionTyped: FullDimension = {
 			...currentDimensionData,
 			options: currentDimensionData.options || [],
@@ -280,47 +446,90 @@ export async function updateDimension(
 
 		if (name && name !== currentDimensionTyped.name) {
 			const { data: existingName, error: nameCheckError } = await supabase
-				.from("preclass_dimensions").select("id").eq("project_id", projectId).eq("name", name).neq("id", dimensionId).maybeSingle();
-			if (nameCheckError) return { success: false, error: `Error verificando nombre: ${nameCheckError.message}`, errorCode: "DB_ERROR" };
-			if (existingName) return { success: false, error: `Ya existe otra dimensión con el nombre "${name}".`, errorCode: "DUPLICATE_DIMENSION_NAME" };
+				.from("preclass_dimensions")
+				.select("id")
+				.eq("project_id", projectId)
+				.eq("name", name)
+				.neq("id", dimensionId)
+				.maybeSingle();
+			if (nameCheckError)
+				return {
+					success: false,
+					error: `Error verificando nombre: ${nameCheckError.message}`,
+					errorCode: "DB_ERROR",
+				};
+			if (existingName)
+				return {
+					success: false,
+					error: `Ya existe otra dimensión con el nombre "${name}".`,
+					errorCode: "DUPLICATE_DIMENSION_NAME",
+				};
 		}
-		
+
 		const effectiveType = currentDimensionTyped.type;
 
-		const dimensionUpdates: PreclassDimensionUpdate = {} as PreclassDimensionUpdate;
-        if (name !== undefined && name !== currentDimensionTyped.name) dimensionUpdates.name = name;
-        if (description !== undefined && description !== currentDimensionTyped.description) dimensionUpdates.description = description;
-        if (ordering !== undefined && ordering !== currentDimensionTyped.ordering) dimensionUpdates.ordering = ordering;
-        if (icon !== undefined) {
-            dimensionUpdates.icon = icon ?? null;
-        }
-		
+		const dimensionUpdates: PreclassDimensionUpdate =
+			{} as PreclassDimensionUpdate;
+		if (name !== undefined && name !== currentDimensionTyped.name)
+			dimensionUpdates.name = name;
+		if (
+			description !== undefined &&
+			description !== currentDimensionTyped.description
+		)
+			dimensionUpdates.description = description;
+		if (ordering !== undefined && ordering !== currentDimensionTyped.ordering)
+			dimensionUpdates.ordering = ordering;
+		if (icon !== undefined) {
+			dimensionUpdates.icon = icon ?? null;
+		}
+
 		let updatedDimensionRow: PreclassDimensionRow = currentDimensionTyped;
 
 		if (Object.keys(dimensionUpdates).length > 0) {
 			dimensionUpdates.updated_at = new Date().toISOString();
 			const { data: updatedData, error: updateMainError } = await supabase
-			.from("preclass_dimensions").update(dimensionUpdates).eq("id", dimensionId).select().single();
-			if (updateMainError || !updatedData) return { success: false, error: `Error actualizando datos principales: ${updateMainError?.message || 'No data'}.`, errorCode: "MAIN_UPDATE_FAILED" };
+				.from("preclass_dimensions")
+				.update(dimensionUpdates)
+				.eq("id", dimensionId)
+				.select()
+				.single();
+			if (updateMainError || !updatedData)
+				return {
+					success: false,
+					error: `Error actualizando datos principales: ${updateMainError?.message || "No data"}.`,
+					errorCode: "MAIN_UPDATE_FAILED",
+				};
 			updatedDimensionRow = updatedData;
 			console.log(`[${opId}] Dimensión principal actualizada.`);
 		}
 
 		// A. MANEJAR OPCIONES
-		if (effectiveType === 'finite') {
+		if (effectiveType === "finite") {
 			if (payloadOptions !== undefined) {
-				const currentOptionIds = (currentDimensionTyped.options || []).map(opt => opt.id);
-				const receivedOptionIds = (payloadOptions || []).map(opt => opt.id).filter(id => !!id) as string[];
-				const optionsToDelete = currentOptionIds.filter(id => !receivedOptionIds.includes(id));
+				const currentOptionIds = (currentDimensionTyped.options || []).map(
+					(opt) => opt.id,
+				);
+				const receivedOptionIds = (payloadOptions || [])
+					.map((opt) => opt.id)
+					.filter((id) => !!id) as string[];
+				const optionsToDelete = currentOptionIds.filter(
+					(id) => !receivedOptionIds.includes(id),
+				);
 				if (optionsToDelete.length > 0) {
 					const { error: deleteErr } = await supabase
 						.from("preclass_dimension_options")
 						.delete()
 						.in("id", optionsToDelete);
-					if (deleteErr) return { success: false, error: `Error eliminando opciones antiguas: ${deleteErr.message}`, errorCode: "DELETE_OPTIONS_FAILED" };
+					if (deleteErr)
+						return {
+							success: false,
+							error: `Error eliminando opciones antiguas: ${deleteErr.message}`,
+							errorCode: "DELETE_OPTIONS_FAILED",
+						};
 				}
-				for (const optPayload of (payloadOptions || [])) {
-					if (optPayload.id && currentOptionIds.includes(optPayload.id)) { // Actualizar
+				for (const optPayload of payloadOptions || []) {
+					if (optPayload.id && currentOptionIds.includes(optPayload.id)) {
+						// Actualizar
 						const updateBody: PreclassDimensionOptionUpdate = {
 							value: optPayload.value,
 							ordering: optPayload.ordering,
@@ -330,8 +539,14 @@ export async function updateDimension(
 							.from("preclass_dimension_options")
 							.update(updateBody)
 							.eq("id", optPayload.id);
-						if (updateErr) return { success: false, error: `Error actualizando opción ${optPayload.id}: ${updateErr.message}`, errorCode: "UPDATE_OPTION_FAILED" };
-					} else { // Insertar
+						if (updateErr)
+							return {
+								success: false,
+								error: `Error actualizando opción ${optPayload.id}: ${updateErr.message}`,
+								errorCode: "UPDATE_OPTION_FAILED",
+							};
+					} else {
+						// Insertar
 						const insertBody: PreclassDimensionOptionInsert = {
 							dimension_id: dimensionId,
 							value: optPayload.value,
@@ -341,200 +556,387 @@ export async function updateDimension(
 						const { error: insertErr } = await supabase
 							.from("preclass_dimension_options")
 							.insert(insertBody);
-						if (insertErr) return { success: false, error: `Error insertando nueva opción: ${insertErr.message}`, errorCode: "INSERT_OPTION_FAILED" };
+						if (insertErr)
+							return {
+								success: false,
+								error: `Error insertando nueva opción: ${insertErr.message}`,
+								errorCode: "INSERT_OPTION_FAILED",
+							};
 					}
 				}
 			}
 			console.log(`[${opId}] Opciones (finite) procesadas.`);
-		} else if (effectiveType === 'open' && (currentDimensionTyped.options || []).length > 0) {
-			const { error: deleteErr } = await supabase.from("preclass_dimension_options").delete().eq("dimension_id", dimensionId);
-			if (deleteErr) return { success: false, error: `Error eliminando opciones para tipo open: ${deleteErr.message}`, errorCode: "DELETE_OPEN_OPTIONS_FAILED" };
+		} else if (
+			effectiveType === "open" &&
+			(currentDimensionTyped.options || []).length > 0
+		) {
+			const { error: deleteErr } = await supabase
+				.from("preclass_dimension_options")
+				.delete()
+				.eq("dimension_id", dimensionId);
+			if (deleteErr)
+				return {
+					success: false,
+					error: `Error eliminando opciones para tipo open: ${deleteErr.message}`,
+					errorCode: "DELETE_OPEN_OPTIONS_FAILED",
+				};
 			console.log(`[${opId}] Opciones eliminadas porque el tipo es 'open'.`);
 		}
 
 		// B. MANEJAR PREGUNTAS
 		if (payloadQuestions !== undefined) {
-			const currentQuestionIds = (currentDimensionTyped.questions || []).map(q => q.id);
-			const receivedQuestionIds = (payloadQuestions || []).map(q => q.id).filter(id => !!id) as string[];
-			const questionsToDelete = currentQuestionIds.filter(id => !receivedQuestionIds.includes(id));
+			const currentQuestionIds = (currentDimensionTyped.questions || []).map(
+				(q) => q.id,
+			);
+			const receivedQuestionIds = (payloadQuestions || [])
+				.map((q) => q.id)
+				.filter((id) => !!id) as string[];
+			const questionsToDelete = currentQuestionIds.filter(
+				(id) => !receivedQuestionIds.includes(id),
+			);
 			if (questionsToDelete.length > 0) {
-				const { error: deleteErr } = await supabase.from("preclass_dimension_questions").delete().in("id", questionsToDelete);
-				if (deleteErr) return { success: false, error: `Error eliminando preguntas antiguas: ${deleteErr.message}`, errorCode: "DELETE_QUESTIONS_FAILED" };
+				const { error: deleteErr } = await supabase
+					.from("preclass_dimension_questions")
+					.delete()
+					.in("id", questionsToDelete);
+				if (deleteErr)
+					return {
+						success: false,
+						error: `Error eliminando preguntas antiguas: ${deleteErr.message}`,
+						errorCode: "DELETE_QUESTIONS_FAILED",
+					};
 			}
-			for (const qPayload of (payloadQuestions || [])) {
-				if (qPayload.id && currentQuestionIds.includes(qPayload.id)) { // Actualizar
-					const { error: updateErr } = await supabase.from("preclass_dimension_questions").update({ question: qPayload.question, ordering: qPayload.ordering }).eq("id", qPayload.id);
-					if (updateErr) return { success: false, error: `Error actualizando pregunta ${qPayload.id}: ${updateErr.message}`, errorCode: "UPDATE_QUESTION_FAILED" };
-				} else { // Insertar
-					const { error: insertErr } = await supabase.from("preclass_dimension_questions").insert({ dimension_id: dimensionId, question: qPayload.question, ordering: qPayload.ordering });
-					if (insertErr) return { success: false, error: `Error insertando nueva pregunta: ${insertErr.message}`, errorCode: "INSERT_QUESTION_FAILED" };
+			for (const qPayload of payloadQuestions || []) {
+				if (qPayload.id && currentQuestionIds.includes(qPayload.id)) {
+					// Actualizar
+					const { error: updateErr } = await supabase
+						.from("preclass_dimension_questions")
+						.update({
+							question: qPayload.question,
+							ordering: qPayload.ordering,
+						})
+						.eq("id", qPayload.id);
+					if (updateErr)
+						return {
+							success: false,
+							error: `Error actualizando pregunta ${qPayload.id}: ${updateErr.message}`,
+							errorCode: "UPDATE_QUESTION_FAILED",
+						};
+				} else {
+					// Insertar
+					const { error: insertErr } = await supabase
+						.from("preclass_dimension_questions")
+						.insert({
+							dimension_id: dimensionId,
+							question: qPayload.question,
+							ordering: qPayload.ordering,
+						});
+					if (insertErr)
+						return {
+							success: false,
+							error: `Error insertando nueva pregunta: ${insertErr.message}`,
+							errorCode: "INSERT_QUESTION_FAILED",
+						};
 				}
 			}
 			console.log(`[${opId}] Preguntas procesadas.`);
 		}
-		
+
 		// C. MANEJAR EJEMPLOS
 		if (payloadExamples !== undefined) {
-			const currentExampleIds = (currentDimensionTyped.examples || []).map(ex => ex.id);
-			const receivedExampleIds = (payloadExamples || []).map(ex => ex.id).filter(id => !!id) as string[];
-			const examplesToDelete = currentExampleIds.filter(id => !receivedExampleIds.includes(id));
+			const currentExampleIds = (currentDimensionTyped.examples || []).map(
+				(ex) => ex.id,
+			);
+			const receivedExampleIds = (payloadExamples || [])
+				.map((ex) => ex.id)
+				.filter((id) => !!id) as string[];
+			const examplesToDelete = currentExampleIds.filter(
+				(id) => !receivedExampleIds.includes(id),
+			);
 			if (examplesToDelete.length > 0) {
-				const { error: deleteErr } = await supabase.from("preclass_dimension_examples").delete().in("id", examplesToDelete);
-				if (deleteErr) return { success: false, error: `Error eliminando ejemplos antiguos: ${deleteErr.message}`, errorCode: "DELETE_EXAMPLES_FAILED" };
+				const { error: deleteErr } = await supabase
+					.from("preclass_dimension_examples")
+					.delete()
+					.in("id", examplesToDelete);
+				if (deleteErr)
+					return {
+						success: false,
+						error: `Error eliminando ejemplos antiguos: ${deleteErr.message}`,
+						errorCode: "DELETE_EXAMPLES_FAILED",
+					};
 			}
-			for (const exPayload of (payloadExamples || [])) {
-				if (exPayload.id && currentExampleIds.includes(exPayload.id)) { // Actualizar
-					const { error: updateErr } = await supabase.from("preclass_dimension_examples").update({ example: exPayload.example }).eq("id", exPayload.id);
-					if (updateErr) return { success: false, error: `Error actualizando ejemplo ${exPayload.id}: ${updateErr.message}`, errorCode: "UPDATE_EXAMPLE_FAILED" };
-				} else { // Insertar
-					const { error: insertErr } = await supabase.from("preclass_dimension_examples").insert({ dimension_id: dimensionId, example: exPayload.example });
-					if (insertErr) return { success: false, error: `Error insertando nuevo ejemplo: ${insertErr.message}`, errorCode: "INSERT_EXAMPLE_FAILED" };
+			for (const exPayload of payloadExamples || []) {
+				if (exPayload.id && currentExampleIds.includes(exPayload.id)) {
+					// Actualizar
+					const { error: updateErr } = await supabase
+						.from("preclass_dimension_examples")
+						.update({ example: exPayload.example })
+						.eq("id", exPayload.id);
+					if (updateErr)
+						return {
+							success: false,
+							error: `Error actualizando ejemplo ${exPayload.id}: ${updateErr.message}`,
+							errorCode: "UPDATE_EXAMPLE_FAILED",
+						};
+				} else {
+					// Insertar
+					const { error: insertErr } = await supabase
+						.from("preclass_dimension_examples")
+						.insert({ dimension_id: dimensionId, example: exPayload.example });
+					if (insertErr)
+						return {
+							success: false,
+							error: `Error insertando nuevo ejemplo: ${insertErr.message}`,
+							errorCode: "INSERT_EXAMPLE_FAILED",
+						};
 				}
 			}
 			console.log(`[${opId}] Ejemplos procesados.`);
 		}
 
-		console.log(`🎉 [${opId}] ÉXITO: Dimensión actualizada. ID: ${dimensionId}`);
+		console.log(
+			`🎉 [${opId}] ÉXITO: Dimensión actualizada. ID: ${dimensionId}`,
+		);
 		return { success: true, data: updatedDimensionRow };
 	} catch (error) {
 		console.error(`❌ [${opId}] Excepción en updateDimension:`, error);
-		return { success: false, error: `Error interno del servidor: ${(error as Error).message}`, errorCode: "INTERNAL_SERVER_ERROR" };
+		return {
+			success: false,
+			error: `Error interno del servidor: ${(error as Error).message}`,
+			errorCode: "INTERNAL_SERVER_ERROR",
+		};
 	}
 }
-
 
 // ========================================================================
 //	ACTION 4: ARCHIVAR UNA DIMENSIÓN (Soft Delete)
 // ========================================================================
 export async function archiveDimension(
-	payload: ArchiveDimensionPayload
+	payload: ArchiveDimensionPayload,
 ): Promise<ResultadoOperacion<null>> {
-    const opId = `ADIM-${Math.floor(Math.random() * 10000)}`;
-    const { dimensionId, projectId } = payload;
-    console.log(`🗄️ [${opId}] Iniciando archiveDimension: ID ${dimensionId}`);
+	const opId = `ADIM-${Math.floor(Math.random() * 10000)}`;
+	const { dimensionId, projectId } = payload;
+	console.log(`🗄️ [${opId}] Iniciando archiveDimension: ID ${dimensionId}`);
 
-    if (!dimensionId || !projectId) {
-        return { success: false, error: "IDs de dimensión y proyecto son requeridos.", errorCode: "MISSING_IDS" };
-    }
+	if (!dimensionId || !projectId) {
+		return {
+			success: false,
+			error: "IDs de dimensión y proyecto son requeridos.",
+			errorCode: "MISSING_IDS",
+		};
+	}
 
-    try {
-        const supabase = await createSupabaseServerClient();
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
+	try {
+		const supabase = await createSupabaseServerClient();
+		const {
+			data: { user: currentUser },
+		} = await supabase.auth.getUser();
 
-        if (!currentUser) {
-            return { success: false, error: "Usuario no autenticado.", errorCode: "UNAUTHENTICATED" };
-        }
-        if (!(await verificarPermisoGestionDimensiones(supabase, currentUser.id, projectId))) {
-            return { success: false, error: "No tienes permiso para archivar dimensiones.", errorCode: "FORBIDDEN" };
-        }
+		if (!currentUser) {
+			return {
+				success: false,
+				error: "Usuario no autenticado.",
+				errorCode: "UNAUTHENTICATED",
+			};
+		}
+		if (
+			!(await verificarPermisoGestionDimensiones(
+				supabase,
+				currentUser.id,
+				projectId,
+			))
+		) {
+			return {
+				success: false,
+				error: "No tienes permiso para archivar dimensiones.",
+				errorCode: "FORBIDDEN",
+			};
+		}
 
-        const { error: updateError } = await supabase
-            .from("preclass_dimensions")
-            .update({ status: 'archived', updated_at: new Date().toISOString() })
-            .eq("id", dimensionId)
-            .eq("project_id", projectId);
+		const { error: updateError } = await supabase
+			.from("preclass_dimensions")
+			.update({ status: "archived", updated_at: new Date().toISOString() })
+			.eq("id", dimensionId)
+			.eq("project_id", projectId);
 
-        if (updateError) {
-            console.error(`❌ [${opId}] Error al archivar dimensión:`, updateError);
-            return { success: false, error: `Error al archivar la dimensión: ${updateError.message}`, errorCode: "ARCHIVE_FAILED" };
-        }
+		if (updateError) {
+			console.error(`❌ [${opId}] Error al archivar dimensión:`, updateError);
+			return {
+				success: false,
+				error: `Error al archivar la dimensión: ${updateError.message}`,
+				errorCode: "ARCHIVE_FAILED",
+			};
+		}
 
-        console.log(`🎉 [${opId}] ÉXITO: Dimensión archivada ID: ${dimensionId}`);
-        return { success: true, data: null };
-    } catch (error) {
-        console.error(`❌ [${opId}] Excepción en archiveDimension:`, error);
-        return { success: false, error: `Error interno del servidor: ${(error as Error).message}`, errorCode: "INTERNAL_SERVER_ERROR" };
-    }
+		console.log(`🎉 [${opId}] ÉXITO: Dimensión archivada ID: ${dimensionId}`);
+		return { success: true, data: null };
+	} catch (error) {
+		console.error(`❌ [${opId}] Excepción en archiveDimension:`, error);
+		return {
+			success: false,
+			error: `Error interno del servidor: ${(error as Error).message}`,
+			errorCode: "INTERNAL_SERVER_ERROR",
+		};
+	}
 }
 
 // ========================================================================
 //	ACTION 5: BORRADO FÍSICO DE DIMENSIÓN (Hard Delete)
 // ========================================================================
 export async function hardDeleteDimension(
-    payload: HardDeleteDimensionPayload
+	payload: HardDeleteDimensionPayload,
 ): Promise<ResultadoOperacion<null>> {
-    const opId = `HDDIM-${Math.floor(Math.random() * 10000)}`;
-    const { dimensionId, projectId } = payload;
-    console.log(`🗑️ [${opId}] Iniciando hardDeleteDimension: ID ${dimensionId}`);
+	const opId = `HDDIM-${Math.floor(Math.random() * 10000)}`;
+	const { dimensionId, projectId } = payload;
+	console.log(`🗑️ [${opId}] Iniciando hardDeleteDimension: ID ${dimensionId}`);
 
-    if (!dimensionId || !projectId) {
-        return { success: false, error: "IDs de dimensión y proyecto son requeridos.", errorCode: "MISSING_IDS" };
-    }
+	if (!dimensionId || !projectId) {
+		return {
+			success: false,
+			error: "IDs de dimensión y proyecto son requeridos.",
+			errorCode: "MISSING_IDS",
+		};
+	}
 
-    try {
-        const supabase = await createSupabaseServerClient();
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
+	try {
+		const supabase = await createSupabaseServerClient();
+		const {
+			data: { user: currentUser },
+		} = await supabase.auth.getUser();
 
-        if (!currentUser) {
-            return { success: false, error: "Usuario no autenticado.", errorCode: "UNAUTHENTICATED" };
-        }
-        if (!(await verificarPermisoGestionDimensiones(supabase, currentUser.id, projectId))) {
-            return { success: false, error: "No tienes permiso para eliminar dimensiones.", errorCode: "FORBIDDEN" };
-        }
+		if (!currentUser) {
+			return {
+				success: false,
+				error: "Usuario no autenticado.",
+				errorCode: "UNAUTHENTICATED",
+			};
+		}
+		if (
+			!(await verificarPermisoGestionDimensiones(
+				supabase,
+				currentUser.id,
+				projectId,
+			))
+		) {
+			return {
+				success: false,
+				error: "No tienes permiso para eliminar dimensiones.",
+				errorCode: "FORBIDDEN",
+			};
+		}
 
-        const { count, error: checkError } = await supabase
-            .from('article_dimension_reviews')
-            .select('*', { count: 'exact', head: true })
-            .eq('dimension_id', dimensionId);
-        
-        if (checkError) {
-            return { success: false, error: `Error al verificar el uso de la dimensión: ${checkError.message}`, errorCode: "USAGE_CHECK_FAILED" };
-        }
+		const { count, error: checkError } = await supabase
+			.from("article_dimension_reviews")
+			.select("*", { count: "exact", head: true })
+			.eq("dimension_id", dimensionId);
 
-        if (count && count > 0) {
-            return { success: false, error: `Esta dimensión ya ha sido usada en ${count} clasificaciones y no puede ser eliminada permanentemente. Puede archivarla en su lugar.`, errorCode: "DIMENSION_IN_USE" };
-        }
+		if (checkError) {
+			return {
+				success: false,
+				error: `Error al verificar el uso de la dimensión: ${checkError.message}`,
+				errorCode: "USAGE_CHECK_FAILED",
+			};
+		}
 
-        const { error: deleteError } = await supabase
-            .from("preclass_dimensions")
-            .delete()
-            .eq("id", dimensionId);
+		if (count && count > 0) {
+			return {
+				success: false,
+				error: `Esta dimensión ya ha sido usada en ${count} clasificaciones y no puede ser eliminada permanentemente. Puede archivarla en su lugar.`,
+				errorCode: "DIMENSION_IN_USE",
+			};
+		}
 
-        if (deleteError) {
-            console.error(`❌ [${opId}] Error al eliminar dimensión:`, deleteError);
-            return { success: false, error: `Error al eliminar la dimensión: ${deleteError.message}`, errorCode: "DELETE_FAILED" };
-        }
+		const { error: deleteError } = await supabase
+			.from("preclass_dimensions")
+			.delete()
+			.eq("id", dimensionId);
 
-        console.log(`🎉 [${opId}] ÉXITO: Dimensión eliminada permanentemente. ID: ${dimensionId}`);
-        return { success: true, data: null };
+		if (deleteError) {
+			console.error(`❌ [${opId}] Error al eliminar dimensión:`, deleteError);
+			return {
+				success: false,
+				error: `Error al eliminar la dimensión: ${deleteError.message}`,
+				errorCode: "DELETE_FAILED",
+			};
+		}
 
-    } catch (error) {
-        console.error(`❌ [${opId}] Excepción en hardDeleteDimension:`, error);
-        return { success: false, error: `Error interno del servidor: ${(error as Error).message}`, errorCode: "INTERNAL_SERVER_ERROR" };
-    }
+		console.log(
+			`🎉 [${opId}] ÉXITO: Dimensión eliminada permanentemente. ID: ${dimensionId}`,
+		);
+		return { success: true, data: null };
+	} catch (error) {
+		console.error(`❌ [${opId}] Excepción en hardDeleteDimension:`, error);
+		return {
+			success: false,
+			error: `Error interno del servidor: ${(error as Error).message}`,
+			errorCode: "INTERNAL_SERVER_ERROR",
+		};
+	}
 }
 
 // ========================================================================
 //	ACCIÓN 6: REORDENAR DIMENSIONES
 // ========================================================================
 export async function reorderDimensions(
-	payload: ReorderDimensionsPayload
+	payload: ReorderDimensionsPayload,
 ): Promise<ResultadoOperacion<null>> {
 	const opId = `RDIM-${Math.floor(Math.random() * 10000)}`;
 	const { projectId, orderedDimensionIds } = payload;
-	console.log(`🔄 [${opId}] Iniciando reorderDimensions para proyecto: ${projectId}`);
+	console.log(
+		`🔄 [${opId}] Iniciando reorderDimensions para proyecto: ${projectId}`,
+	);
 
-	if (!projectId || !Array.isArray(orderedDimensionIds)) return { success: false, error: "Payload inválido.", errorCode: "INVALID_PAYLOAD" };
+	if (!projectId || !Array.isArray(orderedDimensionIds))
+		return {
+			success: false,
+			error: "Payload inválido.",
+			errorCode: "INVALID_PAYLOAD",
+		};
 
 	try {
 		const supabase = await createSupabaseServerClient();
-		const { data: { user: currentUser } } = await supabase.auth.getUser();
-		if (!currentUser) return { success: false, error: "Usuario no autenticado.", errorCode: "UNAUTHENTICATED" };
-		if (!(await verificarPermisoGestionDimensiones(supabase, currentUser.id, projectId))) return { success: false, error: "No tienes permiso para reordenar dimensiones.", errorCode: "FORBIDDEN" };
+		const {
+			data: { user: currentUser },
+		} = await supabase.auth.getUser();
+		if (!currentUser)
+			return {
+				success: false,
+				error: "Usuario no autenticado.",
+				errorCode: "UNAUTHENTICATED",
+			};
+		if (
+			!(await verificarPermisoGestionDimensiones(
+				supabase,
+				currentUser.id,
+				projectId,
+			))
+		)
+			return {
+				success: false,
+				error: "No tienes permiso para reordenar dimensiones.",
+				errorCode: "FORBIDDEN",
+			};
 
 		const updates = orderedDimensionIds.map((dimensionId, index) =>
 			supabase
 				.from("preclass_dimensions")
 				.update({ ordering: index, updated_at: new Date().toISOString() })
 				.eq("id", dimensionId)
-				.eq("project_id", projectId)
+				.eq("project_id", projectId),
 		);
-		
+
 		const results = await Promise.all(updates);
 		for (const result of results) {
 			if (result.error) {
-				console.error(`❌ [${opId}] Error actualizando orden para una dimensión:`, result.error);
-				return { success: false, error: `Error al actualizar orden: ${result.error.message}`, errorCode: "REORDER_FAILED_PARTIAL" };
+				console.error(
+					`❌ [${opId}] Error actualizando orden para una dimensión:`,
+					result.error,
+				);
+				return {
+					success: false,
+					error: `Error al actualizar orden: ${result.error.message}`,
+					errorCode: "REORDER_FAILED_PARTIAL",
+				};
 			}
 		}
 
@@ -542,6 +944,127 @@ export async function reorderDimensions(
 		return { success: true, data: null };
 	} catch (error) {
 		console.error(`❌ [${opId}] Excepción en reorderDimensions:`, error);
-		return { success: false, error: `Error interno del servidor: ${(error as Error).message}`, errorCode: "INTERNAL_SERVER_ERROR" };
+		return {
+			success: false,
+			error: `Error interno del servidor: ${(error as Error).message}`,
+			errorCode: "INTERNAL_SERVER_ERROR",
+		};
+	}
+}
+
+// ========================================================================
+//	ACTION 7: SIMULAR CLASIFICACIÓN (CALIBRADOR QUIPU)
+// ========================================================================
+
+export interface SimulateClassificationPayload {
+	name: string;
+	description?: string | null;
+	type: "finite" | "open";
+	options: { value: string; emoticon?: string | null }[];
+	questions?: { question: string }[];
+	examples?: { example: string }[];
+	text: string;
+}
+
+export interface SimulationResult {
+	value: string;
+	confidence: "Alta" | "Media" | "Baja";
+	rationale: string;
+}
+
+export async function simulateDimensionClassification(
+	payload: SimulateClassificationPayload,
+): Promise<ResultadoOperacion<SimulationResult>> {
+	const opId = `SIM-${Math.floor(Math.random() * 10000)}`;
+	const { name, description, type, options, questions, examples, text } =
+		payload;
+	console.log(`🧠 [${opId}] Iniciando simulación de clasificación: ${name}`);
+
+	if (!name || !text) {
+		return {
+			success: false,
+			error: "Faltan datos requeridos (nombre dimensión, texto a clasificar).",
+			errorCode: "MISSING_DATA",
+		};
+	}
+
+	try {
+		// Construir texto de opciones con emoticones si existen
+		let optionsText = "";
+		if (type === "finite") {
+			const optionsWithEmoticons = options
+				.map((o) =>
+					o.emoticon ? `${o.emoticon} "${o.value}"` : `"${o.value}"`,
+				)
+				.join(", ");
+			optionsText = `Opciones Válidas: ${optionsWithEmoticons}.`;
+		} else {
+			optionsText =
+				"Tipo: Respuesta Abierta (genera una respuesta breve y concisa).";
+		}
+
+		// Construir sección de preguntas guía si existen
+		const questionsText =
+			questions && questions.length > 0 ?
+				`\n### PREGUNTAS GUÍA ###\nPara ayudarte a clasificar, considera estas preguntas:\n${questions.map((q, i) => `${i + 1}. ${q.question}`).join("\n")}\n`
+			:	"";
+
+		// Construir sección de ejemplos si existen
+		const examplesText =
+			examples && examples.length > 0 ?
+				`\n### EJEMPLOS ILUSTRATIVOS ###\nEstos ejemplos te ayudarán a entender el tipo de clasificación esperada:\n${examples.map((e, i) => `${i + 1}. ${e.example}`).join("\n")}\n`
+			:	"";
+
+		const prompt = `
+        Actúa como un asistente de investigación experto.
+        Tu tarea es clasificar el siguiente texto basándote ÚNICAMENTE en la definición de dimensión proporcionada.
+        
+        ### DEFINICIÓN DE LA DIMENSIÓN ###
+        Nombre: "${name}"
+        Descripción: "${description || "Sin descripción adicional"}"
+        ${optionsText}
+        ${questionsText}${examplesText}
+        ### TEXTO A CLASIFICAR ###
+        "${text}"
+
+        ### INSTRUCCIONES ###
+        1. Analiza el texto según la descripción de la dimensión.
+        2. ${questionsText ? "Usa las preguntas guía para orientar tu análisis." : ""}
+        3. ${examplesText ? "Considera los ejemplos ilustrativos como referencia del tipo de clasificación esperada." : ""}
+        4. Determina el valor de clasificación más apropiado.
+           - Si es finita, DEBE ser una de las opciones válidas (sin el emoticon).
+           - Si es abierta, genera una respuesta coherente.
+        5. Asigna un nivel de confianza (Alta, Media, Baja).
+        6. Provee una justificación breve (máx 2 oraciones).
+
+        Responde en formato JSON estrictamente:
+        {
+            "value": "valor seleccionado o generado",
+            "confidence": "Alta" | "Media" | "Baja",
+            "rationale": "justificación"
+        }
+        `;
+
+		// 🔧 MIGRACIÓN: Ahora usamos DeepSeek en lugar de Gemini
+		// DeepSeek es más accesible para investigadores independientes
+		const { result } = await callDeepSeekAPI("deepseek-chat", prompt);
+
+		// Limpieza básica de JSON si viene con backticks
+		let cleanJson = result.trim();
+		if (cleanJson.startsWith("```json")) {
+			cleanJson = cleanJson.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+		} else if (cleanJson.startsWith("```")) {
+			cleanJson = cleanJson.replace(/^```\s*/, "").replace(/\s*```$/, "");
+		}
+
+		const parsed = JSON.parse(cleanJson) as SimulationResult;
+
+		return { success: true, data: parsed };
+	} catch (error) {
+		console.error(`❌ [${opId}] Error en simulación:`, error);
+		return {
+			success: false,
+			error: `Error al simular clasificación: ${(error as Error).message}`,
+		};
 	}
 }

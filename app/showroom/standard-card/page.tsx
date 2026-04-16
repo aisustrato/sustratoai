@@ -19,17 +19,11 @@ import {
 	StandardTabsTrigger,
 } from "@/components/ui/StandardTabs";
 import { TabsContent as StandardTabsContent } from "@radix-ui/react-tabs";
-import {
-	Edit3,
-	Trash2,
-	Bell,
-	Loader,
-	MousePointerClick,
-} from "lucide-react";
+import { Edit3, Trash2, Bell, Loader, MousePointerClick } from "lucide-react";
 
 type ShowroomButtonColor = Exclude<
 	StandardCardColorScheme,
-	"neutral" | "white"
+	"neutral" | "default"
 >;
 
 const cardColorSchemesForDemo: StandardCardColorScheme[] = [
@@ -41,7 +35,6 @@ const cardColorSchemesForDemo: StandardCardColorScheme[] = [
 	"warning",
 	"danger",
 	"neutral",
-	"white",
 ];
 const styleTypes: NonNullable<StandardCardProps["styleType"]>[] = [
 	"filled",
@@ -71,13 +64,76 @@ const loadingVariants: NonNullable<StandardCardProps["loadingVariant"]>[] = [
 ];
 
 const getValidButtonColor = (
-	scheme: StandardCardColorScheme
+	scheme: StandardCardColorScheme,
 ): ShowroomButtonColor | "primary" => {
-	if (scheme === "neutral" || scheme === "white") {
+	if (scheme === "neutral" || scheme === "default") {
 		return "primary";
 	}
 	return scheme as ShowroomButtonColor;
 };
+
+// 🔄 Mock de la tarjeta que gira al aprobar (como en preclasificación)
+function ApprovalMockCard() {
+	const [approved, setApproved] = useState(false);
+	const [animKey, setAnimKey] = useState(0);
+
+	const handleToggle = () => {
+		setApproved(!approved);
+		setAnimKey((k) => k + 1); // Fuerza nueva animación
+	};
+
+	return (
+		<div className="flex flex-col md:flex-row gap-6 items-start">
+			<StandardCard
+				colorScheme="primary"
+				styleType="filled"
+				hasOutline
+				approved={approved}
+				approvedColorScheme="success"
+				animateOnChangeKey={animKey}
+				className="w-full max-w-sm">
+				<StandardCard.Header>
+					<StandardCard.Title>
+						{approved ? "✅ Artículo Aprobado" : "📄 Artículo en Revisión"}
+					</StandardCard.Title>
+					<StandardCard.Subtitle>
+						{approved ? "Clasificación confirmada" : "Pendiente de aprobación"}
+					</StandardCard.Subtitle>
+				</StandardCard.Header>
+				<StandardCard.Content>
+					<StandardText size="sm">
+						{approved ?
+							"El artículo ha sido clasificado correctamente. La tarjeta giró 360° y cambió a success."
+						:	"Haz clic en 'Aprobar' para ver el giro y cambio de color."}
+					</StandardText>
+				</StandardCard.Content>
+				<StandardCard.Actions>
+					<StandardButton
+						colorScheme={approved ? "success" : "primary"}
+						styleType={approved ? "ghost" : "solid"}
+						onClick={handleToggle}>
+						{approved ? "Revertir" : "Aprobar"}
+					</StandardButton>
+				</StandardCard.Actions>
+			</StandardCard>
+
+			<div className="flex flex-col gap-3 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+				<StandardText size="sm" weight="semibold">
+					Props activas:
+				</StandardText>
+				<code className="text-xs">
+					approved={approved.toString()}
+					<br />
+					approvalAnimation=&quot;spin&quot;
+					<br />
+					approvedColorScheme=&quot;success&quot;
+					<br />
+					animateOnChangeKey={animKey.toString()}
+				</code>
+			</div>
+		</div>
+	);
+}
 
 export default function StandardCardShowroomPage() {
 	const [activeTab, setActiveTab] = useState("interactive");
@@ -98,7 +154,7 @@ export default function StandardCardShowroomPage() {
 		useState<StandardCardColorScheme>("primary");
 	const [isLoadingDemo, setIsLoadingDemo] = useState(false);
 	const [demoLoadingText, setDemoLoadingText] = useState(
-		"Procesando intensamente..."
+		"Procesando intensamente...",
 	);
 	const [demoLoadingVariant, setDemoLoadingVariant] =
 		useState<NonNullable<StandardCardProps["loadingVariant"]>>("spin-pulse");
@@ -169,13 +225,13 @@ export default function StandardCardShowroomPage() {
 				defaultValue="interactive"
 				className="w-full"
 				onValueChange={setActiveTab}
-                colorScheme="primary"
-                styleType="line"
-            >
-				<StandardTabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 mb-8">
+				colorScheme="primary"
+				styleType="line">
+				<StandardTabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7 mb-8">
 					<StandardTabsTrigger value="interactive">
 						Interactivo
 					</StandardTabsTrigger>
+					<StandardTabsTrigger value="effects">🌊 Efectos</StandardTabsTrigger>
 					<StandardTabsTrigger value="styles">Estilos</StandardTabsTrigger>
 					<StandardTabsTrigger value="schemes">Esquemas</StandardTabsTrigger>
 					<StandardTabsTrigger value="accents">Acentos</StandardTabsTrigger>
@@ -229,7 +285,11 @@ export default function StandardCardShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoStyleType}
-											onChange={(val) => setDemoStyleType(val as NonNullable<StandardCardProps["styleType"]>)}
+											onChange={(val) =>
+												setDemoStyleType(
+													val as NonNullable<StandardCardProps["styleType"]>,
+												)
+											}
 											options={styleTypes.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>
@@ -239,7 +299,11 @@ export default function StandardCardShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoShadow}
-											onChange={(val) => setDemoShadow(val as NonNullable<StandardCardProps["shadow"]>)}
+											onChange={(val) =>
+												setDemoShadow(
+													val as NonNullable<StandardCardProps["shadow"]>,
+												)
+											}
 											options={shadows.map((s) => ({ value: s, label: s }))}
 										/>
 									</div>
@@ -249,7 +313,13 @@ export default function StandardCardShowroomPage() {
 										</StandardText>
 										<StandardSelect
 											value={demoAccent}
-											onChange={(val) => setDemoAccent(val as NonNullable<StandardCardProps["accentPlacement"]>)}
+											onChange={(val) =>
+												setDemoAccent(
+													val as NonNullable<
+														StandardCardProps["accentPlacement"]
+													>,
+												)
+											}
 											options={accentPlacements.map((s) => ({
 												value: s,
 												label: s,
@@ -309,7 +379,13 @@ export default function StandardCardShowroomPage() {
 												</StandardText>
 												<StandardSelect
 													value={demoLoadingVariant}
-													onChange={(val) => setDemoLoadingVariant(val as NonNullable<StandardCardProps["loadingVariant"]>)}
+													onChange={(val) =>
+														setDemoLoadingVariant(
+															val as NonNullable<
+																StandardCardProps["loadingVariant"]
+															>,
+														)
+													}
 													options={loadingVariants.map((s) => ({
 														value: s,
 														label: s,
@@ -445,6 +521,277 @@ export default function StandardCardShowroomPage() {
 						</StandardTabsContent>
 					)}
 
+					{activeTab === "effects" && (
+						<StandardTabsContent forceMount value="effects" asChild>
+							<motion.section
+								key="effects"
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, y: -10 }}
+								transition={{ duration: 0.25 }}>
+								<StandardText preset="title" size="3xl" className="mb-6">
+									🌊 Efectos SUSTRATO v4.3
+								</StandardText>
+								<StandardText size="md" className="mb-8 max-w-2xl">
+									Los efectos SUSTRATO aportan vida y feedback visual sutil a
+									las cards. Se desactivan automáticamente cuando la card está
+									selected, loading o inactive.
+								</StandardText>
+
+								<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+									{/* Card Normal */}
+									<div>
+										<StandardText size="sm" weight="semibold" className="mb-2">
+											Sin efectos (default)
+										</StandardText>
+										<StandardCard
+											colorScheme="primary"
+											styleType="subtle"
+											hasOutline>
+											<StandardCard.Header>
+												<StandardCard.Title>Card Normal</StandardCard.Title>
+											</StandardCard.Header>
+											<StandardCard.Content>
+												<StandardText size="sm">
+													Card sin efectos especiales. Estado base.
+												</StandardText>
+											</StandardCard.Content>
+										</StandardCard>
+									</div>
+
+									{/* Pulse Border */}
+									<div>
+										<StandardText size="sm" weight="semibold" className="mb-2">
+											🌊 pulseBorder
+										</StandardText>
+										<StandardCard
+											colorScheme="primary"
+											styleType="subtle"
+											hasOutline
+											pulseBorder>
+											<StandardCard.Header>
+												<StandardCard.Title>Pulse Border</StandardCard.Title>
+											</StandardCard.Header>
+											<StandardCard.Content>
+												<StandardText size="sm">
+													Respiración sutil del borde. Indica disponibilidad o
+													espera.
+												</StandardText>
+											</StandardCard.Content>
+										</StandardCard>
+									</div>
+
+									{/* Pafff Moment */}
+									<div>
+										<StandardText size="sm" weight="semibold" className="mb-2">
+											🪩 pafffMoment
+										</StandardText>
+										<StandardCard
+											colorScheme="success"
+											styleType="subtle"
+											hasOutline
+											pafffMoment>
+											<StandardCard.Header>
+												<StandardCard.Title>Pafff Moment</StandardCard.Title>
+											</StandardCard.Header>
+											<StandardCard.Content>
+												<StandardText size="sm">
+													Efecto de coherencia/insight. Borde pulsante con glow.
+												</StandardText>
+											</StandardCard.Content>
+										</StandardCard>
+									</div>
+
+									{/* Shimmer */}
+									<div>
+										<StandardText size="sm" weight="semibold" className="mb-2">
+											✨ shimmer
+										</StandardText>
+										<StandardCard
+											colorScheme="accent"
+											styleType="filled"
+											shimmer>
+											<StandardCard.Header>
+												<StandardCard.Title>Shimmer</StandardCard.Title>
+											</StandardCard.Header>
+											<StandardCard.Content>
+												<StandardText size="sm">
+													Brillo sutil que recorre la card. Indica
+													interactividad.
+												</StandardText>
+											</StandardCard.Content>
+										</StandardCard>
+									</div>
+								</div>
+
+								{/* Combinaciones con estados */}
+								<StandardText
+									preset="subheading"
+									size="xl"
+									className="mt-12 mb-6">
+									Interacción con Estados
+								</StandardText>
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+									{/* Pulse + Selected */}
+									<div>
+										<StandardText size="sm" weight="semibold" className="mb-2">
+											pulseBorder + selected (desactivado)
+										</StandardText>
+										<StandardCard
+											colorScheme="tertiary"
+											styleType="subtle"
+											hasOutline
+											pulseBorder
+											selected>
+											<StandardCard.Header>
+												<StandardCard.Title>Selected</StandardCard.Title>
+											</StandardCard.Header>
+											<StandardCard.Content>
+												<StandardText size="sm">
+													Efecto se desactiva cuando card está selected.
+												</StandardText>
+											</StandardCard.Content>
+										</StandardCard>
+									</div>
+
+									{/* Pafff + Loading */}
+									<div>
+										<StandardText size="sm" weight="semibold" className="mb-2">
+											pafffMoment + loading (desactivado)
+										</StandardText>
+										<StandardCard
+											colorScheme="warning"
+											styleType="subtle"
+											hasOutline
+											pafffMoment
+											loading
+											loadingText="Cargando...">
+											<StandardCard.Header>
+												<StandardCard.Title>Loading</StandardCard.Title>
+											</StandardCard.Header>
+											<StandardCard.Content>
+												<StandardText size="sm">
+													Efecto se desactiva durante loading.
+												</StandardText>
+											</StandardCard.Content>
+										</StandardCard>
+									</div>
+
+									{/* Shimmer + Inactive */}
+									<div>
+										<StandardText size="sm" weight="semibold" className="mb-2">
+											shimmer + inactive (desactivado)
+										</StandardText>
+										<StandardCard
+											colorScheme="danger"
+											styleType="filled"
+											shimmer
+											inactive>
+											<StandardCard.Header>
+												<StandardCard.Title>Inactive</StandardCard.Title>
+											</StandardCard.Header>
+											<StandardCard.Content>
+												<StandardText size="sm">
+													Efecto se desactiva cuando card está inactive.
+												</StandardText>
+											</StandardCard.Content>
+										</StandardCard>
+									</div>
+								</div>
+
+								{/* Todos los colorSchemes con pulseBorder */}
+								<StandardText
+									preset="subheading"
+									size="xl"
+									className="mt-12 mb-6">
+									pulseBorder × colorSchemes
+								</StandardText>
+								<div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+									{(
+										[
+											"primary",
+											"secondary",
+											"tertiary",
+											"accent",
+											"success",
+											"warning",
+											"danger",
+											"neutral",
+										] as const
+									).map((scheme) => (
+										<StandardCard
+											key={scheme}
+											colorScheme={scheme}
+											styleType="subtle"
+											hasOutline
+											pulseBorder>
+											<StandardCard.Content className="py-4">
+												<StandardText
+													size="sm"
+													weight="semibold"
+													className="capitalize">
+													{scheme}
+												</StandardText>
+											</StandardCard.Content>
+										</StandardCard>
+									))}
+								</div>
+
+								{/* Todos los colorSchemes con pafffMoment */}
+								<StandardText
+									preset="subheading"
+									size="xl"
+									className="mt-12 mb-6">
+									pafffMoment × colorSchemes
+								</StandardText>
+								<div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+									{(
+										[
+											"primary",
+											"secondary",
+											"tertiary",
+											"accent",
+											"success",
+											"warning",
+											"danger",
+											"neutral",
+										] as const
+									).map((scheme) => (
+										<StandardCard
+											key={scheme}
+											colorScheme={scheme}
+											styleType="subtle"
+											hasOutline
+											pafffMoment>
+											<StandardCard.Content className="py-4">
+												<StandardText
+													size="sm"
+													weight="semibold"
+													className="capitalize">
+													{scheme}
+												</StandardText>
+											</StandardCard.Content>
+										</StandardCard>
+									))}
+								</div>
+
+								{/* 🔄 Mock de Giro con Aprobación (como en preclasificación) */}
+								<StandardText
+									preset="subheading"
+									size="xl"
+									className="mt-12 mb-6">
+									🔄 Giro con Aprobación (approved)
+								</StandardText>
+								<StandardText size="md" className="mb-6 max-w-2xl">
+									Simula el comportamiento de preclasificación: al
+									&quot;aprobar&quot;, la tarjeta gira 360° y cambia de primary
+									a success. Haz clic en &quot;Aprobar&quot; para ver el efecto.
+								</StandardText>
+								<ApprovalMockCard />
+							</motion.section>
+						</StandardTabsContent>
+					)}
+
 					{activeTab === "styles" && (
 						<StandardTabsContent forceMount value="styles" asChild>
 							<motion.section
@@ -525,7 +872,8 @@ export default function StandardCardShowroomPage() {
 												</StandardCard.Header>
 												<StandardCard.Content>
 													<StandardText>
-														Estilo &apos;filled&apos; con esquema &apos;{cs}&apos;.
+														Estilo &apos;filled&apos; con esquema &apos;{cs}
+														&apos;.
 													</StandardText>
 													<Bell
 														size={32}
@@ -579,7 +927,8 @@ export default function StandardCardShowroomPage() {
 												</StandardCard.Title>
 												<StandardCard.Content>
 													<StandardText>
-														Acento de color &apos;accent&apos; en tarjeta &apos;secondary&apos;.
+														Acento de color &apos;accent&apos; en tarjeta
+														&apos;secondary&apos;.
 													</StandardText>
 												</StandardCard.Content>
 											</StandardCard>
@@ -598,7 +947,8 @@ export default function StandardCardShowroomPage() {
 											</StandardCard.Title>
 											<StandardCard.Content>
 												<StandardText>
-													La &apos;jugada mágica&apos;: acento de &apos;danger.pure&apos; a &apos;accent.pure&apos;.
+													La &apos;jugada mágica&apos;: acento de
+													&apos;danger.pure&apos; a &apos;accent.pure&apos;.
 												</StandardText>
 											</StandardCard.Content>
 										</StandardCard>
@@ -610,14 +960,14 @@ export default function StandardCardShowroomPage() {
 											accentPlacement="top"
 											accentColorScheme="accent"
 											shadow="md"
-											className="min-h-[150px]"
-										>
+											className="min-h-[150px]">
 											<StandardCard.Title>
 												Accent &apos;Accent&apos; en Card &apos;Accent&apos;
 											</StandardCard.Title>
 											<StandardCard.Content>
 												<StandardText>
-													La &apos;jugada mágica&apos;: acento de &apos;accent.pure&apos; a &apos;primary.pure&apos;.
+													La &apos;jugada mágica&apos;: acento de
+													&apos;accent.pure&apos; a &apos;primary.pure&apos;.
 												</StandardText>
 											</StandardCard.Content>
 										</StandardCard>
@@ -829,9 +1179,13 @@ export default function StandardCardShowroomPage() {
 											styleType="subtle"
 											shadow="lg"
 											noPadding
-											onCardClick={() => alert("Card &apos;noPadding&apos; clickeada!")}>
+											onCardClick={() =>
+												alert("Card &apos;noPadding&apos; clickeada!")
+											}>
 											<StandardCard.Media>
-												<div className="relative w-full" style={{ aspectRatio: '600/320' }}>
+												<div
+													className="relative w-full"
+													style={{ aspectRatio: "600/320" }}>
 													<Image
 														src="https://picsum.photos/seed/standardcardE2E/600/320"
 														alt="Placeholder"
@@ -849,8 +1203,8 @@ export default function StandardCardShowroomPage() {
 												</StandardCard.Header>
 												<StandardCard.Content>
 													<StandardText size="sm" className="my-3">
-														Cuando &#39;noPadding&#39; es true, Media puede ocupar todo
-														el ancho. Se requiere padding manual.
+														Cuando &#39;noPadding&#39; es true, Media puede
+														ocupar todo el ancho. Se requiere padding manual.
 													</StandardText>
 												</StandardCard.Content>
 												<StandardCard.Actions>

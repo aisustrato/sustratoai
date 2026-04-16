@@ -1,0 +1,303 @@
+"use server";
+
+import { createSupabaseServerClient } from "@/lib/server";
+
+export interface ResultadoOperacion<T = void> {
+	success: boolean;
+	data?: T;
+	error?: string;
+}
+
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+export interface SeedVariant {
+	content: string;
+	artifact_count: number;
+	artifact_ids: string[];
+	is_canonical: boolean;
+	canonical_content: string | null;
+}
+
+export interface NormalizationLog {
+	id: string;
+	project_id: string;
+	performed_by: string;
+	source_contents: string[];
+	canonical_content: string;
+	reason: string | null;
+	affected_rows: number;
+	affected_artifact_ids: string[];
+	created_at: string;
+}
+
+export interface NormalizationPreview {
+	source_contents: string[];
+	canonical_content: string;
+	total_affected_artifacts: number;
+	affected_artifact_ids: string[];
+	artifact_titles: Array<{ id: string; title: string }>;
+}
+
+// ─── Obtener semillas del proyecto con sus variantes ─────────────────────────
+
+export async function getSeedsForNormalization(
+	projectId: string,
+): Promise<ResultadoOperacion<SeedVariant[]>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data, error } = await supabase
+			.from("cog_fractal_seeds")
+			.select("content, artifact_id, canonical_content")
+			.eq("project_id", projectId)
+			.not("tags", "cs", '{"cita"}');
+
+		if (error) return { success: false, error: error.message };
+
+		// Agrupar por content
+		const map = new Map<
+			string,
+			{ artifact_ids: Set<string>; canonical_content: string | null }
+		>();
+
+		(data || []).forEach(
+			(row: {
+				content: string;
+				artifact_id: string | null;
+				canonical_content: string | null;
+			}) => {
+				if (!row.artifact_id) return;
+				const existing = map.get(row.content);
+				if (existing) {
+					existing.artifact_ids.add(row.artifact_id);
+				} else {
+					map.set(row.content, {
+						artifact_ids: new Set([row.artifact_id]),
+						canonical_content: row.canonical_content,
+					});
+				}
+			},
+		);
+
+		// Determinar cuáles son canónicas (no tienen canonical_content propio)
+		const canonicalSet = new Set<string>();
+		map.forEach((val, content) => {
+			if (!val.canonical_content) canonicalSet.add(content);
+		});
+
+		const result: SeedVariant[] = Array.from(map.entries())
+			.map(([content, val]) => ({
+				content,
+				artifact_count: val.artifact_ids.size,
+				artifact_ids: Array.from(val.artifact_ids),
+				is_canonical: canonicalSet.has(content) && !val.canonical_content,
+				canonical_content: val.canonical_content,
+			}))
+			.sort((a, b) => b.artifact_count - a.artifact_count);
+
+		return { success: true, data: result };
+	} catch (error) {
+		console.error("❌ Error en getSeedsForNormalization:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+// ─── Preview de una fusión antes de ejecutarla ───────────────────────────────
+
+export async function previewNormalization(
+	projectId: string,
+	sourceContents: string[],
+	canonicalContent: string,
+): Promise<ResultadoOperacion<NormalizationPreview>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		// Todos los artifact_ids que tienen alguna de las semillas fuente
+		const { data: seeds, error } = await supabase
+			.from("cog_fractal_seeds")
+			.select("artifact_id")
+			.eq("project_id", projectId)
+			.in("content", sourceContents);
+
+		if (error) return { success: false, error: error.message };
+
+		const artifactIdSet = new Set<string>(
+			(seeds || [])
+				.map((s: { artifact_id: string | null }) => s.artifact_id)
+				.filter(Boolean) as string[],
+		);
+		const artifactIds = Array.from(artifactIdSet);
+
+		// Obtener títulos para mostrar en preview
+		const { data: artifacts } = await supabase
+			.from("cog_artifacts")
+			.select("id, title")
+			.in("id", artifactIds);
+
+		return {
+			success: true,
+			data: {
+				source_contents: sourceContents,
+				canonical_content: canonicalContent,
+				total_affected_artifacts: artifactIds.length,
+				affected_artifact_ids: artifactIds,
+				artifact_titles: (artifacts || []).map(
+					(a: { id: string; title: string }) => ({
+						id: a.id,
+						title: a.title,
+					}),
+				),
+			},
+		};
+	} catch (error) {
+		console.error("❌ Error en previewNormalization:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+// ─── Ejecutar normalización (append-only) ────────────────────────────────────
+
+export async function normalizeSeed(
+	projectId: string,
+	sourceContents: string[],
+	canonicalContent: string,
+	reason?: string,
+): Promise<ResultadoOperacion<NormalizationLog>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+		if (!user) return { success: false, error: "No autenticado" };
+
+		// 1. Obtener todos los artifact_ids afectados (para el log)
+		const { data: affectedSeeds, error: fetchError } = await supabase
+			.from("cog_fractal_seeds")
+			.select("id, artifact_id, content")
+			.eq("project_id", projectId)
+			.in("content", sourceContents);
+
+		if (fetchError) return { success: false, error: fetchError.message };
+
+		const affectedArtifactIds = Array.from(
+			new Set(
+				(affectedSeeds || [])
+					.map((s: { artifact_id: string | null }) => s.artifact_id)
+					.filter(Boolean) as string[],
+			),
+		);
+
+		// 2. Marcar semillas fuente como fusionadas (append-only: NO se borran)
+		//    Solo las que NO son ya la canónica
+		const nonCanonicalContents = sourceContents.filter(
+			(c) => c !== canonicalContent,
+		);
+
+		let affectedRows = 0;
+
+		if (nonCanonicalContents.length > 0) {
+			const { data: updated, error: updateError } = await supabase
+				.from("cog_fractal_seeds")
+				.update({
+					canonical_content: canonicalContent,
+					merged_at: new Date().toISOString(),
+					merged_by: user.id,
+				})
+				.eq("project_id", projectId)
+				.in("content", nonCanonicalContents)
+				.is("canonical_content", null) // Solo las que aún no tienen canónica
+				.select("id");
+
+			if (updateError) return { success: false, error: updateError.message };
+			affectedRows = updated?.length || 0;
+		}
+
+		// 3. Si la semilla canónica no existe en ningún artefacto afectado, crearla
+		//    (caso: el usuario escribe un nombre nuevo como canónica)
+		if (
+			!sourceContents.includes(canonicalContent) &&
+			affectedArtifactIds.length > 0
+		) {
+			const newSeeds = affectedArtifactIds.map((artifactId) => ({
+				project_id: projectId,
+				artifact_id: artifactId,
+				content: canonicalContent,
+				context: `[Normalizado desde: ${sourceContents.join(", ")}]`,
+				tags: ["normalizado"],
+			}));
+
+			const { error: insertError } = await supabase
+				.from("cog_fractal_seeds")
+				.insert(newSeeds);
+
+			if (insertError) {
+				console.error(
+					"⚠️ Error insertando semilla canónica nueva:",
+					insertError,
+				);
+			}
+			affectedRows += newSeeds.length;
+		}
+
+		// 4. Registrar en el log inmutable
+		const { data: log, error: logError } = await supabase
+			.from("cog_seed_normalizations")
+			.insert({
+				project_id: projectId,
+				performed_by: user.id,
+				source_contents: sourceContents,
+				canonical_content: canonicalContent,
+				reason: reason?.trim() || null,
+				affected_rows: affectedRows,
+				affected_artifact_ids: affectedArtifactIds,
+			})
+			.select()
+			.single();
+
+		if (logError) return { success: false, error: logError.message };
+
+		console.log(
+			`✅ [normalizeSeed] Fusión completada: ${sourceContents.length} semillas → "${canonicalContent}", ${affectedRows} registros actualizados`,
+		);
+
+		return { success: true, data: log as any };
+	} catch (error) {
+		console.error("❌ Error en normalizeSeed:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+// ─── Historial de normalizaciones del proyecto ───────────────────────────────
+
+export async function getNormalizationHistory(
+	projectId: string,
+): Promise<ResultadoOperacion<NormalizationLog[]>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data, error } = await supabase
+			.from("cog_seed_normalizations")
+			.select("*")
+			.eq("project_id", projectId)
+			.order("created_at", { ascending: false });
+
+		if (error) return { success: false, error: error.message };
+		return { success: true, data: (data as any) || [] };
+	} catch (error) {
+		console.error("❌ Error en getNormalizationHistory:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}

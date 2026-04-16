@@ -36,7 +36,7 @@ declare module "@tanstack/table-core" {
 		isTruncatable?: boolean;
 		tooltipType?: "standard" | "longText";
 		cellVariant?: (
-			context: CellContext<TData, TValue>
+			context: CellContext<TData, TValue>,
 		) => "highlight" | "success" | "warning" | "danger" | undefined;
 		// 📋 Mini botón ghost para copiar contenido de celda
 		enableCopyButton?: boolean;
@@ -45,7 +45,7 @@ declare module "@tanstack/table-core" {
 	// Sobrescribir completamente la interfaz TableMeta
 	interface TableMeta<TData = unknown> {
 		getRowStatus?: (
-			row: TData
+			row: TData,
 		) => Exclude<
 			ColorSchemeVariant,
 			"neutral" | "white" | "default" | "info"
@@ -58,9 +58,8 @@ declare module "@tanstack/table-core" {
 		keywordHighlight?: string | null;
 	}
 }
-import { useTheme } from "@/app/theme-provider";
+import { useDesignTokens } from "@/app/providers/DesignTokensProvider";
 import { cn } from "@/lib/utils";
-import { generateTableTokens } from "@/lib/theme/components/standard-table-tokens";
 import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
 import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardIcon } from "@/components/ui/StandardIcon";
@@ -91,7 +90,7 @@ export interface StandardTableProps<TData extends object> {
 	stickyOffset?: number;
 	maxTableHeight?: string;
 	getRowStatus?: (
-		row: TData
+		row: TData,
 	) => Exclude<
 		ColorSchemeVariant,
 		"neutral" | "white" | "default" | "info"
@@ -399,7 +398,7 @@ const StandardTableHeaderCell = <TData extends object, TValue>({
 				{ "cursor-pointer select-none": canSort },
 				{ "sticky z-10": isSticky },
 				isSticky === "left" ? "left-0" : "",
-				isSticky === "right" ? "right-0" : ""
+				isSticky === "right" ? "right-0" : "",
 			)}
 			style={{
 				width: header.getSize(),
@@ -472,7 +471,7 @@ const ExpandIcon = ({ isExpanded }: { isExpanded: boolean }) => {
 					isExpanded ?
 						"bg-[var(--table-expander-expandedCircleBackground)]"
 					:	"bg-[var(--table-expander-circleBackground)]",
-					"border-[var(--table-expander-circleBorderColor)]"
+					"border-[var(--table-expander-circleBorderColor)]",
 				)}>
 				<motion.div
 					animate={{ rotate: isExpanded ? 90 : 0 }}
@@ -484,7 +483,7 @@ const ExpandIcon = ({ isExpanded }: { isExpanded: boolean }) => {
 								"transition-colors",
 								isExpanded ?
 									"text-[var(--table-expander-expandedIconColor)]"
-								:	"text-[var(--table-expander-iconColor)]"
+								:	"text-[var(--table-expander-iconColor)]",
 							)}
 						/>
 					</StandardIcon>
@@ -504,13 +503,13 @@ const highlightKeyword = (
 		textColor: string;
 		borderRadius: string;
 		padding: string;
-	}
+	},
 ): React.ReactNode => {
 	if (!keyword.trim()) return text;
 
 	const regex = new RegExp(
 		`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
-		"gi"
+		"gi",
 	);
 	const parts = text.split(regex);
 
@@ -538,7 +537,7 @@ const StandardTableCell = <TData extends object, TValue>({
 }: {
 	cell: Cell<TData, TValue>;
 }) => {
-	const { appColorTokens, mode } = useTheme();
+	const { tokens: designTokens } = useDesignTokens();
 	const meta = cell.column.columnDef.meta;
 	const align = meta?.align || "left";
 	const isSticky = meta?.isSticky;
@@ -609,7 +608,7 @@ const StandardTableCell = <TData extends object, TValue>({
 			"group-data-[status=success]:bg-[var(--table-row-status-success-backgroundColor)] group-data-[status=success]:text-[var(--table-row-status-success-textColor)] group-hover:group-data-[status=success]:bg-[var(--table-row-status-success-hoverBackgroundColor)]": true,
 			"group-data-[status=warning]:bg-[var(--table-row-status-warning-backgroundColor)] group-data-[status=warning]:text-[var(--table-row-status-warning-textColor)] group-hover:group-data-[status=warning]:bg-[var(--table-row-status-warning-hoverBackgroundColor)]": true,
 			"group-data-[status=danger]:bg-[var(--table-row-status-danger-backgroundColor)] group-data-[status=danger]:text-[var(--table-row-status-danger-foregroundColor)] group-hover:group-data-[status=danger]:bg-[var(--table-row-status-danger-hoverBackgroundColor)]": true,
-		}
+		},
 	);
 
 	const textRef = useRef<HTMLDivElement>(null);
@@ -626,15 +625,14 @@ const StandardTableCell = <TData extends object, TValue>({
 
 	// 🔍 Aplicar highlighting si está habilitado y hay keyword
 	let cellContent;
-	if (enableKeywordHighlighting && keywordHighlight && appColorTokens && mode) {
+	if (enableKeywordHighlighting && keywordHighlight && designTokens?.table) {
 		const cellValue = cell.getValue();
 		if (typeof cellValue === "string" && cellValue) {
-			// Generar tokens para el highlighting usando el color accent
-			const tokens = generateTableTokens(appColorTokens, mode);
+			// Usar tokens precalculados para el highlighting
 			cellContent = highlightKeyword(
 				cellValue,
 				keywordHighlight,
-				tokens.keywordHighlight
+				(designTokens.table as any).keywordHighlight,
 			);
 		} else {
 			cellContent = flexRender(cell.column.columnDef.cell, cell.getContext());
@@ -741,7 +739,7 @@ const StandardTableCell = <TData extends object, TValue>({
 								copyFeedback === "copying",
 							"opacity-100 bg-green-100 dark:bg-green-900":
 								copyFeedback === "copied",
-						}
+						},
 					)}
 					title={
 						copyFeedback === "copied" ? "¡Copiado!"
@@ -778,7 +776,7 @@ const StandardTableRow = <TData extends object>({
 }: {
 	row: Row<TData>;
 	getRowStatus?: (
-		original: TData
+		original: TData,
 	) => Exclude<
 		ColorSchemeVariant,
 		"neutral" | "white" | "default" | "info"
@@ -807,7 +805,7 @@ const StandardTableRow = <TData extends object>({
 						colSpan={row.getVisibleCells().length}
 						className={cn(
 							"p-0 border-r border-b border-[var(--table-row-default-borderColor)]",
-							"bg-[var(--table-row-subRowBackgroundColor)]"
+							"bg-[var(--table-row-subRowBackgroundColor)]",
 						)}>
 						{renderSubComponent ?
 							renderSubComponent(row)
@@ -899,7 +897,7 @@ function StandardTableRoot<TData extends object>({
 	// 🎨 Header color scheme
 	colorScheme = "primary",
 }: StandardTableProps<TData>) {
-	const { appColorTokens, mode } = useTheme();
+	const { tokens: designTokens } = useDesignTokens();
 	const [globalFilter, setGlobalFilter] = useState("");
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [expanded, setExpanded] = useState({});
@@ -955,7 +953,7 @@ function StandardTableRoot<TData extends object>({
 
 		const intersectionObserver = new IntersectionObserver(
 			([entry]) => setIsAnchored(!entry.isIntersecting),
-			{ rootMargin: `-${stickyOffset}px 0px 0px 0px`, threshold: 0 }
+			{ rootMargin: `-${stickyOffset}px 0px 0px 0px`, threshold: 0 },
 		);
 
 		const currentSentinel = sentinelRef.current;
@@ -1015,57 +1013,71 @@ function StandardTableRoot<TData extends object>({
 	});
 
 	const cssVariables = useMemo<React.CSSProperties>(() => {
-		if (!appColorTokens || !mode) return {};
-		const tokens = generateTableTokens(appColorTokens, mode, colorScheme);
+		if (!designTokens?.table) return {};
+		const tokens = designTokens.table;
 		const vars: React.CSSProperties & {
 			[key: `--${string}`]: string | number;
 		} = {};
 
-		if (tokens.cell.variants.highlight) {
-			vars["--table-cell-highlight-backgroundColor"] =
-				tokens.cell.variants.highlight.backgroundColor;
-			vars["--table-cell-highlight-textColor"] =
-				tokens.cell.variants.highlight.foregroundColor;
+		if ((tokens as any).cell.variants.highlight) {
+			vars["--table-cell-highlight-backgroundColor"] = (
+				tokens as any
+			).cell.variants.highlight.backgroundColor;
+			vars["--table-cell-highlight-textColor"] = (
+				tokens as any
+			).cell.variants.highlight.foregroundColor;
 		}
 
-		if (tokens.cell.variants.success) {
-			vars["--table-cell-success-backgroundColor"] =
-				tokens.cell.variants.success.backgroundColor;
-			vars["--table-cell-success-textColor"] =
-				tokens.cell.variants.success.foregroundColor;
+		if ((tokens as any).cell.variants.success) {
+			vars["--table-cell-success-backgroundColor"] = (
+				tokens as any
+			).cell.variants.success.backgroundColor;
+			vars["--table-cell-success-textColor"] = (
+				tokens as any
+			).cell.variants.success.foregroundColor;
 		}
 
-		if (tokens.cell.variants.warning) {
-			vars["--table-cell-warning-backgroundColor"] =
-				tokens.cell.variants.warning.backgroundColor;
-			vars["--table-cell-warning-textColor"] =
-				tokens.cell.variants.warning.foregroundColor;
+		if ((tokens as any).cell.variants.warning) {
+			vars["--table-cell-warning-backgroundColor"] = (
+				tokens as any
+			).cell.variants.warning.backgroundColor;
+			vars["--table-cell-warning-textColor"] = (
+				tokens as any
+			).cell.variants.warning.foregroundColor;
 		}
 
-		if (tokens.cell.variants.danger) {
-			vars["--table-cell-danger-backgroundColor"] =
-				tokens.cell.variants.danger.backgroundColor;
-			vars["--table-cell-danger-textColor"] =
-				tokens.cell.variants.danger.foregroundColor;
+		if ((tokens as any).cell.variants.danger) {
+			vars["--table-cell-danger-backgroundColor"] = (
+				tokens as any
+			).cell.variants.danger.backgroundColor;
+			vars["--table-cell-danger-textColor"] = (
+				tokens as any
+			).cell.variants.danger.foregroundColor;
 		}
 
-		vars["--table-row-subRowBackgroundColor"] = tokens.subRowBackgroundColor;
-		Object.entries(tokens.header).forEach(([key, value]) => {
-			vars[`--table-header-${key}`] = value;
+		vars["--table-row-subRowBackgroundColor"] = (
+			tokens as any
+		).subRowBackgroundColor;
+		Object.entries((tokens as any).header).forEach(([key, value]) => {
+			vars[`--table-header-${key}`] = value as string | number;
 		});
-		Object.entries(tokens.row.default).forEach(([key, value]) => {
-			vars[`--table-row-default-${key}`] = value;
+		Object.entries((tokens as any).row.default).forEach(([key, value]) => {
+			vars[`--table-row-default-${key}`] = value as string | number;
 		});
-		Object.entries(tokens.row.status).forEach(([status, statusTokens]) => {
-			Object.entries(statusTokens).forEach(([key, value]) => {
-				vars[`--table-row-status-${status}-${key}`] = value;
-			});
-		});
-		Object.entries(tokens.expander).forEach(([key, value]) => {
-			vars[`--table-expander-${key}`] = value;
+		Object.entries((tokens as any).row.status).forEach(
+			([status, statusTokens]) => {
+				Object.entries(statusTokens as any).forEach(([key, value]) => {
+					vars[`--table-row-status-${status}-${key}`] = value as
+						| string
+						| number;
+				});
+			},
+		);
+		Object.entries((tokens as any).expander).forEach(([key, value]) => {
+			vars[`--table-expander-${key}`] = value as string | number;
 		});
 		return vars;
-	}, [appColorTokens, mode, colorScheme]);
+	}, [designTokens, colorScheme]);
 
 	const childrenWithProps = Children.map(children, (child) => {
 		if (
@@ -1075,7 +1087,7 @@ function StandardTableRoot<TData extends object>({
 		) {
 			return cloneElement(
 				child as React.ReactElement<SubComponentProps<TData>>,
-				{ table, colorScheme }
+				{ table, colorScheme },
 			);
 		}
 		return null;
@@ -1148,7 +1160,7 @@ function StandardTableRoot<TData extends object>({
 		<div
 			className={cn(
 				"flex flex-col rounded-lg border border-[var(--table-header-borderColor)]",
-				className
+				className,
 			)}
 			style={{ ...cssVariables, maxHeight: maxTableHeight }}>
 			{renderContent()}

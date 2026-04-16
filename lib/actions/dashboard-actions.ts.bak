@@ -1,0 +1,447 @@
+// 📍 lib/actions/dashboard-actions.ts
+// 🎯 PROPÓSITO: Server actions para obtener datos del dashboard del home
+// 🔧 DECISIÓN: Agregaciones optimizadas para métricas del proyecto
+
+"use server";
+
+//#region [imports] - 📦 IMPORTS
+import { createSupabaseServerClient } from "@/lib/server";
+import type {
+	ProjectMasterData,
+	ActivePhaseStatus,
+	UserPersonalData,
+} from "@/lib/types/dashboard-types";
+//#endregion
+
+//#region [core] - 💎 FUNCIONES PRINCIPALES
+
+/**
+ * 🎯 Obtiene datos maestros agregados del proyecto
+ */
+export async function getProjectMasterData(projectId: string): Promise<{
+	success: boolean;
+	data?: ProjectMasterData;
+	error?: string;
+}> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		console.log("[getProjectMasterData] Iniciando con projectId:", projectId);
+
+		// 👥 Miembros y Roles
+		const { data: membersData, error: membersError } = await supabase
+			.from("detailed_project_members")
+			.select("project_member_id, role_name")
+			.eq("project_id", projectId);
+
+		console.log("[getProjectMasterData] Miembros:", {
+			count: membersData?.length,
+			data: membersData,
+			error: membersError,
+		});
+
+		if (membersError) throw membersError;
+
+		const totalMembers = membersData?.length || 0;
+		const uniqueRoles = [
+			...new Set(
+				membersData
+					?.map((m: { role_name: string | null }) => m.role_name)
+					.filter((r): r is string => r !== null) || [],
+			),
+		] as string[];
+
+		// 📚 Artículos
+		const { count: articlesCount, error: articlesError } = await supabase
+			.from("articles")
+			.select("id", { count: "exact", head: true })
+			.eq("project_id", projectId);
+
+		if (articlesError) throw articlesError;
+
+		// 📐 Fases
+		const { data: phasesData, error: phasesError } = await supabase
+			.from("preclassification_phases")
+			.select("id, name, phase_number, status")
+			.eq("project_id", projectId)
+			.order("phase_number", { ascending: true });
+
+		if (phasesError) throw phasesError;
+
+		const totalPhases = phasesData?.length || 0;
+		const activePhase =
+			phasesData?.find(
+				(p: { status: string | null }) => p.status === "active",
+			) || null;
+
+		// 🔢 Dimensiones
+		const { data: dimensionsData, error: dimensionsError } = await supabase
+			.from("preclass_dimensions")
+			.select("id, phase_id")
+			.eq("project_id", projectId);
+
+		if (dimensionsError) throw dimensionsError;
+
+		const totalDimensions = dimensionsData?.length || 0;
+
+		// Agrupar dimensiones por fase
+		const dimensionsByPhase =
+			phasesData
+				?.map((phase: { id: string; name: string }) => {
+					const count =
+						dimensionsData?.filter(
+							(d: { phase_id: string | null }) => d.phase_id === phase.id,
+						).length || 0;
+					return {
+						phaseId: phase.id,
+						phaseName: phase.name,
+						count,
+					};
+				})
+				.filter((p: { count: number }) => p.count > 0) || [];
+
+		// 📦 Lotes
+		const { data: batchesData, error: batchesError } = await supabase
+			.from("article_batches")
+			.select("id, status")
+			.eq("project_id", projectId);
+
+		if (batchesError) throw batchesError;
+
+		const totalBatches = batchesData?.length || 0;
+		const activeBatches =
+			batchesData?.filter(
+				(b: { status: string | null }) => b.status !== "completed",
+			).length || 0;
+		const completedBatches =
+			batchesData?.filter(
+				(b: { status: string | null }) => b.status === "completed",
+			).length || 0;
+
+		// 🎯 Análisis de Preclasificación
+		// Contar artículos únicos que tienen al menos una review
+		const { data: reviewsData, error: reviewsError } = await supabase
+			.from("article_dimension_reviews")
+			.select("article_id, id, articles!inner(id, project_id)")
+			.filter("articles.project_id", "=", projectId);
+
+		console.log("[getProjectMasterData] Análisis de Preclasificación:", {
+			count: reviewsData?.length,
+			data: reviewsData?.slice(0, 3), // Primeros 3 para no saturar
+			error: reviewsError,
+		});
+
+		if (reviewsError) {
+			console.log("[getProjectMasterData] Error en reviews:", reviewsError);
+			// No fallar por esto, solo retornar 0
+		}
+
+		const uniqueArticlesAnalyzed =
+			reviewsData ?
+				new Set(reviewsData.map((r: { article_id: string }) => r.article_id))
+					.size
+			:	0;
+		const totalReviews = reviewsData?.length || 0;
+
+		console.log("[getProjectMasterData] Resultados finales análisis:", {
+			uniqueArticlesAnalyzed,
+			totalReviews,
+		});
+
+		return {
+			success: true,
+			data: {
+				members: {
+					total: totalMembers,
+					roles: uniqueRoles,
+				},
+				articles: {
+					total: articlesCount || 0,
+				},
+				phases: {
+					total: totalPhases,
+					activePhase:
+						activePhase ?
+							{
+								id: activePhase.id,
+								name: activePhase.name,
+								phase_number: activePhase.phase_number,
+							}
+						:	null,
+				},
+				dimensions: {
+					total: totalDimensions,
+					byPhase: dimensionsByPhase,
+				},
+				batches: {
+					total: totalBatches,
+					active: activeBatches,
+					completed: completedBatches,
+				},
+				preclassification: {
+					totalArticlesAnalyzed: uniqueArticlesAnalyzed,
+					totalReviews: totalReviews,
+				},
+			},
+		};
+	} catch (error) {
+		console.error("[getProjectMasterData] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+/**
+ * 🎯 Obtiene estado de la fase activa de preclasificación
+ */
+export async function getActivePhaseStatus(projectId: string): Promise<{
+	success: boolean;
+	data?: ActivePhaseStatus;
+	error?: string;
+}> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		// Obtener fase activa
+		const { data: activePhase, error: phaseError } = await supabase
+			.from("preclassification_phases")
+			.select("id, name, phase_number")
+			.eq("project_id", projectId)
+			.eq("status", "active")
+			.maybeSingle();
+
+		// Si no hay fase activa, retornar estructura vacía
+		if (phaseError || !activePhase) {
+			return {
+				success: true,
+				data: {
+					phase: null,
+					hasLotes: false,
+					articleCounts: {
+						pending: 0,
+						translated: 0,
+						pending_review: 0,
+						reconciliation_pending: 0,
+						validated: 0,
+						reconciled: 0,
+						disputed: 0,
+					},
+					batchStats: {
+						total: 0,
+						active: 0,
+						completed: 0,
+					},
+					progress: {
+						total: 0,
+						completed: 0,
+						percentage: 0,
+					},
+				},
+			};
+		}
+
+		// Obtener lotes de la fase activa
+		const { data: batches, error: batchesError } = await supabase
+			.from("article_batches")
+			.select("id, status, phase_id")
+			.eq("project_id", projectId)
+			.eq("phase_id", activePhase.id);
+
+		if (batchesError) throw batchesError;
+
+		const hasLotes = (batches?.length || 0) > 0;
+
+		if (!hasLotes) {
+			return {
+				success: true,
+				data: {
+					phase: activePhase,
+					hasLotes: false,
+					articleCounts: {
+						pending: 0,
+						translated: 0,
+						pending_review: 0,
+						reconciliation_pending: 0,
+						validated: 0,
+						reconciled: 0,
+						disputed: 0,
+					},
+					batchStats: {
+						total: 0,
+						active: 0,
+						completed: 0,
+					},
+					progress: {
+						total: 0,
+						completed: 0,
+						percentage: 0,
+					},
+				},
+			};
+		}
+
+		// Obtener conteos de artículos por estado
+		const batchIds = batches.map((b: { id: string }) => b.id);
+
+		const { data: items, error: itemsError } = await supabase
+			.from("article_batch_items")
+			.select("status")
+			.in("batch_id", batchIds);
+
+		if (itemsError) throw itemsError;
+
+		// Agregar conteos por estado
+		type ItemStatus =
+			| "pending"
+			| "translated"
+			| "review_pending"
+			| "reconciliation_pending"
+			| "validated"
+			| "reconciled"
+			| "disputed";
+		const articleCounts = {
+			pending:
+				items?.filter((i: { status: ItemStatus }) => i.status === "pending")
+					.length || 0,
+			translated:
+				items?.filter((i: { status: ItemStatus }) => i.status === "translated")
+					.length || 0,
+			pending_review:
+				items?.filter(
+					(i: { status: ItemStatus }) => i.status === "review_pending",
+				).length || 0,
+			reconciliation_pending:
+				items?.filter(
+					(i: { status: ItemStatus }) => i.status === "reconciliation_pending",
+				).length || 0,
+			validated:
+				items?.filter((i: { status: ItemStatus }) => i.status === "validated")
+					.length || 0,
+			reconciled:
+				items?.filter((i: { status: ItemStatus }) => i.status === "reconciled")
+					.length || 0,
+			disputed:
+				items?.filter((i: { status: ItemStatus }) => i.status === "disputed")
+					.length || 0,
+		};
+
+		const totalArticles = items?.length || 0;
+		const completedArticles =
+			articleCounts.validated + articleCounts.reconciled;
+		const progressPercentage =
+			totalArticles > 0 ?
+				Math.round((completedArticles / totalArticles) * 100)
+			:	0;
+
+		return {
+			success: true,
+			data: {
+				phase: activePhase,
+				hasLotes: true,
+				articleCounts,
+				batchStats: {
+					total: batches.length,
+					active: batches.filter((b: { is_final: boolean }) => !b.is_final)
+						.length,
+					completed: batches.filter((b: { is_final: boolean }) => b.is_final)
+						.length,
+				},
+				progress: {
+					total: totalArticles,
+					completed: completedArticles,
+					percentage: progressPercentage,
+				},
+			},
+		};
+	} catch (error) {
+		console.error("[getActivePhaseStatus] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+/**
+ * 🎯 Obtiene datos personales del usuario (notas, grupos, historial)
+ */
+export async function getUserPersonalData(
+	userId: string,
+	projectId: string,
+): Promise<{
+	success: boolean;
+	data?: UserPersonalData;
+	error?: string;
+}> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		// 📝 Notas personales
+		const { count: notesCount, error: notesError } = await supabase
+			.from("article_notes")
+			.select("id", { count: "exact", head: true })
+			.eq("user_id", userId)
+			.eq("project_id", projectId);
+
+		if (notesError) throw notesError;
+
+		// 📁 Grupos de artículos
+		const { data: groupsData, error: groupsError } = await supabase
+			.from("article_groups")
+			.select("id")
+			.eq("user_id", userId)
+			.eq("project_id", projectId);
+
+		if (groupsError) throw groupsError;
+
+		const totalGroups = groupsData?.length || 0;
+		let totalArticlesInGroups = 0;
+
+		if (totalGroups > 0) {
+			const groupIds = groupsData.map((g: { id: string }) => g.id);
+			const { count: articlesInGroupsCount, error: articlesError } =
+				await supabase
+					.from("article_group_items")
+					.select("id", { count: "exact", head: true })
+					.in("group_id", groupIds);
+
+			if (articlesError) throw articlesError;
+			totalArticlesInGroups = articlesInGroupsCount || 0;
+		}
+
+		// 🕐 Historial de trabajos IA (últimos 5)
+		const { data: jobsData, error: jobsError } = await supabase
+			.from("ai_job_history")
+			.select("id, job_type, status, completed_at, description")
+			.eq("user_id", userId)
+			.eq("project_id", projectId)
+			.order("completed_at", { ascending: false, nullsFirst: false })
+			.limit(5);
+
+		if (jobsError) throw jobsError;
+
+		return {
+			success: true,
+			data: {
+				notes: {
+					total: notesCount || 0,
+				},
+				groups: {
+					total: totalGroups,
+					totalArticles: totalArticlesInGroups,
+				},
+				recentJobs: jobsData || [],
+			},
+		};
+	} catch (error) {
+		console.error("[getUserPersonalData] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+//#endregion

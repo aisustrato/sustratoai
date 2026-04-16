@@ -1,183 +1,241 @@
 "use client";
 
 import { StandardCard } from "@/components/ui/StandardCard";
-import { StandardText } from "@/components/ui/StandardText";
 import Link from "next/link";
-import { StandardButton } from "@/components/ui/StandardButton";
-import {
-  FileText,
-  BookOpen,
-  ArrowRight,
-  Sparkles,
-} from "lucide-react";
 import { StandardBadge } from "@/components/ui/StandardBadge";
-import { StandardIcon } from "@/components/ui/StandardIcon";
+import {
+	LotesIcon,
+	FasesIcon,
+	EquipoIcon,
+	AnalisisIcon,
+	ArticulosIcon,
+	DimensionesIcon,
+} from "@/lib/svg/components";
 
 export function HomeCards() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-      {/* Módulo de Transcripciones - Completamente implementado */}
-      <StandardCard
-        colorScheme="primary"
-        accentPlacement="top"
-        animateEntrance
-        disableShadowHover={false}
-        className="overflow-hidden hover:shadow-md transition-shadow duration-300"
-      >
-        <StandardCard.Header>
-          <div className="flex items-center justify-between">
-            <StandardCard.Title
-              className="flex items-center gap-2"
-            >
-              <StandardIcon colorScheme="primary" size="md">
-                 <FileText />
-              </StandardIcon>
-              Transcripciones
-            </StandardCard.Title>
-            <StandardBadge colorScheme="success" styleType="subtle" size="md">
-              Activo
-            </StandardBadge>
-          </div>
-          <StandardCard.Subtitle>
-            <StandardText size="sm" colorScheme="secondary">
-              Gestión y análisis de transcripciones de entrevistas
-            </StandardText>
-          </StandardCard.Subtitle>
-        </StandardCard.Header>
+	// Paleta de colores según el archivo USAGE.jsx
+	const colorPalettes = {
+		lotes: "#0F6E56",
+		fases: "#534AB7",
+		equipo: "#0F6E56",
+		analisis: "#534AB7",
+		articulos: "#185FA5",
+		dimensiones: "#D85A30",
+	};
 
-        <StandardCard.Content>
-          <div className="mb-6 text-muted-foreground">
-            <StandardText size="sm">
-              Herramienta para la gestión, análisis y visualización de
-              transcripciones de entrevistas. Permite cargar transcripciones,
-              normalizarlas y organizarlas en una matriz de vaciado.
-            </StandardText>
-          </div>
+	return (
+		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+			{/* Card de Lotes */}
+			<Link href="/articulos/preclasificacion" className="block group">
+				<StandardCard
+					colorScheme="primary"
+					accentPlacement="top"
+					animateEntrance
+					disableShadowHover={false}
+					onCardClick={() =>
+						(window.location.href = "/articulos/preclasificacion")
+					}
+					className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full">
+					<StandardCard.Content className="flex flex-col h-full">
+						<div className="flex-1">
+							<div className="flex items-center justify-between mb-4">
+								<h3 className="text-xl font-semibold text-foreground">Lotes</h3>
+								<StandardBadge
+									colorScheme="success"
+									styleType="subtle"
+									size="sm">
+									4 activos
+								</StandardBadge>
+							</div>
+							<p className="text-sm text-muted-foreground mb-4">
+								Gestión de lotes de artículos para preclasificación
+							</p>
+						</div>
+						<div
+							className="flex justify-end"
+							style={{ color: colorPalettes.lotes }}>
+							<LotesIcon width={80} height={80} />
+						</div>
+					</StandardCard.Content>
+				</StandardCard>
+			</Link>
 
-          <StandardCard colorScheme="tertiary" className="mb-6">
-            <StandardCard.Content>
-              <StandardText
-                className="mb-2"
-                weight="semibold"
-              >
-                Funcionalidades principales:
-              </StandardText>
+			{/* Card de Fases */}
+			<Link href="/datos-maestros/fases" className="block group">
+				<StandardCard
+					colorScheme="secondary"
+					accentPlacement="top"
+					animateEntrance
+					disableShadowHover={false}
+					onCardClick={() => (window.location.href = "/datos-maestros/fases")}
+					className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full">
+					<StandardCard.Content className="flex flex-col h-full">
+						<div className="flex-1">
+							<div className="flex items-center justify-between mb-4">
+								<h3 className="text-xl font-semibold text-foreground">Fases</h3>
+								<StandardBadge
+									colorScheme="warning"
+									styleType="outline"
+									size="sm">
+									2 configuradas
+								</StandardBadge>
+							</div>
+							<p className="text-sm text-muted-foreground mb-4">
+								Configuración de fases del proyecto de investigación
+							</p>
+						</div>
+						<div
+							className="flex justify-end"
+							style={{ color: colorPalettes.fases }}>
+							<FasesIcon width={80} height={80} />
+						</div>
+					</StandardCard.Content>
+				</StandardCard>
+			</Link>
 
-              <ul className="space-y-1 list-disc list-inside">
-                <li>
-                  <StandardText asElement="span" size="sm">
-                    Gestión de fundaciones y entrevistados
-                  </StandardText>
-                </li>
-                <li>
-                  <StandardText asElement="span" size="sm">
-                    Carga y validación de transcripciones
-                  </StandardText>
-                </li>
-                <li>
-                  <StandardText asElement="span" size="sm">
-                    Normalización de textos
-                  </StandardText>
-                </li>
-                <li>
-                  <StandardText asElement="span" size="sm">
-                    Matriz de vaciado para análisis
-                  </StandardText>
-                </li>
-              </ul>
-            </StandardCard.Content>
-          </StandardCard>
-        </StandardCard.Content>
+			{/* Card de Equipo */}
+			<Link href="#" className="block group">
+				<StandardCard
+					colorScheme="accent"
+					accentPlacement="top"
+					animateEntrance
+					disableShadowHover={false}
+					onCardClick={() => console.log("Equipo card clicked")}
+					className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full">
+					<StandardCard.Content className="flex flex-col h-full">
+						<div className="flex-1">
+							<div className="flex items-center justify-between mb-4">
+								<h3 className="text-xl font-semibold text-foreground">
+									Equipo
+								</h3>
+								<StandardBadge
+									colorScheme="primary"
+									styleType="subtle"
+									size="sm">
+									2 miembros
+								</StandardBadge>
+							</div>
+							<p className="text-sm text-muted-foreground mb-4">
+								Gestión del equipo de investigación y roles
+							</p>
+						</div>
+						<div
+							className="flex justify-end"
+							style={{ color: colorPalettes.equipo }}>
+							<EquipoIcon width={80} height={80} />
+						</div>
+					</StandardCard.Content>
+				</StandardCard>
+			</Link>
 
-        <StandardCard.Actions>
-          <Link href="/entrevistas" className="w-full">
-            <StandardButton className="w-full group" styleType="solid" rightIcon={ArrowRight}>
-                Acceder al módulo
-            </StandardButton>
-          </Link>
-        </StandardCard.Actions>
-      </StandardCard>
+			{/* Card de Análisis */}
+			<Link href="/articulos/analisis-preclasificacion" className="block group">
+				<StandardCard
+					colorScheme="tertiary"
+					accentPlacement="top"
+					animateEntrance
+					disableShadowHover={false}
+					onCardClick={() =>
+						(window.location.href = "/articulos/analisis-preclasificacion")
+					}
+					className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full">
+					<StandardCard.Content className="flex flex-col h-full">
+						<div className="flex-1">
+							<div className="flex items-center justify-between mb-4">
+								<h3 className="text-xl font-semibold text-foreground">
+									Análisis
+								</h3>
+								<StandardBadge
+									colorScheme="success"
+									styleType="subtle"
+									size="sm">
+									Activo
+								</StandardBadge>
+							</div>
+							<p className="text-sm text-muted-foreground mb-4">
+								Análisis de datos de preclasificación y métricas
+							</p>
+						</div>
+						<div
+							className="flex justify-end"
+							style={{ color: colorPalettes.analisis }}>
+							<AnalisisIcon width={80} height={80} />
+						</div>
+					</StandardCard.Content>
+				</StandardCard>
+			</Link>
 
-      {/* Módulo de Artículos Académicos - Implementando los componentes */}
-      <StandardCard
-        colorScheme="secondary"
-        accentPlacement="top"
-        animateEntrance
-        disableShadowHover={false}
-      >
-        <StandardCard.Header>
-          <div className="flex items-center justify-between">
-            <StandardCard.Title
-              className="flex items-center gap-2"
-            >
-              <StandardIcon colorScheme="secondary" size="md">
-                <BookOpen />
-              </StandardIcon>
-              Artículos Académicos
-            </StandardCard.Title>
-            <StandardBadge colorScheme="warning" styleType="outline">
-              En construcción
-            </StandardBadge>
-          </div>
-          <StandardCard.Subtitle>
-            <StandardText size="sm" colorScheme="tertiary">
-              Preclasificación de artículos académicos
-            </StandardText>
-          </StandardCard.Subtitle>
-        </StandardCard.Header>
+			{/* Card de Artículos */}
+			<Link href="/articulos" className="block group">
+				<StandardCard
+					colorScheme="secondary"
+					accentPlacement="top"
+					animateEntrance
+					disableShadowHover={false}
+					onCardClick={() => (window.location.href = "/articulos")}
+					className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full">
+					<StandardCard.Content className="flex flex-col h-full">
+						<div className="flex-1">
+							<div className="flex items-center justify-between mb-4">
+								<h3 className="text-xl font-semibold text-foreground">
+									Artículos
+								</h3>
+								<StandardBadge
+									colorScheme="warning"
+									styleType="outline"
+									size="sm">
+									156 totales
+								</StandardBadge>
+							</div>
+							<p className="text-sm text-muted-foreground mb-4">
+								Gestión de artículos académicos y metadatos
+							</p>
+						</div>
+						<div
+							className="flex justify-end"
+							style={{ color: colorPalettes.articulos }}>
+							<ArticulosIcon width={80} height={80} />
+						</div>
+					</StandardCard.Content>
+				</StandardCard>
+			</Link>
 
-        <StandardCard.Content>
-          <div className="mb-6 text-muted-foreground">
-            <StandardText size="sm">
-              Sistema para la preclasificación, categorización y análisis de
-              artículos académicos. Facilita la organización y revisión
-              sistemática de literatura científica.
-            </StandardText>
-          </div>
-
-          <StandardCard colorScheme="tertiary"
-            shadow="none"
-            className="mb-6">
-            <StandardCard.Content>
-              <StandardText
-                className="mb-2"
-                weight="semibold"
-              >
-                Funcionalidades previstas:
-              </StandardText>
-
-              <ul className="space-y-1 list-disc list-inside">
-                <li>
-                  <StandardText asElement="span" size="sm">
-                    Importación de metadatos de artículos
-                  </StandardText>
-                </li>
-                <li>
-                  <StandardText asElement="span" size="sm">
-                    Categorización por temas y relevancia
-                  </StandardText>
-                </li>
-                <li>
-                  <StandardText asElement="span" size="sm">
-                    Extracción automática de conceptos clave
-                  </StandardText>
-                </li>
-                <li>
-                  <StandardText asElement="span" size="sm">
-                    Generación de reportes de revisión
-                  </StandardText>
-                </li>
-              </ul>
-            </StandardCard.Content>
-          </StandardCard>
-        </StandardCard.Content>
-
-        <StandardCard.Actions>
-          <StandardButton className="w-full" styleType="outline" disabled rightIcon={Sparkles}>
-              Próximamente
-          </StandardButton>
-        </StandardCard.Actions>
-      </StandardCard>
-    </div>
-  );
+			{/* Card de Dimensiones */}
+			<Link href="/datos-maestros/dimensiones" className="block group">
+				<StandardCard
+					colorScheme="danger"
+					accentPlacement="top"
+					animateEntrance
+					disableShadowHover={false}
+					onCardClick={() =>
+						(window.location.href = "/datos-maestros/dimensiones")
+					}
+					className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer h-full">
+					<StandardCard.Content className="flex flex-col h-full">
+						<div className="flex-1">
+							<div className="flex items-center justify-between mb-4">
+								<h3 className="text-xl font-semibold text-foreground">
+									Dimensiones
+								</h3>
+								<StandardBadge
+									colorScheme="danger"
+									styleType="subtle"
+									size="sm">
+									7 configuradas
+								</StandardBadge>
+							</div>
+							<p className="text-sm text-muted-foreground mb-4">
+								Configuración de dimensiones de preclasificación
+							</p>
+						</div>
+						<div
+							className="flex justify-end"
+							style={{ color: colorPalettes.dimensiones }}>
+							<DimensionesIcon width={80} height={80} />
+						</div>
+					</StandardCard.Content>
+				</StandardCard>
+			</Link>
+		</div>
+	);
 }

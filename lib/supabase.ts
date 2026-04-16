@@ -1,6 +1,7 @@
 // Importar dinámicamente los clientes para evitar problemas con Server Components
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
+import { supabase } from '@/app/auth/client'
 
 // Configuración común
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -22,8 +23,12 @@ const getDomain = () => {
 
 const domain = getDomain();
 
-// Cliente para el navegador
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// ⚠️ DEPRECADO: Este cliente causaba conflictos de cookies con @/app/auth/client.ts
+// ✅ USAR EN SU LUGAR: import { supabase } from '@/app/auth/client'
+// 
+// Cliente para el navegador (DEPRECADO - mantener solo para compatibilidad temporal)
+// Este cliente NO debe usarse en nuevo código
+export const supabase_DEPRECATED = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -54,6 +59,10 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     }
   }
 })
+
+// ✅ Re-exportar el cliente oficial de @/app/auth/client.ts
+// Esto asegura compatibilidad con código existente que importa desde aquí
+export { supabase }
 
 // Función para obtener el cliente del servidor
 export async function createServerClient() {

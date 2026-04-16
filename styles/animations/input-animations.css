@@ -1,0 +1,46 @@
+/* 📍 styles/animations/input-animations.css */
+/* 🎯 PROPÓSITO: Animaciones estáticas para StandardInput - pulseBorder y pafffMoment */
+/* 🔧 DECISIÓN: Mover @keyframes a CSS estático para evitar inyección dinámica */
+/* ✅ ARQUITECTURA: CSS Variables para valores dinámicos + clases estáticas */
+/* 🌸 FILOSOFÍA: Performance optimizado sin style tag injection */
+
+/* 🌊 PULSE BORDER - Respiración sutil del borde */
+.input-pulse-border {
+  animation: pulse-border 2.5s ease-in-out infinite;
+}
+
+.input-pulse-border:focus {
+  animation: none;
+}
+
+@keyframes pulse-border {
+  0%, 100% { 
+    border-color: var(--input-border-color);
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% { 
+    border-color: var(--input-focus-border-color);
+    box-shadow: 0 0 8px 0 var(--input-focus-ring-color);
+  }
+}
+
+/* 🪩 PAFFF MOMENT - Borde destacado para insight/coherencia */
+/* El Pafff respira INCLUSO en focus - es el momento de coherencia mientras escribes */
+.input-pafff-moment {
+  animation: pafff-moment 1.5s ease-in-out infinite;
+  border-color: var(--input-focus-border-color);
+}
+
+.input-pafff-moment:focus {
+  outline: none;
+  /* La animación SIGUE - el focus ring está integrado en la animación */
+}
+
+@keyframes pafff-moment {
+  0%, 100% { 
+    box-shadow: inset 0 0 0 1px var(--input-focus-border-color), 0 0 0 2px var(--input-focus-ring-color);
+  }
+  50% { 
+    box-shadow: inset 0 0 0 2px var(--input-focus-border-color), 0 0 0 4px var(--input-focus-ring-color), 0 0 12px 0 var(--input-focus-ring-color);
+  }
+}

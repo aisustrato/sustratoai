@@ -15,7 +15,7 @@ import { StandardFormField } from '@/components/ui/StandardFormField';
 
 const GeminiShowroomPage = () => {
 
-  const [model, setModel] = useState('gemini-2.5-pro');
+  const [model, setModel] = useState('gemini-3-pro-preview');
   const [inputText, setInputText] = useState(
     'The proliferation of large language models (LLMs) has catalyzed a paradigm shift in natural language processing. This paper introduces a novel architecture, the "Cognitive-Resonance Transformer" (CRT), which integrates a simulated associative memory module to enhance contextual understanding and mitigate catastrophic forgetting. We evaluate CRT on a suite of downstream tasks, including abstractive summarization and machine translation, demonstrating a statistically significant improvement over baseline Transformer models. Our results suggest that emulating cognitive mechanisms can be a fruitful avenue for developing more robust and versatile AI systems.'
   );
@@ -24,9 +24,9 @@ const GeminiShowroomPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const modelOptions = [
-    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+    { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (Preview)' },
+    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
   ];
 
   const handleSubmit = async (action: 'translate' | 'summarize') => {

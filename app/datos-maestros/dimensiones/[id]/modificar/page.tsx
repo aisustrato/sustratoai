@@ -127,6 +127,7 @@ export default function ModificarDimensionPage() {
       projectId: proyectoActual.id,
       name: data.name !== dimensionActual.name ? data.name : undefined, // Enviar solo si cambió
       description: data.description !== (dimensionActual.description || "") ? (data.description || null) : undefined, // Enviar solo si cambió
+      icon: data.icon !== dimensionActual.icon ? (data.icon || null) : undefined, // ✅ Enviar icon si cambió
       // No se actualiza el tipo: type: data.type,
       // No se actualiza el ordering principal aquí: ordering: dimensionActual.ordering,
       
@@ -136,7 +137,8 @@ export default function ModificarDimensionPage() {
         ? (data.options || []).map(opt => ({ 
             id: opt.id || undefined, // Asegurar que los nuevos no tengan ID
             value: opt.value, 
-            ordering: opt.ordering 
+            ordering: opt.ordering,
+            emoticon: opt.emoticon || null // ✅ Incluir emoticon
           })) 
         : [], // Si el tipo es 'open' o cambió a 'open', enviar array vacío para borrar opciones.
       questions: (data.questions || []).map(q => ({ 
@@ -154,6 +156,7 @@ export default function ModificarDimensionPage() {
     const cleanPayload: UpdateDimensionPayload = { dimensionId, projectId: proyectoActual.id };
     if (payload.name !== undefined) cleanPayload.name = payload.name;
     if (payload.description !== undefined) cleanPayload.description = payload.description;
+    if (payload.icon !== undefined) cleanPayload.icon = payload.icon; // ✅ Incluir icon en cleanPayload
     if (payload.options !== undefined) cleanPayload.options = payload.options;
     if (payload.questions !== undefined) cleanPayload.questions = payload.questions;
     if (payload.examples !== undefined) cleanPayload.examples = payload.examples;
@@ -196,15 +199,17 @@ export default function ModificarDimensionPage() {
     phaseId: dimensionActual.phase_id || activePhaseId, // Incluir el phaseId de la dimensión, usar activePhaseId como fallback
     type: dimensionActual.type as 'finite' | 'open', // Esto es un cast, asegurar que el tipo sea uno de los dos
     description: dimensionActual.description || "", // El form usa string vacío para null/undefined en description
+    icon: dimensionActual.icon || "", // ✅ Incluir icon
     options: dimensionActual.options.map(o => ({ 
         id: o.id, // Pasar el id original
         value: o.value, 
-        ordering: o.ordering 
+        ordering: o.ordering ?? 0, // ✅ Manejar null
+        emoticon: o.emoticon || "" // ✅ Incluir emoticon
     })),
     questions: dimensionActual.questions.map(q => ({
         id: q.id, // Pasar el id original
         question: q.question, 
-        ordering: q.ordering 
+        ordering: q.ordering ?? 0 // ✅ Manejar null
     })),
     examples: dimensionActual.examples.map(e => ({ 
         id: e.id, // Pasar el id original

@@ -1,0 +1,53 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset"
+  },
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "register": "Sign up",
+    "forgotPassword": "Forgot your password?",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password"
+  },
+  "errors": {
+    "required": "This field is required",
+    "invalid": "Invalid value",
+    "networkError": "Connection error",
+    "unauthorized": "Unauthorized",
+    "notFound": "Not found"
+  },
+  "input": {
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "clearField": "Clear field",
+    "charactersRemaining": "characters remaining"
+  },
+  "showroom": {
+    "standardButton": {
+      "title": "StandardButton Showroom v4.1 🌸",
+      "description": "Pre-calculated tokens • Organic transitions • Breathing effect • i18n-ready",
+      "testButton": "Test Button",
+      "tooltipExample": "This is a test tooltip"
+    },
+    "standardInput": {
+      "title": "StandardInput Showroom v4.2 🌸",
+      "description": "Animation Sovereignty • Pre-calculated Tokens • Visual Validation"
+    }
+  }
+}

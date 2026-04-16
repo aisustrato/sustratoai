@@ -25,6 +25,8 @@ export function TranslationJobHandler({ job }: TranslationJobHandlerProps) {
   const [jobStatus, setJobStatus] = useState<'running' | 'completed' | 'failed'>('running');
   // 🧹 Cleanup idempotente para desuscribir el canal y evitar fugas
   const cleanupRef = useRef<null | (() => void)>(null);
+  // 🔄 Polling fallback para cuando Realtime no funciona
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // 🎯 FUNCIÓN PRINCIPAL: TranslationJobHandler maneja TODO el flujo
   const runJob = useCallback(async () => {
@@ -59,6 +61,7 @@ export function TranslationJobHandler({ job }: TranslationJobHandlerProps) {
       setStatusMessage('Traducción iniciada. Monitoreando progreso...');
 
       // Crear suscripción en tiempo real a la tabla ai_job_history
+      console.log(`🎧 [TranslationJobHandler] Creando suscripción para job: ${backendJobId}`);
       const channel = supabase.channel(`translation-job-${backendJobId}`)
         .on('postgres_changes', 
             { 
@@ -68,7 +71,12 @@ export function TranslationJobHandler({ job }: TranslationJobHandlerProps) {
               filter: `id=eq.${backendJobId}` 
             }, 
             (payload) => {
-              console.log('🔄 [TranslationJobHandler] Actualización del trabajo:', payload);
+              console.log('🔄 [TranslationJobHandler] ✅ EVENTO RECIBIDO:', {
+                timestamp: new Date().toISOString(),
+                eventType: payload.eventType,
+                new: payload.new,
+                old: payload.old
+              });
               
               const { progress, details, status } = payload.new;
               
@@ -105,6 +113,10 @@ export function TranslationJobHandler({ job }: TranslationJobHandlerProps) {
                 setTimeout(() => {
                   console.log('🔄 [TranslationJobHandler] Refrescando página para mostrar traducciones...');
                   runningBatches.delete(batchId);
+                  
+                  // 🔔 Disparar evento personalizado para actualizar esferas
+                  window.dispatchEvent(new CustomEvent('batch-updated', { detail: { batchId } }));
+                  
                   router.refresh();
                   completeJob(job.id);
                   cleanupRef.current?.();
@@ -133,13 +145,144 @@ export function TranslationJobHandler({ job }: TranslationJobHandlerProps) {
                 }, 3000);
               }
             })
-        .subscribe();
+        .subscribe((status) => {
+          console.log(`📡 [TranslationJobHandler] Estado de suscripción:`, {
+            status,
+            channel: channel.topic,
+            timestamp: new Date().toISOString()
+          });
+          
+          if (status === 'SUBSCRIBED') {
+            console.log(`✅ [TranslationJobHandler] Canal suscrito exitosamente para job: ${backendJobId}`);
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error(`❌ [TranslationJobHandler] Error en canal para job: ${backendJobId}`);
+          } else if (status === 'TIMED_OUT') {
+            console.error(`⏱️ [TranslationJobHandler] Timeout en suscripción para job: ${backendJobId}`);
+          }
+        });
+
+      // 🔄 POLLING FALLBACK: Consultar progreso cada 2 segundos
+      // Esto es necesario porque Service Role updates no generan eventos Realtime
+      console.log(`🔄 [TranslationJobHandler] Iniciando polling fallback cada 2s para job: ${backendJobId}`);
+      
+      const pollProgress = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('ai_job_history')
+            .select('progress, details, status')
+            .eq('id', backendJobId)
+            .single();
+          
+          if (error) {
+            console.error(`❌ [TranslationJobHandler] Error en polling:`, error);
+            return;
+          }
+          
+          if (!data) return;
+          
+          console.log(`📊 [TranslationJobHandler] Polling update:`, {
+            progress: data.progress,
+            status: data.status,
+            details: data.details
+          });
+          
+          // Actualizar progreso
+          if (typeof data.progress === 'number') {
+            updateJobProgress(job.id, data.progress);
+          }
+          
+          // Actualizar mensaje de status
+          let statusMsg = 'Procesando...';
+          if (data.details) {
+            if (typeof data.details === 'string') {
+              statusMsg = data.details;
+            } else if (typeof data.details === 'object' && !Array.isArray(data.details)) {
+              const details = data.details as Record<string, any>;
+              if (details.step) {
+                statusMsg = details.step;
+              } else if (details.error) {
+                statusMsg = `Error: ${details.error}`;
+              } else if (details.processed && details.total) {
+                statusMsg = `Procesados ${details.processed}/${details.total} artículos`;
+              }
+            }
+          }
+          setStatusMessage(statusMsg);
+          
+          // Manejar finalización
+          if (data.status === 'completed') {
+            console.log('✅ [TranslationJobHandler] Job completado (detectado por polling)');
+            setJobStatus('completed');
+            
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+            
+            updateJobProgress(job.id, 100);
+            setStatusMessage('¡Traducción completada!');
+            
+            setTimeout(() => {
+              console.log('🔄 [TranslationJobHandler] Refrescando página para mostrar traducciones...');
+              runningBatches.delete(batchId);
+              router.refresh();
+              completeJob(job.id);
+              cleanupRef.current?.();
+            }, 2000);
+            
+          } else if (data.status === 'failed') {
+            console.error('❌ [TranslationJobHandler] Job fallido (detectado por polling)');
+            setJobStatus('failed');
+            
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+            
+            let errorMessage = 'Error durante la traducción';
+            if (data.details) {
+              if (typeof data.details === 'string') {
+                errorMessage = data.details;
+              } else if (typeof data.details === 'object' && !Array.isArray(data.details)) {
+                const details = data.details as Record<string, any>;
+                if (details.error) {
+                  errorMessage = details.error;
+                }
+              }
+            }
+            
+            updateJobProgress(job.id, 100);
+            setStatusMessage(`Error: ${errorMessage}`);
+            
+            setTimeout(() => {
+              runningBatches.delete(batchId);
+              failJob(job.id, errorMessage);
+              cleanupRef.current?.();
+            }, 3000);
+          }
+        } catch (error) {
+          console.error(`❌ [TranslationJobHandler] Error en polling:`, error);
+        }
+      };
+      
+      // Iniciar polling inmediatamente y luego cada 2 segundos
+      pollProgress();
+      pollingIntervalRef.current = setInterval(pollProgress, 2000);
 
       cleanupRef.current = () => {
         try {
+          console.log(`🧹 [TranslationJobHandler] Limpiando suscripción y polling para job: ${backendJobId}`);
+          
+          // Limpiar polling
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          
+          // Desuscribir canal
           channel.unsubscribe();
-        } catch {
-          // noop
+        } catch (error) {
+          console.error(`❌ [TranslationJobHandler] Error al limpiar:`, error);
         } finally {
           cleanupRef.current = null;
         }

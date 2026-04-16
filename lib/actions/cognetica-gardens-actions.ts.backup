@@ -1,0 +1,900 @@
+"use server";
+
+import { createSupabaseServerClient } from "@/lib/server";
+import { estimateTokens } from "@/lib/utils/token-estimator";
+
+export interface ResultadoOperacion<T = void> {
+	success: boolean;
+	data?: T;
+	error?: string;
+}
+
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+export type GardenElementType = "seed" | "discipline" | "theory" | "thinker";
+
+export interface GardenElement {
+	id: string;
+	garden_id: string;
+	element_type: GardenElementType;
+	element_id: string | null;
+	element_content: string | null;
+	element_label: string;
+	added_at: string;
+}
+
+export interface ResonanceGarden {
+	id: string;
+	project_id: string;
+	created_by: string;
+	name: string;
+	description: string | null;
+	emoji: string;
+	created_at: string;
+	updated_at: string;
+	elements?: GardenElement[];
+	artifacts_count?: number;
+}
+
+export interface CreateGardenInput {
+	projectId: string;
+	name: string;
+	description?: string;
+	emoji?: string;
+	elements: Array<{
+		element_type: GardenElementType;
+		element_id?: string;
+		element_content?: string;
+		element_label: string;
+	}>;
+}
+
+export interface GardenArtifact {
+	id: string;
+	title: string;
+	type: string;
+	status: string | null;
+	created_at: string | null;
+	has_chronicle: boolean;
+	has_chat: boolean;
+	micelio_destilada?: string;
+	matched_elements: string[];
+	relevance_score: number;
+}
+
+export interface GardenTokenBreakdown {
+	transcripcion: number;
+	elementos_cognitivos: number;
+	metabolizacion_micelio: number;
+	chat_calibrador: number;
+	total: number;
+	artifacts_procesados: number;
+	artifacts_totales: number;
+}
+
+// ─── Listar jardines del proyecto ─────────────────────────────────────────────
+
+export async function getGardensForProject(
+	projectId: string,
+): Promise<ResultadoOperacion<ResonanceGarden[]>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data: gardens, error } = await supabase
+			.from("cog_resonance_gardens")
+			.select("*")
+			.eq("project_id", projectId)
+			.order("created_at", { ascending: false });
+
+		if (error) return { success: false, error: error.message };
+
+		if (!gardens || gardens.length === 0) {
+			return { success: true, data: [] };
+		}
+
+		const gardenIds = gardens.map((g: { id: string }) => g.id);
+
+		const { data: elements } = await supabase
+			.from("cog_garden_elements")
+			.select("*")
+			.in("garden_id", gardenIds);
+
+		const elementsMap = new Map<string, GardenElement[]>();
+		((elements as any) || []).forEach((el: GardenElement) => {
+			const list = elementsMap.get(el.garden_id) || [];
+			list.push(el);
+			elementsMap.set(el.garden_id, list);
+		});
+
+		const result: ResonanceGarden[] = (gardens as any).map(
+			(g: ResonanceGarden) => ({
+				...g,
+				elements: elementsMap.get(g.id) || [],
+			}),
+		);
+
+		return { success: true, data: result };
+	} catch (error) {
+		console.error("❌ Error en getGardensForProject:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+// ─── Obtener un jardín con sus elementos ─────────────────────────────────────
+
+export async function getGardenById(
+	gardenId: string,
+): Promise<ResultadoOperacion<ResonanceGarden>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data: garden, error } = await supabase
+			.from("cog_resonance_gardens")
+			.select("*")
+			.eq("id", gardenId)
+			.single();
+
+		if (error) return { success: false, error: error.message };
+		if (!garden) return { success: false, error: "Jardín no encontrado" };
+
+		const { data: elements, error: elementsError } = await supabase
+			.from("cog_garden_elements")
+			.select("*")
+			.eq("garden_id", gardenId)
+			.order("added_at", { ascending: true });
+
+		console.log("🔍 [getGardenById] Elements query:", {
+			gardenId,
+			elements,
+			elementsError,
+		});
+
+		return {
+			success: true,
+			data: { ...garden, elements: (elements as any) || [] } as any,
+		};
+	} catch (error) {
+		console.error("❌ Error en getGardenById:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+// ─── Crear jardín ─────────────────────────────────────────────────────────────
+
+export async function createGarden(
+	input: CreateGardenInput,
+): Promise<ResultadoOperacion<ResonanceGarden>> {
+	try {
+		console.log("🌱 [createGarden] Iniciando creación:", {
+			projectId: input.projectId,
+			name: input.name,
+			elementsCount: input.elements.length,
+		});
+
+		const supabase = await createSupabaseServerClient();
+
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+		if (!user) return { success: false, error: "No autenticado" };
+
+		const { data: garden, error: gardenError } = await supabase
+			.from("cog_resonance_gardens")
+			.insert({
+				project_id: input.projectId,
+				created_by: user.id,
+				name: input.name.trim(),
+				description: input.description?.trim() || null,
+				emoji: input.emoji || "🌱",
+			})
+			.select()
+			.single();
+
+		if (gardenError) return { success: false, error: gardenError.message };
+		if (!garden) return { success: false, error: "Error creando jardín" };
+
+		console.log("✅ [createGarden] Jardín creado:", garden.id);
+
+		if (input.elements.length > 0) {
+			console.log(
+				"🌱 [createGarden] Procesando elementos:",
+				input.elements.length,
+			);
+			console.log("🌱 [createGarden] Elements input:", input.elements);
+			const elementsToInsert = input.elements.map((el) => ({
+				garden_id: garden.id,
+				project_id: garden.project_id, // Agregar project_id para RLS
+				element_type: el.element_type,
+				element_id: el.element_id || null,
+				element_content: el.element_content || null,
+				element_label: el.element_label,
+			}));
+
+			console.log(
+				"🌱 [createGarden] Insertando elementos:",
+				elementsToInsert.length,
+			);
+			console.log("🌱 [createGarden] Elements to insert:", elementsToInsert);
+
+			const { data: insertedElements, error: elementsError } = await supabase
+				.from("cog_garden_elements")
+				.insert(elementsToInsert)
+				.select();
+
+			console.log("🔍 [createGarden] Insert result:", {
+				insertedElements,
+				elementsError,
+			});
+
+			if (elementsError) {
+				console.error(
+					"❌ Error insertando elementos del jardín:",
+					elementsError,
+				);
+				// No fallamos la creación del jardín, pero reportamos el error
+				return {
+					success: true,
+					data: { ...garden, elements: [] } as any, // Retornar jardín sin elementos
+					warning: `Jardín creado pero hubo error al insertar elementos: ${elementsError.message}`,
+				} as any;
+			}
+			console.log(
+				"✅ [createGarden] Elementos insertados correctamente:",
+				insertedElements?.length || 0,
+			);
+		} else {
+			console.log("⚠️ [createGarden] No hay elementos para insertar");
+		}
+
+		console.log("🔍 [createGarden] Obteniendo jardín completo...");
+		const fullGarden = await getGardenById(garden.id);
+		console.log("🔍 [createGarden] Full garden result:", fullGarden);
+		return fullGarden;
+	} catch (error) {
+		console.error("❌ Error en createGarden:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+// ─── Actualizar jardín (nombre, descripción, emoji) ──────────────────────────
+
+export async function updateGarden(
+	gardenId: string,
+	updates: { name?: string; description?: string; emoji?: string },
+): Promise<ResultadoOperacion<ResonanceGarden>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { error } = await supabase
+			.from("cog_resonance_gardens")
+			.update({
+				...(updates.name !== undefined && { name: updates.name.trim() }),
+				...(updates.description !== undefined && {
+					description: updates.description.trim() || null,
+				}),
+				...(updates.emoji !== undefined && { emoji: updates.emoji }),
+			})
+			.eq("id", gardenId);
+
+		if (error) return { success: false, error: error.message };
+
+		return getGardenById(gardenId);
+	} catch (error) {
+		console.error("❌ Error en updateGarden:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+// ─── Eliminar jardín ──────────────────────────────────────────────────────────
+
+export async function deleteGarden(
+	gardenId: string,
+): Promise<ResultadoOperacion> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { error } = await supabase
+			.from("cog_resonance_gardens")
+			.delete()
+			.eq("id", gardenId);
+
+		if (error) return { success: false, error: error.message };
+		return { success: true };
+	} catch (error) {
+		console.error("❌ Error en deleteGarden:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+// ─── Agregar elemento al jardín ───────────────────────────────────────────────
+
+export async function addElementToGarden(
+	gardenId: string,
+	element: {
+		element_type: GardenElementType;
+		element_id?: string;
+		element_content?: string;
+		element_label: string;
+	},
+): Promise<ResultadoOperacion<GardenElement>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		// 🔑 Obtener project_id del jardín para RLS (igual que en createGarden)
+		const { data: garden, error: gardenError } = await supabase
+			.from("cog_resonance_gardens")
+			.select("project_id")
+			.eq("id", gardenId)
+			.single();
+
+		if (gardenError || !garden) {
+			return { success: false, error: "Jardín no encontrado" };
+		}
+
+		const { data, error } = await supabase
+			.from("cog_garden_elements")
+			.insert({
+				garden_id: gardenId,
+				project_id: garden.project_id, // 🔑 Agregar project_id para RLS
+				element_type: element.element_type,
+				element_id: element.element_id || null,
+				element_content: element.element_content || null,
+				element_label: element.element_label,
+			})
+			.select()
+			.single();
+
+		if (error) return { success: false, error: error.message };
+		return { success: true, data: data as any };
+	} catch (error) {
+		console.error("❌ Error en addElementToGarden:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+// ─── Quitar elemento del jardín ───────────────────────────────────────────────
+
+export async function removeElementFromGarden(
+	elementId: string,
+): Promise<ResultadoOperacion> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { error } = await supabase
+			.from("cog_garden_elements")
+			.delete()
+			.eq("id", elementId);
+
+		if (error) return { success: false, error: error.message };
+		return { success: true };
+	} catch (error) {
+		console.error("❌ Error en removeElementFromGarden:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+// ─── Obtener artefactos del jardín (con relevancia) ───────────────────────────
+
+export async function getArtifactsForGarden(
+	gardenId: string,
+	projectId: string,
+): Promise<ResultadoOperacion<GardenArtifact[]>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data: elements, error: elemError } = await supabase
+			.from("cog_garden_elements")
+			.select("*")
+			.eq("garden_id", gardenId);
+
+		if (elemError) return { success: false, error: elemError.message };
+		if (!elements || elements.length === 0) return { success: true, data: [] };
+
+		const seeds = (elements as any).filter(
+			(e: GardenElement) => e.element_type === "seed",
+		);
+		const disciplines = (elements as any).filter(
+			(e: GardenElement) => e.element_type === "discipline",
+		);
+		const theories = (elements as any).filter(
+			(e: GardenElement) => e.element_type === "theory",
+		);
+		const thinkers = (elements as any).filter(
+			(e: GardenElement) => e.element_type === "thinker",
+		);
+
+		const artifactIdSets: Map<string, Set<string>> = new Map();
+
+		const trackArtifact = (artifactId: string, elementLabel: string) => {
+			const set = artifactIdSets.get(artifactId) || new Set<string>();
+			set.add(elementLabel);
+			artifactIdSets.set(artifactId, set);
+		};
+
+		if (seeds.length > 0) {
+			const seedContents = seeds
+				.map((s: GardenElement) => s.element_content)
+				.filter(Boolean);
+			for (const content of seedContents) {
+				const { data } = await supabase
+					.from("cog_fractal_seeds")
+					.select("artifact_id")
+					.eq("project_id", projectId)
+					.eq("content", content)
+					.not("tags", "cs", '{"cita"}');
+				(data || []).forEach((r: { artifact_id: string | null }) => {
+					if (r.artifact_id) trackArtifact(r.artifact_id, content as string);
+				});
+			}
+		}
+
+		if (disciplines.length > 0) {
+			const discIds = disciplines
+				.map((d: GardenElement) => d.element_id)
+				.filter(Boolean);
+			for (const discId of discIds) {
+				const disc = disciplines.find(
+					(d: GardenElement) => d.element_id === discId,
+				);
+				const { data } = await supabase
+					.from("cog_artifact_disciplines")
+					.select("artifact_id, cog_artifacts!inner(project_id)")
+					.eq("cog_artifacts.project_id", projectId)
+					.eq("discipline_id", discId);
+				(data || []).forEach((r: { artifact_id: string }) => {
+					trackArtifact(
+						r.artifact_id,
+						disc?.element_label || (discId as string),
+					);
+				});
+			}
+		}
+
+		if (theories.length > 0) {
+			const theoryIds = theories
+				.map((t: GardenElement) => t.element_id)
+				.filter(Boolean);
+			for (const theoryId of theoryIds) {
+				const theory = theories.find(
+					(t: GardenElement) => t.element_id === theoryId,
+				);
+				const { data } = await supabase
+					.from("cog_artifact_theories")
+					.select("artifact_id, cog_artifacts!inner(project_id)")
+					.eq("cog_artifacts.project_id", projectId)
+					.eq("theory_id", theoryId);
+				(data || []).forEach((r: { artifact_id: string }) => {
+					trackArtifact(
+						r.artifact_id,
+						theory?.element_label || (theoryId as string),
+					);
+				});
+			}
+		}
+
+		if (thinkers.length > 0) {
+			const thinkerIds = thinkers
+				.map((t: GardenElement) => t.element_id)
+				.filter(Boolean);
+			for (const thinkerId of thinkerIds) {
+				const thinker = thinkers.find(
+					(t: GardenElement) => t.element_id === thinkerId,
+				);
+				const { data } = await supabase
+					.from("cog_artifact_references")
+					.select("artifact_id, cog_artifacts!inner(project_id)")
+					.eq("cog_artifacts.project_id", projectId)
+					.eq("reference_id", thinkerId);
+				(data || []).forEach((r: { artifact_id: string | null }) => {
+					if (r.artifact_id)
+						trackArtifact(
+							r.artifact_id,
+							thinker?.element_label || (thinkerId as string),
+						);
+				});
+			}
+		}
+
+		if (artifactIdSets.size === 0) return { success: true, data: [] };
+
+		const artifactIds = Array.from(artifactIdSets.keys());
+
+		const { data: artifacts, error: artError } = await supabase
+			.from("cog_artifacts")
+			.select("id, title, type, status, created_at, source_metadata")
+			.in("id", artifactIds)
+			.order("created_at", { ascending: false });
+
+		if (artError) return { success: false, error: artError.message };
+
+		const { data: chatData } = await supabase
+			.from("cog_chat_sessions")
+			.select("artifact_id")
+			.in("artifact_id", artifactIds);
+
+		const chatSet = new Set<string>(
+			chatData?.map((s: { artifact_id: string }) => s.artifact_id) || [],
+		);
+
+		const result: GardenArtifact[] = (artifacts || []).map(
+			(a: {
+				id: string;
+				title: string;
+				type: string;
+				status: string | null;
+				created_at: string | null;
+				source_metadata: unknown;
+			}) => {
+				const meta =
+					(
+						a.source_metadata &&
+						typeof a.source_metadata === "object" &&
+						!Array.isArray(a.source_metadata)
+					) ?
+						(a.source_metadata as Record<string, unknown>)
+					:	null;
+				const chronicle = meta?.micelio_chronicle as
+					| Record<string, unknown>
+					| undefined;
+				const matched = Array.from(artifactIdSets.get(a.id) || []);
+				return {
+					id: a.id,
+					title: a.title,
+					type: a.type,
+					status: a.status,
+					created_at: a.created_at,
+					has_chronicle: !!chronicle,
+					has_chat: chatSet.has(a.id),
+					micelio_destilada: chronicle?.version_destilada as string | undefined,
+					matched_elements: matched,
+					relevance_score: matched.length / elements.length,
+				};
+			},
+		);
+
+		result.sort((a, b) => b.relevance_score - a.relevance_score);
+
+		return { success: true, data: result };
+	} catch (error) {
+		console.error("❌ Error en getArtifactsForGarden:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function getArtifactTokens(artifactId: string): Promise<{
+	success: boolean;
+	data?: {
+		transcripcion: number;
+		ensayo_destilado: number;
+		elementos_cognitivos: number;
+		datos_cronologicos: number;
+		metabolizacion_micelio: number;
+		chat_calibrador: number;
+		total: number;
+		detalles: {
+			transcripcion_fuente: string;
+			transcripcion_preview: string;
+			ensayo_destilado_preview: string;
+			elementos_preview: string[];
+			cronologicos_preview: string;
+			micelio_partes: { nombre: string; preview: string }[];
+			chat_preview: string;
+		};
+	};
+	error?: string;
+}> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		// Obtener artefacto con metadata
+		const { data: artifact, error: artError } = await supabase
+			.from("cog_artifacts")
+			.select("id, type, source_metadata")
+			.eq("id", artifactId)
+			.single();
+
+		if (artError || !artifact) {
+			return { success: false, error: "Artefacto no encontrado" };
+		}
+
+		let transcripcion = 0;
+		let ensayo_destilado = 0;
+		let elementos_cognitivos = 0;
+		let datos_cronologicos = 0;
+		let metabolizacion_micelio = 0;
+		let chat_calibrador = 0;
+
+		let transcripcion_fuente = "No encontrado";
+		let transcripcion_preview = "";
+		let ensayo_destilado_preview = "";
+		const elementos_preview: string[] = [];
+		let cronologicos_preview = "";
+		const micelio_partes: { nombre: string; preview: string }[] = [];
+		let chat_preview = "";
+
+		const meta =
+			(
+				artifact.source_metadata &&
+				typeof artifact.source_metadata === "object" &&
+				!Array.isArray(artifact.source_metadata)
+			) ?
+				(artifact.source_metadata as Record<string, unknown>)
+			:	null;
+
+		console.log(`🔍 [getArtifactTokens] Artifact ${artifactId}:`, {
+			type: artifact.type,
+			hasMetadata: !!meta,
+			metadataKeys: meta ? Object.keys(meta) : [],
+		});
+
+		// 1. TRANSCRIPCIÓN
+		// Para pdf_slides: buscar en cog_artifact_pages (por páginas)
+		if (artifact.type === "pdf_slides") {
+			const { data: pages } = await supabase
+				.from("cog_artifact_pages")
+				.select("markdown_original, page_number")
+				.eq("artifact_id", artifactId)
+				.order("page_number", { ascending: true });
+
+			if (pages && pages.length > 0) {
+				const fullContent = pages
+					.map((p) => p.markdown_original)
+					.filter(Boolean)
+					.join("\n\n");
+
+				if (fullContent) {
+					transcripcion = estimateTokens(fullContent);
+					transcripcion_fuente = `cog_artifact_pages.markdown_original (${pages.length} páginas)`;
+					transcripcion_preview = fullContent.substring(0, 100);
+					console.log(
+						`📊 [Slides] Encontradas ${pages.length} páginas: ${fullContent.length} caracteres, ${transcripcion} tokens`,
+					);
+				}
+			} else {
+				console.log(
+					`⚠️ [Slides] NO encontradas páginas en cog_artifact_pages para ${artifactId}`,
+				);
+			}
+		} else {
+			// Para otros tipos: buscar en cog_transcriptions
+			const { data: transcriptionData } = await supabase
+				.from("cog_transcriptions")
+				.select("full_text")
+				.eq("artifact_id", artifactId)
+				.order("created_at", { ascending: false })
+				.limit(1)
+				.single();
+
+			if (transcriptionData?.full_text) {
+				transcripcion = estimateTokens(transcriptionData.full_text);
+				transcripcion_fuente = `cog_transcriptions.full_text (${artifact.type})`;
+				transcripcion_preview = transcriptionData.full_text.substring(0, 100);
+				console.log(
+					`📝 [Transcripción] Encontrada: ${transcriptionData.full_text.length} caracteres, ${transcripcion} tokens`,
+				);
+			} else {
+				console.log(
+					`⚠️ [Transcripción] NO encontrada en cog_transcriptions para ${artifactId}`,
+				);
+			}
+		}
+
+		console.log(`✅ [getArtifactTokens] Transcripción tokens:`, transcripcion);
+
+		// 2. ENSAYO DESTILADO (si existe)
+		const { data: essayData } = await supabase
+			.from("cog_transcriptions")
+			.select("distilled_essay")
+			.eq("artifact_id", artifactId)
+			.order("created_at", { ascending: false })
+			.limit(1)
+			.single();
+
+		if (essayData?.distilled_essay) {
+			ensayo_destilado = estimateTokens(essayData.distilled_essay);
+			ensayo_destilado_preview = essayData.distilled_essay.substring(0, 100);
+			console.log(
+				`📖 [Ensayo Destilado] Encontrado: ${essayData.distilled_essay.length} caracteres, ${ensayo_destilado} tokens`,
+			);
+		} else {
+			console.log(`ℹ️ [Ensayo Destilado] NO encontrado para ${artifactId}`);
+		}
+
+		// 3. ELEMENTOS COGNITIVOS (semillas, disciplinas, teorías, pensadores)
+		const { data: seeds } = await supabase
+			.from("cog_fractal_seeds")
+			.select("content")
+			.eq("artifact_id", artifactId)
+			.not("tags", "cs", '{"cita"}');
+
+		if (seeds && seeds.length > 0) {
+			elementos_cognitivos += seeds.reduce(
+				(acc, s) => acc + estimateTokens(s.content || ""),
+				0,
+			);
+			elementos_preview.push(
+				`Seeds (${seeds.length}): ${seeds[0].content?.substring(0, 50) || ""}...`,
+			);
+		}
+
+		const { data: disciplines } = await supabase
+			.from("cog_artifact_disciplines")
+			.select("cog_disciplines(name)")
+			.eq("artifact_id", artifactId);
+
+		if (disciplines && disciplines.length > 0) {
+			elementos_cognitivos += disciplines.reduce((acc, d) => {
+				const disc = d.cog_disciplines as { name: string } | null;
+				return acc + estimateTokens(disc?.name || "");
+			}, 0);
+			const disc = disciplines[0].cog_disciplines as { name: string } | null;
+			elementos_preview.push(
+				`Disciplinas (${disciplines.length}): ${disc?.name || ""}`,
+			);
+		}
+
+		const { data: theories } = await supabase
+			.from("cog_artifact_theories")
+			.select("cog_theories(name)")
+			.eq("artifact_id", artifactId);
+
+		if (theories && theories.length > 0) {
+			elementos_cognitivos += theories.reduce((acc, t) => {
+				const theory = t.cog_theories as { name: string } | null;
+				return acc + estimateTokens(theory?.name || "");
+			}, 0);
+			const theory = theories[0].cog_theories as { name: string } | null;
+			elementos_preview.push(
+				`Teorías (${theories.length}): ${theory?.name || ""}`,
+			);
+		}
+
+		const { data: thinkers } = await supabase
+			.from("cog_artifact_references")
+			.select("cog_references(name)")
+			.eq("artifact_id", artifactId);
+
+		if (thinkers && thinkers.length > 0) {
+			elementos_cognitivos += thinkers.reduce((acc, t) => {
+				const thinker = t.cog_references as { name: string } | null;
+				return acc + estimateTokens(thinker?.name || "");
+			}, 0);
+			const thinker = thinkers[0].cog_references as { name: string } | null;
+			elementos_preview.push(
+				`Pensadores (${thinkers.length}): ${thinker?.name || ""}`,
+			);
+		}
+
+		// 3.5. DATOS CRONOLÓGICOS (fechas, eventos, períodos)
+		const { data: chronologicalData } = await supabase
+			.from("cog_chronological_data")
+			.select("date_value, event_type, description")
+			.eq("artifact_id", artifactId);
+
+		if (chronologicalData && chronologicalData.length > 0) {
+			datos_cronologicos = chronologicalData.reduce((acc, item) => {
+				const text = `${item.date_value || ""} ${item.event_type || ""} ${item.description || ""}`;
+				return acc + estimateTokens(text);
+			}, 0);
+			cronologicos_preview = `Datos cronológicos (${chronologicalData.length}): ${chronologicalData[0].date_value || ""} - ${chronologicalData[0].description?.substring(0, 40) || ""}...`;
+			console.log(
+				`📅 [Datos Cronológicos] Encontrados ${chronologicalData.length} eventos: ${datos_cronologicos} tokens`,
+			);
+		} else {
+			console.log(`ℹ️ [Datos Cronológicos] NO encontrados para ${artifactId}`);
+		}
+
+		// 3. METABOLIZACIÓN MICELIO - Obtener TODAS las partes
+		const chronicle = meta?.micelio_chronicle as
+			| Record<string, unknown>
+			| undefined;
+
+		if (chronicle) {
+			console.log(`🍄 [Micelio] Keys encontradas:`, Object.keys(chronicle));
+
+			// Iterar sobre todas las propiedades del chronicle
+			for (const [key, value] of Object.entries(chronicle)) {
+				if (typeof value === "string" && value.length > 0) {
+					metabolizacion_micelio += estimateTokens(value);
+					micelio_partes.push({
+						nombre: key
+							.replace(/_/g, " ")
+							.replace(/\b\w/g, (l) => l.toUpperCase()),
+						preview: value.substring(0, 80),
+					});
+					console.log(`🍄 [Micelio] ${key}: ${value.length} caracteres`);
+				}
+			}
+		} else {
+			console.log(
+				`⚠️ [Micelio] NO encontrado micelio_chronicle en source_metadata`,
+			);
+		}
+
+		// 4. CHAT CALIBRADOR QUIPU
+		const { data: chatSessions } = await supabase
+			.from("cog_chat_sessions")
+			.select("messages")
+			.eq("artifact_id", artifactId);
+
+		if (chatSessions && chatSessions.length > 0) {
+			let totalMessages = 0;
+			chatSessions.forEach((session) => {
+				const messages = session.messages as Array<{ content: string }> | null;
+				if (messages && Array.isArray(messages)) {
+					totalMessages += messages.length;
+					chat_calibrador += messages.reduce(
+						(acc, msg) => acc + estimateTokens(msg.content || ""),
+						0,
+					);
+				}
+			});
+			if (totalMessages > 0) {
+				const firstMsg = (
+					chatSessions[0].messages as Array<{ content: string }>
+				)[0];
+				chat_preview = `${totalMessages} mensajes. Primero: ${firstMsg?.content?.substring(0, 60) || ""}...`;
+			}
+		}
+
+		const total =
+			transcripcion +
+			ensayo_destilado +
+			elementos_cognitivos +
+			datos_cronologicos +
+			metabolizacion_micelio +
+			chat_calibrador;
+
+		return {
+			success: true,
+			data: {
+				transcripcion,
+				ensayo_destilado,
+				elementos_cognitivos,
+				datos_cronologicos,
+				metabolizacion_micelio,
+				chat_calibrador,
+				total,
+				detalles: {
+					transcripcion_fuente,
+					transcripcion_preview,
+					ensayo_destilado_preview,
+					elementos_preview,
+					cronologicos_preview,
+					micelio_partes,
+					chat_preview,
+				},
+			},
+		};
+	} catch (error) {
+		console.error("❌ Error en getArtifactTokens:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}

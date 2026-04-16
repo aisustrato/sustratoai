@@ -16,6 +16,7 @@ export interface Project {
   module_bibliography?: boolean | null;
   module_interviews?: boolean | null;
   module_planning?: boolean | null;
+  module_cognetica?: boolean | null;
   // lead_researcher_user_id?: string | null; // Ya presente en Database['public']['Tables']['projects']['Row']
 }
 

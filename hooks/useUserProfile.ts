@@ -33,13 +33,14 @@ export function useUserProfile() {
           .from('users_profiles')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error al cargar el perfil del usuario:', error);
           setProfile(null);
         } else {
-          setProfile(data as UserProfile);
+          // maybeSingle() retorna null si no hay registros, lo cual es válido
+          setProfile(data as UserProfile | null);
         }
       } catch (error) {
         console.error('Error inesperado al cargar el perfil:', error);

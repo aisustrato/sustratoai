@@ -254,3 +254,139 @@ export async function getProjectDetails(
 		};
 	}
 }
+
+// ========================================================================
+//  SERVER ACTION: createMinimalProject
+// ========================================================================
+
+/**
+ * Crea un nuevo proyecto con la estructura mínima requerida.
+ * El usuario que crea el proyecto se convierte automáticamente en owner.
+ *
+ * @param name - Nombre del proyecto (requerido).
+ * @returns Un objeto con el resultado de la operación y los datos del proyecto creado.
+ */
+export async function createMinimalProject(
+	name: string
+): Promise<
+	ResultadoOperacion<{
+		project: Database["public"]["Tables"]["projects"]["Row"];
+	}>
+> {
+	const opId = `CREATE-PROJ-${Math.floor(Math.random() * 10000)}`;
+	console.log(`🚀 [${opId}] Iniciando creación de proyecto: ${name}`);
+
+	// 1. --- Validación del Payload ---
+	if (!name || name.trim().length === 0) {
+		return {
+			success: false,
+			error: "El nombre del proyecto es requerido.",
+			errorCode: "INVALID_PAYLOAD",
+		};
+	}
+
+	const supabase = await createSupabaseServerClient();
+
+	try {
+		// 2. --- Verificación de Autenticación ---
+		const {
+			data: { user: currentUser },
+		} = await supabase.auth.getUser();
+		if (!currentUser) {
+			return {
+				success: false,
+				error: "Usuario no autenticado.",
+				errorCode: "UNAUTHENTICATED",
+			};
+		}
+
+		// 3. --- Creación del Proyecto ---
+		const { data: newProject, error: insertError } = await supabase
+			.from("projects")
+			.insert({
+				name: name.trim(),
+				owner_id: currentUser.id,
+				status: "active",
+			})
+			.select()
+			.single();
+
+		if (insertError) {
+			console.error(
+				`❌ [${opId}] Error al crear el proyecto:`,
+				insertError
+			);
+			throw new Error(`Error al crear el proyecto: ${insertError.message}`);
+		}
+
+		console.log(
+			`✅ [${opId}] Proyecto "${name}" creado con ID: ${newProject.id}`
+		);
+
+		// 4. --- Creación del Rol de Administrador ---
+		const { data: adminRole, error: roleError } = await supabase
+			.from("project_roles")
+			.insert({
+				project_id: newProject.id,
+				role_name: "Administrador",
+				role_description: "Administrador del proyecto con todos los permisos",
+				can_manage_master_data: true,
+				can_create_batches: true,
+				can_upload_files: true,
+				can_bulk_edit_master_data: true,
+			})
+			.select()
+			.single();
+
+		if (roleError) {
+			console.error(
+				`❌ [${opId}] Error al crear el rol de administrador:`,
+				roleError
+			);
+			throw new Error(`Error al crear el rol de administrador: ${roleError.message}`);
+		}
+
+		console.log(
+			`✅ [${opId}] Rol de administrador creado con ID: ${adminRole.id}`
+		);
+
+		// 5. --- Agregar al Usuario como Miembro del Proyecto ---
+		const { error: memberError } = await supabase
+			.from("project_members")
+			.insert({
+				project_id: newProject.id,
+				user_id: currentUser.id,
+				project_role_id: adminRole.id,
+				is_active_for_user: true,
+			});
+
+		if (memberError) {
+			console.error(
+				`❌ [${opId}] Error al agregar usuario como miembro:`,
+				memberError
+			);
+			throw new Error(`Error al agregar usuario como miembro: ${memberError.message}`);
+		}
+
+		console.log(
+			`✅ [${opId}] Usuario ${currentUser.id} agregado como miembro del proyecto`
+		);
+
+		return {
+			success: true,
+			data: { project: newProject },
+		};
+	} catch (error) {
+		const errorMessage =
+			error instanceof Error ? error.message : "Error desconocido.";
+		console.error(
+			`❌ [${opId}] Excepción en createMinimalProject:`,
+			errorMessage
+		);
+		return {
+			success: false,
+			error: `Error interno del servidor: ${errorMessage}`,
+			errorCode: "INTERNAL_SERVER_ERROR",
+		};
+	}
+}

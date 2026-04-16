@@ -58,20 +58,19 @@ function calculateLayout(
 	availableHeight: number,
 	itemCount: number,
 	cellMode: "rectangular" | "square",
-	forceBadge: boolean
+	forceBadge: boolean,
 ): LayoutCalculationResult {
 	const GAP = availableWidth > 600 ? 16 : 8;
 	const RECTANGULAR_CELL_BADGE_SPACE = 24;
 
-	const effectiveMinDiameter = forceBadge
-		? MINIMUM_SPHERE_DIAMETER_FOR_BADGE
-		: MINIMUM_SPHERE_DIAMETER;
+	const effectiveMinDiameter =
+		forceBadge ? MINIMUM_SPHERE_DIAMETER_FOR_BADGE : MINIMUM_SPHERE_DIAMETER;
 
 	let bestFit = {
 		size: effectiveMinDiameter,
 		cols: Math.max(
 			1,
-			Math.floor((availableWidth + GAP) / (effectiveMinDiameter + GAP))
+			Math.floor((availableWidth + GAP) / (effectiveMinDiameter + GAP)),
 		),
 		overflow: "scroll" as "scroll" | "shrink",
 	};
@@ -81,7 +80,7 @@ function calculateLayout(
 
 	if (low > high) {
 		console.warn(
-			`Advertencia de Cálculo: El tamaño mínimo (${low}px) es mayor que el máximo (${high}px).`
+			`Advertencia de Cálculo: El tamaño mínimo (${low}px) es mayor que el máximo (${high}px).`,
 		);
 	} else {
 		while (low <= high) {
@@ -96,9 +95,9 @@ function calculateLayout(
 			const rowsNeeded = Math.ceil(itemCount / colsForSize);
 
 			const cellHeightForSize =
-				cellMode === "rectangular"
-					? midSize + RECTANGULAR_CELL_BADGE_SPACE
-					: midSize;
+				cellMode === "rectangular" ?
+					midSize + RECTANGULAR_CELL_BADGE_SPACE
+				:	midSize;
 			const totalHeightNeeded = rowsNeeded * (cellHeightForSize + GAP) - GAP;
 
 			if (totalHeightNeeded <= availableHeight) {
@@ -113,9 +112,9 @@ function calculateLayout(
 	}
 
 	const finalCellHeight =
-		cellMode === "rectangular"
-			? bestFit.size + RECTANGULAR_CELL_BADGE_SPACE
-			: bestFit.size;
+		cellMode === "rectangular" ?
+			bestFit.size + RECTANGULAR_CELL_BADGE_SPACE
+		:	bestFit.size;
 
 	return {
 		size: bestFit.size,
@@ -177,7 +176,7 @@ export const StandardSphereGrid = memo(
 		verticalSafetyMargin,
 	}: StandardSphereGridProps) => {
 		const [calculatedSpherePx, setCalculatedSpherePx] = useState<number>(
-			MINIMUM_SPHERE_DIAMETER
+			MINIMUM_SPHERE_DIAMETER,
 		);
 		const [calculatedCellHeight, setCalculatedCellHeight] = useState<number>(0);
 		const [allowBadgeRender, setAllowBadgeRender] = useState<boolean>(true);
@@ -197,14 +196,14 @@ export const StandardSphereGrid = memo(
 			if (sortBy !== "none") {
 				const compareValues = (a: React.ReactNode, b: React.ReactNode) => {
 					// Convertir ReactNode a string para comparación
-					const aStr = String(a || '');
-					const bStr = String(b || '');
-					
+					const aStr = String(a || "");
+					const bStr = String(b || "");
+
 					// Intentar comparar como números si ambos son numéricos
 					const aNum = Number(aStr);
 					const bNum = Number(bStr);
 					if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
-					
+
 					// Comparar como strings
 					return aStr.localeCompare(bStr);
 				};
@@ -228,7 +227,7 @@ export const StandardSphereGrid = memo(
 
 		const hasAnyBadge = useMemo(
 			() => processedItems.some((item) => !!item.statusBadge),
-			[processedItems]
+			[processedItems],
 		);
 
 		// ✅ CORRECCIÓN: Se restaura la lógica que crea el mapa de colores.
@@ -278,7 +277,7 @@ export const StandardSphereGrid = memo(
 					availableHeight,
 					processedItems.length,
 					cellMode,
-					forceBadge
+					forceBadge,
 				);
 				finalLayout = {
 					size: fixedSize,
@@ -286,13 +285,13 @@ export const StandardSphereGrid = memo(
 						1,
 						Math.floor(
 							(availableWidth + (availableWidth > 600 ? 16 : 8)) /
-								(fixedSize + (availableWidth > 600 ? 16 : 8))
-						)
+								(fixedSize + (availableWidth > 600 ? 16 : 8)),
+						),
 					),
 					cellHeight:
-						cellMode === "rectangular"
-							? fixedSize + RECTANGULAR_CELL_BADGE_SPACE
-							: fixedSize,
+						cellMode === "rectangular" ?
+							fixedSize + RECTANGULAR_CELL_BADGE_SPACE
+						:	fixedSize,
 					overflow: tempLayout.overflow,
 				};
 				finalAllowBadgeRender = canShowBadgeAtFixedSize;
@@ -302,14 +301,14 @@ export const StandardSphereGrid = memo(
 					availableHeight,
 					processedItems.length,
 					"rectangular",
-					forceBadge
+					forceBadge,
 				);
 				const squareResult = calculateLayout(
 					availableWidth,
 					availableHeight,
 					processedItems.length,
 					"square",
-					forceBadge
+					forceBadge,
 				);
 
 				if (
@@ -416,9 +415,9 @@ export const StandardSphereGrid = memo(
 		return (
 			<StandardCard
 				animateEntrance
-				colorScheme={cardColorScheme}
+				colorScheme={cardColorScheme as any}
 				accentPlacement="top"
-				accentColorScheme={cardColorScheme}
+				accentColorScheme={cardColorScheme as any}
 				shadow="md"
 				className={cn("flex flex-col h-full", className)}
 				styleType="subtle"
@@ -446,18 +445,16 @@ export const StandardSphereGrid = memo(
 					</StandardCard.Header>
 				)}
 				<StandardCard.Content className="p-4">
-					{isLoading ? (
+					{isLoading ?
 						<div className="flex h-full w-full items-center justify-center">
 							<SustratoLoadingLogo size={48} text={loadingMessage} showText />
 						</div>
-					) : (
-						renderGridContent
-					)}
+					:	renderGridContent}
 				</StandardCard.Content>
 			</StandardCard>
 		);
-	}
+	},
 );
 
-StandardSphereGrid.displayName = 'StandardSphereGrid';
+StandardSphereGrid.displayName = "StandardSphereGrid";
 // #endregion

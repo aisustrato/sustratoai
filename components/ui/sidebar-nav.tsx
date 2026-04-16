@@ -2,8 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { LucideIcon } from "lucide-react";
-import { useTheme } from "@/app/theme-provider";
 import { useMemo } from "react";
+import { StandardSidebarNavAnimations } from "./StandardSidebarNavAnimations";
 
 interface SidebarNavItem {
 	title: string;
@@ -18,38 +18,27 @@ interface SidebarNavProps {
 	isCollapsed: boolean;
 }
 
-import { SidebarNavAnimations } from "./sidebar-nav-animations";
-
 export function SidebarNav({ items, className, isCollapsed }: SidebarNavProps) {
 	const pathname = usePathname() || "";
-	const { appColorTokens, mode } = useTheme();
 
-	const isDark = mode === "dark";
-	const accentBgHover = isDark
-		? appColorTokens.accent.bg
-		: appColorTokens.accent.bgShade;
-	const primaryBg = `${appColorTokens.primary.bg}1A`;
-	const primaryBgHover = `${appColorTokens.primary.bg}26`;
-
-	// Crear estilos dinámicos para el hover
+	// Crear estilos dinámicos para el hover (valores por defecto)
 	const hoverStyles = useMemo(
 		() =>
 			({
-				"--hover-bg": accentBgHover,
-				"--active-bg": primaryBg,
-				"--active-hover-bg": primaryBgHover,
-			} as React.CSSProperties),
-		[accentBgHover, primaryBg, primaryBgHover]
+				"--hover-bg": "#00000026",
+				"--active-bg": "#0000001A",
+				"--active-hover-bg": "#00000026",
+			}) as React.CSSProperties,
+		[],
 	);
 
 	return (
-    <SidebarNavAnimations
-      items={items}
-      activeHref={pathname}
-      hoverStyles={hoverStyles}
-      appColorTokens={appColorTokens}
-      isCollapsed={isCollapsed}
-      className={className}
-    />
-  );
+		<StandardSidebarNavAnimations
+			items={items}
+			activeHref={pathname}
+			hoverStyles={hoverStyles}
+			isCollapsed={isCollapsed}
+			className={className}
+		/>
+	);
 }

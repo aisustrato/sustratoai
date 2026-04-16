@@ -25,7 +25,9 @@ type ColorSchemeId =
 	| "roseGold"
 	| "midnight"
 	| "burgundy"
-	| "zenith";
+	| "zenith"
+	| "coral"
+	| "ocean";
 
 export function ColorSchemeSwitcher() {
 	const { colorScheme, mode, setColorScheme, appColorTokens } = useTheme();
@@ -36,9 +38,9 @@ export function ColorSchemeSwitcher() {
 	const buttonRef = useRef<HTMLButtonElement>(null);
 
 	const themeSelectorTokens = useMemo(() => {
-		return appColorTokens
-			? generateThemeSelectorTokens(appColorTokens, mode)
-			: null;
+		return appColorTokens ?
+				generateThemeSelectorTokens(appColorTokens, mode)
+			:	null;
 	}, [appColorTokens, mode]);
 
 	const hasTokens = !!themeSelectorTokens;
@@ -52,7 +54,7 @@ export function ColorSchemeSwitcher() {
 		if (visualChangeNeeded) {
 			setColorScheme(scheme); // Esto actualiza ThemeProvider y la UI
 			console.log(
-				`[ColorSchemeSwitcher v1.1] Cambio visual inmediato a tema: ${scheme}`
+				`[ColorSchemeSwitcher v1.1] Cambio visual inmediato a tema: ${scheme}`,
 			);
 			// El setTimeout para forceUpdate se mantiene por ahora, como en el código original.
 			// Considerar si es necesario después de pruebas completas.
@@ -68,58 +70,58 @@ export function ColorSchemeSwitcher() {
 		if (!needsPersistence) {
 			if (!auth.user?.id || !auth.proyectoActual?.id) {
 				console.warn(
-					"[ColorSchemeSwitcher v1.1] Persistencia omitida: Usuario o proyecto no disponible."
+					"[ColorSchemeSwitcher v1.1] Persistencia omitida: Usuario o proyecto no disponible.",
 				);
 			} else if (scheme === currentPersistedTheme) {
 				console.log(
-					"[ColorSchemeSwitcher v1.1] Persistencia omitida: El tema seleccionado ya está persistido."
+					"[ColorSchemeSwitcher v1.1] Persistencia omitida: El tema seleccionado ya está persistido.",
 				);
 			}
 			return;
 		}
 
 		console.log(
-			`[ColorSchemeSwitcher v1.1] Iniciando persistencia silenciosa para tema: ${scheme}`
+			`[ColorSchemeSwitcher v1.1] Iniciando persistencia silenciosa para tema: ${scheme}`,
 		);
 		try {
 			// Aseguramos que user.id y proyectoActual.id existen antes de usarlos
 			// (aunque la lógica de needsPersistence ya debería haberlo cubierto)
 			if (!auth.user?.id || !auth.proyectoActual?.id) {
 				throw new Error(
-					"Usuario o ID de proyecto no disponible para la persistencia."
+					"Usuario o ID de proyecto no disponible para la persistencia.",
 				);
 			}
 
 			const result = await actualizarPreferenciasUI(
 				auth.user.id,
 				auth.proyectoActual.id,
-				{ ui_theme: scheme } // Solo enviamos la preferencia de tema
+				{ ui_theme: scheme }, // Solo enviamos la preferencia de tema
 			);
 
 			if (result.success) {
 				auth.setUiThemeLocal(scheme); // Actualiza AuthProvider silenciosamente
 				console.log(
-					`[ColorSchemeSwitcher v1.1] Persistencia exitosa y AuthProvider actualizado para tema: ${scheme}`
+					`[ColorSchemeSwitcher v1.1] Persistencia exitosa y AuthProvider actualizado para tema: ${scheme}`,
 				);
 			} else {
 				toast.error(
 					result.error ||
-						"Ups! Tuvimos un problema al guardar tu preferencia de tema. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior."
+						"Ups! Tuvimos un problema al guardar tu preferencia de tema. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.",
 				);
 				console.error(
 					"[ColorSchemeSwitcher v1.1] Error en persistencia desde actualizarPreferenciasUI:",
-					result.error
+					result.error,
 				);
 			}
 		} catch (error: unknown) {
 			console.error(
 				"[ColorSchemeSwitcher v1.1] Excepción durante la persistencia del tema:",
-				error
+				error,
 			);
 			const errorMessage =
-				error instanceof Error
-					? error.message
-					: "Ups! Hubo una excepción al guardar tu preferencia de tema. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.";
+				error instanceof Error ?
+					error.message
+				:	"Ups! Hubo una excepción al guardar tu preferencia de tema. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.";
 			toast.error(errorMessage);
 		}
 	};
@@ -186,9 +188,11 @@ export function ColorSchemeSwitcher() {
 		},
 		{ id: "graphite", name: "Grafito", bgColorClass: "bg-gray-500" },
 		{ id: "roseGold", name: "Oro Rosado", bgColorClass: "bg-rose-300" },
-		{ id: "midnight", name: "Medianoche", bgColorClass: "bg-[#0A0F2C]" }, // Azul muy oscuro
+		{ id: "midnight", name: "Medianoche", bgColorClass: "bg-[#0A0F2C]" },
 		{ id: "burgundy", name: "Burdeos", bgColorClass: "bg-[#8D0027]" },
 		{ id: "zenith", name: "Zenith", bgColorClass: "bg-[#A0D2DB]" },
+		{ id: "coral", name: "Coral", bgColorClass: "bg-[#FF6B6B]" },
+		{ id: "ocean", name: "Ocean", bgColorClass: "bg-[#0EA5E9]" },
 	];
 
 	const getCurrentColorSchemeName = () => {
@@ -221,17 +225,17 @@ export function ColorSchemeSwitcher() {
 					className="flex items-center justify-between w-full rounded-full border px-2 py-0.5 text-xs transition-colors"
 					style={{
 						backgroundColor:
-							hasTokens && themeSelectorTokens
-								? themeSelectorTokens.dropdown.backgroundColor
-								: defaultBackgroundColor,
+							hasTokens && themeSelectorTokens ?
+								themeSelectorTokens.dropdown.backgroundColor
+							:	defaultBackgroundColor,
 						borderColor:
-							hasTokens && themeSelectorTokens
-								? themeSelectorTokens.dropdown.borderColor
-								: defaultBorderColor,
+							hasTokens && themeSelectorTokens ?
+								themeSelectorTokens.dropdown.borderColor
+							:	defaultBorderColor,
 						color:
-							hasTokens && themeSelectorTokens
-								? themeSelectorTokens.closedLabelText.color
-								: defaultTextColor,
+							hasTokens && themeSelectorTokens ?
+								themeSelectorTokens.closedLabelText.color
+							:	defaultTextColor,
 						maxWidth: "150px",
 					}}
 					aria-label="Seleccionar tema de color"
@@ -241,9 +245,8 @@ export function ColorSchemeSwitcher() {
 						<div
 							className="h-2 w-2 rounded-full flex-shrink-0"
 							style={{
-								backgroundColor: appColorTokens
-									? appColorTokens.primary.pure
-									: "#3D7DF6",
+								backgroundColor:
+									appColorTokens ? appColorTokens.primary.pure : "#3D7DF6",
 							}}
 						/>
 						<StandardText
@@ -261,9 +264,9 @@ export function ColorSchemeSwitcher() {
 						}`}
 						style={{
 							color:
-								hasTokens && themeSelectorTokens
-									? themeSelectorTokens.icon.color
-									: defaultIconColor,
+								hasTokens && themeSelectorTokens ?
+									themeSelectorTokens.icon.color
+								:	defaultIconColor,
 							width: "10px",
 							height: "10px",
 							flexShrink: 0,
@@ -279,17 +282,17 @@ export function ColorSchemeSwitcher() {
 						className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border"
 						style={{
 							backgroundColor:
-								hasTokens && themeSelectorTokens
-									? themeSelectorTokens.dropdown.backgroundColor
-									: "#ffffff",
+								hasTokens && themeSelectorTokens ?
+									themeSelectorTokens.dropdown.backgroundColor
+								:	"#ffffff",
 							borderColor:
-								hasTokens && themeSelectorTokens
-									? themeSelectorTokens.dropdown.borderColor
-									: defaultBorderColor,
+								hasTokens && themeSelectorTokens ?
+									themeSelectorTokens.dropdown.borderColor
+								:	defaultBorderColor,
 							boxShadow:
-								hasTokens && themeSelectorTokens
-									? themeSelectorTokens.dropdown.boxShadow
-									: "0 4px 12px rgba(0, 0, 0, 0.1)",
+								hasTokens && themeSelectorTokens ?
+									themeSelectorTokens.dropdown.boxShadow
+								:	"0 4px 12px rgba(0, 0, 0, 0.1)",
 							padding: themeSelectorTokens?.dropdown.padding || "0.5rem",
 						}}
 						variants={menuVariants}
@@ -307,17 +310,19 @@ export function ColorSchemeSwitcher() {
 									className="flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors"
 									style={{
 										backgroundColor:
-											colorScheme === schemeItem.id &&
-											hasTokens &&
-											themeSelectorTokens
-												? themeSelectorTokens.item.selected.backgroundColor
-												: "transparent",
+											(
+												colorScheme === schemeItem.id &&
+												hasTokens &&
+												themeSelectorTokens
+											) ?
+												themeSelectorTokens.item.selected.backgroundColor
+											:	"transparent",
 									}}
 									whileHover={{
 										backgroundColor:
-											hasTokens && themeSelectorTokens
-												? themeSelectorTokens.item.hover.backgroundColor
-												: "rgba(0, 0, 0, 0.05)",
+											hasTokens && themeSelectorTokens ?
+												themeSelectorTokens.item.hover.backgroundColor
+											:	"rgba(0, 0, 0, 0.05)",
 									}}
 									onClick={() => handleColorSchemeChange(schemeItem.id)}>
 									<div className="flex items-center gap-2">

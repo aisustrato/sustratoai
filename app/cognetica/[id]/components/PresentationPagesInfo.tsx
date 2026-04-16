@@ -1,0 +1,256 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardProgressBar } from "@/components/ui/StandardProgressBar";
+import { FileText, Loader2 } from "lucide-react";
+import {
+	listArtifactPages,
+	processPageWithMarker,
+} from "@/lib/actions/cognetica-presentation-actions";
+import { toast } from "sonner";
+
+interface PresentationPagesInfoProps {
+	artifactId: string;
+}
+
+interface PageInfo {
+	pageId: string;
+	pageNumber: number;
+	status: "pending" | "processing" | "processed" | "failed";
+}
+
+export function PresentationPagesInfo({
+	artifactId,
+}: PresentationPagesInfoProps) {
+	const [pages, setPages] = useState<PageInfo[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+	const [isProcessing, setIsProcessing] = useState(false);
+	const [processProgress, setProcessProgress] = useState(0);
+	const [currentProcessingPage, setCurrentProcessingPage] = useState(0);
+
+	useEffect(() => {
+		async function loadPages() {
+			console.error(
+				`🔥 [PresentationPagesInfo] Cargando páginas para artifact: ${artifactId}`,
+			);
+			const result = await listArtifactPages(artifactId);
+			console.error(`🔥 [PresentationPagesInfo] Resultado:`, result);
+
+			if (result.success) {
+				console.error(
+					`✅ [PresentationPagesInfo] ${result.data.length} páginas cargadas`,
+				);
+				setPages(result.data as PageInfo[]);
+			} else {
+				console.error(`❌ [PresentationPagesInfo] Error: ${result.error}`);
+				setError(result.error);
+			}
+			setLoading(false);
+		}
+		loadPages();
+	}, [artifactId]);
+
+	const handleProcessPages = async () => {
+		const pendingPagesList = pages.filter((p) => p.status === "pending");
+
+		if (pendingPagesList.length === 0) {
+			toast.error("No hay páginas pendientes para procesar");
+			return;
+		}
+
+		setIsProcessing(true);
+		setProcessProgress(0);
+		setCurrentProcessingPage(0);
+		toast.info(
+			`Iniciando procesamiento de ${pendingPagesList.length} páginas...`,
+		);
+
+		try {
+			const totalPages = pendingPagesList.length;
+			let processedCount = 0;
+
+			// Procesar páginas en paralelo (máximo 3 a la vez para no sobrecargar)
+			const batchSize = 3;
+			const totalBatches = Math.ceil(totalPages / batchSize);
+			let currentBatch = 0;
+
+			for (let i = 0; i < totalPages; i += batchSize) {
+				const batch = pendingPagesList.slice(i, i + batchSize);
+				currentBatch++;
+
+				const batchPageNumbers = batch.map((p) => p.pageNumber).join(", ");
+				toast.info(
+					`Procesando lote ${currentBatch}/${totalBatches} (páginas: ${batchPageNumbers})...`,
+				);
+
+				await Promise.all(
+					batch.map(async (page) => {
+						setCurrentProcessingPage(page.pageNumber);
+						const result = await processPageWithMarker(page.pageId);
+
+						processedCount++;
+						const progress = Math.round((processedCount / totalPages) * 100);
+						setProcessProgress(progress);
+
+						if (!result.success) {
+							toast.error(
+								`Error en página ${page.pageNumber}: ${result.error}`,
+							);
+						}
+					}),
+				);
+
+				// Toast de éxito por lote procesado
+				toast.success(
+					`✅ Lote ${currentBatch}/${totalBatches} completado (${batch.length} páginas procesadas)`,
+				);
+			}
+
+			toast.success("¡Todas las páginas procesadas exitosamente!");
+
+			// Recargar páginas para actualizar estados
+			const result = await listArtifactPages(artifactId);
+			if (result.success) {
+				setPages(result.data as PageInfo[]);
+
+				// Si todas las páginas están procesadas, actualizar metadata del artifact
+				const allProcessed = (result.data as PageInfo[]).every(
+					(p) => p.status === "processed",
+				);
+				if (allProcessed) {
+					// Actualizar metadata para que el pipeline avance
+					const { updateArtifactMetadata } = await import(
+						"@/lib/actions/cognetica-actions"
+					);
+					await updateArtifactMetadata(artifactId, { pages_processed: true });
+
+					// Recargar página para reflejar cambios en pipeline
+					window.location.reload();
+				}
+			}
+		} catch (error) {
+			toast.error("Error procesando páginas");
+			console.error("Error en handleProcessPages:", error);
+		} finally {
+			setIsProcessing(false);
+			setProcessProgress(0);
+			setCurrentProcessingPage(0);
+		}
+	};
+
+	if (loading) {
+		return (
+			<div className="bg-card p-6 rounded-xl border shadow-sm">
+				<div className="flex items-center justify-center gap-2 text-muted-foreground">
+					<Loader2 className="w-4 h-4 animate-spin" />
+					<span className="text-sm">Cargando páginas...</span>
+				</div>
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="bg-destructive/10 p-6 rounded-xl border border-destructive/20 shadow-sm">
+				<div className="space-y-2">
+					<h3 className="font-semibold text-lg text-destructive">
+						❌ Error Cargando Páginas
+					</h3>
+					<p className="text-sm text-destructive/80">{error}</p>
+					<p className="text-xs text-muted-foreground mt-4">
+						Las páginas se insertaron correctamente en la base de datos, pero no
+						se pueden recuperar. Esto indica un problema de permisos (RLS) en la
+						consulta SELECT.
+					</p>
+				</div>
+			</div>
+		);
+	}
+
+	const pendingPages = pages.filter((p) => p.status === "pending").length;
+	const processingPages = pages.filter((p) => p.status === "processing").length;
+	const processedPages = pages.filter((p) => p.status === "processed").length;
+	const failedPages = pages.filter((p) => p.status === "failed").length;
+
+	return (
+		<div className="bg-card p-6 rounded-xl border shadow-sm space-y-4">
+			<div className="flex items-center justify-between">
+				<h3 className="font-semibold text-lg flex items-center gap-2">
+					<FileText className="w-5 h-5 text-primary" />
+					Páginas de la Presentación
+				</h3>
+				<span className="text-2xl font-bold text-primary">{pages.length}</span>
+			</div>
+
+			<div className="grid grid-cols-2 gap-3 text-sm">
+				<div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+					<span className="text-muted-foreground">Pendientes</span>
+					<span className="font-semibold text-slate-700 dark:text-slate-300">
+						{pendingPages}
+					</span>
+				</div>
+				<div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+					<span className="text-muted-foreground">Procesando</span>
+					<span className="font-semibold text-blue-700 dark:text-blue-300">
+						{processingPages}
+					</span>
+				</div>
+				<div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+					<span className="text-muted-foreground">Completadas</span>
+					<span className="font-semibold text-green-700 dark:text-green-300">
+						{processedPages}
+					</span>
+				</div>
+				<div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950 rounded-lg">
+					<span className="text-muted-foreground">Fallidas</span>
+					<span className="font-semibold text-red-700 dark:text-red-300">
+						{failedPages}
+					</span>
+				</div>
+			</div>
+
+			{pendingPages > 0 && (
+				<div className="pt-2 space-y-3">
+					<StandardButton
+						colorScheme="primary"
+						size="sm"
+						fullWidth
+						disabled={isProcessing}
+						onClick={handleProcessPages}>
+						{isProcessing ?
+							<>
+								<Loader2 className="w-4 h-4 animate-spin mr-2" />
+								Procesando {pendingPages} páginas...
+							</>
+						:	`Procesar ${pendingPages} Páginas con Marker`}
+					</StandardButton>
+
+					{isProcessing && (
+						<div className="space-y-2">
+							<StandardProgressBar
+								value={processProgress}
+								max={100}
+								colorScheme="primary"
+								size="md"
+								showValue
+								animated
+								label="Procesamiento con Marker API"
+							/>
+							<p className="text-xs text-center text-muted-foreground">
+								Procesando página {currentProcessingPage} de {pages.length}
+							</p>
+						</div>
+					)}
+
+					{!isProcessing && (
+						<p className="text-xs text-center text-muted-foreground">
+							Se procesarán en lotes de 3 páginas simultáneas
+						</p>
+					)}
+				</div>
+			)}
+		</div>
+	);
+}

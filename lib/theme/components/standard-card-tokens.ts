@@ -18,7 +18,7 @@ const createThreeToneDiagonalGradient = (
 	color1: string,
 	color2: string,
 	color3: string,
-	angle = 135
+	angle = 135,
 ): string => {
 	return `linear-gradient(${angle}deg, ${color1} 10%, ${color2} 80%, ${color3} 100%)`;
 };
@@ -27,7 +27,7 @@ const createThreeToneDiagonalGradient = (
 const createAccentBarGradient = (
 	startColor: string,
 	endColor: string,
-	angle = 135
+	angle = 135,
 ): string => {
 	return `linear-gradient(${angle}deg, ${startColor} 0%, ${endColor} 100%)`;
 };
@@ -110,10 +110,10 @@ export interface StandardCardTokens {
 //#region [main] - 🏭 TOKEN GENERATOR FUNCTION 🏭
 export function generateStandardCardTokens(
 	appColorTokens: AppColorTokens,
-	mode: Mode
+	mode: Mode,
 ): StandardCardTokens {
 	const allCardSchemes: ProCardVariant[] = Object.keys(
-		appColorTokens
+		appColorTokens,
 	) as ProCardVariant[];
 
 	const styleTypes: StandardCardTokens["styleTypes"] = {
@@ -121,11 +121,11 @@ export function generateStandardCardTokens(
 		subtle: {},
 		transparent: {},
 	};
-  const hoverOverlays: StandardCardTokens["hoverOverlays"] = {
-    filled: {},
-    subtle: {},
-    transparent: {},
-  };
+	const hoverOverlays: StandardCardTokens["hoverOverlays"] = {
+		filled: {},
+		subtle: {},
+		transparent: {},
+	};
 
 	allCardSchemes.forEach((scheme) => {
 		const tokenShade: ColorShade | undefined = appColorTokens[scheme]; // Este tokenShade ya es el específico del modo (light/dark)
@@ -143,7 +143,7 @@ export function generateStandardCardTokens(
 				background: createThreeToneDiagonalGradient(
 					filledBase,
 					filledMid,
-					filledEnd
+					filledEnd,
 				),
 				// Importante: en light, el fondo de 'filled' usa bg/bgShade (claros),
 				// por lo que debemos usar un color de texto oscuro (tokenShade.text) para alto contraste.
@@ -164,7 +164,7 @@ export function generateStandardCardTokens(
 			if (scheme === "neutral" || scheme === "white") {
 				styleTypes.filled[scheme]!.background = createAccentBarGradient(
 					neutral.gray[900],
-					neutral.gray[800]
+					neutral.gray[800],
 				); // Gradiente de grises oscuros
 				styleTypes.filled[scheme]!.color = neutral.gray[100]; // Texto claro
 			}
@@ -172,59 +172,66 @@ export function generateStandardCardTokens(
 
 		// --- SUBTLE ---
 		if (mode === "light") {
-			// Tu lógica para subtle light mode (manito de gato)
+			// 🎨 Gradiente subtle mejorado - más perceptible al ojo humano
 			let subtleBase = neutral.white;
 			let subtleMid = tokenShade.bg;
 			let subtleEnd = tinycolor
-      .mix(tokenShade.bg, tokenShade.bgShade, 30)
-      .toHexString();
+				.mix(tokenShade.bg, tokenShade.bgShade, 60) // 🎨 Aumentado de 30 a 60 para más contraste
+				.toHexString();
 
 			if (scheme === "neutral" || scheme === "white") {
 				subtleBase = neutral.white;
 				subtleMid = neutral.gray[50];
-				subtleEnd = neutral.gray[100];
+				subtleEnd = neutral.gray[200]; // 🎨 Cambiado de 100 a 200 para más contraste
 			} else {
 				subtleBase = tinycolor
-					.mix(neutral.white, tokenShade.bg, 30)
-					.toHexString(); // 70% white, 30% tokenShade.bg
+					.mix(neutral.white, tokenShade.bg, 20) // 🎨 Reducido de 30 a 20 para base más clara
+					.toHexString();
+				subtleMid = tinycolor
+					.mix(neutral.white, tokenShade.bg, 50) // 🎨 Tono medio más definido
+					.toHexString();
 			}
 			styleTypes.subtle[scheme] = {
 				background: createThreeToneDiagonalGradient(
 					subtleBase,
 					subtleMid,
-					subtleEnd
+					subtleEnd,
 				),
 				color: tokenShade.text,
 			};
 		} else {
 			// Dark Mode for 'subtle'
-			// Objetivo: Degradado inverso al modo light, con predominancia oscura/neutral
-			// pero manteniendo la personalidad etérea del color del esquema.
-			// Creamos un degradado de 3 tonos que va desde más oscuro/neutral hacia tonos
-			// ligeramente influenciados por el color del esquema.
+			// 🎨 Gradiente subtle mejorado - más perceptible al ojo humano
 			let subtleDarkBase: string;
 			let subtleDarkMid: string;
 			let subtleDarkEnd: string;
-			
+
 			if (scheme === "neutral" || scheme === "white") {
-				// Para esquemas neutrales, usamos gradaciones de gris
+				// Para esquemas neutrales, usamos gradaciones de gris más pronunciadas
 				subtleDarkBase = neutral.gray[900]; // Más oscuro (base)
-				subtleDarkMid = tinycolor(neutral.gray[900]).lighten(3).toHexString(); // Tono intermedio
-				subtleDarkEnd = neutral.gray[800]; // Menos oscuro (final)
+				subtleDarkMid = tinycolor(neutral.gray[900]).lighten(6).toHexString(); // 🎨 Aumentado de 3 a 6
+				subtleDarkEnd = tinycolor(neutral.gray[800]).lighten(3).toHexString(); // 🎨 Más claro que antes
 			} else {
-				// Para esquemas de color, partimos de un neutral oscuro
-				// y vamos añadiendo sutilmente el tinte del color del esquema
+				// Para esquemas de color, más presencia del tinte del esquema
 				subtleDarkBase = neutral.gray[900]; // Base muy oscura
-				subtleDarkMid = tinycolor.mix(neutral.gray[900], tokenShade.bgShade, 20).toHexString(); 
-				// Final con algo más de presencia del color del esquema, pero aún oscuro
-				subtleDarkEnd = tinycolor.mix(tinycolor(neutral.gray[900]).lighten(5).toHexString(), tokenShade.bg, 30).toHexString();
+				subtleDarkMid = tinycolor
+					.mix(neutral.gray[900], tokenShade.bgShade, 35)
+					.toHexString(); // 🎨 Aumentado de 20 a 35
+				// Final con más presencia del color del esquema
+				subtleDarkEnd = tinycolor
+					.mix(
+						tinycolor(neutral.gray[900]).lighten(8).toHexString(),
+						tokenShade.bg,
+						50,
+					)
+					.toHexString(); // 🎨 Aumentado de 30 a 50
 			}
-			
+
 			styleTypes.subtle[scheme] = {
 				background: createThreeToneDiagonalGradient(
 					subtleDarkBase,
 					subtleDarkMid,
-					subtleDarkEnd
+					subtleDarkEnd,
 				),
 				color: tokenShade.text, // Ya es un color de texto claro para fondos oscuros
 			};
@@ -236,27 +243,65 @@ export function generateStandardCardTokens(
 			color: tokenShade.text,
 		};
 
-    // --- HOVER OVERLAY (per scheme/styleType, modo-aware) ---
-    // Buscamos oscurecer el contenido respetando el esquema y estilo.
-    // En light usamos el color del esquema + mezcla con negro; en dark reforzamos con negro para mantener contraste.
-    const baseForTint = tokenShade.pureShade || tokenShade.pure || tokenShade.bgShade || tokenShade.bg;
-    const overlayLightFilled = tinycolor.mix(baseForTint, "#000", 25).setAlpha(0.10).toRgbString();
-    const overlayLightSubtle = tinycolor.mix(tokenShade.bgShade || baseForTint, "#000", 20).setAlpha(0.08).toRgbString();
-    const overlayLightTransparent = tinycolor("#000").setAlpha(0.06).toRgbString();
-    const overlayDarkFilled = tinycolor.mix(baseForTint, "#000", 45).setAlpha(0.12).toRgbString();
-    const overlayDarkSubtle = tinycolor.mix(tokenShade.bg || baseForTint, "#000", 40).setAlpha(0.10).toRgbString();
-    const overlayDarkTransparent = tinycolor("#000").setAlpha(0.10).toRgbString();
+		// --- HOVER OVERLAY (per scheme/styleType, modo-aware) ---
+		// Buscamos oscurecer el contenido respetando el esquema y estilo.
+		// En light usamos el color del esquema + mezcla con negro; en dark reforzamos con negro para mantener contraste.
+		const baseForTint =
+			tokenShade.pureShade ||
+			tokenShade.pure ||
+			tokenShade.bgShade ||
+			tokenShade.bg;
+		const overlayLightFilled = tinycolor
+			.mix(baseForTint, "#000", 25)
+			.setAlpha(0.1)
+			.toRgbString();
+		const overlayLightSubtle = tinycolor
+			.mix(tokenShade.bgShade || baseForTint, "#000", 20)
+			.setAlpha(0.08)
+			.toRgbString();
+		const overlayLightTransparent = tinycolor("#000")
+			.setAlpha(0.06)
+			.toRgbString();
+		const overlayDarkFilled = tinycolor
+			.mix(baseForTint, "#000", 45)
+			.setAlpha(0.12)
+			.toRgbString();
+		const overlayDarkSubtle = tinycolor
+			.mix(tokenShade.bg || baseForTint, "#000", 40)
+			.setAlpha(0.1)
+			.toRgbString();
+		const overlayDarkTransparent = tinycolor("#000")
+			.setAlpha(0.1)
+			.toRgbString();
 
-    const commonInset = "2px"; // margen interior sutil y retrocompatible
-    if (mode === "light") {
-      hoverOverlays.filled![scheme] = { overlayBackground: overlayLightFilled, insetPx: commonInset };
-      hoverOverlays.subtle![scheme] = { overlayBackground: overlayLightSubtle, insetPx: commonInset };
-      hoverOverlays.transparent![scheme] = { overlayBackground: overlayLightTransparent, insetPx: commonInset };
-    } else {
-      hoverOverlays.filled![scheme] = { overlayBackground: overlayDarkFilled, insetPx: commonInset };
-      hoverOverlays.subtle![scheme] = { overlayBackground: overlayDarkSubtle, insetPx: commonInset };
-      hoverOverlays.transparent![scheme] = { overlayBackground: overlayDarkTransparent, insetPx: commonInset };
-    }
+		const commonInset = "2px"; // margen interior sutil y retrocompatible
+		if (mode === "light") {
+			hoverOverlays.filled![scheme] = {
+				overlayBackground: overlayLightFilled,
+				insetPx: commonInset,
+			};
+			hoverOverlays.subtle![scheme] = {
+				overlayBackground: overlayLightSubtle,
+				insetPx: commonInset,
+			};
+			hoverOverlays.transparent![scheme] = {
+				overlayBackground: overlayLightTransparent,
+				insetPx: commonInset,
+			};
+		} else {
+			hoverOverlays.filled![scheme] = {
+				overlayBackground: overlayDarkFilled,
+				insetPx: commonInset,
+			};
+			hoverOverlays.subtle![scheme] = {
+				overlayBackground: overlayDarkSubtle,
+				insetPx: commonInset,
+			};
+			hoverOverlays.transparent![scheme] = {
+				overlayBackground: overlayDarkTransparent,
+				insetPx: commonInset,
+			};
+		}
 	});
 
 	// ... (resto de los tokens: outline, accents, selected, checkbox, etc. se mantienen como en tu versión "manito de gato" ya que no eran el foco de este cambio)
@@ -283,7 +328,7 @@ export function generateStandardCardTokens(
 	allCardSchemes.forEach((outerScheme) => {
 		const outerTokenShade = appColorTokens[outerScheme];
 		if (!outerTokenShade) return;
-				const colorInstance = tinycolor(outerTokenShade.pure);
+		const colorInstance = tinycolor(outerTokenShade.pure);
 		let startColor = outerTokenShade.pure;
 
 		// If the 'pure' color is dark, lighten it to ensure the gradient is visible.
@@ -293,18 +338,18 @@ export function generateStandardCardTokens(
 
 		const standardBg = createAccentBarGradient(
 			startColor, // Use the potentially lightened color
-			outerTokenShade.text
+			outerTokenShade.text,
 		);
 		let duotoneMagicBg: string;
 		if (outerScheme === "accent") {
 			duotoneMagicBg = createAccentBarGradient(
 				appColorTokens.accent.pure,
-				appColorTokens.primary.pure
+				appColorTokens.primary.pure,
 			);
 		} else {
 			duotoneMagicBg = createAccentBarGradient(
 				outerTokenShade.pure,
-				appColorTokens.accent.pure
+				appColorTokens.accent.pure,
 			);
 		}
 		(
@@ -316,13 +361,13 @@ export function generateStandardCardTokens(
 				standardBackground: standardBg,
 				duotoneMagicBackground: duotoneMagicBg,
 				height:
-					placement === "top" || placement === "bottom"
-						? accentThickness
-						: undefined,
+					placement === "top" || placement === "bottom" ?
+						accentThickness
+					:	undefined,
 				width:
-					placement === "left" || placement === "right"
-						? accentThickness
-						: undefined,
+					placement === "left" || placement === "right" ?
+						accentThickness
+					:	undefined,
 			};
 		});
 	});
@@ -360,22 +405,22 @@ export function generateStandardCardTokens(
 	}
 
 	const inactiveOverlayBgValue =
-		mode === "dark"
-			? tinycolor(appColorTokens.neutral.bg || neutral.gray[900])
-					.setAlpha(0.7)
-					.toRgbString()
-			: tinycolor(neutral.gray[50]).setAlpha(0.6).toRgbString();
+		mode === "dark" ?
+			tinycolor(appColorTokens.neutral.bg || neutral.gray[900])
+				.setAlpha(0.7)
+				.toRgbString()
+		:	tinycolor(neutral.gray[50]).setAlpha(0.6).toRgbString();
 
 	const loadingOverlayBgValue =
-		mode === "dark"
-			? tinycolor(appColorTokens.neutral.bg || neutral.gray[800])
-					.setAlpha(0.75)
-					.toRgbString()
-			: tinycolor(neutral.gray[100]).setAlpha(0.65).toRgbString();
+		mode === "dark" ?
+			tinycolor(appColorTokens.neutral.bg || neutral.gray[800])
+				.setAlpha(0.75)
+				.toRgbString()
+		:	tinycolor(neutral.gray[100]).setAlpha(0.65).toRgbString();
 
 	return {
 		styleTypes,
-    hoverOverlays,
+		hoverOverlays,
 		outline,
 		accents,
 		shadows: {

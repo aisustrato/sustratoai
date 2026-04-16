@@ -38,6 +38,8 @@ import { useFontTheme } from "@/app/font-provider";
 import { useTheme } from "@/app/theme-provider";
 
 const LOG_PREFIX = "[AUTH_PROVIDER_V10.19]";
+const isDev = process.env.NODE_ENV === 'development';
+const VERBOSE_LOGS = false; // Cambiar a true solo para debugging profundo
 
 interface AuthContextType {
 	supabase: SupabaseClient;
@@ -104,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const userRef = useRef(user);
 	const proyectoActualRef = useRef(proyectoActual);
 	const authInitializedRef = useRef(authInitialized);
+	const authLoadingRef = useRef(authLoading);
 	const initialLoadAttemptedRef = useRef(false);
 	const configAppliedForProjectId = useRef<string | null>(null);
 	const signedInProcessedRef = useRef(false);
@@ -152,15 +155,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		authInitializedRef.current = authInitialized;
 	}, [authInitialized]);
+	useEffect(() => {
+		authLoadingRef.current = authLoading;
+	}, [authLoading]);
 
 	const cargarProyectosUsuario = useCallback(
 		async (userId: string, forceReload: boolean = false): Promise<boolean> => {
-			console.log(
-				`${LOG_PREFIX} cargarProyectosUsuario: User: ${userId.substring(
-					0,
-					8
-				)}. Forzar: ${forceReload}.`
-			);
+			if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} Cargando proyectos para ${userId.substring(0, 8)}`);
 			setLoadingProyectos(true);
 			let GenuinelyLoadedNewData = false;
 			try {
@@ -169,9 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 					proyectoActualRef.current &&
 					proyectoActualRef.current.id === configAppliedForProjectId.current
 				) {
-					console.log(
-						`${LOG_PREFIX} cargarProyectosUsuario: No se recarga de BD (ya aplicado).`
-					);
+					if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} No se recarga de BD (ya aplicado)`);
 					setProyectosDisponibles((prev) =>
 						prev.length > 0
 							? prev
@@ -180,9 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 							: []
 					);
 				} else {
-					console.log(
-						`${LOG_PREFIX} cargarProyectosUsuario: Obteniendo proyectos de BD.`
-					);
+					if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} Obteniendo proyectos de BD`);
 					const result: ResultadoOperacion<UserProjectSetting[]> =
 						await obtenerProyectosConSettingsUsuario(userId);
 					if (result.success) {
@@ -195,20 +192,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 						setProyectoActual(activo);
 						if (activo) {
 							configAppliedForProjectId.current = activo.id;
-							console.log(
-								`${LOG_PREFIX} Proyecto activo desde BD: ${activo.id.substring(
-									0,
-									8
-								)}. Nombre: ${activo.name}`
-							);
+							if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} Proyecto activo: ${activo.id.substring(0, 8)}`);
 						} else {
 							configAppliedForProjectId.current = null;
 						}
 					} else {
-						console.error(
-							`${LOG_PREFIX} Error cargar proyectos BD:`,
-							result.error
-						);
+						console.error(`${LOG_PREFIX} Error cargar proyectos BD:`, result.error);
 						setProyectoActual(null);
 						setProyectosDisponibles([]);
 						configAppliedForProjectId.current = null;
@@ -231,26 +220,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		// InitializeEffect
 		if (initialLoadAttemptedRef.current) return;
 		initialLoadAttemptedRef.current = true;
-		console.log(
-			`${LOG_PREFIX} [InitializeEffect] Iniciando. authLoading (estado inicial): ${authLoading}. Contador: ${authLoadingGlobalActivationAttemptRef.current}`
-		);
+		if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} [InitializeEffect] Iniciando`);
 		if (authLoading) {
 			authLoadingGlobalActivationAttemptRef.current++;
-			console.log(
-				`${LOG_PREFIX} [InitializeEffect] Contador de activación de authLoading global incrementado a: ${authLoadingGlobalActivationAttemptRef.current} por carga inicial.`
-			);
 		}
 		(async () => {
 			try {
 				const {
 					data: { session: initialSession },
 				} = await supabase.auth.getSession();
-				console.log(
-					`${LOG_PREFIX} [InitializeEffect] Sesión inicial:`,
-					initialSession
-						? `User: ${initialSession.user.id.substring(0, 8)}`
-						: "No hay sesión"
-				);
+				if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} Sesión inicial:`, initialSession ? `User: ${initialSession.user.id.substring(0, 8)}` : "No hay sesión");
 				setSession(initialSession);
 				setUser(initialSession?.user ?? null);
 				if (initialSession?.user && !signedInProcessedRef.current) {
@@ -266,9 +245,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				signedInProcessedRef.current = false;
 				welcomeToastShownRef.current = false;
 			} finally {
-				console.log(
-					`${LOG_PREFIX} [InitializeEffect] Finalizando. AuthInitialized: true, AuthLoading: false.`
-				);
+				if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} Auth inicializado`);
 				setAuthInitialized(true);
 				setAuthLoading(false);
 			}
@@ -278,17 +255,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		// onAuthStateChangeEffect
 		if (!supabase) return;
-		console.log(`${LOG_PREFIX} [onAuthStateChangeEffect] Suscribiendo.`);
+		if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} Suscribiendo a auth changes`);
 		const {
 			data: { subscription },
 		} = supabase.auth.onAuthStateChange(async (event, newSession) => {
-			console.log(
-				`${LOG_PREFIX} [EVENT:${event}] Nuevo estado. User: ${
-					newSession?.user?.id?.substring(0, 8) ?? "ninguno"
-				}. AuthInit: ${authInitializedRef.current}, GlobalLoadingActivations: ${
-					authLoadingGlobalActivationAttemptRef.current
-				}`
-			);
+			if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} [${event}] User: ${newSession?.user?.id?.substring(0, 8) ?? "ninguno"}`);
 			const previousUser = userRef.current;
 			let needsProjectLoad = false;
 			let GenuinelyLoadedNewDataInEvent = false;
@@ -304,11 +275,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 					needsProjectLoad = true;
 				}
 				if (needsProjectLoad) {
-					console.log(
-						`${LOG_PREFIX} [EVENT:SIGNED_IN] (needsProjectLoad=true) Cargando proyectos para ${
-							newSession!.user!.id
-						}`
-					);
+					if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} Cargando proyectos para ${newSession!.user!.id.substring(0,8)}`);
 					configAppliedForProjectId.current = null;
 					GenuinelyLoadedNewDataInEvent = await cargarProyectosUsuario(
 						newSession!.user!.id,
@@ -322,9 +289,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 						welcomeToastShownRef.current = true;
 					}
 				} else if (newSession?.user) {
-					console.log(
-						`${LOG_PREFIX} [EVENT:SIGNED_IN] (needsProjectLoad=false) Mismo usuario y proyecto ya cargado. No se recarga.`
-					);
+					if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} Proyecto ya cargado, no recarga`);
 					setProyectosDisponibles((prev) =>
 						prev.length > 0
 							? prev
@@ -335,7 +300,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				}
 				signedInProcessedRef.current = true;
 			} else if (event === "SIGNED_OUT") {
-				console.log(`${LOG_PREFIX} [EVENT:SIGNED_OUT] Limpiando estados.`);
+				console.log(`${LOG_PREFIX} [${event}] Limpiando estados.`);
 				setProyectoActual(null);
 				setProyectosDisponibles([]);
 				configAppliedForProjectId.current = null;
@@ -347,11 +312,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				!proyectoActualRef.current
 			) {
 				console.warn(
-					`${LOG_PREFIX} [ACUSADOR-EVENT:${event}] Se necesitan proyectos pero authLoading global (Contador: ${authLoadingGlobalActivationAttemptRef.current}) ya se usó o no aplica. Cargando proyectos sin loader global.`
+					`${LOG_PREFIX} [${event}] Se necesitan proyectos pero authLoading global (Contador: ${authLoadingGlobalActivationAttemptRef.current}) ya se usó o no aplica. Cargando proyectos sin loader global.`
 				);
 				await cargarProyectosUsuario(newSession.user.id, false);
 			} else if (event === "INITIAL_SESSION") {
-				console.log(`${LOG_PREFIX} [EVENT:INITIAL_SESSION] Recibido.`);
+				if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} [${event}] Recibido.`);
 				if (!newSession?.user && authInitializedRef.current) {
 					setProyectoActual(null);
 					setProyectosDisponibles([]);
@@ -359,58 +324,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 					signedInProcessedRef.current = false;
 					welcomeToastShownRef.current = false;
 				} else if (newSession?.user && proyectoActualRef.current) {
-					console.log(
-						`${LOG_PREFIX} [EVENT:INITIAL_SESSION] Confirmación de sesión existente.`
-					);
+					if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} [${event}] Confirmación de sesión existente.`);
 				} else if (
 					newSession?.user &&
 					!authInitializedRef.current &&
 					!signedInProcessedRef.current
 				) {
 					console.warn(
-						`${LOG_PREFIX} [ACUSADOR-EVENT:INITIAL_SESSION] Carga por INITIAL_SESSION antes de InitializeEffect/SIGNED_IN. Contador: ${authLoadingGlobalActivationAttemptRef.current}. Cargando proyectos sin loader global.`
+						`${LOG_PREFIX} [${event}] Carga por INITIAL_SESSION antes de InitializeEffect/SIGNED_IN. Contador: ${authLoadingGlobalActivationAttemptRef.current}. Cargando proyectos sin loader global.`
 					);
 					await cargarProyectosUsuario(newSession.user.id, true);
 				}
 			}
 			if (
 				authInitializedRef.current &&
-				authLoading &&
+				authLoadingRef.current &&
 				authLoadingGlobalActivationAttemptRef.current === 1 &&
 				(event === "SIGNED_IN" ||
 					(event === "INITIAL_SESSION" && signedInProcessedRef.current))
 			) {
-				console.log(
-					`${LOG_PREFIX} [EVENT:${event}] Fin de ciclo de login (Contador=1). Poniendo authLoading=false.`
-				);
+				if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} [${event}] Fin de ciclo de login (Contador=1). Poniendo authLoading=false.`);
 				setAuthLoading(false);
 			}
-			console.log(
-				`${LOG_PREFIX} [EVENT:${event}] Procesamiento completado. AuthLoading: ${authLoading}, ContadorGlobal: ${authLoadingGlobalActivationAttemptRef.current}`
-			);
+			if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} [${event}] Completado`);
 		});
 		return () => {
 			subscription?.unsubscribe();
 		};
-	}, [cargarProyectosUsuario, authLoading]);
+	}, [cargarProyectosUsuario]); // authLoading removido - se usa authLoadingRef dentro del callback
 
 	// --- USEEFFECT DE SINCRONIZACIÓN DE UI CON DEPENDENCIAS ESTRICTAS ---
 	useEffect(() => {
 		// Solo se ejecuta si authInitialized es true o si proyectoActual.id cambia.
 		if (authInitialized && proyectoActual) {
-			console.log(
-				`${LOG_PREFIX} SINCRONIZACIÓN DE UI para proyecto ID: ${proyectoActual.id} (authInit: ${authInitialized})`
-			);
-
+			if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} Sincronizando UI para proyecto ${proyectoActual.id.substring(0,8)}`);
 			// Sincronizar Fuente
 			if (typeof proyectoActual.ui_font_pair === "string") {
-				console.log(`  -> Aplicando fuente: ${proyectoActual.ui_font_pair}`);
+				if (VERBOSE_LOGS) console.log("Aplicando fuente:", proyectoActual.ui_font_pair);
 				aplicarFuenteRef.current(proyectoActual.ui_font_pair as FontTheme);
 			}
 
 			// Sincronizar Esquema de Color (ui_theme)
 			if (typeof proyectoActual.ui_theme === "string") {
-				console.log(`  -> Aplicando tema: ${proyectoActual.ui_theme}`);
+				if (VERBOSE_LOGS) console.log("Aplicando tema:", proyectoActual.ui_theme);
 				aplicarTemaRef.current(proyectoActual.ui_theme as ColorScheme);
 			}
 
@@ -421,9 +377,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				proyectoActual.ui_is_dark_mode !== undefined
 			) {
 				const newMode = proyectoActual.ui_is_dark_mode ? "dark" : "light";
-				console.log(
-					`  -> Aplicando modo: ${newMode} (desde ui_is_dark_mode: ${proyectoActual.ui_is_dark_mode})`
-				);
+				if (VERBOSE_LOGS) console.log(`Aplicando modo: ${newMode}`);
 				aplicarModoRef.current(newMode);
 			}
 		}
@@ -438,39 +392,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		const currentUser = userRef.current;
 
 		// 🔍 LOGS DETALLADOS PARA DEBUGGING DE PASSWORD RESET
-		console.log(`${LOG_PREFIX} [RedirectEffect] 🔍 EJECUTÁNDOSE con:`);
-		console.log(`${LOG_PREFIX} [RedirectEffect] 🔍 pathname: ${pathname}`);
-		console.log(
-			`${LOG_PREFIX} [RedirectEffect] 🔍 currentUser: ${
-				currentUser ? currentUser.id.substring(0, 8) : "null"
-			}`
-		);
-		console.log(
-			`${LOG_PREFIX} [RedirectEffect] 🔍 authInitialized: ${currentAuthInitialized}`
-		);
-		console.log(
-			`${LOG_PREFIX} [RedirectEffect] 🔍 authLoading: ${authLoading}`
-		);
-		console.log(
-			`${LOG_PREFIX} [RedirectEffect] 🔍 window.location.href: ${
-				typeof window !== "undefined" ? window.location.href : "SSR"
-			}`
-		);
+		if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} [Redirect] pathname: ${pathname}, user: ${user ? user.id.substring(0, 8) : "null"}`);
 
 		// 🔧 SOLUCIÓN PARA CARRERA DE CONDICIONES: Omitir redirección en /update-password
 		// Esto permite que Supabase procese el token de recuperación antes de que
 		// el AuthProvider intente redirigir por falta de sesión activa
 		if (pathname === "/update-password") {
-			console.log(
-				`${LOG_PREFIX} [RedirectEffect] 🚨 EN /update-password, omitiendo redirección para permitir procesamiento del token de recuperación.`
-			);
+			if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} [Redirect] En /update-password, omitiendo redirección para permitir procesamiento del token de recuperación.`);
 			return;
 		}
 
 		if (!currentAuthInitialized) {
-			console.log(
-				`${LOG_PREFIX} [RedirectEffect] 🔍 Auth no inicializado, saliendo early.`
-			);
+			if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} Auth no inicializado, saliendo`);
 			return;
 		}
 		if (
@@ -478,9 +411,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			currentUser &&
 			authLoadingGlobalActivationAttemptRef.current === 1
 		) {
-			console.log(
-				`${LOG_PREFIX} [RedirectEffect] Esperando fin de ciclo de login (Contador=1). AuthLoading: ${authLoading}`
-			);
+			if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} [Redirect] Esperando fin de ciclo de login (Contador=1). AuthLoading: ${authLoading}`);
 			return;
 		}
 		const currentPageIsPublic = isPublicPage(pathname);
@@ -505,47 +436,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		email: string,
 		password: string
 	): Promise<{ error: unknown | null; success: boolean }> => {
-		/* ... sin cambios ... */
-		console.log(
-			`${LOG_PREFIX} handleSignIn: Iniciado. Contador actual: ${authLoadingGlobalActivationAttemptRef.current}`
-		);
+		if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} handleSignIn: Iniciado. Contador actual: ${authLoadingGlobalActivationAttemptRef.current}`);
 		if (authLoadingGlobalActivationAttemptRef.current === 0) {
 			setAuthLoading(true);
 			authLoadingGlobalActivationAttemptRef.current++;
-			console.log(
-				`${LOG_PREFIX} handleSignIn: authLoading global puesto a TRUE (Contador ahora: ${authLoadingGlobalActivationAttemptRef.current})`
-			);
+			if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} handleSignIn iniciado`);
 		} else {
-			console.warn(
-				`${LOG_PREFIX} [ACUSADOR-handleSignIn] Intento de activar authLoading global cuando el contador ya es ${authLoadingGlobalActivationAttemptRef.current}. No se cambió authLoading global.`
-			);
+			if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} AuthLoading ya activo, no se cambia`);
 		}
 		signedInProcessedRef.current = false;
 		welcomeToastShownRef.current = false;
 		const { error } = await clientSignIn(email, password);
 		if (error) {
-			console.error(
-				`${LOG_PREFIX} handleSignIn: Error de Supabase:`,
-				error.message ? error.message : error
-			);
+			console.error(`${LOG_PREFIX} handleSignIn: Error de Supabase:`, error.message ? error.message : error);
 			toast.error(error.message || "Error al iniciar sesión.");
 			if (authLoadingGlobalActivationAttemptRef.current === 1 && authLoading) {
 				setAuthLoading(false);
-				console.log(
-					`${LOG_PREFIX} handleSignIn: authLoading global puesto a FALSE por error. Contador: ${authLoadingGlobalActivationAttemptRef.current}`
-				);
+				if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} handleSignIn: authLoading global puesto a FALSE por error. Contador: ${authLoadingGlobalActivationAttemptRef.current}`);
 			}
 			return { error, success: false };
 		}
-		console.log(
-			`${LOG_PREFIX} handleSignIn: Autenticación Supabase OK. Esperando evento SIGNED_IN para completar.`
-		);
+		if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} Auth OK, esperando evento SIGNED_IN`);
 		return { error: null, success: true };
 	};
 	const handleSignUp = async (
 		email: string,
 		password: string
 	): Promise<{ error: unknown | null; success: boolean }> => {
+		if (VERBOSE_LOGS) console.log(`${LOG_PREFIX} signUp iniciado`);
 		/* ... sin cambios ... */
 		console.log(`${LOG_PREFIX} signUp iniciado`);
 		setAuthLoading(true);

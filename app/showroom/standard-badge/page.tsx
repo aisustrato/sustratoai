@@ -124,7 +124,7 @@ export default function StandardBadgeShowroomPage() {
                 colorScheme="secondary" // Añadimos theming para consistencia
                 styleType="line"
             >
-				<StandardTabsList className="grid w-full grid-cols-2 md:grid-cols-3 mb-8">
+				<StandardTabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8">
 					<StandardTabsTrigger value="interactive">
 						Interactivo
 					</StandardTabsTrigger>
@@ -133,6 +133,9 @@ export default function StandardBadgeShowroomPage() {
 					</StandardTabsTrigger>
 					<StandardTabsTrigger value="features">
 						Tamaños e Iconos
+					</StandardTabsTrigger>
+					<StandardTabsTrigger value="effects">
+						🌊 Efectos
 					</StandardTabsTrigger>
 				</StandardTabsList>
 
@@ -343,6 +346,134 @@ export default function StandardBadgeShowroomPage() {
 											rightIcon={Tag}>
 											Informativo
 										</StandardBadge>
+									</div>
+								</motion.div>
+							</motion.section>
+						</StandardTabsContent>
+					)}
+
+					{/* Pestaña Efectos SUSTRATO */}
+					{activeTab === "effects" && (
+						<StandardTabsContent forceMount value="effects" asChild>
+							<motion.section
+								key="effects"
+								variants={tabContentVariants}
+								initial="hidden"
+								animate="visible"
+								exit="exit"
+								className="space-y-10">
+								<motion.div variants={itemVariants}>
+									<StandardText
+										asElement="h3"
+										size="lg"
+										weight="medium"
+										className="mb-4 border-b pb-2">
+										🌊 Pulse Border - Respiración Sutil (2.5s)
+									</StandardText>
+									<StandardText
+										asElement="p"
+										size="sm"
+										colorScheme="neutral"
+										colorShade="textShade"
+										className="mb-4">
+										Efecto de respiración sutil en el borde. Ideal para badges que representan estados activos o en progreso.
+									</StandardText>
+									<div className="flex items-center flex-wrap gap-4">
+										<StandardBadge
+											colorScheme="primary"
+											styleType="outline"
+											size="md"
+											pulseBorder>
+											En Progreso
+										</StandardBadge>
+										<StandardBadge
+											colorScheme="accent"
+											styleType="outline"
+											size="md"
+											pulseBorder
+											leftIcon={Sparkles}>
+											Activo
+										</StandardBadge>
+										<StandardBadge
+											colorScheme="success"
+											styleType="subtle"
+											size="lg"
+											pulseBorder>
+											Procesando
+										</StandardBadge>
+									</div>
+								</motion.div>
+
+								<motion.div variants={itemVariants}>
+									<StandardText
+										asElement="h3"
+										size="lg"
+										weight="medium"
+										className="mb-4 border-b pb-2">
+										🪩 Pafff Moment - Latido de Coherencia (1.5s)
+									</StandardText>
+									<StandardText
+										asElement="p"
+										size="sm"
+										colorScheme="neutral"
+										colorShade="textShade"
+										className="mb-4">
+										Latido más intenso para momentos de insight o coherencia. Retroalimenta al humano con energía visual.
+									</StandardText>
+									<div className="flex items-center flex-wrap gap-4">
+										<StandardBadge
+											colorScheme="warning"
+											styleType="solid"
+											size="md"
+											pafffMoment
+											leftIcon={AlertTriangle}>
+											¡Atención!
+										</StandardBadge>
+										<StandardBadge
+											colorScheme="tertiary"
+											styleType="outline"
+											size="md"
+											pafffMoment
+											leftIcon={Wand2}>
+											Insight
+										</StandardBadge>
+										<StandardBadge
+											colorScheme="danger"
+											styleType="subtle"
+											size="lg"
+											pafffMoment>
+											Urgente
+										</StandardBadge>
+									</div>
+								</motion.div>
+
+								<motion.div variants={itemVariants}>
+									<StandardText
+										asElement="h3"
+										size="lg"
+										weight="medium"
+										className="mb-4 border-b pb-2">
+										🎨 Combinaciones con Diferentes Estilos
+									</StandardText>
+									<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+										<div className="space-y-3">
+											<StandardText size="sm" weight="medium">Solid + Pulse</StandardText>
+											<StandardBadge colorScheme="primary" styleType="solid" pulseBorder>
+												Solid Pulse
+											</StandardBadge>
+										</div>
+										<div className="space-y-3">
+											<StandardText size="sm" weight="medium">Subtle + Pafff</StandardText>
+											<StandardBadge colorScheme="secondary" styleType="subtle" pafffMoment>
+												Subtle Pafff
+											</StandardBadge>
+										</div>
+										<div className="space-y-3">
+											<StandardText size="sm" weight="medium">Outline + Pulse</StandardText>
+											<StandardBadge colorScheme="accent" styleType="outline" pulseBorder>
+												Outline Pulse
+											</StandardBadge>
+										</div>
 									</div>
 								</motion.div>
 							</motion.section>

@@ -1,13 +1,13 @@
 "use client";
 
-import { DarkModeSwitcher } from "./dark-mode-switcher";
+import { StandardDarkModeSwitcher } from "./StandardDarkModeSwitcher";
 import { ColorSchemeSwitcher } from "./color-scheme-switcher";
 
 export function ThemeSwitcher() {
-  return (
-    <div className="flex items-center gap-4">
-      <ColorSchemeSwitcher />
-      <DarkModeSwitcher />
-    </div>
-  );
+	return (
+		<div className="flex items-center gap-4">
+			<ColorSchemeSwitcher />
+			<StandardDarkModeSwitcher />
+		</div>
+	);
 }

@@ -1,0 +1,1261 @@
+"use server";
+
+import { createSupabaseServerClient } from "@/lib/server";
+
+export interface ResultadoOperacion<T = void> {
+	success: boolean;
+	data?: T;
+	error?: string;
+}
+
+/**
+ * Interfaz para elementos cognitivos disponibles en el proyecto
+ */
+export interface CognitiveElements {
+	seeds: Array<{ content: string; count: number }>;
+	disciplines: Array<{ id: string; name: string; count: number }>;
+	theories: Array<{ id: string; name: string; count: number }>;
+	thinkers: Array<{ id: string; name: string; count: number }>;
+}
+
+/**
+ * Obtiene todos los elementos cognitivos únicos del proyecto con sus contadores
+ * Para poblar los dropdowns de filtros en la UI
+ */
+/**
+ * Obtiene el conteo de ocurrencias de un elemento cognitivo específico en otros artefactos
+ */
+export async function getCognitiveElementOccurrences(
+	projectId: string,
+	elementType: "seed" | "discipline" | "theory" | "thinker",
+	elementValue: string,
+): Promise<ResultadoOperacion<number>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		let count = 0;
+
+		switch (elementType) {
+			case "seed":
+				const { data: seedsData } = await supabase
+					.from("cog_fractal_seeds")
+					.select("artifact_id", { count: "exact", head: false })
+					.eq("project_id", projectId)
+					.eq("content", elementValue)
+					.not("tags", "cs", '{"cita"}');
+				count = seedsData?.length || 0;
+				break;
+
+			case "discipline":
+				const { data: disciplinesData } = await supabase
+					.from("cog_artifact_disciplines")
+					.select("artifact_id, cog_artifacts!inner(project_id)", {
+						count: "exact",
+						head: false,
+					})
+					.eq("cog_artifacts.project_id", projectId)
+					.eq("discipline_id", elementValue);
+				count = disciplinesData?.length || 0;
+				break;
+
+			case "theory":
+				const { data: theoriesData } = await supabase
+					.from("cog_artifact_theories")
+					.select("artifact_id, cog_artifacts!inner(project_id)", {
+						count: "exact",
+						head: false,
+					})
+					.eq("cog_artifacts.project_id", projectId)
+					.eq("theory_id", elementValue);
+				count = theoriesData?.length || 0;
+				break;
+
+			case "thinker":
+				const { data: thinkersData } = await supabase
+					.from("cog_artifact_references")
+					.select("artifact_id, cog_artifacts!inner(project_id)", {
+						count: "exact",
+						head: false,
+					})
+					.eq("cog_artifacts.project_id", projectId)
+					.eq("reference_id", elementValue);
+				count = thinkersData?.length || 0;
+				break;
+		}
+
+		return { success: true, data: count };
+	} catch (error) {
+		console.error("Error obteniendo ocurrencias de elemento cognitivo:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function getCognitiveElementsForProject(
+	projectId: string,
+): Promise<ResultadoOperacion<CognitiveElements>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		// 1. Obtener semillas fractales únicas con conteo (excluyendo citas)
+		const { data: seedsData, error: seedsError } = await supabase
+			.from("cog_fractal_seeds")
+			.select("content, artifact_id, tags, project_id")
+			.eq("project_id", projectId)
+			.not("tags", "cs", '{"cita"}'); // Excluir citas como las otras funciones
+
+		console.log("🌱 [getCognitiveElementsForProject] Seeds query:", {
+			projectId,
+			seedsCount: seedsData?.length || 0,
+			seedsError,
+		});
+
+		if (seedsError) {
+			console.error("❌ Error obteniendo semillas:", seedsError);
+			return { success: false, error: seedsError.message };
+		}
+
+		// Agrupar y contar semillas
+		const seedsMap = new Map<string, number>();
+		const allSeedsList: string[] = [];
+		const tagsAnalysis: Record<string, number> = {};
+
+		seedsData?.forEach(
+			(seed: {
+				content: string;
+				artifact_id: string | null;
+				tags: string[] | null;
+			}) => {
+				// Incluir todas las semillas (con o sin artifact_id)
+				const content = seed.content.trim();
+				if (content) {
+					// Solo filtrar por contenido vacío
+					seedsMap.set(content, (seedsMap.get(content) || 0) + 1);
+					allSeedsList.push(content);
+
+					// Analizar tags
+					const tags = seed.tags || [];
+					tags.forEach((tag) => {
+						tagsAnalysis[tag] = (tagsAnalysis[tag] || 0) + 1;
+					});
+				}
+			},
+		);
+
+		console.log(
+			"🌱 [getCognitiveElementsForProject] Tags analysis:",
+			tagsAnalysis,
+		);
+
+		// Análisis específico de semillas manuales
+		const manualSeeds =
+			seedsData?.filter((seed: { tags: string[] | null }) =>
+				seed.tags?.includes("manual"),
+			) || [];
+
+		console.log("🌱 [getCognitiveElementsForProject] Manual seeds analysis:", {
+			totalManualSeeds: manualSeeds.length,
+			manualSeedsSample: manualSeeds.slice(0, 10).map((s) => s.content),
+			hasManualSeeds: manualSeeds.length > 0,
+		});
+
+		console.log(
+			"🌱 [getCognitiveElementsForProject] All seeds found:",
+			allSeedsList.slice(0, 20),
+		); // Primeras 20
+		console.log(
+			"🌱 [getCognitiveElementsForProject] Searching for specific seeds...",
+			{
+				hasResonancia: allSeedsList.some((s) =>
+					s.toLowerCase().includes("resonancia"),
+				),
+				hasSustrato: allSeedsList.some((s) =>
+					s.toLowerCase().includes("sustrato"),
+				),
+				hasCognitiva: allSeedsList.some((s) =>
+					s.toLowerCase().includes("cognitiva"),
+				),
+				hasFractal: allSeedsList.some((s) =>
+					s.toLowerCase().includes("fractal"),
+				),
+				hasNudo: allSeedsList.some((s) => s.toLowerCase().includes("nudo")),
+				hasAcademia: allSeedsList.some((s) =>
+					s.toLowerCase().includes("academia"),
+				),
+				hasNudoAcademia: allSeedsList.some((s) =>
+					s.toLowerCase().includes("nudo academia"),
+				),
+				totalSeedsFound: allSeedsList.length,
+			},
+		);
+
+		// Búsqueda específica de "nudo academia"
+		const nudoAcademiaSeeds = allSeedsList.filter(
+			(s) =>
+				s.toLowerCase().includes("nudo") ||
+				s.toLowerCase().includes("academia"),
+		);
+		console.log(
+			"🎯 [getCognitiveElementsForProject] Nudo/Academia seeds found:",
+			nudoAcademiaSeeds,
+		);
+
+		// Verificar project_id de las semillas originales
+		const nudoAcademiaOriginal =
+			seedsData?.filter(
+				(seed: { content: string; project_id: string }) =>
+					seed.content.toLowerCase().includes("nudo") ||
+					seed.content.toLowerCase().includes("academia"),
+			) || [];
+
+		console.log(
+			"🔍 [getCognitiveElementsForProject] Original Nudo/Academia seeds with project_id:",
+			nudoAcademiaOriginal.map((s) => ({
+				content: s.content,
+				project_id: s.project_id,
+				matchesProject: s.project_id === projectId,
+			})),
+		);
+
+		const seeds = Array.from(seedsMap.entries())
+			.map(([content, count]) => ({ content, count }))
+			.sort((a, b) => b.count - a.count); // Ordenar por más usadas
+
+		console.log("🌱 [getCognitiveElementsForProject] Unique seeds processed:", {
+			totalSeeds: seedsData?.length || 0,
+			uniqueSeeds: seeds.length,
+			top5: seeds.slice(0, 5),
+		});
+
+		// 2. Obtener disciplinas con conteo
+		const { data: disciplinesData, error: disciplinesError } = await supabase
+			.from("cog_artifact_disciplines")
+			.select(
+				`
+                discipline_id,
+                cog_disciplines!inner(id, name),
+                cog_artifacts!inner(project_id)
+            `,
+			)
+			.eq("cog_artifacts.project_id", projectId);
+
+		if (disciplinesError) {
+			console.error("❌ Error obteniendo disciplinas:", disciplinesError);
+			return { success: false, error: disciplinesError.message };
+		}
+
+		// Agrupar y contar disciplinas
+		const disciplinesMap = new Map<
+			string,
+			{ id: string; name: string; count: number }
+		>();
+		disciplinesData?.forEach(
+			(item: {
+				discipline_id: string;
+				cog_disciplines: { id: string; name: string };
+			}) => {
+				const disc = item.cog_disciplines;
+				if (disc) {
+					const existing = disciplinesMap.get(disc.id);
+					if (existing) {
+						existing.count++;
+					} else {
+						disciplinesMap.set(disc.id, {
+							id: disc.id,
+							name: disc.name,
+							count: 1,
+						});
+					}
+				}
+			},
+		);
+
+		const disciplines = Array.from(disciplinesMap.values()).sort(
+			(a, b) => b.count - a.count,
+		);
+
+		// 3. Obtener teorías con conteo
+		const { data: theoriesData, error: theoriesError } = await supabase
+			.from("cog_artifact_theories")
+			.select(
+				`
+                theory_id,
+                cog_theories!inner(id, name),
+                cog_artifacts!inner(project_id)
+            `,
+			)
+			.eq("cog_artifacts.project_id", projectId);
+
+		if (theoriesError) {
+			console.error("❌ Error obteniendo teorías:", theoriesError);
+			return { success: false, error: theoriesError.message };
+		}
+
+		// Agrupar y contar teorías
+		const theoriesMap = new Map<
+			string,
+			{ id: string; name: string; count: number }
+		>();
+		theoriesData?.forEach(
+			(item: {
+				theory_id: string;
+				cog_theories: { id: string; name: string };
+			}) => {
+				const theory = item.cog_theories;
+				if (theory) {
+					const existing = theoriesMap.get(theory.id);
+					if (existing) {
+						existing.count++;
+					} else {
+						theoriesMap.set(theory.id, {
+							id: theory.id,
+							name: theory.name,
+							count: 1,
+						});
+					}
+				}
+			},
+		);
+
+		const theories = Array.from(theoriesMap.values()).sort(
+			(a, b) => b.count - a.count,
+		);
+
+		// 4. Obtener pensadores/referencias con conteo
+		const { data: thinkersData, error: thinkersError } = await supabase
+			.from("cog_artifact_references")
+			.select(
+				`
+                reference_id,
+                cog_references!inner(id, name),
+                cog_artifacts!inner(project_id)
+            `,
+			)
+			.eq("cog_artifacts.project_id", projectId);
+
+		if (thinkersError) {
+			console.error("❌ Error obteniendo pensadores:", thinkersError);
+			return { success: false, error: thinkersError.message };
+		}
+
+		// Agrupar y contar pensadores
+		const thinkersMap = new Map<
+			string,
+			{ id: string; name: string; count: number }
+		>();
+		thinkersData?.forEach(
+			(item: {
+				reference_id: string;
+				cog_references: { id: string; name: string };
+			}) => {
+				const thinker = item.cog_references;
+				if (thinker) {
+					const existing = thinkersMap.get(thinker.id);
+					if (existing) {
+						existing.count++;
+					} else {
+						thinkersMap.set(thinker.id, {
+							id: thinker.id,
+							name: thinker.name,
+							count: 1,
+						});
+					}
+				}
+			},
+		);
+
+		const thinkers = Array.from(thinkersMap.values()).sort(
+			(a, b) => b.count - a.count,
+		);
+
+		console.log(
+			`✅ Elementos cognitivos obtenidos: ${seeds.length} semillas, ${disciplines.length} disciplinas, ${theories.length} teorías, ${thinkers.length} pensadores`,
+		);
+
+		return {
+			success: true,
+			data: {
+				seeds,
+				disciplines,
+				theories,
+				thinkers,
+			},
+		};
+	} catch (error) {
+		console.error(
+			"❌ Error inesperado en getCognitiveElementsForProject:",
+			error,
+		);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+/**
+ * Obtiene IDs de artefactos que contienen una semilla fractal específica
+ */
+export async function getArtifactIdsBySeed(
+	projectId: string,
+	seedContent: string,
+): Promise<ResultadoOperacion<string[]>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data, error } = await supabase
+			.from("cog_fractal_seeds")
+			.select("artifact_id")
+			.eq("project_id", projectId)
+			.eq("content", seedContent)
+			.not("tags", "cs", '{"cita"}');
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		const artifactIds = [
+			...new Set(
+				data
+					?.map((s: { artifact_id: string | null }) => s.artifact_id)
+					.filter((id): id is string => id !== null) || [],
+			),
+		];
+		return { success: true, data: artifactIds };
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+/**
+ * Obtiene IDs de artefactos que contienen una disciplina específica
+ */
+export async function getArtifactIdsByDiscipline(
+	projectId: string,
+	disciplineId: string,
+): Promise<ResultadoOperacion<string[]>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data, error } = await supabase
+			.from("cog_artifact_disciplines")
+			.select("artifact_id, cog_artifacts!inner(project_id)")
+			.eq("cog_artifacts.project_id", projectId)
+			.eq("discipline_id", disciplineId);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		const artifactIds = [
+			...new Set(
+				data?.map((d: { artifact_id: string }) => d.artifact_id) || [],
+			),
+		];
+		return { success: true, data: artifactIds };
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+/**
+ * Obtiene IDs de artefactos que contienen una teoría específica
+ */
+export async function getArtifactIdsByTheory(
+	projectId: string,
+	theoryId: string,
+): Promise<ResultadoOperacion<string[]>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data, error } = await supabase
+			.from("cog_artifact_theories")
+			.select("artifact_id, cog_artifacts!inner(project_id)")
+			.eq("cog_artifacts.project_id", projectId)
+			.eq("theory_id", theoryId);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		const artifactIds = [
+			...new Set(
+				data?.map((t: { artifact_id: string }) => t.artifact_id) || [],
+			),
+		];
+		return { success: true, data: artifactIds };
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+/**
+ * Obtiene IDs de artefactos que mencionan un pensador/referencia específico
+ */
+export async function getArtifactIdsByThinker(
+	projectId: string,
+	referenceId: string,
+): Promise<ResultadoOperacion<string[]>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data, error } = await supabase
+			.from("cog_artifact_references")
+			.select("artifact_id, cog_artifacts!inner(project_id)")
+			.eq("cog_artifacts.project_id", projectId)
+			.eq("reference_id", referenceId);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		const artifactIds = [
+			...new Set(
+				data
+					?.map((r: { artifact_id: string | null }) => r.artifact_id)
+					.filter((id): id is string => id !== null) || [],
+			),
+		];
+		return { success: true, data: artifactIds };
+	} catch (error) {
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+/**
+ * Interfaz para artefacto con contadores de elementos cognitivos
+ */
+export interface ArtifactWithCounts {
+	id: string;
+	title: string;
+	type: string;
+	status: string | null;
+	created_at: string | null;
+	duration_seconds: number | null;
+	seeds_count: number;
+	disciplines_count: number;
+	theories_count: number;
+	thinkers_count: number;
+	// Elementos cognitivos reales
+	seeds?: Array<{ content: string }>;
+	disciplines?: Array<{ id: string; name: string }>;
+	theories?: Array<{ id: string; name: string }>;
+	thinkers?: Array<{ id: string; name: string }>;
+	// Micelio Cronista Forense
+	has_chronicle: boolean;
+	micelio_destilada?: string;
+	// Chat Quipu
+	has_chat: boolean;
+	// Jardines
+	garden_count: number;
+}
+
+/**
+ * Interfaz para filtros de artefactos
+ */
+export interface ArtifactFilters {
+	searchText?: string;
+	types?: string[];
+	seedContent?: string;
+	disciplineId?: string;
+	theoryId?: string;
+	thinkerId?: string;
+	hasGardens?: "with" | "without" | undefined;
+}
+
+/**
+ * Obtiene artefactos filtrados con contadores de elementos cognitivos
+ * Implementa filtrado por búsqueda, tipo y elementos cognitivos
+ */
+export async function getFilteredArtifacts(
+	projectId: string,
+	filters: ArtifactFilters,
+): Promise<ResultadoOperacion<ArtifactWithCounts[]>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		console.log("🔍 [getFilteredArtifacts] Iniciando con filtros:", filters);
+
+		// 1. Obtener IDs de artefactos que cumplen con filtros cognitivos
+		let filteredArtifactIds: string[] | null = null;
+
+		// Filtro por semilla
+		if (filters.seedContent) {
+			const seedResult = await getArtifactIdsBySeed(
+				projectId,
+				filters.seedContent,
+			);
+			if (!seedResult.success || !seedResult.data) {
+				return { success: false, error: "Error filtrando por semilla" };
+			}
+			filteredArtifactIds = seedResult.data;
+			console.log(
+				`  🌱 Filtro por semilla "${filters.seedContent}": ${filteredArtifactIds.length} artefactos`,
+			);
+		}
+
+		// Filtro por disciplina (AND con filtros anteriores)
+		if (filters.disciplineId) {
+			const discResult = await getArtifactIdsByDiscipline(
+				projectId,
+				filters.disciplineId,
+			);
+			if (!discResult.success || !discResult.data) {
+				return { success: false, error: "Error filtrando por disciplina" };
+			}
+			if (filteredArtifactIds === null) {
+				filteredArtifactIds = discResult.data;
+			} else {
+				// Intersección (AND)
+				filteredArtifactIds = filteredArtifactIds.filter((id) =>
+					discResult.data!.includes(id),
+				);
+			}
+			console.log(
+				`  🔬 Filtro por disciplina: ${filteredArtifactIds.length} artefactos`,
+			);
+		}
+
+		// Filtro por teoría (AND con filtros anteriores)
+		if (filters.theoryId) {
+			const theoryResult = await getArtifactIdsByTheory(
+				projectId,
+				filters.theoryId,
+			);
+			if (!theoryResult.success || !theoryResult.data) {
+				return { success: false, error: "Error filtrando por teoría" };
+			}
+			if (filteredArtifactIds === null) {
+				filteredArtifactIds = theoryResult.data;
+			} else {
+				filteredArtifactIds = filteredArtifactIds.filter((id) =>
+					theoryResult.data!.includes(id),
+				);
+			}
+			console.log(
+				`  💡 Filtro por teoría: ${filteredArtifactIds.length} artefactos`,
+			);
+		}
+
+		// Filtro por pensador (AND con filtros anteriores)
+		if (filters.thinkerId) {
+			const thinkerResult = await getArtifactIdsByThinker(
+				projectId,
+				filters.thinkerId,
+			);
+			if (!thinkerResult.success || !thinkerResult.data) {
+				return { success: false, error: "Error filtrando por pensador" };
+			}
+			if (filteredArtifactIds === null) {
+				filteredArtifactIds = thinkerResult.data;
+			} else {
+				filteredArtifactIds = filteredArtifactIds.filter((id) =>
+					thinkerResult.data!.includes(id),
+				);
+			}
+			console.log(
+				`  👤 Filtro por pensador: ${filteredArtifactIds.length} artefactos`,
+			);
+		}
+
+		// 2. Query base de artefactos (incluye source_metadata para detectar micelio)
+		let query = supabase
+			.from("cog_artifacts")
+			.select(
+				"id, title, type, status, created_at, duration_seconds, source_metadata",
+			)
+			.eq("project_id", projectId);
+
+		// Aplicar filtro por IDs si hay filtros cognitivos
+		if (filteredArtifactIds !== null) {
+			if (filteredArtifactIds.length === 0) {
+				// No hay artefactos que cumplan los filtros cognitivos
+				console.log("  ⚠️ Ningún artefacto cumple los filtros cognitivos");
+				return { success: true, data: [] };
+			}
+			query = query.in("id", filteredArtifactIds);
+		}
+
+		// Filtro por búsqueda de texto
+		if (filters.searchText && filters.searchText.trim()) {
+			query = query.ilike("title", `%${filters.searchText.trim()}%`);
+		}
+
+		// Filtro por tipos
+		if (filters.types && filters.types.length > 0) {
+			query = query.in(
+				"type",
+				filters.types as Array<
+					"audio" | "video" | "markdown" | "pdf_report" | "pdf_slides" | "image"
+				>,
+			);
+		}
+
+		// Ordenar por fecha de creación
+		query = query.order("created_at", { ascending: false });
+
+		const { data: artifacts, error: artifactsError } = await query;
+
+		if (artifactsError) {
+			console.error("❌ Error obteniendo artefactos:", artifactsError);
+			return { success: false, error: artifactsError.message };
+		}
+
+		if (!artifacts || artifacts.length === 0) {
+			return { success: true, data: [] };
+		}
+
+		// 3. Obtener contadores de elementos cognitivos para cada artefacto
+		const artifactIds = artifacts.map((a: { id: string }) => a.id);
+
+		// Obtener artefactos que tienen sesiones de chat Quipu
+		const { data: chatSessionsData } = await supabase
+			.from("cog_chat_sessions")
+			.select("artifact_id")
+			.in("artifact_id", artifactIds);
+
+		const chatSet = new Set<string>(
+			chatSessionsData?.map((s: { artifact_id: string }) => s.artifact_id) ||
+				[],
+		);
+
+		// Obtener TODAS las semillas de los artefactos con paginación (Supabase limita a 1000)
+		let allSeedsData: Array<{
+			artifact_id: string | null;
+			content: string;
+			tags: string[] | null;
+			properties?: { type?: string };
+		}> = [];
+		const pageSize = 1000;
+		let page = 0;
+		let hasMore = true;
+
+		while (hasMore) {
+			const { data: seedsPage } = await supabase
+				.from("cog_fractal_seeds")
+				.select("artifact_id, content, tags, properties")
+				.in("artifact_id", artifactIds)
+				.range(page * pageSize, (page + 1) * pageSize - 1);
+
+			if (seedsPage && seedsPage.length > 0) {
+				allSeedsData = [...allSeedsData, ...(seedsPage as any)];
+				hasMore = seedsPage.length === pageSize;
+				page++;
+			} else {
+				hasMore = false;
+			}
+		}
+
+		const seedsData = allSeedsData;
+		console.log(
+			`🌱 [getFilteredArtifacts] Total semillas obtenidas del query (${page} página(s)): ${seedsData?.length || 0}`,
+		);
+
+		const seedsMap = new Map<string, Array<{ content: string }>>();
+		let citasFiltradas = 0;
+		let frasesNotablesFiltradas = 0;
+		let nullArtifactIds = 0;
+		let seedsValidos = 0;
+
+		// Logging detallado para los primeros 2 artefactos
+		const firstTwoArtifacts = artifactIds.slice(0, 2);
+
+		// Contar semillas por artefacto en el query original
+		firstTwoArtifacts.forEach((artifactId, index) => {
+			const seedsForArtifact =
+				seedsData?.filter((s) => s.artifact_id === artifactId) || [];
+			console.log(
+				`🔎 [Artefacto ${index + 1}] ID: ${artifactId.substring(0, 8)}... - Semillas en query: ${seedsForArtifact.length}`,
+			);
+		});
+
+		seedsData?.forEach(
+			(s: {
+				artifact_id: string | null;
+				content: string;
+				tags: string[] | null;
+				properties?: { type?: string };
+			}) => {
+				if (s.artifact_id) {
+					// Filtrar citas y frases notables
+					const isCita = s.tags && s.tags.includes("cita");
+					const isFraseNotable =
+						(s.tags && s.tags.includes("frase-notable")) ||
+						s.properties?.type === "notable_phrase";
+
+					// Logging para primeros 2 artefactos
+					if (firstTwoArtifacts.includes(s.artifact_id)) {
+						console.log(
+							`🔍 [Artefacto ${artifactIds.indexOf(s.artifact_id) + 1}] Semilla: "${s.content}"`,
+						);
+						console.log(`   - Tags: ${JSON.stringify(s.tags)}`);
+						console.log(`   - Properties: ${JSON.stringify(s.properties)}`);
+						console.log(
+							`   - isCita: ${isCita}, isFraseNotable: ${isFraseNotable}`,
+						);
+						console.log(
+							`   - Resultado: ${!isCita && !isFraseNotable ? "✅ INCLUIDA" : "❌ FILTRADA"}`,
+						);
+					}
+
+					if (isCita) {
+						citasFiltradas++;
+					} else if (isFraseNotable) {
+						frasesNotablesFiltradas++;
+					} else {
+						// Solo semillas fractales puras
+						seedsValidos++;
+						if (!seedsMap.has(s.artifact_id)) {
+							seedsMap.set(s.artifact_id, []);
+						}
+						// Verificar si ya existe esta semilla en el artefacto (deduplicar)
+						const existingSeeds = seedsMap.get(s.artifact_id)!;
+						const isDuplicate = existingSeeds.some(
+							(seed) => seed.content === s.content,
+						);
+						if (!isDuplicate) {
+							existingSeeds.push({ content: s.content });
+						}
+					}
+				} else {
+					nullArtifactIds++;
+				}
+			},
+		);
+
+		// Logging de resultados para primeros 2 artefactos
+		firstTwoArtifacts.forEach((artifactId, index) => {
+			const seeds = seedsMap.get(artifactId) || [];
+			console.log(
+				`📊 [Artefacto ${index + 1}] Total semillas finales: ${seeds.length}`,
+			);
+			if (seeds.length > 0) {
+				console.log(
+					`   Semillas: ${seeds.map((s) => `"${s.content}"`).join(", ")}`,
+				);
+			}
+		});
+
+		// Obtener disciplinas por artefacto con nombres
+		const { data: disciplinesData } = await supabase
+			.from("cog_artifact_disciplines")
+			.select("artifact_id, discipline_id, cog_disciplines!inner(id, name)")
+			.in("artifact_id", artifactIds);
+
+		const disciplinesMap = new Map<
+			string,
+			Array<{ id: string; name: string }>
+		>();
+		disciplinesData?.forEach(
+			(d: {
+				artifact_id: string;
+				discipline_id: string;
+				cog_disciplines: { id: string; name: string };
+			}) => {
+				if (!disciplinesMap.has(d.artifact_id)) {
+					disciplinesMap.set(d.artifact_id, []);
+				}
+				disciplinesMap
+					.get(d.artifact_id)!
+					.push({ id: d.cog_disciplines.id, name: d.cog_disciplines.name });
+			},
+		);
+
+		// Obtener teorías por artefacto con nombres
+		const { data: theoriesData } = await supabase
+			.from("cog_artifact_theories")
+			.select("artifact_id, theory_id, cog_theories!inner(id, name)")
+			.in("artifact_id", artifactIds);
+
+		const theoriesMap = new Map<string, Array<{ id: string; name: string }>>();
+		theoriesData?.forEach(
+			(t: {
+				artifact_id: string;
+				theory_id: string;
+				cog_theories: { id: string; name: string };
+			}) => {
+				if (!theoriesMap.has(t.artifact_id)) {
+					theoriesMap.set(t.artifact_id, []);
+				}
+				theoriesMap
+					.get(t.artifact_id)!
+					.push({ id: t.cog_theories.id, name: t.cog_theories.name });
+			},
+		);
+
+		// Obtener pensadores por artefacto con nombres
+		const { data: thinkersData } = await supabase
+			.from("cog_artifact_references")
+			.select("artifact_id, reference_id, cog_references!inner(id, name)")
+			.in("artifact_id", artifactIds);
+
+		const thinkersMap = new Map<string, Array<{ id: string; name: string }>>();
+		thinkersData?.forEach(
+			(r: {
+				artifact_id: string | null;
+				reference_id: string;
+				cog_references: { id: string; name: string };
+			}) => {
+				if (r.artifact_id) {
+					if (!thinkersMap.has(r.artifact_id)) {
+						thinkersMap.set(r.artifact_id, []);
+					}
+					thinkersMap
+						.get(r.artifact_id)!
+						.push({ id: r.cog_references.id, name: r.cog_references.name });
+				}
+			},
+		);
+
+		// 3.5. Obtener jardines del proyecto y mapear artefactos a jardines
+		const { data: projectGardens } = await supabase
+			.from("cog_resonance_gardens")
+			.select("id")
+			.eq("project_id", projectId);
+
+		const gardenIds = projectGardens?.map((g: { id: string }) => g.id) || [];
+
+		// Mapa: artifact_id -> Set de garden_ids
+		const artifactGardensMap = new Map<string, Set<string>>();
+
+		if (gardenIds.length > 0) {
+			const { data: gardenElements } = await supabase
+				.from("cog_garden_elements")
+				.select("garden_id, element_type, element_id, element_content")
+				.in("garden_id", gardenIds);
+
+			if (gardenElements && gardenElements.length > 0) {
+				// Mapear cada elemento a sus jardines
+				const elementToGardensMap = new Map<string, Set<string>>();
+				gardenElements.forEach(
+					(el: {
+						garden_id: string;
+						element_type: string;
+						element_id: string | null;
+						element_content: string | null;
+					}) => {
+						const key =
+							el.element_type === "seed" ?
+								`seed:${el.element_content}`
+							:	`${el.element_type}:${el.element_id}`;
+						const gardens = elementToGardensMap.get(key) || new Set<string>();
+						gardens.add(el.garden_id);
+						elementToGardensMap.set(key, gardens);
+					},
+				);
+
+				// Para cada artefacto, verificar qué jardines contiene basado en sus elementos cognitivos
+				seedsData?.forEach(
+					(s: {
+						artifact_id: string | null;
+						content: string;
+						tags: string[] | null;
+					}) => {
+						if (s.artifact_id && (!s.tags || !s.tags.includes("cita"))) {
+							const key = `seed:${s.content}`;
+							const gardens = elementToGardensMap.get(key);
+							if (gardens) {
+								const artifactGardens =
+									artifactGardensMap.get(s.artifact_id) || new Set<string>();
+								gardens.forEach((g) => artifactGardens.add(g));
+								artifactGardensMap.set(s.artifact_id, artifactGardens);
+							}
+						}
+					},
+				);
+
+				disciplinesData?.forEach(
+					(d: { artifact_id: string; discipline_id: string }) => {
+						const key = `discipline:${d.discipline_id}`;
+						const gardens = elementToGardensMap.get(key);
+						if (gardens) {
+							const artifactGardens =
+								artifactGardensMap.get(d.artifact_id) || new Set<string>();
+							gardens.forEach((g) => artifactGardens.add(g));
+							artifactGardensMap.set(d.artifact_id, artifactGardens);
+						}
+					},
+				);
+
+				theoriesData?.forEach(
+					(t: { artifact_id: string; theory_id: string }) => {
+						const key = `theory:${t.theory_id}`;
+						const gardens = elementToGardensMap.get(key);
+						if (gardens) {
+							const artifactGardens =
+								artifactGardensMap.get(t.artifact_id) || new Set<string>();
+							gardens.forEach((g) => artifactGardens.add(g));
+							artifactGardensMap.set(t.artifact_id, artifactGardens);
+						}
+					},
+				);
+
+				thinkersData?.forEach(
+					(th: { artifact_id: string | null; reference_id: string }) => {
+						if (th.artifact_id) {
+							const key = `thinker:${th.reference_id}`;
+							const gardens = elementToGardensMap.get(key);
+							if (gardens) {
+								const artifactGardens =
+									artifactGardensMap.get(th.artifact_id) || new Set<string>();
+								gardens.forEach((g) => artifactGardens.add(g));
+								artifactGardensMap.set(th.artifact_id, artifactGardens);
+							}
+						}
+					},
+				);
+			}
+		}
+
+		// 4. Combinar artefactos con contadores y elementos
+		const artifactsWithCounts: ArtifactWithCounts[] = artifacts.map(
+			(artifact: {
+				id: string;
+				title: string;
+				type: string;
+				status: string | null;
+				created_at: string | null;
+				duration_seconds: number | null;
+				source_metadata: unknown;
+			}) => {
+				const seeds = seedsMap.get(artifact.id) || [];
+				const disciplines = disciplinesMap.get(artifact.id) || [];
+				const theories = theoriesMap.get(artifact.id) || [];
+				const thinkers = thinkersMap.get(artifact.id) || [];
+
+				const meta =
+					(
+						artifact.source_metadata &&
+						typeof artifact.source_metadata === "object" &&
+						!Array.isArray(artifact.source_metadata)
+					) ?
+						(artifact.source_metadata as Record<string, unknown>)
+					:	null;
+				const chronicle = meta?.micelio_chronicle as
+					| Record<string, unknown>
+					| undefined;
+				const hasChronicle = !!chronicle;
+				const micelioDestilada =
+					hasChronicle ?
+						(chronicle?.version_destilada as string | undefined)
+					:	undefined;
+
+				return {
+					id: artifact.id,
+					title: artifact.title,
+					type: artifact.type,
+					status: artifact.status,
+					created_at: artifact.created_at,
+					duration_seconds: artifact.duration_seconds,
+					seeds_count: seeds.length,
+					disciplines_count: disciplines.length,
+					theories_count: theories.length,
+					thinkers_count: thinkers.length,
+					seeds,
+					disciplines,
+					theories,
+					thinkers,
+					has_chronicle: hasChronicle,
+					micelio_destilada: micelioDestilada,
+					has_chat: chatSet.has(artifact.id),
+					garden_count: artifactGardensMap.get(artifact.id)?.size || 0,
+				};
+			},
+		);
+
+		// 5. Aplicar filtro de jardines si está activo
+		let finalArtifacts = artifactsWithCounts;
+		if (filters.hasGardens) {
+			if (filters.hasGardens === "with") {
+				finalArtifacts = artifactsWithCounts.filter((a) => a.garden_count > 0);
+				console.log(
+					`  🌱 Filtro "con jardines": ${finalArtifacts.length} de ${artifactsWithCounts.length} artefactos`,
+				);
+			} else if (filters.hasGardens === "without") {
+				finalArtifacts = artifactsWithCounts.filter(
+					(a) => a.garden_count === 0,
+				);
+				console.log(
+					`  🌱 Filtro "sin jardines": ${finalArtifacts.length} de ${artifactsWithCounts.length} artefactos`,
+				);
+			}
+		}
+
+		console.log(
+			`✅ [getFilteredArtifacts] ${finalArtifacts.length} artefactos finales`,
+		);
+
+		return { success: true, data: finalArtifacts };
+	} catch (error) {
+		console.error("❌ Error inesperado en getFilteredArtifacts:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export type CognitiveElementType = "seed" | "discipline" | "theory" | "thinker";
+
+export interface ElementArtifact {
+	id: string;
+	title: string;
+	type: string;
+	status: string | null;
+	created_at: string | null;
+	has_chronicle: boolean;
+	has_chat: boolean;
+	micelio_destilada?: string;
+}
+
+/**
+ * Dado un elemento cognitivo, retorna todos los artefactos del proyecto que lo contienen.
+ * Soporta: semilla (por content), disciplina, teoría y pensador (por id).
+ */
+export async function getArtifactsByElement(
+	projectId: string,
+	elementType: CognitiveElementType,
+	elementValue: string,
+): Promise<ResultadoOperacion<ElementArtifact[]>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		let artifactIds: string[] = [];
+
+		switch (elementType) {
+			case "seed": {
+				const { data } = await supabase
+					.from("cog_fractal_seeds")
+					.select("artifact_id")
+					.eq("project_id", projectId)
+					.eq("content", elementValue)
+					.not("tags", "cs", '{"cita"}');
+				artifactIds = [
+					...new Set(
+						data
+							?.map((r: { artifact_id: string | null }) => r.artifact_id)
+							.filter((id): id is string => id !== null) || [],
+					),
+				];
+				break;
+			}
+			case "discipline": {
+				const { data } = await supabase
+					.from("cog_artifact_disciplines")
+					.select("artifact_id, cog_artifacts!inner(project_id)")
+					.eq("cog_artifacts.project_id", projectId)
+					.eq("discipline_id", elementValue);
+				artifactIds = [
+					...new Set(
+						data?.map((r: { artifact_id: string }) => r.artifact_id) || [],
+					),
+				];
+				break;
+			}
+			case "theory": {
+				const { data } = await supabase
+					.from("cog_artifact_theories")
+					.select("artifact_id, cog_artifacts!inner(project_id)")
+					.eq("cog_artifacts.project_id", projectId)
+					.eq("theory_id", elementValue);
+				artifactIds = [
+					...new Set(
+						data?.map((r: { artifact_id: string }) => r.artifact_id) || [],
+					),
+				];
+				break;
+			}
+			case "thinker": {
+				const { data } = await supabase
+					.from("cog_artifact_references")
+					.select("artifact_id, cog_artifacts!inner(project_id)")
+					.eq("cog_artifacts.project_id", projectId)
+					.eq("reference_id", elementValue);
+				artifactIds = [
+					...new Set(
+						data
+							?.map((r: { artifact_id: string | null }) => r.artifact_id)
+							.filter((id): id is string => id !== null) || [],
+					),
+				];
+				break;
+			}
+		}
+
+		if (artifactIds.length === 0) {
+			return { success: true, data: [] };
+		}
+
+		const { data: artifacts, error } = await supabase
+			.from("cog_artifacts")
+			.select("id, title, type, status, created_at, source_metadata")
+			.in("id", artifactIds)
+			.order("created_at", { ascending: false });
+
+		if (error) return { success: false, error: error.message };
+
+		const { data: chatData } = await supabase
+			.from("cog_chat_sessions")
+			.select("artifact_id")
+			.in("artifact_id", artifactIds);
+
+		const chatSet = new Set<string>(
+			chatData?.map((s: { artifact_id: string }) => s.artifact_id) || [],
+		);
+
+		const result: ElementArtifact[] = (artifacts || []).map(
+			(a: {
+				id: string;
+				title: string;
+				type: string;
+				status: string | null;
+				created_at: string | null;
+				source_metadata: unknown;
+			}) => {
+				const meta =
+					(
+						a.source_metadata &&
+						typeof a.source_metadata === "object" &&
+						!Array.isArray(a.source_metadata)
+					) ?
+						(a.source_metadata as Record<string, unknown>)
+					:	null;
+				const chronicle = meta?.micelio_chronicle as
+					| Record<string, unknown>
+					| undefined;
+				return {
+					id: a.id,
+					title: a.title,
+					type: a.type,
+					status: a.status,
+					created_at: a.created_at,
+					has_chronicle: !!chronicle,
+					has_chat: chatSet.has(a.id),
+					micelio_destilada: chronicle?.version_destilada as string | undefined,
+				};
+			},
+		);
+
+		return { success: true, data: result };
+	} catch (error) {
+		console.error("❌ Error en getArtifactsByElement:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}

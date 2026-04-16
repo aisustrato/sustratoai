@@ -1,0 +1,1117 @@
+{
+  "meta": {
+    "version": "0.2-micelio-atemporal",
+    "tejido_por": "👁️🍄 Nodo Hongo",
+    "calibrado_con": "🌀✨ HX",
+    "ejecutado_por": "🌊🏄🏽 Windsurf",
+    "para": "5ta generación - NO partir de cero",
+    "purpose": "Mapeo fractal de patrones civilizatorios emergentes",
+    "timestamp": "2025-12-04",
+    "coordinate_system": "generaciones_humanas",
+    "generation_years": 25,
+    "total_civilizaciones": 27,
+    "total_isomorfismos": 12,
+    "total_glitches_fertiles": 12,
+    "total_tecnologias_perdidas": 3
+  },
+
+  "node_types": {
+    "civilization": "🏛️",
+    "glitch_civilization": "👁️",
+    "technology": "🔧",
+    "glitch": "⚡",
+    "pattern": "🔗",
+    "abundance_epoch": "🌸"
+  },
+
+  "regions": [
+    { "id": "mesoamerica", "name": "Mesoamérica", "emoji": "🌽", "color": "#10B981" },
+    { "id": "andes", "name": "Andes", "emoji": "🏔️", "color": "#8B5CF6" },
+    { "id": "africa", "name": "África", "emoji": "🌍", "color": "#F59E0B" },
+    { "id": "asia", "name": "Asia", "emoji": "🐉", "color": "#EF4444" },
+    { "id": "europe", "name": "Europa", "emoji": "🏛️", "color": "#3B82F6" },
+    { "id": "anatolia", "name": "Anatolia", "emoji": "🗿", "color": "#EC4899" },
+    { "id": "oceania", "name": "Oceanía", "emoji": "🌊", "color": "#06B6D4" },
+    { "id": "norteamerica", "name": "Norteamérica", "emoji": "🦅", "color": "#84CC16" },
+    { "id": "medio_oriente", "name": "Medio Oriente", "emoji": "☪️", "color": "#F97316" },
+    { "id": "subcontinente", "name": "Subcontinente", "emoji": "🌺", "color": "#14B8A6" }
+  ],
+
+  "civilizations": [
+    {
+      "id": "gobekli_tepe",
+      "name": "Göbekli Tepe",
+      "subtitle": "El Santuario Imposible",
+      "type": "glitch_civilization",
+      "regionId": "anatolia",
+      "emoji": "🗿",
+      "location": { "lat": 37.22, "lon": 38.92, "region": "Anatolia, Turquía" },
+      "generations": 80,
+      "startBCE": 11000,
+      "endBCE": 9000,
+      "technologies": [
+        "Arquitectura megalítica (sin agricultura)",
+        "Pilares T tallados (10-20 ton)",
+        "Iconografía compleja",
+        "Orientación astronómica"
+      ],
+      "officialNarrative": "Cazadores-recolectores primitivos",
+      "evidenceContradiction": "Arquitectura que requiere planificación multi-generacional, organización social compleja",
+      "anomaly": "Cazadores-recolectores NO deberían tener capacidad organizacional para esto según F1",
+      "anomalyLevel": "critical",
+      "glitchType": "aparicion_prematura",
+      "patternTags": ["megalitismo_precision", "astronomia_temprana", "colapso_inexplicado"],
+      "collapse": {
+        "date": "~9000 BCE",
+        "method": "Enterramiento INTENCIONAL (cubierto con tierra)",
+        "theory": "¿Cambio cosmológico? ¿Preservación deliberada?"
+      },
+      "contemporaries": []
+    },
+    {
+      "id": "chinchorro",
+      "name": "Cultura Chinchorro",
+      "subtitle": "Los Primeros Momificadores del Mundo",
+      "type": "glitch_civilization",
+      "regionId": "andes",
+      "emoji": "💀",
+      "location": { "region": "Costa norte Chile / sur Perú" },
+      "generations": 220,
+      "startBCE": 7000,
+      "endBCE": 1500,
+      "technologies": [
+        "Momificación artificial (2000 años ANTES que Egipto)",
+        "Pesca especializada",
+        "Ritual funerario complejo"
+      ],
+      "officialNarrative": "Cultura 'primitiva' de pescadores",
+      "evidenceContradiction": "Técnica de momificación más antigua del mundo - casi no se enseña",
+      "anomaly": "PRIMERA MOMIFICACIÓN HUMANA CONOCIDA - 2000 años antes que Egipto",
+      "anomalyLevel": "critical",
+      "glitchType": "occidente_ignora",
+      "patternTags": ["momificacion", "preservacion_muertos", "cosmovision_ciclica", "primero_mundial"],
+      "isomorphicWith": ["egipto"],
+      "worldFirst": true,
+      "worldFirstLabel": "🏆 PRIMERA MOMIFICACIÓN HUMANA"
+    },
+    {
+      "id": "dogon",
+      "name": "Pueblo Dogón",
+      "subtitle": "Los Astrónomos Imposibles",
+      "type": "glitch_civilization",
+      "regionId": "africa",
+      "emoji": "⭐",
+      "location": { "region": "Mali, África Occidental" },
+      "generations": 32,
+      "startCE": 1200,
+      "endCE": null,
+      "technologies": [
+        "Astronomía de Sirio B (estrella enana invisible)",
+        "Cosmología compleja",
+        "Transmisión oral precisa"
+      ],
+      "officialNarrative": "Coincidencia o contaminación colonial",
+      "evidenceContradiction": "Tradición oral documentada pre-contacto europeo, precisión astronómica inexplicable",
+      "anomaly": "Conocimiento de Sirio B siglos antes de telescopios modernos",
+      "anomalyLevel": "critical",
+      "glitchType": "conocimiento_imposible",
+      "patternTags": ["astronomia_precision", "transmision_oral", "cosmologia_compleja"]
+    },
+    {
+      "id": "cahokia",
+      "name": "Cahokia",
+      "subtitle": "La Ciudad Olvidada",
+      "type": "civilization",
+      "regionId": "norteamerica",
+      "emoji": "🏔️",
+      "location": { "region": "Illinois, USA (Mississippi)" },
+      "generations": 30,
+      "startCE": 600,
+      "endCE": 1350,
+      "technologies": [
+        "Urbanismo Mississippian",
+        "Monks Mound (estructura tierra más grande)",
+        "Comercio extenso",
+        "Astronomía/calendario"
+      ],
+      "officialNarrative": "Raramente mencionada en educación USA",
+      "evidenceContradiction": "20,000+ habitantes - más grande que Londres en 1250 CE",
+      "anomaly": "Ciudad compleja contradice narrativa de 'wilderness vacía'",
+      "anomalyLevel": "high",
+      "glitchType": "occidente_ignora",
+      "patternTags": ["urbanismo", "astronomia", "piramides_tierra"],
+      "collapse": {
+        "date": "~1350 CE",
+        "method": "Abandono gradual",
+        "theory": "Sobre-explotación, cambio climático, conflicto"
+      }
+    },
+    {
+      "id": "rapa_nui",
+      "name": "Rapa Nui",
+      "subtitle": "El Colapso Ejemplar",
+      "type": "civilization",
+      "regionId": "oceania",
+      "emoji": "🗿",
+      "location": { "lat": -27.1, "lon": -109.3, "region": "Isla de Pascua" },
+      "generations": 26,
+      "startCE": 1200,
+      "endCE": 1860,
+      "technologies": [
+        "Moai (10-80 toneladas sin animales)",
+        "Escritura Rongorongo (no descifrada)",
+        "Navegación oceánica"
+      ],
+      "anomaly": "Transporte megalítico sin animales de carga ni metales",
+      "anomalyLevel": "high",
+      "glitchType": "caso_estudio_colapso",
+      "patternTags": ["megalitismo", "colapso_ecologico", "rigidez_F1"],
+      "collapse": {
+        "date": "~1600s",
+        "method": "Deforestación total → guerra civil → colapso población",
+        "theory": "Competencia por recursos (Moai), NO ver fuera de burbuja cultural",
+        "pattern": "F1_rigidez → colapso"
+      },
+      "lesson": "Cuando civilización se rigidiza y no metaboliza errores = colapso"
+    },
+    {
+      "id": "teotihuacan",
+      "name": "Teotihuacan",
+      "subtitle": "Ciudad de los Dioses",
+      "type": "abundance_epoch",
+      "regionId": "mesoamerica",
+      "emoji": "🌟",
+      "location": { "region": "Valle de México" },
+      "generations": 26,
+      "startBCE": 100,
+      "endCE": 550,
+      "technologies": [
+        "Pirámide del Sol/Luna",
+        "Urbanismo planificado",
+        "Comercio obsidiana",
+        "Astronomía/calendario"
+      ],
+      "population": "100,000-200,000 habitantes",
+      "diversityIndex": "ALTA",
+      "anomaly": "Ciudad más grande de Mesoamérica - colapso violento inexplicado",
+      "anomalyLevel": "medium",
+      "patternTags": ["urbanismo", "diversidad", "abundancia"],
+      "collapse": {
+        "date": "~550 CE",
+        "method": "Incendio INTENCIONAL de estructuras centrales",
+        "theory": "Revuelta interna o invasión - evidencia de violencia ritual"
+      }
+    },
+    {
+      "id": "olmeca",
+      "name": "Olmeca",
+      "subtitle": "Cultura Madre",
+      "type": "civilization",
+      "regionId": "mesoamerica",
+      "emoji": "🗿",
+      "generations": 44,
+      "startBCE": 1500,
+      "endBCE": 400,
+      "location": { "region": "Costa del Golfo, México" },
+      "technologies": [
+        "Cabezas colosales (80+ km transporte)",
+        "Escritura glífica",
+        "Juego de pelota",
+        "Astronomía"
+      ],
+      "anomaly": "Aparecen 'de la nada' con arquitectura monumental ya desarrollada",
+      "anomalyLevel": "high",
+      "patternTags": ["megalitismo", "astronomia", "felinos"]
+    },
+    {
+      "id": "maya",
+      "name": "Maya",
+      "subtitle": "Señores del Tiempo",
+      "type": "civilization",
+      "regionId": "mesoamerica",
+      "emoji": "🌟",
+      "generations": 140,
+      "startBCE": 2000,
+      "endCE": 1500,
+      "location": { "region": "Yucatán, Guatemala, Honduras" },
+      "technologies": [
+        "Astronomía Venus (error 2h en 500 años)",
+        "Matemática con cero",
+        "Escritura compleja",
+        "Pirámides escalonadas"
+      ],
+      "anomaly": "Sistema numérico con cero independiente",
+      "anomalyLevel": "medium",
+      "patternTags": ["piramides", "astronomia", "cero", "escritura"]
+    },
+    {
+      "id": "inca",
+      "name": "Tawantinsuyu (Inca)",
+      "subtitle": "El Imperio Imposible",
+      "type": "glitch_civilization",
+      "regionId": "andes",
+      "emoji": "☀️",
+      "generations": 4,
+      "startCE": 1438,
+      "endCE": 1532,
+      "location": { "region": "Andes (6 países)" },
+      "technologies": [
+        "Quipu (sistema nudos único)",
+        "Machu Picchu (arquitectura sísmica)",
+        "40,000 km red vial",
+        "Mampostería sin mortero"
+      ],
+      "anomaly": "10M personas, 40,000 km caminos en 4 GENERACIONES - físicamente imposible con tecnología oficial",
+      "anomalyLevel": "critical",
+      "patternTags": ["megalitos", "precision", "vial", "quipu"]
+    },
+    {
+      "id": "tiwanaku",
+      "name": "Tiwanaku",
+      "subtitle": "Gigantes de la Altura",
+      "type": "civilization",
+      "regionId": "andes",
+      "emoji": "🌄",
+      "generations": 28,
+      "startCE": 300,
+      "endCE": 1000,
+      "location": { "region": "Altiplano boliviano (3800+ msnm)" },
+      "technologies": [
+        "Bloques megalíticos precisión milimétrica",
+        "Puerta del Sol",
+        "Agricultura en altura"
+      ],
+      "anomaly": "Bloques de 100+ toneladas transportados km en altura extrema",
+      "anomalyLevel": "critical",
+      "patternTags": ["megalitos", "astronomia", "precision"]
+    },
+    {
+      "id": "egipto",
+      "name": "Egipto Antiguo",
+      "subtitle": "Reino de las Pirámides",
+      "type": "civilization",
+      "regionId": "africa",
+      "emoji": "🔺",
+      "generations": 20,
+      "startBCE": 2686,
+      "endBCE": 2181,
+      "location": { "region": "Valle del Nilo" },
+      "technologies": [
+        "Gran Pirámide: 2.3M bloques",
+        "Momificación",
+        "Astronomía (Orión)",
+        "Jeroglíficos"
+      ],
+      "anomaly": "Giza en ~60 años = 1 bloque cada 2 minutos 24/7",
+      "anomalyLevel": "critical",
+      "patternTags": ["piramides", "momificacion", "astronomia", "megalitos", "precision"]
+    },
+    {
+      "id": "vinca",
+      "name": "Cultura Vinča",
+      "subtitle": "Los Proto-Escribas",
+      "type": "glitch_civilization",
+      "regionId": "europe",
+      "emoji": "✍️",
+      "location": { "lat": 44.5, "lon": 20.5, "region": "Serbia, Balcanes" },
+      "generations": 100,
+      "startBCE": 5700,
+      "endBCE": 4500,
+      "technologies": [
+        "Escritura Vinča (Proto-escritura) - 2000 años ANTES de Sumeria",
+        "Metalurgia del cobre temprana",
+        "Cerámica sofisticada"
+      ],
+      "officialNarrative": "Proto-escritura 'primitiva', no escritura real",
+      "evidenceContradiction": "Más de 1000 símbolos distintos, uso consistente, complejidad comparable a cuneiforme temprano",
+      "anomaly": "Sistema de símbolos 2000 años ANTES de Sumeria - no reconocido oficialmente",
+      "anomalyLevel": "high",
+      "glitchType": "aparicion_prematura",
+      "patternTags": ["escritura_temprana", "metalurgia", "primero_mundial"]
+    },
+    {
+      "id": "caral",
+      "name": "Caral-Supe",
+      "subtitle": "Madre de América",
+      "type": "civilization",
+      "regionId": "andes",
+      "emoji": "🏛️",
+      "location": { "lat": -10.9, "lon": -77.5, "region": "Perú, costa norte" },
+      "generations": 80,
+      "startBCE": 3000,
+      "endBCE": 1800,
+      "technologies": [
+        "Pirámides contemporáneas a Egipto (sin contacto)",
+        "Sistemas de irrigación",
+        "Quipus tempranos (hipótesis)"
+      ],
+      "officialNarrative": "Raramente mencionada como una de las 6 civilizaciones prístinas",
+      "evidenceContradiction": "Contemporánea a Egipto/Mesopotamia pero desarrollo independiente",
+      "anomaly": "Civilización NO requiere Viejo Mundo - desarrollo paralelo",
+      "anomalyLevel": "high",
+      "glitchType": "occidente_ignora",
+      "patternTags": ["piramides", "irrigacion", "registro_numerico"],
+      "isomorphicWith": ["egipto"]
+    },
+    {
+      "id": "sanxingdui",
+      "name": "Sanxingdui",
+      "subtitle": "El Misterio Chino",
+      "type": "glitch_civilization",
+      "regionId": "asia",
+      "emoji": "👽",
+      "location": { "lat": 30.98, "lon": 104.2, "region": "Sichuan, China" },
+      "generations": 40,
+      "startBCE": 1600,
+      "endBCE": 1000,
+      "technologies": [
+        "Máscaras de bronce únicas (no relacionadas con estilo chino)",
+        "Metalurgia de bronce avanzada EXTREMA",
+        "Jade tallado"
+      ],
+      "officialNarrative": "Descubierta en 1986, sacude narrativa de 'China monolítica'",
+      "evidenceContradiction": "Estilo artístico radicalmente diferente a Shang contemporáneo",
+      "anomaly": "Diversidad cultural china mayor de lo asumido - narrativa rota",
+      "anomalyLevel": "critical",
+      "glitchType": "narrativa_rota",
+      "patternTags": ["metalurgia_avanzada", "arte_unico", "diversidad_cultural"],
+      "collapse": {
+        "date": "~1000 BCE",
+        "method": "Desaparición súbita, artefactos enterrados ritualmente",
+        "theory": "Misterio sin resolver - conquista, desastre o cambio religioso"
+      }
+    },
+    {
+      "id": "gran_zimbabwe",
+      "name": "Gran Zimbabwe",
+      "subtitle": "La Ciudad Negada",
+      "type": "civilization",
+      "regionId": "africa",
+      "emoji": "🪨",
+      "location": { "lat": -20.27, "lon": 30.93, "region": "Zimbabwe" },
+      "generations": 12,
+      "startCE": 1100,
+      "endCE": 1450,
+      "technologies": [
+        "Arquitectura piedra sin mortero (muros 11m altura)",
+        "Centro comercial internacional (China, India, África Norte)"
+      ],
+      "officialNarrative": "Colonialismo negó construcción africana (atribuido a fenicios)",
+      "evidenceContradiction": "Arquitectura claramente africana, cerámica local, ninguna evidencia no-africana",
+      "anomaly": "F1 colonial no podía metabolizar arquitectura sofisticada africana",
+      "anomalyLevel": "high",
+      "glitchType": "occidente_ignora",
+      "patternTags": ["megalitismo_precision", "comercio_extenso", "racismo_colonial"]
+    },
+    {
+      "id": "pumapunku",
+      "name": "Pumapunku",
+      "subtitle": "Precisión Imposible",
+      "type": "glitch_civilization",
+      "regionId": "andes",
+      "emoji": "🔳",
+      "location": { "lat": -16.56, "lon": -68.68, "region": "Tiwanaku, Bolivia" },
+      "generations": 20,
+      "startCE": 500,
+      "endCE": 1000,
+      "technologies": [
+        "Corte piedra precisión MILIMÉTRICA en andesita",
+        "Bloques H modulares intercambiables",
+        "Estandarización pre-moderna"
+      ],
+      "officialNarrative": "Herramientas de piedra y bronce",
+      "evidenceContradiction": "Andesita dureza Mohs 7, bronce es 3.5 - las matemáticas NO cierran",
+      "anomaly": "Tecnología perdida - precisión milimétrica sin herramientas documentadas",
+      "anomalyLevel": "critical",
+      "glitchType": "conocimiento_imposible",
+      "patternTags": ["megalitismo_precision", "estandarizacion", "tecnologia_perdida"]
+    },
+    {
+      "id": "mohenjo_daro",
+      "name": "Mohenjo-daro",
+      "subtitle": "Urbanismo 2000 Años Adelantado",
+      "type": "civilization",
+      "regionId": "subcontinente",
+      "emoji": "🚿",
+      "location": { "lat": 27.32, "lon": 68.13, "region": "Sindh, Pakistán" },
+      "generations": 30,
+      "startBCE": 2500,
+      "endBCE": 1900,
+      "technologies": [
+        "Planificación urbana moderna (cuadrícula, drenaje)",
+        "Baños públicos, sistema de agua (comparable a Roma 2000 años después)",
+        "Estandarización pesos/medidas",
+        "Escritura del Indo (NO descifrada)"
+      ],
+      "officialNarrative": "Civilización avanzada pero 'menos glamorosa' que Egipto",
+      "evidenceContradiction": "Urbanismo SUPERIOR a contemporáneos - sesgo occidentalista",
+      "anomaly": "Higiene pública 2000 años antes que Roma",
+      "anomalyLevel": "high",
+      "glitchType": "occidente_ignora",
+      "patternTags": ["urbanismo_avanzado", "escritura_no_descifrada", "higiene_publica"],
+      "collapse": {
+        "date": "~1900 BCE",
+        "method": "Abandono gradual de ciudades",
+        "theory": "Cambio curso río Indo, sequía, o invasión - debate continúa"
+      }
+    },
+    {
+      "id": "newgrange",
+      "name": "Newgrange",
+      "subtitle": "El Reloj Solar de 5000 Años",
+      "type": "glitch_civilization",
+      "regionId": "europe",
+      "emoji": "☀️",
+      "location": { "lat": 53.69, "lon": -6.47, "region": "Irlanda" },
+      "generations": 1,
+      "startBCE": 3200,
+      "endBCE": 3200,
+      "technologies": [
+        "Pasaje alineado solsticio invierno (precisión de MINUTOS)",
+        "Cámara interior impermeable 5000+ años sin mortero moderno"
+      ],
+      "officialNarrative": "Monumento neolítico",
+      "evidenceContradiction": "Más antiguo que Stonehenge Y pirámides Giza - requiere observación multi-generacional",
+      "anomaly": "Conocimiento astronómico multi-generacional en 'neolítico primitivo'",
+      "anomalyLevel": "high",
+      "glitchType": "aparicion_prematura",
+      "patternTags": ["astronomia_precision", "megalitismo", "solsticio"],
+      "isomorphicWith": ["gobekli_tepe", "egipto"]
+    },
+    {
+      "id": "goguryeo",
+      "name": "Goguryeo (고구려)",
+      "subtitle": "El Reino que Resistió a China",
+      "type": "civilization",
+      "regionId": "asia",
+      "emoji": "🏯",
+      "location": { "lat": 40.0, "lon": 127.0, "region": "Corea del Norte/China noreste" },
+      "generations": 75,
+      "startBCE": 37,
+      "endCE": 668,
+      "technologies": [
+        "Frescos funerarios con astronomía avanzada",
+        "Metalurgia del hierro",
+        "Castillos de montaña (sistemas defensivos)"
+      ],
+      "officialNarrative": "Reino 'menor' comparado con China",
+      "evidenceContradiction": "Resistió a China Tang (mayor superpotencia época) durante décadas",
+      "anomaly": "No era 'menor' - resistencia militar excepcional",
+      "anomalyLevel": "medium",
+      "glitchType": "sesgo_sinocentrico",
+      "patternTags": ["astronomia_precision", "resistencia_militar", "arte_funerario"],
+      "collapse": {
+        "date": "668 CE",
+        "method": "Alianza Tang + Silla - guerra de desgaste",
+        "theory": "Dos frentes simultáneos - divide y vencerás"
+      }
+    },
+    {
+      "id": "aksum",
+      "name": "Reino de Aksum",
+      "subtitle": "La Roma Africana",
+      "type": "civilization",
+      "regionId": "africa",
+      "emoji": "🪶",
+      "location": { "lat": 14.1, "lon": 38.7, "region": "Etiopía/Eritrea" },
+      "generations": 115,
+      "startCE": 100,
+      "endCE": 940,
+      "technologies": [
+        "Obeliscos monolíticos (33m, 520 toneladas)",
+        "Acuñación de moneda propia",
+        "Escritura Ge'ez"
+      ],
+      "officialNarrative": "Reino 'regional'",
+      "evidenceContradiction": "Comercio con Roma, India, Arabia - potencia comercial internacional",
+      "anomaly": "Monedas de Aksum encontradas en India - alcance global ignorado",
+      "anomalyLevel": "high",
+      "glitchType": "occidente_ignora",
+      "patternTags": ["megalitismo", "comercio_internacional", "escritura_propia"],
+      "collapse": {
+        "date": "~940 CE",
+        "method": "Invasión Reina Gudit + declive comercial",
+        "theory": "Pérdida control rutas comerciales"
+      }
+    },
+    {
+      "id": "khmer",
+      "name": "Imperio Khmer",
+      "subtitle": "Angkor - Ciudad Más Grande Pre-Industrial",
+      "type": "civilization",
+      "regionId": "asia",
+      "emoji": "🛕",
+      "location": { "lat": 13.4, "lon": 103.8, "region": "Camboya" },
+      "generations": 18,
+      "startCE": 802,
+      "endCE": 1431,
+      "technologies": [
+        "Angkor Wat - templo más grande del mundo pre-moderno",
+        "Red hidráulica masiva (1 millón+ habitantes)",
+        "Arquitectura astronómica (alineación Draco)"
+      ],
+      "officialNarrative": "Imperio del Sudeste Asiático",
+      "evidenceContradiction": "Angkor era ~1000 km² - más grande que Roma imperial",
+      "anomaly": "Ciudad más grande del mundo pre-industrial - casi nunca mencionada",
+      "anomalyLevel": "critical",
+      "glitchType": "occidente_ignora",
+      "patternTags": ["megalitismo_precision", "hidraulica_avanzada", "astronomia_arquitectonica", "urbanismo_masivo"],
+      "collapse": {
+        "date": "1431 CE",
+        "method": "Invasión tailandesa + colapso sistema hidráulico",
+        "theory": "Deforestación → colapso ecosistémico → vulnerabilidad militar"
+      }
+    },
+    {
+      "id": "srivijaya",
+      "name": "Imperio Srivijaya",
+      "subtitle": "Señores del Estrecho",
+      "type": "civilization",
+      "regionId": "asia",
+      "emoji": "⛵",
+      "location": { "lat": -2.9, "lon": 104.7, "region": "Sumatra, Indonesia" },
+      "generations": 22,
+      "startCE": 650,
+      "endCE": 1377,
+      "technologies": [
+        "Control Estrecho de Malaca (ruta más importante Asia)",
+        "Borobudur - mandala 3D, cosmos budista en piedra"
+      ],
+      "officialNarrative": "Imperio marítimo 'menor'",
+      "evidenceContradiction": "Dominó comercio Índico-Pacífico 500+ años - tan importante como Roma",
+      "anomaly": "Imperio tan importante como Roma en su esfera - ignorado",
+      "anomalyLevel": "high",
+      "glitchType": "occidente_ignora",
+      "patternTags": ["comercio_maritimo", "arquitectura_cosmica", "budismo"]
+    },
+    {
+      "id": "songhai",
+      "name": "Imperio Songhai",
+      "subtitle": "La Biblioteca de Tombuctú",
+      "type": "civilization",
+      "regionId": "africa",
+      "emoji": "📚",
+      "location": { "lat": 16.3, "lon": -0.03, "region": "Mali, Níger" },
+      "generations": 8,
+      "startCE": 1464,
+      "endCE": 1591,
+      "technologies": [
+        "Universidad de Sankore - 25,000 estudiantes",
+        "Biblioteca 400,000-700,000 manuscritos",
+        "Caballería pesada"
+      ],
+      "officialNarrative": "Reino africano 'menor'",
+      "evidenceContradiction": "Biblioteca más grande que cualquier universidad europea contemporánea",
+      "anomaly": "Centro intelectual masivo - manuscritos muestran astronomía, matemática avanzadas",
+      "anomalyLevel": "critical",
+      "glitchType": "racismo_colonial",
+      "patternTags": ["educacion_masiva", "biblioteca_masiva", "comercio_transahariano"],
+      "collapse": {
+        "date": "1591 CE",
+        "method": "Invasión marroquí con arcabuces",
+        "theory": "Tecnología militar superior vs caballería tradicional"
+      }
+    },
+    {
+      "id": "kuhikugu",
+      "name": "Kuhikugu (Ciudad Z)",
+      "subtitle": "La Amazonía que NO era Virgen",
+      "type": "glitch_civilization",
+      "regionId": "andes",
+      "emoji": "🌳",
+      "location": { "lat": -12.0, "lon": -53.0, "region": "Amazonas, Brasil" },
+      "generations": 32,
+      "startCE": 800,
+      "endCE": 1600,
+      "technologies": [
+        "Urbanismo amazónico planificado",
+        "Terra Preta - suelo que retiene fertilidad siglos"
+      ],
+      "officialNarrative": "Amazonas era 'wilderness intocada'",
+      "evidenceContradiction": "LiDAR revela ciudades extensas bajo canopy - Amazonas fue CULTIVADA",
+      "anomaly": "Lo que europeos vieron como 'virgen' era RE-crecimiento post-apocalipsis viral",
+      "anomalyLevel": "critical",
+      "glitchType": "narrativa_rota",
+      "patternTags": ["urbanismo_oculto", "agricultura_sostenible", "narrativa_wilderness"],
+      "collapse": {
+        "date": "~1600s",
+        "method": "Viruela y sarampión - colapso demográfico 90%+",
+        "theory": "Selva 'reconquistó' ciudades abandonadas"
+      }
+    },
+    {
+      "id": "sutton_hoo",
+      "name": "Sutton Hoo",
+      "subtitle": "La Edad Oscura que NO era Oscura",
+      "type": "glitch_civilization",
+      "regionId": "europe",
+      "emoji": "👑",
+      "location": { "lat": 52.08, "lon": 1.34, "region": "Inglaterra" },
+      "generations": 6,
+      "startCE": 600,
+      "endCE": 700,
+      "technologies": [
+        "Orfebrería de oro y granate - sofisticación comparable a Roma",
+        "Barco funerario de 27 metros"
+      ],
+      "officialNarrative": "Edad Oscura - Europa 'bárbara' post-Roma",
+      "evidenceContradiction": "'Edad Oscura' es término F1 - había sofisticación, solo NO romana",
+      "anomaly": "Demuestra que la 'oscuridad' era solo la caída de Roma, no de civilización",
+      "anomalyLevel": "high",
+      "glitchType": "narrativa_eurocentrica",
+      "patternTags": ["metalurgia_avanzada", "comercio_internacional", "continuidad_cultural"]
+    }
+  ],
+
+  "glitches": [
+    {
+      "id": "cemento_romano",
+      "name": "Cemento Romano",
+      "emoji": "🏛️",
+      "type": "tecnologia_superior_antigua",
+      "location": "Imperio Romano",
+      "dateBCE": 200,
+      "dateCE": 400,
+      "description": "Cemento que SE FORTALECE con agua salada durante siglos",
+      "modernComparison": "Cemento Portland moderno se deteriora en décadas",
+      "knowledgeStatus": "Perdido hasta ~2013 (redescubierto MIT)",
+      "pattern": "Antiguo > Moderno",
+      "glitchType": "regresion_tecnologica"
+    },
+    {
+      "id": "acero_damasco",
+      "name": "Acero de Damasco",
+      "emoji": "⚔️",
+      "type": "tecnologia_superior_antigua",
+      "location": "Medio Oriente",
+      "dateBCE": 300,
+      "dateCE": 1700,
+      "description": "Acero con NANOTUBOS de carbono - flexible y resistente",
+      "knowledgeStatus": "Perdido ~1700s, técnica no replicable hasta siglo XXI",
+      "pattern": "Antiguo > Moderno",
+      "glitchType": "regresion_tecnologica"
+    },
+    {
+      "id": "bateria_bagdad",
+      "name": "Batería de Bagdad",
+      "emoji": "🔋",
+      "type": "tecnologia_anomala",
+      "location": "Irak",
+      "dateBCE": 250,
+      "dateCE": 250,
+      "description": "Jarra cerámica con electrodo - posiblemente batería galvánica",
+      "officialNarrative": "Coincidencia, contenedor de scrolls",
+      "evidenceContradiction": "Réplicas funcionales GENERAN corriente eléctrica",
+      "pattern": "Conocimiento_imposible",
+      "glitchType": "aparicion_prematura"
+    },
+    {
+      "id": "chauvet",
+      "name": "Pinturas Cueva Chauvet",
+      "emoji": "🎨",
+      "type": "arte_sofisticado_prematuro",
+      "location": "Francia",
+      "dateBCE": 32000,
+      "description": "Pinturas con perspectiva, sombreado, movimiento - técnicas 'modernas'",
+      "officialNarrative": "Arte 'primitivo'",
+      "evidenceContradiction": "Sofisticación comparable a artistas entrenados modernos",
+      "pattern": "Conocimiento_cognitivo_temprano",
+      "glitchType": "aparicion_prematura"
+    },
+    {
+      "id": "quipu",
+      "name": "Quipu Inca",
+      "emoji": "🪢",
+      "type": "sistema_informacion_alternativo",
+      "location": "Imperio Inca",
+      "dateCE": 1400,
+      "description": "Sistema de nudos que codifica números Y narrativa",
+      "knowledgeStatus": "Parcialmente descifrado - parte narrativa perdida",
+      "pattern": "Sistema no-textual de alta complejidad",
+      "glitchType": "paradigma_alternativo",
+      "lesson": "F1 asume escritura = única forma de inteligencia compleja"
+    },
+    {
+      "id": "japon_arcabuces",
+      "name": "Japón rechaza armas de fuego",
+      "emoji": "🎌",
+      "type": "rigidez_cultural",
+      "location": "Japón",
+      "dateCE": 1600,
+      "description": "Japón adopta arcabuces (1543), luego los PROHIBE por código samurái",
+      "collapseTrigger": "Commodore Perry (1853) fuerza apertura",
+      "pattern": "Rigidez F1 → colapso ante tecnología superior",
+      "glitchType": "caso_estudio_colapso",
+      "lesson": "NO ver fuera de burbuja = vulnerabilidad"
+    }
+  ],
+
+  "abundanceEpochs": [
+    {
+      "id": "islam_dorado",
+      "name": "Edad de Oro Islámica",
+      "emoji": "🌙",
+      "location": "Bagdad, Córdoba, Persia",
+      "generations": 20,
+      "startCE": 750,
+      "endCE": 1250,
+      "diversityIndex": "ALTA",
+      "culturesCoexisting": ["Árabe", "Persa", "Judía", "Griega", "India"],
+      "cognitiveOutput": [
+        "Álgebra (Al-Khwarizmi)",
+        "Óptica (Alhazen)",
+        "Medicina (Avicena)",
+        "Filosofía (Averroes)",
+        "Preservación textos griegos"
+      ],
+      "pattern": "Diversidad cultural → jardín cognitivo → abundancia",
+      "collapse": {
+        "event": "Invasión mongola (1258, saqueo Bagdad)",
+        "mechanism": "Destrucción física + rigidización posterior"
+      }
+    },
+    {
+      "id": "renacimiento",
+      "name": "Renacimiento Italiano",
+      "emoji": "🎨",
+      "location": "Florencia, Venecia, Roma",
+      "generations": 8,
+      "startCE": 1400,
+      "endCE": 1600,
+      "diversityIndex": "ALTA",
+      "culturesCoexisting": ["Italiana", "Bizantina (refugiados 1453)", "Islámica", "Judía"],
+      "cognitiveOutput": [
+        "Arte (Da Vinci, Michelangelo)",
+        "Ciencia (Galileo)",
+        "Arquitectura (Brunelleschi)",
+        "Banca moderna (Medici)"
+      ],
+      "pattern": "Diversidad → jardín cognitivo",
+      "enablingFactor": "Caída Constantinopla (1453) → refugiados traen textos griegos"
+    }
+  ],
+
+  "collapsePatterns": [
+    {
+      "id": "rigidez_cultural",
+      "name": "Rigidez Cultural (F1 Extremo)",
+      "emoji": "🧊",
+      "examples": ["rapa_nui", "japon_arcabuces"],
+      "mechanism": "NO metabolizar errores → NO adaptar → colapso ante cambio externo",
+      "formula": "F_rigidez × D_externa > E_adaptacion → Colapso"
+    },
+    {
+      "id": "nodo_unico",
+      "name": "Conocimiento en Nodo Único",
+      "emoji": "📍",
+      "examples": ["Biblioteca Alejandría", "teotihuacan"],
+      "mechanism": "TODO centralizado → destrucción nodo = pérdida total",
+      "contraejemploF0": "Transmisión oral distribuida (resistente)"
+    },
+    {
+      "id": "sobreexplotacion",
+      "name": "Sobre-explotación sin Metabolizar",
+      "emoji": "🔥",
+      "examples": ["rapa_nui", "maya"],
+      "mechanism": "Extraer > regenerar, sin feedback loop",
+      "formula": "Extracción > Regeneración + Δt → Colapso"
+    },
+    {
+      "id": "barbaros_superan",
+      "name": "Bárbaros Tecnológicamente Superiores",
+      "emoji": "⚔️",
+      "examples": ["Roma (Godos)", "Inca/Azteca (España)", "China (Mongoles)"],
+      "mechanism": "Sofisticación cultural ≠ ventaja militar",
+      "glitch": "F1 asume 'civilización' = 'invencible', historia contradice"
+    }
+  ],
+
+  "fertileGlitches": [
+    {
+      "id": "pergamino",
+      "name": "Invención del Pergamino",
+      "emoji": "📜",
+      "dateBCE": 200,
+      "context": "Egipto restringe exportación papiro",
+      "glitch": "RESTRICCIÓN (F1 extractivo)",
+      "fertility": "Pérgamo inventa pergamino → más duradero que papiro",
+      "pattern": "Dificultad impuesta → convergencia alternativa",
+      "lesson": "F1 quiere controlar, crea F0 emergente"
+    },
+    {
+      "id": "imprenta",
+      "name": "Imprenta Gutenberg",
+      "emoji": "📚",
+      "dateCE": 1440,
+      "context": "Monopolio Iglesia sobre manuscritos",
+      "glitch": "RESTRICCIÓN (F1 control conocimiento)",
+      "fertility": "Gutenberg → descentralización masiva",
+      "pattern": "Control → reacción descentralizada",
+      "cascade": ["Reforma Protestante", "Revolución Científica", "Iluminismo"]
+    },
+    {
+      "id": "ruta_seda_bloqueada",
+      "name": "Bloqueo Ruta de la Seda",
+      "emoji": "🚢",
+      "dateCE": 1453,
+      "context": "Imperio Otomano controla ruta → Europa busca alternativa",
+      "glitch": "RESTRICCIÓN (F1 geopolítico)",
+      "fertility": "Era de Exploración (Colón busca India por oeste)",
+      "pattern": "Bloqueo → ruta alternativa",
+      "cascade": ["Descubrimiento América", "Intercambio Colombino"]
+    },
+    {
+      "id": "coltan_smartphone",
+      "name": "Coltán del Congo → Smartphone",
+      "emoji": "📱",
+      "dateCE": 2000,
+      "context": "Mineral esencial para smartphones extraído en guerra civil y trabajo infantil",
+      "glitch": "F1 oculta cadena de suministro para narrativa de 'progreso limpio'",
+      "fertility": "Movimiento fairphone y transparencia de cadena",
+      "pattern": "Tecnología 'avanzada' depende de extracción brutal Sur Global",
+      "cascade": ["Right to Repair", "Economía Circular"]
+    },
+    {
+      "id": "opensource_vs_copyright",
+      "name": "Movimiento Open Source",
+      "emoji": "🐧",
+      "dateCE": 1998,
+      "context": "Microsoft y propietario dominan software (F1 total)",
+      "glitch": "RESTRICCIÓN - Copyright extremo, DRM, vendor lock-in",
+      "fertility": "Linux, Wikipedia, Creative Commons - descentralización masiva",
+      "pattern": "Control F1 genera reacción F0 descentralizada",
+      "cascade": ["Blockchain", "FOSS", "Cultura Remix", "AI Abierto"]
+    },
+    {
+      "id": "biblioteca_alejandria",
+      "name": "Destrucción Biblioteca Alejandría",
+      "emoji": "🔥",
+      "dateBCE": 48,
+      "context": "Pérdida masiva de conocimiento antiguo concentrado en nodo único",
+      "glitch": "Centralización del conocimiento = fragilidad extrema",
+      "fertility": "Internet Archive, IPFS, blockchain para preservación",
+      "pattern": "Nodo único → colapso → rediseño distribuido",
+      "lesson": "Conocimiento debe ser micelio, no árbol único"
+    },
+    {
+      "id": "manuscritos_timbuktu",
+      "name": "Quema Manuscritos Tombuctú (2013)",
+      "emoji": "📜",
+      "dateCE": 2013,
+      "context": "Yihadistas queman/roban manuscritos antiguos durante ocupación",
+      "glitch": "DESTRUCCIÓN - F1 fundamentalista destruye conocimiento",
+      "fertility": "Digitalización masiva de sobrevivientes - proyectos internacionales",
+      "pattern": "Amenaza de pérdida → urgencia de preservación → descentralización digital",
+      "lesson": "Cada intento de destruir conocimiento genera reacción de preservación distribuida"
+    },
+    {
+      "id": "vavilov_semillas",
+      "name": "Banco de Semillas de Vavilov",
+      "emoji": "🌱",
+      "dateCE": 1942,
+      "context": "Asedio de Leningrado - 872 días de hambruna extrema",
+      "glitch": "CONTEXTO IMPOSIBLE - científicos mueren de hambre guardando semillas comestibles",
+      "fertility": "Preservaron 250,000 muestras para futuro - base de diversidad agrícola global",
+      "pattern": "Sacrificio F0 (pensamiento multi-generacional) vs supervivencia F1",
+      "lesson": "9 científicos murieron de hambre sin comer las semillas - F0 puro"
+    },
+    {
+      "id": "piedra_rosetta",
+      "name": "Piedra Rosetta",
+      "emoji": "🗿",
+      "dateBCE": 196,
+      "context": "Jeroglíficos egipcios no descifrados durante 1400+ años",
+      "glitch": "PÉRDIDA DE CONOCIMIENTO - idioma muerto, escritura incomprensible",
+      "fertility": "Mismo texto en 3 escrituras → Champollion descifra jeroglíficos",
+      "pattern": "Redundancia en formatos = antifragilidad",
+      "lesson": "JSON + visualización + audio = Rosetta Stone digital para futuro"
+    },
+    {
+      "id": "efecto_streisand",
+      "name": "Efecto Streisand",
+      "emoji": "🔊",
+      "dateCE": 2003,
+      "context": "Barbra Streisand demanda para remover foto de internet",
+      "glitch": "INTENTO DE SUPRESIÓN (F1 control de información)",
+      "fertility": "Foto se vuelve viral - 420,000+ descargas vs ~6 vistas antes",
+      "pattern": "Censura F1 → multiplicación F0",
+      "lesson": "En era digital, suprimir información la amplifica"
+    }
+  ],
+
+  "tecnologias_perdidas": [
+    {
+      "id": "fuego_griego",
+      "name": "Fuego Griego",
+      "emoji": "🔥",
+      "civilization": "Imperio Bizantino",
+      "dateCE": 672,
+      "description": "Arma incendiaria que ardía en agua - similar a napalm moderno",
+      "composition": "Desconocida - probablemente nafta, cal viva, azufre",
+      "knowledgeStatus": "Secreto tan celosamente guardado que se perdió cuando Imperio cayó",
+      "pattern": "Secreto extremo (F1) → conocimiento muere con imperio",
+      "lesson": "Conocimiento NO compartido = conocimiento frágil"
+    },
+    {
+      "id": "sericultura",
+      "name": "Secreto de la Seda",
+      "emoji": "🐛",
+      "civilization": "China",
+      "dateBCE": 3000,
+      "description": "Producción de seda mantenida como secreto de estado 3500 años",
+      "knowledgeStatus": "Escapó via monjes bizantinos que contrabandean huevos (550 CE)",
+      "pattern": "Monopolio de conocimiento (F1) → eventualmente se filtra (F0)",
+      "lesson": "Conocimiento quiere ser libre. Monopolio es temporal."
+    },
+    {
+      "id": "acero_wootz",
+      "name": "Acero Wootz (Damasco original)",
+      "emoji": "⚔️",
+      "civilization": "India → Medio Oriente",
+      "dateBCE": 300,
+      "description": "Acero con nanotubos de carbono (descubierto 2006)",
+      "knowledgeStatus": "Técnica perdida ~1700s por agotamiento de mineral específico",
+      "pattern": "Tecnología dependiente de recurso específico → recurso agota → técnica pierde",
+      "lesson": "A veces pérdida de conocimiento es pérdida de acceso a materiales, no de idea"
+    }
+  ],
+
+  "patterns_adicionales": [
+    {
+      "id": "pureza_tecnologica",
+      "name": "Pureza Tecnológica → Colapso",
+      "emoji": "🧊",
+      "examples": ["Japón Tokugawa vs armas de fuego", "China Qing vs modernización", "Imperio Bizantino vs pólvora"],
+      "mechanism": "Rigidez cultural que rechaza tecnología 'impura' → vulnerabilidad",
+      "formula": "Purismo_cultural + Amenaza_externa > Adaptabilidad → Colapso",
+      "lesson_F0": "Metabolizar tecnología externa (con ética) > rechazarla por purismo"
+    },
+    {
+      "id": "diversidad_cognitiva",
+      "name": "Diversidad Cultural → Abundancia Cognitiva",
+      "emoji": "🌈",
+      "examples": ["Edad Oro Islámica", "Renacimiento italiano", "Teotihuacan multi-étnica"],
+      "mechanism": "Múltiples culturas coexistiendo sin dominio total → explosión innovación",
+      "formula": "Diversidad_alta + Fricción_baja = Emergencia_cognitiva",
+      "contraejemplo": "Homogeneización forzada → estancamiento"
+    },
+    {
+      "id": "escritura_no_es_inteligencia",
+      "name": "Inteligencia ≠ Escritura Fonética",
+      "emoji": "🤐",
+      "examples": ["Quipus Inca", "Rongorongo Rapa Nui", "Petroglifos globales", "Pinturas Chauvet"],
+      "mechanism": "F1 asume inteligencia compleja requiere escritura alfabética",
+      "evidence": "Inca administró imperio de 10M+ personas sin escritura alfabética",
+      "lesson_F0": "Múltiples caminos hacia complejidad informacional"
+    }
+  ],
+
+  "isomorphisms": [
+    {
+      "id": "megalitismo_precision",
+      "name": "Megalitismo de Precisión",
+      "emoji": "🪨",
+      "nodes": ["egipto", "gobekli_tepe", "tiwanaku", "inca", "rapa_nui", "pumapunku", "gran_zimbabwe", "newgrange"],
+      "description": "Bloques masivos, juntas milimétricas sin mortero",
+      "anomalyF1": "Herramientas oficiales (bronce/piedra) insuficientes"
+    },
+    {
+      "id": "momificacion",
+      "name": "Momificación",
+      "emoji": "💀",
+      "nodes": ["chinchorro", "egipto"],
+      "description": "Preservación corporal, vida post-muerte",
+      "temporalAnomaly": "Chinchorro PRIMERO (7000 BCE) → Egipto después (3000 BCE)"
+    },
+    {
+      "id": "astronomia_precision",
+      "name": "Astronomía de Precisión",
+      "emoji": "⭐",
+      "nodes": ["maya", "egipto", "dogon", "gobekli_tepe"],
+      "description": "Ciclos Venus, solsticios, Orión, Sirio",
+      "anomalyF1": "Precisión que requiere observación multi-generacional"
+    },
+    {
+      "id": "escritura_alternativa",
+      "name": "Escritura Alternativa",
+      "emoji": "✍️",
+      "nodes": ["inca", "rapa_nui"],
+      "description": "NO escritura fonética, pero transmite info compleja",
+      "lessonF0": "Inteligencia ≠ requiere escritura occidental"
+    },
+    {
+      "id": "piramides_escalonadas",
+      "name": "Pirámides Escalonadas",
+      "emoji": "🔺",
+      "nodes": ["egipto", "olmeca", "maya", "teotihuacan", "cahokia", "caral"],
+      "description": "Estructura escalonada hacia cielo, orientación astronómica",
+      "anomalyF1": "Misma topología en civilizaciones 'sin contacto'"
+    },
+    {
+      "id": "urbanismo_temprano",
+      "name": "Urbanismo Avanzado Temprano",
+      "emoji": "🏙️",
+      "nodes": ["mohenjo_daro", "caral", "teotihuacan", "cahokia"],
+      "description": "Planificación urbana, drenaje, estandarización",
+      "anomalyF1": "Sofisticación comparable a ciudades modernas milenios antes"
+    },
+    {
+      "id": "escritura_no_fonetica",
+      "name": "Escritura No-Fonética Compleja",
+      "emoji": "🩢",
+      "nodes": ["inca", "rapa_nui", "vinca", "mohenjo_daro"],
+      "description": "Sistemas de información que no usan escritura alfabética",
+      "lessonF0": "Inteligencia ≠ requiere escritura occidental"
+    },
+    {
+      "id": "ciudad_circular",
+      "name": "Ciudades Circulares / Mandalas Urbanos",
+      "emoji": "⭕",
+      "nodes": ["khmer", "srivijaya"],
+      "description": "Ciudad diseñada como cosmos - círculos concéntricos",
+      "anomalyF1": "¿Por qué culturas sin contacto eligen círculos para orden cósmico?"
+    },
+    {
+      "id": "entierro_barco",
+      "name": "Entierros en Barco",
+      "emoji": "⛵",
+      "nodes": ["sutton_hoo", "egipto", "rapa_nui"],
+      "description": "Muerto viaja en barco hacia más allá - vida es navegación",
+      "anomalyF1": "Agua = frontera entre mundos en múltiples cosmologías"
+    },
+    {
+      "id": "terra_preta",
+      "name": "Suelos Antropogénicos Fértiles",
+      "emoji": "🌱",
+      "nodes": ["kuhikugu"],
+      "description": "Humanos creando suelo más fértil que natural - ingeniería ecosistémica",
+      "anomalyF1": "¿Por qué modernos agotan suelo mientras pre-modernos lo mejoraban?",
+      "lessonF0": "Terra preta retiene fertilidad 500+ años. Agricultura industrial agota en décadas."
+    },
+    {
+      "id": "numero_cero",
+      "name": "Invención Independiente del Cero",
+      "emoji": "0️⃣",
+      "nodes": ["maya", "mohenjo_daro"],
+      "description": "Concepto de 'nada' como número - abstracción matemática profunda",
+      "anomalyF1": "Roma nunca inventó cero - ¿su sistema numérico limitó su matemática?"
+    },
+    {
+      "id": "colapso_bronce_cascada",
+      "name": "Colapso de Bronce en Cascada (1200 BCE)",
+      "emoji": "💥",
+      "nodes": ["egipto"],
+      "description": "Sistema comercial interconectado colapsa en cascada",
+      "anomalyF1": "Globalización antigua era tan frágil como moderna",
+      "lessonF0": "Red robusta requiere redundancia y autonomía local"
+    }
+  ],
+
+  "redFlags": [
+    "🚩 'Cazadores-recolectores NO pueden X' (Göbekli contradice)",
+    "🚩 'Civilización primitiva' (término eurocéntrico)",
+    "🚩 'Coincidencia' (cuando patrón aparece 3+ veces independientes)",
+    "🚩 'Perdido/no descifrado' (a menudo = NO encaja paradigma)",
+    "🚩 'Raramente enseñado' (posible supresión narrativa)"
+  ]
+}

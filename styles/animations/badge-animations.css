@@ -1,0 +1,38 @@
+/* 📍 styles/animations/badge-animations.css */
+/* 🎯 PROPÓSITO: Animaciones estáticas para StandardBadge - pulseBorder y pafffMoment */
+/* 🔧 DECISIÓN: Mover @keyframes a CSS estático para evitar inyección dinámica */
+/* ✅ ARQUITECTURA: CSS Variables para valores dinámicos + clases estáticas */
+/* 🌸 FILOSOFÍA: Performance optimizado sin style tag injection */
+
+/* 🌊 PULSE BORDER - Respiración sutil del borde */
+.badge-pulse-border {
+  animation: pulse-border 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { 
+    border-color: var(--badge-base-border);
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% { 
+    border-color: var(--badge-light-border);
+    box-shadow: 0 0 8px 0 var(--badge-glow-color);
+  }
+}
+
+/* 🪩 PAFFF MOMENT - Latido de coherencia */
+.badge-pafff-moment {
+  animation: pafff-moment 1.5s ease-in-out infinite;
+  border-color: var(--badge-base-border);
+}
+
+@keyframes pafff-moment {
+  0%, 100% { 
+    box-shadow: inset 0 0 0 1px var(--badge-base-border), 0 0 0 2px var(--badge-glow-color);
+  }
+  50% { 
+    box-shadow: inset 0 0 0 2px var(--badge-light-border-5), 
+                0 0 0 4px var(--badge-glow-color), 
+                0 0 12px 0 var(--badge-glow-color);
+  }
+}

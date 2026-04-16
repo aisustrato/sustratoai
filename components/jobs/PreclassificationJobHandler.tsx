@@ -112,6 +112,9 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
                   // 🧹 LIMPIAR PROTECCIÓN GLOBAL: Permitir futuras ejecuciones del lote
                   runningBatches.delete(batchId);
                   
+                  // 🔔 Disparar evento personalizado para actualizar esferas
+                  window.dispatchEvent(new CustomEvent('batch-updated', { detail: { batchId } }));
+                  
                   router.refresh();
                   completeJob(job.id);
                   cleanupRef.current?.();

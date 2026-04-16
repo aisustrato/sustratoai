@@ -12,7 +12,7 @@ import {
 	ArrowRight,
 	Scale,
 } from "lucide-react";
-import { SustratoLogoWithFixedText } from "@/components/ui/sustrato-logo-with-fixed-text";
+import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustratoLogoWithFixedText";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function SignUpPage() {
@@ -29,7 +29,7 @@ export default function SignUpPage() {
 					{/* Cabecera: Identidad y Cambio Ontológico */}
 					<StandardCard.Header className="space-y-4 text-center pb-6 border-b border-border/40">
 						<div className="flex justify-center mb-6">
-							<SustratoLogoWithFixedText
+							<StandardSustratoLogoWithFixedText
 								size={80}
 								variant="vertical"
 								speed="slow"

@@ -6,7 +6,6 @@ import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
 import { useStandardTabs } from "./standard-tabs-context";
-import { generateStandardTabsTokens } from "@/lib/theme/components/standard-tabs-tokens";
 
 const StandardTabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
@@ -14,26 +13,25 @@ const StandardTabsList = React.forwardRef<
 >(({ className, ...props }, ref) => {
   const context = useStandardTabs();
 
-  const recipe = React.useMemo(() =>
-    generateStandardTabsTokens(context.appColorTokens, context.mode, {
-      ...context, isActive: false, isDisabled: false, isHovered: false
-    }),
-    [context]
-  );
+  const listTokens = React.useMemo(() => {
+    if (!context.tokens) return null;
+    return context.tokens.tabs[context.colorScheme][context.styleType][context.size].list;
+  }, [context.tokens, context.colorScheme, context.styleType, context.size]);
 
-  // El estilo ahora se aplica de forma más limpia, incluyendo el borde del "riel"
+  if (!listTokens) {
+    return <TabsPrimitive.List ref={ref} className={className} {...props} />;
+  }
+
   const listStyles: React.CSSProperties = {
-    borderBottomWidth: recipe.tabsList.borderBottomWidth,
-    borderBottomColor: recipe.tabsList.borderBottomColor,
-    width: '100%' // Asegura que el riel ocupe todo el ancho disponible
+    borderBottomWidth: listTokens.borderBottomWidth,
+    borderBottomColor: listTokens.borderBottomColor,
+    width: '100%',
   };
 
   return (
-    <div style={listStyles}>  {/* Usamos un div como el "riel" del borde */}
+    <div style={listStyles}>
         <TabsPrimitive.List
             ref={ref}
-            // FIX: Eliminamos clases de layout fijas como h-10, p-1 y justify-center
-            // para dar total flexibilidad al usuario, permitiendo que `grid` funcione como se espera.
             className={cn(
                 "inline-flex items-center text-muted-foreground",
                 className

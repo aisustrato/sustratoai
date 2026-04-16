@@ -1,0 +1,17 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="8" y="10" width="14" height="14" rx="3" fill="currentColor" opacity="0.3"/>
+  <rect x="25" y="10" width="14" height="14" rx="3" fill="currentColor" opacity="0.45"/>
+  <rect x="42" y="10" width="14" height="14" rx="3" fill="currentColor" opacity="0.3"/>
+  <rect x="59" y="10" width="14" height="14" rx="3" fill="currentColor" opacity="0.4"/>
+  <rect x="8" y="28" width="14" height="14" rx="3" fill="currentColor" opacity="0.4"/>
+  <rect x="25" y="28" width="14" height="14" rx="3" fill="currentColor" opacity="0.55"/>
+  <rect x="42" y="28" width="14" height="14" rx="3" fill="currentColor" opacity="0.45"/>
+  <rect x="59" y="28" width="14" height="14" rx="3" fill="currentColor" opacity="0.3"/>
+  <rect x="8" y="46" width="14" height="14" rx="3" fill="currentColor" opacity="0.3"/>
+  <rect x="25" y="46" width="14" height="14" rx="3" fill="currentColor" opacity="0.4"/>
+  <rect x="42" y="46" width="14" height="14" rx="3" fill="currentColor" opacity="0.55"/>
+  <rect x="59" y="46" width="14" height="14" rx="3" fill="currentColor" opacity="0.45"/>
+  <rect x="8" y="64" width="14" height="8" rx="2" fill="currentColor" opacity="0.2"/>
+  <rect x="25" y="64" width="14" height="8" rx="2" fill="currentColor" opacity="0.25"/>
+  <rect x="42" y="64" width="14" height="8" rx="2" fill="currentColor" opacity="0.2"/>
+</svg>

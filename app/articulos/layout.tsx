@@ -54,20 +54,7 @@ export default function ArticulosLayout({
   const [layoutGap, setLayoutGap] = useState(40); // Default to large gap
   const [globalXPadding, setGlobalXPadding] = useState(64); // Default to large padding
 
-  // 🚨 DEBUG TEMPORAL: Verificar que el layout se está ejecutando
-  console.log(`🏗️ [ArticulosLayout] Renderizando con pathname: ${pathname}`);
-  console.warn(`⚠️ [ArticulosLayout] LAYOUT EJECUTÁNDOSE - Pathname: ${pathname}`);
-  
-  // 🚨 DEBUG TEMPORAL: Alert visible para confirmar ejecución
-  useEffect(() => {
-    console.log(`🔄 [ArticulosLayout] useEffect ejecutado, pathname: ${pathname}`);
-    // Solo mostrar alert en standard-table-final para confirmar
-    if (pathname.includes('standard-table-final')) {
-      console.error(`🔥 [ArticulosLayout] CONFIRMADO: Layout se ejecuta en standard-table-final`);
-    }
-  }, [pathname]);
-
-  // 🎯 FILTRADO INTELIGENTE POR RUTAS CON SOPORTE DE SUB-RUTAS
+  //  FILTRADO INTELIGENTE POR RUTAS CON SOPORTE DE SUB-RUTAS
   // Solo aplicar lógica dinámica en rutas que la necesitan
   // Excluir rutas y sub-rutas específicas que necesitan sticky columns nativos
   const shouldApplyDynamicLayout = useMemo(() => {
@@ -92,13 +79,11 @@ export default function ArticulosLayout({
     
     // Si es una ruta estática explícita, NO aplicar layout dinámico
     if (staticRoutes.some(route => pathname.startsWith(route))) {
-      console.log(`🚫 [Layout] Ruta estática explícita: ${pathname} - SIN layout dinámico`);
       return false;
     }
     
     // Si es una página de detalle de lote, NO aplicar layout dinámico
     if (isBatchDetailPage) {
-      console.log(`🚫 [Layout] Página de detalle de lote detectada: ${pathname} - SIN layout dinámico`);
       return false;
     }
     
@@ -108,7 +93,6 @@ export default function ArticulosLayout({
       return pathname === route || pathname === route + '/';
     });
     
-    console.log(`${isDynamic ? '✅' : '❌'} [Layout] Ruta: ${pathname} - ${isDynamic ? 'CON' : 'SIN'} layout dinámico`);
     return isDynamic;
   }, [pathname]);
 

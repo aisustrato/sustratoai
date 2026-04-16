@@ -58,7 +58,7 @@ export function generateSphereTokens(appColorTokens: AppColorTokens, mode: Mode)
     const key = colorScheme as ColorSchemeVariant;
     const palette = appColorTokens[key];
 
-    if (!palette || !['primary', 'secondary', 'tertiary', 'success', 'warning', 'danger', 'info', 'neutral'].includes(key)) {
+    if (!palette || !['primary', 'secondary', 'tertiary', 'accent', 'success', 'warning', 'danger', 'info', 'neutral'].includes(key)) {
       continue;
     }
     

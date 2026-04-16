@@ -39,12 +39,6 @@ export default function ArticulosHome() {
             description: "Revisa y clasifica los artículos según criterios de inclusión y exclusión."
           },
           {
-            href: "/articulos/analisis-preclasificacion",
-            icon: BarChart3,
-            title: "Análisis de Preclasificación",
-            description: "Visualiza y analiza los resultados de la preclasificación con gráficos interactivos."
-          },
-          {
             href: "/articulos/grupos",
             icon: MapPin,
             title: "Grupos",

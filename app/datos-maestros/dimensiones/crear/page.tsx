@@ -101,6 +101,7 @@ export default function CrearDimensionPage() {
       name: data.name,
       type: data.type,
       description: data.description || null,
+      icon: data.icon || null, // ✅ Incluir icon
       ordering: 0, // Por ahora, un valor por defecto. La action podría manejar esto.
       options: data.options || [],
       questions: data.questions || [],

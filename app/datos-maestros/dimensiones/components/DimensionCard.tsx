@@ -14,6 +14,7 @@ import { StandardText } from "@/components/ui/StandardText";
 import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { PenLine, Trash2 } from "lucide-react"; // GripVertical para drag handle, Eye para ver detalles (comentado)
+import * as LucideIcons from "lucide-react"; // ✅ Importar todos los iconos para renderizado dinámico
 
 import { cn } from "@/lib/utils";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
@@ -69,6 +70,21 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 		triggerRipple(e, accentBg, 10);
 		onViewDetails();
 	};
+
+	// ✅ Renderizar icono dinámicamente desde el nombre guardado
+	const renderIcon = () => {
+		if (!dimension.icon) return null;
+		
+		// Obtener el componente del icono desde lucide-react
+		const IconComponent = (LucideIcons as any)[dimension.icon];
+		
+		if (!IconComponent) {
+			// Si el icono no existe, mostrar un icono por defecto
+			return <LucideIcons.Circle className="h-4 w-4 inline-block mr-1" />;
+		}
+		
+		return <IconComponent className="h-4 w-4 inline-block mr-1" />;
+	};
 	//#endregion ![sub]
 
 	//#region [render] - 🎨 RENDER SECTION 🎨
@@ -107,11 +123,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 							size="md"
 							weight="semibold" // Se puede revisar si preset="title" ya lo incluye
 							truncate>
-							{dimension.icon ? (
-								<span aria-hidden className="mr-1 align-middle">
-									{dimension.icon}
-								</span>
-							) : null}
+							{renderIcon()}
 							{dimension.name}
 						</StandardText>
 						<StandardBadge

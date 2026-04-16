@@ -1,0 +1,1156 @@
+// 📍 app/showroom/transcriptor-audio/page.tsx
+// 🎯 PROPÓSITO: Prueba de concepto de transcripción soberana de audio
+// 🔧 DECISIÓN: Web Speech API (más liviana) como primera opción
+// ⚠️ ADVERTENCIA: Si falla en máquina viejita, escalar a Transformers.js
+
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
+import { StandardCard } from "@/components/ui/StandardCard";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardTextarea } from "@/components/ui/StandardTextarea";
+import { StandardProgressBar } from "@/components/ui/StandardProgressBar";
+import {
+	StandardStepper,
+	type StepItem,
+} from "@/components/ui/StandardStepper";
+import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
+import {
+	Upload,
+	Play,
+	Pause,
+	Rewind,
+	Copy,
+	Download,
+	CheckCircle,
+	Loader2,
+	Table,
+	FileText,
+	AlertTriangle,
+	RefreshCw,
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+	TranscriptionCards,
+	TranscriptionSegment,
+} from "./components/TranscriptionCards";
+import { StandardDialog } from "@/components/ui/StandardDialog";
+
+export default function TranscriptorAudioPage() {
+	//#region [state] - 📦 ESTADO
+	const [audioFiles, setAudioFiles] = useState<File[]>([]);
+	const [audioFile, setAudioFile] = useState<File | null>(null);
+	const [audioUrl, setAudioUrl] = useState<string>("");
+	const [currentFileIndex, setCurrentFileIndex] = useState<number>(0);
+	const [fileTranscriptions, setFileTranscriptions] = useState<
+		{ fileName: string; text: string }[]
+	>([]);
+	const [transcription, setTranscription] = useState<string>("");
+	const [isPlaying, setIsPlaying] = useState(false);
+	const [playbackRate, setPlaybackRate] = useState(1.0);
+	const [statusMessage, setStatusMessage] = useState<string>("");
+	const [volume, setVolume] = useState(1.0);
+	// ⚠️ ELIMINADO: transcriptionMode - Solo WhisperX (Estrategia NK)
+	const [isTranscribing, setIsTranscribing] = useState(false);
+	const [currentStep, setCurrentStep] = useState(0);
+	const [estimatedTime, setEstimatedTime] = useState<string>("");
+	const [progressPercent, setProgressPercent] = useState(0);
+	const [elapsedSeconds, setElapsedSeconds] = useState(0);
+	const [transcriptionSegments, setTranscriptionSegments] = useState<
+		TranscriptionSegment[]
+	>([]);
+	const [viewMode, setViewMode] = useState<"text" | "table">("text");
+	const [currentTime, setCurrentTime] = useState(0);
+
+	// 🚨 Estados para manejo de errores ruidosos (Filosofía Sustrato)
+	const [showErrorDialog, setShowErrorDialog] = useState(false);
+	const [errorDetails, setErrorDetails] = useState<{
+		userMessage: string;
+		suggestions: string[];
+		errorType: string;
+		technicalDetails: string;
+		retryAfter?: number;
+		canRetry: boolean;
+	} | null>(null);
+	const [retryCountdown, setRetryCountdown] = useState(0);
+
+	const timerRef = useRef<NodeJS.Timeout | null>(null);
+	const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+	const audioRef = useRef<HTMLAudioElement>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	//#endregion
+
+	//#region [effects] - 🔄 INICIALIZACIÓN Y CLEANUP
+	// Cleanup del timer al desmontar
+	useEffect(() => {
+		return () => {
+			if (timerRef.current) {
+				clearInterval(timerRef.current);
+			}
+		};
+	}, []);
+
+	// ⚠️ DEPRECADO: Web Speech API - Movido a estrategia API-First (NK)
+	// useEffect(() => {
+	//   // Verificar soporte de Web Speech API
+	//   const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+	//
+	//   if (!SpeechRecognition) {
+	//     setStatusMessage('⚠️ Tu navegador no soporta Web Speech API. Prueba Chrome/Edge.');
+	//     return;
+	//   }
+	//
+	//   const recognition = new SpeechRecognition();
+	//   recognition.continuous = true;
+	//   recognition.interimResults = true;
+	//   recognition.lang = 'es-ES';
+	//
+	//   recognition.onresult = (event: any) => {
+	//     let finalTranscript = '';
+	//     let interimTranscript = '';
+	//
+	//     for (let i = event.resultIndex; i < event.results.length; i++) {
+	//       const transcript = event.results[i][0].transcript;
+	//       if (event.results[i].isFinal) {
+	//         finalTranscript += transcript + ' ';
+	//       } else {
+	//         interimTranscript += transcript;
+	//       }
+	//     }
+	//
+	//     if (finalTranscript) {
+	//       setTranscription(prev => prev + finalTranscript);
+	//     }
+	//   };
+	//
+	//   recognition.onerror = (event: any) => {
+	//     console.error('Error de reconocimiento:', event.error);
+	//     if (event.error === 'not-allowed') {
+	//       setStatusMessage('⚠️ Permiso de micrófono denegado. Permite el acceso para usar dictado.');
+	//     } else if (event.error === 'no-speech') {
+	//       setStatusMessage('🔇 No se detectó voz. Intenta hablar más cerca del micrófono.');
+	//     } else {
+	//       setStatusMessage(`⚠️ Error: ${event.error}`);
+	//     }
+	//     setIsRecognizing(false);
+	//   };
+	//
+	//   recognition.onend = () => {
+	//     setIsRecognizing(false);
+	//   };
+	//
+	//   recognitionRef.current = recognition;
+	//
+	//   return () => {
+	//     if (recognitionRef.current) {
+	//       recognitionRef.current.stop();
+	//     }
+	//   };
+	// }, []);
+
+	// 🎹 Atajos de teclado
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			// Espacio: Play/Pause (solo si no está escribiendo en textarea)
+			if (e.code === "Space" && e.ctrlKey && audioRef.current) {
+				e.preventDefault();
+				togglePlayback();
+			}
+
+			// Esc: Retroceder 5s y pausar
+			if (e.key === "Escape" && audioRef.current) {
+				e.preventDefault();
+				handleRewind();
+				if (!audioRef.current.paused) {
+					audioRef.current.pause();
+					setIsPlaying(false);
+				}
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	// ⚠️ ELIMINADO: useEffect de sincronización - Ahora se usa onTimeUpdate directamente en <audio>
+	//#endregion
+
+	//#region [handlers] - 🔄 MANEJADORES DE EVENTOS
+	const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const files = e.target.files;
+		if (!files || files.length === 0) return;
+
+		const filesArray = Array.from(files);
+		setAudioFiles(filesArray);
+
+		// Cargar el primer archivo para preview
+		const firstFile = filesArray[0];
+		setAudioFile(firstFile);
+
+		// 🔊 Revocar URL anterior si existe para evitar memory leaks
+		if (audioUrl) {
+			URL.revokeObjectURL(audioUrl);
+		}
+
+		const url = URL.createObjectURL(firstFile);
+		setAudioUrl(url);
+
+		// 🔊 CRÍTICO: Aplicar volumen inicial cuando el audio esté listo
+		setTimeout(() => {
+			if (audioRef.current) {
+				audioRef.current.volume = volume;
+				console.log("🔊 [Audio] Volumen inicial aplicado:", volume);
+			}
+		}, 100);
+
+		setStatusMessage(
+			`✅ ${filesArray.length} archivo(s) cargado(s): ${filesArray.map((f) => f.name).join(", ")}`,
+		);
+		toast.success(`${filesArray.length} archivo(s) cargado(s)`);
+		console.log(
+			"🎵 [Audio] Archivos cargados:",
+			filesArray.map((f) => f.name),
+		);
+	};
+
+	// ⚠️ DEPRECADO: toggleRecognition - Web Speech API
+	// const toggleRecognition = () => {
+	//   if (!recognitionRef.current) {
+	//     setStatusMessage('⚠️ Web Speech API no disponible');
+	//     return;
+	//   }
+	//
+	//   if (isRecognizing) {
+	//     recognitionRef.current.stop();
+	//     setIsRecognizing(false);
+	//     setStatusMessage('⏸️ Dictado pausado');
+	//   } else {
+	//     recognitionRef.current.start();
+	//     setIsRecognizing(true);
+	//     setStatusMessage('🎙️ Dictado activo - Habla ahora');
+	//   }
+	// };
+
+	const togglePlayback = () => {
+		if (!audioRef.current) return;
+
+		if (isPlaying) {
+			audioRef.current.pause();
+			setIsPlaying(false);
+		} else {
+			audioRef.current.play();
+			setIsPlaying(true);
+		}
+	};
+
+	const handleRewind = () => {
+		if (!audioRef.current) return;
+		audioRef.current.currentTime = Math.max(
+			0,
+			audioRef.current.currentTime - 5,
+		);
+	};
+
+	const changePlaybackRate = (rate: number) => {
+		if (!audioRef.current) return;
+		audioRef.current.playbackRate = rate;
+		setPlaybackRate(rate);
+		setStatusMessage(`⚡ Velocidad: ${rate}x`);
+	};
+
+	const copyToClipboard = async () => {
+		navigator.clipboard.writeText(transcription);
+		setStatusMessage("📋 Copiado al portapapeles");
+		toast.success("Transcripción copiada al portapapeles");
+	};
+
+	const exportTranscription = () => {
+		const timestamp = new Date().toISOString().split("T")[0];
+		let content = `# Reporte Miel: Transcripción Soberana\n\n**Fecha**: ${timestamp}\n**Archivo**: ${audioFile?.name || "Sin archivo"}\n\n---\n\n`;
+
+		// Si hay segmentos con diarización, agrupar por speaker
+		if (transcriptionSegments.length > 0) {
+			let currentSpeaker = "";
+			let currentText = "";
+
+			transcriptionSegments.forEach((segment, index) => {
+				const speaker = segment.speaker || "SPEAKER_00";
+
+				// Si cambia el speaker, escribir el bloque anterior
+				if (speaker !== currentSpeaker && currentText) {
+					content += `## ${currentSpeaker}\n\n${currentText.trim()}\n\n`;
+					currentText = "";
+				}
+
+				currentSpeaker = speaker;
+				currentText += segment.textOriginal + " ";
+
+				// Si es el último segmento, escribir el bloque final
+				if (index === transcriptionSegments.length - 1) {
+					content += `## ${currentSpeaker}\n\n${currentText.trim()}\n\n`;
+				}
+			});
+		} else {
+			// Sin diarización, usar transcripción simple
+			content += transcription;
+		}
+
+		const blob = new Blob([content], { type: "text/markdown" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `transcripcion_${timestamp}.md`;
+		a.click();
+		URL.revokeObjectURL(url);
+
+		setStatusMessage("💾 Transcripción exportada");
+		toast.success(`Archivo exportado: transcripcion_${timestamp}.md`);
+	};
+
+	const handleSegmentClick = (startTime: number) => {
+		if (!audioRef.current) return;
+		audioRef.current.currentTime = startTime;
+		if (!isPlaying) {
+			audioRef.current.play();
+			setIsPlaying(true);
+		}
+		setStatusMessage(
+			`⏩ Saltando a ${Math.floor(startTime / 60)}:${Math.floor(startTime % 60)
+				.toString()
+				.padStart(2, "0")}`,
+		);
+	};
+
+	const transcriptionSteps: StepItem[] = [
+		{ id: 0, label: "Listo", description: "Esperando audio" },
+		{
+			id: 1,
+			label: "Subiendo",
+			description: "Enviando a Replicate",
+			icon: Upload,
+		},
+		{
+			id: 2,
+			label: "Procesando",
+			description: "WhisperX trabajando",
+			icon: Loader2,
+		},
+		{
+			id: 3,
+			label: "Completado",
+			description: "Transcripción lista",
+			icon: CheckCircle,
+		},
+	];
+
+	const transcribeWithReplicate = async () => {
+		if (audioFiles.length === 0) {
+			setStatusMessage("⚠️ Primero carga uno o más archivos de audio");
+			toast.error("Primero carga uno o más archivos de audio");
+			return;
+		}
+
+		setIsTranscribing(true);
+		setFileTranscriptions([]);
+		const allTranscriptions: { fileName: string; text: string }[] = [];
+
+		// Procesar cada archivo secuencialmente
+		for (let i = 0; i < audioFiles.length; i++) {
+			const file = audioFiles[i];
+			setCurrentFileIndex(i);
+
+			// Estimar tiempo basado en tamaño (aprox 10 segundos por MB)
+			const fileSizeMB = file.size / (1024 * 1024);
+			const estimatedMinutes = Math.ceil((fileSizeMB * 10) / 60);
+			const estimatedSeconds = Math.ceil(fileSizeMB * 10);
+			const timeEstimate =
+				estimatedMinutes > 1 ?
+					`~${estimatedMinutes} minutos`
+				:	`~${estimatedSeconds} segundos`;
+			setEstimatedTime(timeEstimate);
+
+			setCurrentStep(1);
+			setProgressPercent(0);
+			setElapsedSeconds(0);
+			setStatusMessage(
+				`🚀 [${i + 1}/${audioFiles.length}] Enviando ${file.name} (${fileSizeMB.toFixed(1)}MB)...`,
+			);
+			toast.loading(
+				`[${i + 1}/${audioFiles.length}] Enviando ${file.name}...`,
+				{ id: "transcription" },
+			);
+
+			// 🕐 Iniciar cronómetro del ProgressBar
+			timerRef.current = setInterval(() => {
+				setElapsedSeconds((prev) => {
+					const newElapsed = prev + 1;
+					const newProgress = Math.min(
+						100,
+						(newElapsed / estimatedSeconds) * 100,
+					);
+					setProgressPercent(newProgress);
+					return newElapsed;
+				});
+			}, 1000);
+
+			try {
+				const formData = new FormData();
+				formData.append("audio", file);
+				formData.append("language", "es");
+
+				setCurrentStep(2);
+				setStatusMessage(
+					`⚙️ [${i + 1}/${audioFiles.length}] Procesando ${file.name} (${timeEstimate})...`,
+				);
+				toast.loading(
+					`[${i + 1}/${audioFiles.length}] Procesando... ${timeEstimate}`,
+					{ id: "transcription" },
+				);
+
+				const response = await fetch("/api/transcription/replicate", {
+					method: "POST",
+					body: formData,
+				});
+
+				const result = await response.json();
+
+				// 🚨 MANEJO DE ERRORES RUIDOSO - Filosofía Sustrato
+				if (!response.ok || !result.success) {
+					// Detener timer
+					if (timerRef.current) {
+						clearInterval(timerRef.current);
+						timerRef.current = null;
+					}
+
+					setIsTranscribing(false);
+					setCurrentStep(0);
+					toast.dismiss("transcription");
+
+					// Guardar detalles del error para mostrar en dialog
+					setErrorDetails({
+						userMessage:
+							result.userMessage || "Error desconocido al transcribir",
+						suggestions: result.suggestions || ["Intenta nuevamente"],
+						errorType: result.errorType || "unknown",
+						technicalDetails:
+							result.technicalDetails ||
+							result.error ||
+							"Sin detalles técnicos",
+						retryAfter: result.retryAfter,
+						canRetry: result.canRetry !== false,
+					});
+
+					// Si es rate limit, iniciar countdown
+					if (result.retryAfter) {
+						setRetryCountdown(result.retryAfter);
+						retryTimerRef.current = setInterval(() => {
+							setRetryCountdown((prev) => {
+								if (prev <= 1) {
+									if (retryTimerRef.current) {
+										clearInterval(retryTimerRef.current);
+										retryTimerRef.current = null;
+									}
+									return 0;
+								}
+								return prev - 1;
+							});
+						}, 1000);
+					}
+
+					setShowErrorDialog(true);
+
+					console.error("🚨 [Transcription] Error detallado:", result);
+					return; // Detener procesamiento
+				}
+
+				// ✅ ÉXITO
+				if (result.success && result.transcription) {
+					// Detener timer y completar progreso
+					if (timerRef.current) {
+						clearInterval(timerRef.current);
+						timerRef.current = null;
+					}
+					setProgressPercent(100);
+					setCurrentStep(3);
+
+					// Guardar transcripción de este archivo
+					allTranscriptions.push({
+						fileName: file.name,
+						text: result.transcription,
+					});
+					setFileTranscriptions([...allTranscriptions]);
+
+					// ✅ Guardar segmentos si existen (WhisperX con diarización)
+					if (
+						result.segments &&
+						Array.isArray(result.segments) &&
+						result.segments.length > 0
+					) {
+						// 🔮 Preparar estructura con 3 versiones del texto
+						const segmentsWithVersions = result.segments.map(
+							(seg: {
+								start: number;
+								end: number;
+								text: string;
+								speaker?: string;
+							}) => ({
+								start: seg.start,
+								end: seg.end,
+								text: seg.text, // Versión actual (por defecto la original)
+								speaker: seg.speaker,
+								// 📝 Versiones múltiples del texto
+								textOriginal: seg.text, // Versión original de WhisperX
+								textNormalized: undefined, // Versión normalizada por IA (futuro)
+								textHumanEdited: undefined, // Versión editada por humano (futuro)
+							}),
+						);
+
+						setTranscriptionSegments(segmentsWithVersions);
+						setViewMode("table"); // Cambiar automáticamente a vista de cards
+
+						console.log(
+							"📊 Segmentos de transcripción con versiones:",
+							segmentsWithVersions,
+						);
+						console.log("🌐 Idioma detectado:", result.detectedLanguage);
+						console.log(
+							"🎭 Hablantes detectados:",
+							new Set(
+								segmentsWithVersions
+									.map((s: { speaker?: string }) => s.speaker)
+									.filter(Boolean),
+							).size,
+						);
+					}
+
+					setStatusMessage(
+						`✅ [${i + 1}/${audioFiles.length}] ${file.name} completado`,
+					);
+					toast.success(
+						`[${i + 1}/${audioFiles.length}] ${file.name} completado`,
+						{ id: "transcription" },
+					);
+				}
+			} catch (error: unknown) {
+				console.error(`💥 [Transcription] Error de red o parsing:`, error);
+				const errorMessage =
+					error instanceof Error ? error.message : "Error desconocido";
+
+				// Detener timer
+				if (timerRef.current) {
+					clearInterval(timerRef.current);
+					timerRef.current = null;
+				}
+
+				setIsTranscribing(false);
+				setCurrentStep(0);
+				toast.dismiss("transcription");
+
+				// Error de red o parsing
+				setErrorDetails({
+					userMessage: "🌐 Error de conexión o respuesta inválida del servidor",
+					suggestions: [
+						"Verifica tu conexión a internet",
+						"Intenta nuevamente en unos segundos",
+						"Si el problema persiste, puede ser un issue temporal del servidor",
+					],
+					errorType: "network_error",
+					technicalDetails: errorMessage,
+					canRetry: true,
+				});
+				setShowErrorDialog(true);
+				return; // Detener procesamiento
+			}
+		}
+
+		// Concatenar todas las transcripciones
+		const finalTranscription = allTranscriptions
+			.map((t) => `## ${t.fileName}\n\n${t.text}\n\n---\n`)
+			.join("\n");
+		setTranscription(finalTranscription);
+
+		setIsTranscribing(false);
+		// Mantener currentStep en 3 para mostrar "Completado" en verde
+		// setCurrentStep(0); // NO resetear aquí
+
+		const successCount = allTranscriptions.filter(
+			(t) => !t.text.startsWith("[ERROR]"),
+		).length;
+		const finalMsg = `✅ Completado: ${successCount}/${audioFiles.length} archivos transcritos`;
+		setStatusMessage(finalMsg);
+		toast.success(finalMsg, { id: "transcription" });
+	};
+	//#endregion
+
+	//#region [render] - 🎨 RENDER
+	return (
+		<div className="container mx-auto px-4 py-8 max-w-6xl">
+			<StandardPageTitle
+				title="🐢 Transcriptor Soberano"
+				subtitle="Nodo eRRRe | Frecuencia 1x | Sin Soplones de Ozymandias"
+			/>
+
+			{/* Concepto Filosófico */}
+			<StandardCard
+				colorScheme="warning"
+				styleType="subtle"
+				className="mb-6 border-l-4">
+				<p className="text-sm italic">
+					&quot;Para que el mono no tenga tendinitis y las abejas del jardín
+					tengan ojos. Transcribe sin salir de tu propia arquitectura. La paz es
+					la eficiencia.&quot;
+				</p>
+			</StandardCard>
+
+			{/* Status Message */}
+			{statusMessage && (
+				<StandardCard colorScheme="accent" styleType="subtle" className="mb-4">
+					<p className="text-sm font-mono">{statusMessage}</p>
+				</StandardCard>
+			)}
+
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				{/* Columna Izquierda: Controles de Audio */}
+				<div className="lg:col-span-2 space-y-6">
+					{/* Subida de Audio */}
+					<StandardCard colorScheme="primary" styleType="subtle">
+						<h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+							<Upload className="w-5 h-5" />
+							Cargar Audio del Micelio
+						</h3>
+
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept="audio/*"
+							multiple
+							onChange={handleFileUpload}
+							className="hidden"
+						/>
+
+						<StandardButton
+							colorScheme="primary"
+							styleType="solid"
+							onClick={() => fileInputRef.current?.click()}
+							className="w-full mb-4"
+							leftIcon={Upload}>
+							Seleccionar Archivo(s) de Audio
+						</StandardButton>
+
+						{/* Lista de archivos cargados */}
+						{audioFiles.length > 0 && (
+							<div className="mb-4 p-3 bg-slate-800/50 rounded-lg">
+								<h4 className="text-xs font-bold mb-2 text-slate-300">
+									📁 Archivos cargados ({audioFiles.length}):
+								</h4>
+								<ul className="space-y-1">
+									{audioFiles.map((file, idx) => (
+										<li key={idx} className="text-xs flex items-center gap-2">
+											{isTranscribing && idx === currentFileIndex ?
+												<Loader2 className="w-3 h-3 animate-spin text-blue-400" />
+											: fileTranscriptions[idx] ?
+												fileTranscriptions[idx].text.startsWith("[ERROR]") ?
+													<span className="text-red-400">❌</span>
+												:	<CheckCircle className="w-3 h-3 text-green-400" />
+											:	<span className="text-slate-500">⏸️</span>}
+											<span
+												className={`${
+													isTranscribing && idx === currentFileIndex ?
+														"text-blue-400 font-bold"
+													: fileTranscriptions[idx] ?
+														fileTranscriptions[idx].text.startsWith("[ERROR]") ?
+															"text-red-400"
+														:	"text-green-400"
+													:	"text-slate-400"
+												}`}>
+												{file.name} ({(file.size / (1024 * 1024)).toFixed(1)}MB)
+											</span>
+										</li>
+									))}
+								</ul>
+							</div>
+						)}
+
+						{audioUrl && (
+							<div className="space-y-4">
+								<audio
+									ref={audioRef}
+									src={audioUrl}
+									onLoadedData={() => {
+										// 🔊 CRÍTICO: Asegurar volumen cuando el audio está listo
+										if (audioRef.current) {
+											audioRef.current.volume = volume;
+											audioRef.current.muted = false; // ✅ Asegurar que NO esté muted
+											console.log(
+												"🔊 [Audio] onLoadedData - Volumen aplicado:",
+												volume,
+											);
+											console.log("🔊 [Audio] Estado del elemento:", {
+												volume: audioRef.current.volume,
+												muted: audioRef.current.muted,
+												duration: audioRef.current.duration,
+												readyState: audioRef.current.readyState,
+												src: audioRef.current.src,
+											});
+										}
+										setStatusMessage("✅ Audio listo para reproducir");
+									}}
+									onTimeUpdate={(e) => {
+										// 🎤 CRÍTICO: Sincronización para efecto karaoke
+										const audio = e.currentTarget;
+										setCurrentTime(audio.currentTime);
+										console.log(
+											"⏱️ [Karaoke] currentTime:",
+											audio.currentTime.toFixed(2),
+										);
+									}}
+									onPlay={() => {
+										setIsPlaying(true);
+										setStatusMessage("▶️ Reproduciendo audio...");
+										console.log("▶️ [Audio] Reproducción iniciada");
+										console.log(
+											"🔊 [Audio] Volumen actual:",
+											audioRef.current?.volume,
+										);
+										console.log("🔇 [Audio] Muted:", audioRef.current?.muted);
+									}}
+									onPause={() => {
+										setIsPlaying(false);
+										setStatusMessage("⏸️ Audio pausado");
+									}}
+									onEnded={() => {
+										setIsPlaying(false);
+										setStatusMessage("✅ Audio finalizado");
+									}}
+									onError={(e) => {
+										setStatusMessage(
+											"⚠️ Error al cargar audio. Verifica el formato del archivo.",
+										);
+										console.error("💥 [Audio] Error:", e);
+									}}
+									className="w-full"
+									controls
+									preload="auto"
+								/>
+
+								{/* Indicador Visual de Reproducción */}
+								{isPlaying && (
+									<div className="flex items-center gap-2 text-sm text-green-400 animate-pulse">
+										<div className="w-2 h-2 bg-green-400 rounded-full"></div>
+										<span>Audio reproduciéndose...</span>
+									</div>
+								)}
+
+								{/* Controles de Reproducción */}
+								<div className="flex flex-wrap gap-2">
+									<StandardButton
+										colorScheme="secondary"
+										styleType="outline"
+										size="sm"
+										onClick={togglePlayback}
+										leftIcon={isPlaying ? Pause : Play}>
+										{isPlaying ? "Pausar" : "Reproducir"}
+									</StandardButton>
+
+									<StandardButton
+										colorScheme="secondary"
+										styleType="outline"
+										size="sm"
+										onClick={handleRewind}
+										leftIcon={Rewind}>
+										-5s
+									</StandardButton>
+
+									<StandardButton
+										colorScheme={playbackRate === 0.5 ? "accent" : "neutral"}
+										styleType={playbackRate === 0.5 ? "solid" : "outline"}
+										size="sm"
+										onClick={() => changePlaybackRate(0.5)}>
+										0.5x
+									</StandardButton>
+
+									<StandardButton
+										colorScheme={playbackRate === 1.0 ? "accent" : "neutral"}
+										styleType={playbackRate === 1.0 ? "solid" : "outline"}
+										size="sm"
+										onClick={() => changePlaybackRate(1.0)}>
+										1.0x
+									</StandardButton>
+
+									<StandardButton
+										colorScheme={playbackRate === 1.5 ? "accent" : "neutral"}
+										styleType={playbackRate === 1.5 ? "solid" : "outline"}
+										size="sm"
+										onClick={() => changePlaybackRate(1.5)}>
+										1.5x
+									</StandardButton>
+								</div>
+
+								{/* Control de Volumen */}
+								<div className="flex items-center gap-3">
+									<span className="text-xs text-slate-400">Volumen:</span>
+									<input
+										type="range"
+										min="0"
+										max="1"
+										step="0.1"
+										value={volume}
+										onChange={(e) => {
+											const newVolume = parseFloat(e.target.value);
+											setVolume(newVolume);
+											if (audioRef.current) {
+												audioRef.current.volume = newVolume;
+											}
+											setStatusMessage(
+												`🔊 Volumen: ${Math.round(newVolume * 100)}%`,
+											);
+										}}
+										className="w-32 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+									/>
+									<span className="text-xs text-slate-400 w-10">
+										{Math.round(volume * 100)}%
+									</span>
+								</div>
+							</div>
+						)}
+					</StandardCard>
+
+					{/* Área de Transcripción */}
+					<StandardCard colorScheme="success" styleType="subtle">
+						<div className="flex justify-between items-center mb-4">
+							<h3 className="text-lg font-bold">Transcripción</h3>
+							<div className="flex gap-2">
+								{/* Selector de vista (solo si hay segmentos) */}
+								{transcriptionSegments.length > 0 && (
+									<>
+										<StandardButton
+											colorScheme={viewMode === "text" ? "success" : "neutral"}
+											styleType={viewMode === "text" ? "solid" : "outline"}
+											size="sm"
+											onClick={() => setViewMode("text")}
+											leftIcon={FileText}>
+											Texto
+										</StandardButton>
+										<StandardButton
+											colorScheme={viewMode === "table" ? "success" : "neutral"}
+											styleType={viewMode === "table" ? "solid" : "outline"}
+											size="sm"
+											onClick={() => setViewMode("table")}
+											leftIcon={Table}>
+											Tabla
+										</StandardButton>
+									</>
+								)}
+								<StandardButton
+									colorScheme="success"
+									styleType="outline"
+									size="sm"
+									onClick={copyToClipboard}
+									leftIcon={Copy}
+									disabled={!transcription}>
+									Copiar
+								</StandardButton>
+								<StandardButton
+									colorScheme="success"
+									styleType="solid"
+									size="sm"
+									onClick={exportTranscription}
+									leftIcon={Download}
+									disabled={!transcription}>
+									Exportar .md
+								</StandardButton>
+							</div>
+						</div>
+
+						{/* Vista de texto */}
+						{viewMode === "text" && (
+							<StandardTextarea
+								value={transcription}
+								onChange={(e) => setTranscription(e.target.value)}
+								placeholder="Escribe aquí o activa el dictado..."
+								rows={15}
+								colorScheme="default"
+							/>
+						)}
+
+						{/* Vista de cards con efecto karaoke y scroll automático */}
+						{viewMode === "table" && transcriptionSegments.length > 0 && (
+							<div className="space-y-2">
+								<div className="text-xs text-center opacity-70 mb-2 p-2 bg-black/20 rounded">
+									🎤 <strong>Sincronización Karaoke:</strong> El segmento activo
+									se resalta automáticamente
+									<br />⏩ Haz clic en el tiempo para saltar a ese momento del
+									audio
+								</div>
+								<TranscriptionCards
+									segments={transcriptionSegments}
+									currentTime={currentTime}
+									onSegmentClick={handleSegmentClick}
+								/>
+							</div>
+						)}
+
+						{/* Mensaje si no hay segmentos en modo cards */}
+						{viewMode === "table" && transcriptionSegments.length === 0 && (
+							<div className="text-center py-8 text-sm opacity-70">
+								📊 La vista de segmentos estará disponible después de
+								transcribir con WhisperX
+								<br />
+								<span className="text-xs opacity-50 mt-2 block">
+									(WhisperX incluye diarización automática de hablantes)
+								</span>
+							</div>
+						)}
+					</StandardCard>
+				</div>
+
+				{/* Columna Derecha: WhisperX (Estrategia NK: API-First) */}
+				<div className="space-y-6">
+					{/* Transcripción WhisperX */}
+					<StandardCard colorScheme="primary" styleType="filled">
+						<h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+							⚡ WhisperX Large v3
+						</h3>
+
+						<p className="text-sm mb-4 opacity-90">
+							Transcripción acelerada vía WhisperX. Más rápida, robusta y sin
+							timeouts. Sin quemar tu CPU local.
+						</p>
+
+						{/* Stepper de Progreso */}
+						{isTranscribing && (
+							<div className="mb-4">
+								<StandardCard
+									colorScheme="warning"
+									styleType="subtle"
+									className="mb-3">
+									<p className="text-xs text-center">
+										⏳ <strong>Procesamiento en curso</strong>
+										<br />
+										Tiempo estimado: {estimatedTime}
+										<br />
+										<span className="opacity-70">
+											WhisperX es más rápido que Whisper v3
+										</span>
+									</p>
+								</StandardCard>
+
+								{/* Cronómetro Visual con ProgressBar */}
+								<div className="mb-4">
+									<StandardProgressBar
+										value={progressPercent}
+										max={100}
+										colorScheme={progressPercent >= 100 ? "warning" : "primary"}
+										styleType="gradient"
+										size="lg"
+										label={`Tiempo transcurrido: ${elapsedSeconds}s`}
+										showValue={true}
+										animated={true}
+									/>
+									{progressPercent >= 100 && (
+										<p className="text-xs text-center mt-2 text-yellow-600 dark:text-yellow-400">
+											😅 Tomó más de lo estimado... Whisper sigue trabajando
+										</p>
+									)}
+								</div>
+
+								<StandardStepper
+									steps={transcriptionSteps}
+									currentStepIndex={currentStep}
+									variant="primary"
+									orientation="vertical"
+								/>
+								<div className="mt-3 flex justify-center">
+									<SustratoLoadingLogo
+										size={40}
+										variant="spin-pulse"
+										speed="normal"
+										showText={false}
+										breathingEffect={true}
+										colorTransition={true}
+									/>
+								</div>
+							</div>
+						)}
+
+						<StandardButton
+							colorScheme="primary"
+							styleType="solid"
+							onClick={transcribeWithReplicate}
+							disabled={audioFiles.length === 0 || isTranscribing}
+							className="w-full"
+							leftIcon={isTranscribing ? undefined : Upload}
+							loading={isTranscribing}
+							loadingText={
+								isTranscribing ?
+									`Transcribiendo [${currentFileIndex + 1}/${audioFiles.length}]...`
+								:	"Transcribiendo..."
+							}>
+							{!isTranscribing &&
+								`⚡ Transcribir ${audioFiles.length > 0 ? `${audioFiles.length} archivo(s)` : ""} con WhisperX`}
+						</StandardButton>
+
+						{!isTranscribing && (
+							<div className="mt-4 p-3 bg-black/20 rounded-lg">
+								<p className="text-xs">
+									<strong>Ventajas WhisperX:</strong>
+									<br />
+									• ⚡ Más rápido que Whisper v3
+									<br />
+									• 🛡️ Sin timeouts (más robusto)
+									<br />
+									• Calidad profesional
+									<br />
+									• Soporta audios largos
+									<br />
+									• No quema CPU local
+									<br />• 🐢 Procesa múltiples archivos secuencialmente
+								</p>
+							</div>
+						)}
+					</StandardCard>
+
+					<StandardCard colorScheme="neutral" styleType="subtle">
+						<h4 className="text-sm font-bold mb-2">🔒 Privacidad</h4>
+						<p className="text-xs opacity-75 leading-relaxed">
+							Este artefacto usa Web Speech API nativa del navegador. El audio
+							NO se envía a servidores externos de SUSTRATO.AI. La transcripción
+							ocurre en tu máquina local.
+						</p>
+					</StandardCard>
+
+					<StandardCard colorScheme="accent" styleType="subtle">
+						<h4 className="text-sm font-bold mb-2">
+							💡 Tips para Audios Rápidos
+						</h4>
+						<ul className="text-xs opacity-75 leading-relaxed space-y-1">
+							<li>
+								• <strong>Velocidad 0.5x</strong>: Ralentiza podcasts rápidos
+							</li>
+							<li>
+								• <strong>Parlante + Micrófono</strong>: Reproduce en parlante,
+								micrófono cerca
+							</li>
+							<li>
+								• <strong>Audífonos Mac</strong>: Verifica Preferencias → Sonido
+								→ Salida
+							</li>
+							<li>
+								• <strong>Retraso normal</strong>: Web Speech API tiene ~1-2s de
+								delay
+							</li>
+						</ul>
+					</StandardCard>
+				</div>
+			</div>
+
+			{/* Footer Meta */}
+			<div className="mt-8 text-center text-xs opacity-50 max-w-2xl mx-auto leading-relaxed">
+				Si el sistema F1 pregunta por la NASA, ignóralo. El mono ya está en
+				2026.
+			</div>
+
+			{/* 🚨 Dialog de Error Ruidoso - Filosofía Sustrato */}
+			<StandardDialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+				<StandardDialog.Content
+					size="lg"
+					colorScheme={
+						errorDetails?.errorType === "rate_limit" ? "warning" : "danger"
+					}>
+					<StandardDialog.Header>
+						<StandardDialog.Title>
+							<div className="flex items-center gap-2">
+								<AlertTriangle className="w-5 h-5" />
+								{errorDetails?.errorType === "rate_limit" ?
+									"⏱️ Límite de Peticiones"
+								:	"❌ Error en Transcripción"}
+							</div>
+						</StandardDialog.Title>
+						<StandardDialog.Description>
+							{errorDetails?.userMessage}
+						</StandardDialog.Description>
+					</StandardDialog.Header>
+
+					<div className="space-y-4">
+						{/* Sugerencias */}
+						{errorDetails?.suggestions &&
+							errorDetails.suggestions.length > 0 && (
+								<div className="bg-black/20 p-4 rounded-lg">
+									<h4 className="text-sm font-bold mb-2">💡 Sugerencias:</h4>
+									<ul className="text-sm space-y-1">
+										{errorDetails.suggestions.map((suggestion, idx) => (
+											<li key={idx} className="flex items-start gap-2">
+												<span className="opacity-70">•</span>
+												<span>{suggestion}</span>
+											</li>
+										))}
+									</ul>
+								</div>
+							)}
+
+						{/* Detalles técnicos (colapsable) */}
+						<details className="text-xs opacity-70">
+							<summary className="cursor-pointer hover:opacity-100">
+								🔧 Detalles técnicos (para debugging)
+							</summary>
+							<pre className="mt-2 p-2 bg-black/30 rounded overflow-x-auto">
+								{errorDetails?.technicalDetails}
+							</pre>
+						</details>
+
+						{/* Countdown para rate limit */}
+						{retryCountdown > 0 && (
+							<div className="text-center p-3 bg-yellow-500/20 rounded-lg">
+								<p className="text-sm font-bold">
+									⏳ Espera {retryCountdown} segundos antes de reintentar
+								</p>
+							</div>
+						)}
+					</div>
+
+					<StandardDialog.Footer>
+						<StandardButton
+							colorScheme="neutral"
+							styleType="outline"
+							onClick={() => {
+								setShowErrorDialog(false);
+								if (retryTimerRef.current) {
+									clearInterval(retryTimerRef.current);
+									retryTimerRef.current = null;
+								}
+								setRetryCountdown(0);
+							}}>
+							Cerrar
+						</StandardButton>
+
+						{errorDetails?.canRetry && (
+							<StandardButton
+								colorScheme={retryCountdown > 0 ? "warning" : "primary"}
+								styleType="solid"
+								onClick={() => {
+									setShowErrorDialog(false);
+									if (retryTimerRef.current) {
+										clearInterval(retryTimerRef.current);
+										retryTimerRef.current = null;
+									}
+									setRetryCountdown(0);
+									// Reintentar transcripción
+									setTimeout(() => transcribeWithReplicate(), 100);
+								}}
+								disabled={retryCountdown > 0}
+								leftIcon={RefreshCw}>
+								{retryCountdown > 0 ?
+									`Espera ${retryCountdown}s`
+								:	"Reintentar Ahora"}
+							</StandardButton>
+						)}
+					</StandardDialog.Footer>
+				</StandardDialog.Content>
+			</StandardDialog>
+		</div>
+	);
+	//#endregion
+}

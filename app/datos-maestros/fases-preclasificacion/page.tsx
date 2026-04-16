@@ -73,13 +73,16 @@ export default function FasesPreclasificacionPage() {
 				throw new Error(error.message || "Error al cargar las fases");
 			}
 
-			setFases(data || []);
+			setFases((data || []) as any);
 		} catch (err) {
 			console.error("Error cargando fases:", err);
-			const errorMessage = err instanceof Error ? err.message : "Error desconocido al cargar las fases";
+			const errorMessage =
+				err instanceof Error ?
+					err.message
+				:	"Error desconocido al cargar las fases";
 			toast.error("Error al cargar", {
 				description: errorMessage,
-				icon: <AlertCircle className="h-5 w-5 text-destructive" />
+				icon: <AlertCircle className="h-5 w-5 text-destructive" />,
 			});
 			setError(errorMessage);
 		} finally {
@@ -103,7 +106,9 @@ export default function FasesPreclasificacionPage() {
 			accessorKey: "description",
 			header: "Descripción",
 			size: 300, // Ancho fijo para la columna de descripción
-			cell: ({ row }) => <div className="truncate">{row.original.description || "-"}</div>,
+			cell: ({ row }) => (
+				<div className="truncate">{row.original.description || "-"}</div>
+			),
 			meta: { isTruncatable: true }, // Habilita el tooltip en hover
 		},
 		{
@@ -114,24 +119,21 @@ export default function FasesPreclasificacionPage() {
 				const estado = row.original.status;
 				// Mapeamos los estados a los valores válidos de ColorSchemeVariant
 				const variant =
-					estado === "active"
-						? "success"
-						: estado === "completed"
-						? "secondary"
-						: estado === "annulled"
-						? "danger"
-						: "neutral";
+					estado === "active" ? "success"
+					: estado === "completed" ? "secondary"
+					: estado === "annulled" ? "danger"
+					: "neutral";
 
 				return (
 					<div className="flex justify-center">
 						<StandardBadge colorScheme={variant} styleType="solid">
-							{estado === "active"
-								? "Activo"
-								: estado === "completed"
-								? "Completado"
-								: estado === "annulled"
-								? "Anulado"
-								: "Inactivo"}
+							{estado === "active" ?
+								"Activo"
+							: estado === "completed" ?
+								"Completado"
+							: estado === "annulled" ?
+								"Anulado"
+							:	"Inactivo"}
 						</StandardBadge>
 					</div>
 				);
@@ -142,58 +144,58 @@ export default function FasesPreclasificacionPage() {
 			header: "Acciones",
 			size: 180, // Ancho fijo en píxeles
 			cell: ({ row }) => (
-									<div className="flex justify-center space-x-1">
-										{/* Botón Ver - Siempre visible */}
-										<StandardButton
-											styleType="outline"
-											colorScheme="primary"
-											size="sm"
-											iconOnly={true}
-											onClick={() =>
-												router.push(
-													`/datos-maestros/fases-preclasificacion/${row.original.id}/ver`
-												)
-											}
-											tooltip="Ver detalles"
-											leftIcon={Eye}
-											aria-label="Ver detalles de la fase"
-										/>
+				<div className="flex justify-center space-x-1">
+					{/* Botón Ver - Siempre visible */}
+					<StandardButton
+						styleType="outline"
+						colorScheme="primary"
+						size="sm"
+						iconOnly={true}
+						onClick={() =>
+							router.push(
+								`/datos-maestros/fases-preclasificacion/${row.original.id}/ver`,
+							)
+						}
+						tooltip="Ver detalles"
+						leftIcon={Eye}
+						aria-label="Ver detalles de la fase"
+					/>
 
-										{/* Botones de edición y eliminación - Solo con permisos */}
-										{puedeGestionarFases && (
-											<>
-												<StandardButton
-													styleType="outline"
-													colorScheme="primary"
-													size="sm"
-													iconOnly={true}
-													onClick={() =>
-														router.push(
-															`/datos-maestros/fases-preclasificacion/${row.original.id}/editar`
-														)
-													}
-													tooltip="Editar fase"
-													leftIcon={Edit}
-													aria-label="Editar fase"
-												/>
+					{/* Botones de edición y eliminación - Solo con permisos */}
+					{puedeGestionarFases && (
+						<>
+							<StandardButton
+								styleType="outline"
+								colorScheme="primary"
+								size="sm"
+								iconOnly={true}
+								onClick={() =>
+									router.push(
+										`/datos-maestros/fases-preclasificacion/${row.original.id}/editar`,
+									)
+								}
+								tooltip="Editar fase"
+								leftIcon={Edit}
+								aria-label="Editar fase"
+							/>
 
-												<StandardButton
-													styleType="outline"
-													colorScheme="danger"
-													size="sm"
-													iconOnly={true}
-													onClick={() =>
-														router.push(
-															`/datos-maestros/fases-preclasificacion/${row.original.id}/eliminar`
-														)
-													}
-													tooltip="Eliminar fase"
-													leftIcon={Trash2}
-													aria-label="Eliminar fase"
-												/>
-											</>
-										)}
-									</div>
+							<StandardButton
+								styleType="outline"
+								colorScheme="danger"
+								size="sm"
+								iconOnly={true}
+								onClick={() =>
+									router.push(
+										`/datos-maestros/fases-preclasificacion/${row.original.id}/eliminar`,
+									)
+								}
+								tooltip="Eliminar fase"
+								leftIcon={Trash2}
+								aria-label="Eliminar fase"
+							/>
+						</>
+					)}
+				</div>
 			),
 		},
 	];
@@ -263,34 +265,34 @@ export default function FasesPreclasificacionPage() {
 							{ label: "Fases de Preclasificación" },
 						]}
 						actions={
-							puedeGestionarFases ? (
+							puedeGestionarFases ?
 								<StandardButton
-									onClick={() => router.push("/datos-maestros/fases-preclasificacion/nuevo/crear")}
+									onClick={() =>
+										router.push(
+											"/datos-maestros/fases-preclasificacion/nuevo/crear",
+										)
+									}
 									colorScheme="primary"
-									leftIcon={Plus}
-								>
+									leftIcon={Plus}>
 									Nueva Fase
 								</StandardButton>
-							) : undefined
+							:	undefined
 						}
 					/>
-
-
 
 					{/* Mensaje de permisos limitados */}
 					{mensajePermisos}
 
 					{/* Tabla de fases */}
 					<StandardCard>
-						{fases.length > 0 ? (
+						{fases.length > 0 ?
 							<StandardTable<PreclassificationPhase>
 								data={fases}
 								columns={columnas}
 								filterPlaceholder="Buscar fases...">
 								<StandardTable.Table />
 							</StandardTable>
-						) : (
-							<div className="p-8 text-center">
+						:	<div className="p-8 text-center">
 								<StandardEmptyState
 									title="No hay fases"
 									description="Aún no se han creado fases de preclasificación para este proyecto."
@@ -299,7 +301,7 @@ export default function FasesPreclasificacionPage() {
 										<StandardButton
 											onClick={() =>
 												router.push(
-													"/datos-maestros/fases-preclasificacion/nuevo/crear"
+													"/datos-maestros/fases-preclasificacion/nuevo/crear",
 												)
 											}
 											leftIcon={Plus}
@@ -309,7 +311,7 @@ export default function FasesPreclasificacionPage() {
 									}
 								/>
 							</div>
-						)}
+						}
 					</StandardCard>
 				</div>
 			</div>

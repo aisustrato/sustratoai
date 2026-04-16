@@ -1,0 +1,303 @@
+// 📍 lib/actions/nexus-actions.ts
+// 🍄👁️ Server Actions para Hipatia Nexus
+// v0.01
+
+"use server";
+
+import { createSupabaseServerClient } from "@/lib/server";
+
+// ============================================
+// 📦 TIPOS
+// ============================================
+
+export type ResultadoOperacion<T> =
+	| { success: true; data: T }
+	| { success: false; error: string };
+
+export interface NexusRegion {
+	id: string;
+	name: string;
+	emoji?: string;
+	color?: string;
+	sort_order?: number;
+}
+
+export interface NexusCivilization {
+	id: string;
+	name: string;
+	emoji?: string;
+	subtitle?: string;
+	start_bce?: number;
+	start_ce?: number;
+	end_bce?: number;
+	end_ce?: number;
+	generations?: number;
+	region_id?: string;
+	latitude?: number;
+	longitude?: number;
+	type?: string;
+	anomaly_level?: "low" | "medium" | "high" | "critical";
+	glitch_type?: string;
+	official_narrative?: string;
+	evidence_contradiction?: string;
+	anomaly?: string;
+	world_first?: boolean;
+	world_first_label?: string;
+	pattern_tags?: string[];
+	technologies?: string[];
+}
+
+export interface NexusIsomorphism {
+	id: string;
+	name: string;
+	description?: string;
+	icon?: string;
+	color?: string;
+	strength?: number;
+	civilizations?: string[];
+}
+
+export interface NexusJsonData {
+	regions: NexusRegion[];
+	civilizations: NexusCivilization[];
+	isomorphisms: NexusIsomorphism[];
+}
+
+export interface LoadStats {
+	regions: number;
+	civilizations: number;
+	isomorphisms: number;
+	connections: number;
+	tags: number;
+}
+
+// ============================================
+// 🔍 ACTION: Verificar si hay datos
+// ============================================
+
+export async function checkNexusDataAction(): Promise<
+	ResultadoOperacion<{ hasData: boolean; count: number }>
+> {
+	try {
+		const supabase = await createSupabaseServerClient();
+		
+		const { count, error } = await supabase
+			.from("nexus_civilizations")
+			.select("*", { count: "exact", head: true });
+		
+		if (error) {
+			// Si la tabla no existe, retornar vacío (no error)
+			if (error.code === "42P01") {
+				return { success: true, data: { hasData: false, count: 0 } };
+			}
+			return { success: false, error: error.message };
+		}
+		
+		return { 
+			success: true, 
+			data: { hasData: (count || 0) > 0, count: count || 0 } 
+		};
+	} catch (err) {
+		return { 
+			success: false, 
+			error: err instanceof Error ? err.message : "Error desconocido" 
+		};
+	}
+}
+
+// ============================================
+// 📤 ACTION: Cargar JSON a Supabase
+// ============================================
+
+export async function loadJsonToNexusAction(
+	jsonData: NexusJsonData
+): Promise<ResultadoOperacion<{ message: string; stats: LoadStats }>> {
+	const stats: LoadStats = { 
+		regions: 0, 
+		civilizations: 0, 
+		isomorphisms: 0, 
+		connections: 0, 
+		tags: 0 
+	};
+	
+	try {
+		const supabase = await createSupabaseServerClient();
+		
+		// 1️⃣ Cargar Regiones
+		if (jsonData.regions?.length) {
+			const { error: regError } = await supabase
+				.from("nexus_regions")
+				.upsert(
+					jsonData.regions.map((r, idx) => ({
+						id: r.id,
+						name: r.name,
+						emoji: r.emoji,
+						color: r.color,
+						sort_order: r.sort_order || idx,
+					})),
+					{ onConflict: "id" }
+				);
+			
+			if (regError) throw new Error(`Regiones: ${regError.message}`);
+			stats.regions = jsonData.regions.length;
+		}
+		
+		// 2️⃣ Extraer y cargar Tags únicos
+		const allTags = new Set<string>();
+		jsonData.civilizations?.forEach(civ => {
+			civ.pattern_tags?.forEach(tag => allTags.add(tag));
+		});
+		
+		if (allTags.size > 0) {
+			const tagsToInsert = Array.from(allTags).map(tag => ({
+				id: tag,
+				name: tag.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()),
+			}));
+			
+			const { error: tagError } = await supabase
+				.from("nexus_pattern_tags")
+				.upsert(tagsToInsert, { onConflict: "id" });
+			
+			if (tagError) throw new Error(`Tags: ${tagError.message}`);
+			stats.tags = tagsToInsert.length;
+		}
+		
+		// 3️⃣ Cargar Civilizaciones
+		if (jsonData.civilizations?.length) {
+			const civsToInsert = jsonData.civilizations.map(civ => ({
+				id: civ.id,
+				name: civ.name,
+				emoji: civ.emoji,
+				subtitle: civ.subtitle,
+				start_bce: civ.start_bce,
+				start_ce: civ.start_ce,
+				end_bce: civ.end_bce,
+				end_ce: civ.end_ce,
+				generations: civ.generations,
+				region_id: civ.region_id,
+				latitude: civ.latitude,
+				longitude: civ.longitude,
+				type: civ.type || "civilization",
+				anomaly_level: civ.anomaly_level,
+				glitch_type: civ.glitch_type,
+				official_narrative: civ.official_narrative,
+				evidence_contradiction: civ.evidence_contradiction,
+				anomaly: civ.anomaly,
+				world_first: civ.world_first,
+				world_first_label: civ.world_first_label,
+			}));
+			
+			const { error: civError } = await supabase
+				.from("nexus_civilizations")
+				.upsert(civsToInsert, { onConflict: "id" });
+			
+			if (civError) throw new Error(`Civilizaciones: ${civError.message}`);
+			stats.civilizations = civsToInsert.length;
+			
+			// 3b️⃣ Cargar relaciones Civilización ↔ Tags
+			const civTagsToInsert: Array<{ civilization_id: string; tag_id: string }> = [];
+			jsonData.civilizations.forEach(civ => {
+				civ.pattern_tags?.forEach(tag => {
+					civTagsToInsert.push({ civilization_id: civ.id, tag_id: tag });
+				});
+			});
+			
+			if (civTagsToInsert.length > 0) {
+				// Primero eliminar existentes para evitar duplicados
+				const civIds = jsonData.civilizations.map(c => c.id);
+				await supabase
+					.from("nexus_civilization_tags")
+					.delete()
+					.in("civilization_id", civIds);
+				
+				const { error: ctError } = await supabase
+					.from("nexus_civilization_tags")
+					.insert(civTagsToInsert);
+				
+				if (ctError) throw new Error(`Civ-Tags: ${ctError.message}`);
+			}
+		}
+		
+		// 4️⃣ Cargar Isomorfismos
+		if (jsonData.isomorphisms?.length) {
+			const isosToInsert = jsonData.isomorphisms.map(iso => ({
+				id: iso.id,
+				name: iso.name,
+				description: iso.description,
+				icon: iso.icon,
+				color: iso.color,
+				strength: iso.strength || 0.5,
+			}));
+			
+			const { error: isoError } = await supabase
+				.from("nexus_isomorphisms")
+				.upsert(isosToInsert, { onConflict: "id" });
+			
+			if (isoError) throw new Error(`Isomorfismos: ${isoError.message}`);
+			stats.isomorphisms = isosToInsert.length;
+			
+			// 4b️⃣ Cargar conexiones Isomorfismo ↔ Civilización
+			const connectionsToInsert: Array<{ isomorphism_id: string; civilization_id: string }> = [];
+			jsonData.isomorphisms.forEach(iso => {
+				iso.civilizations?.forEach(civId => {
+					connectionsToInsert.push({ isomorphism_id: iso.id, civilization_id: civId });
+				});
+			});
+			
+			if (connectionsToInsert.length > 0) {
+				// Primero eliminar existentes
+				const isoIds = jsonData.isomorphisms.map(i => i.id);
+				await supabase
+					.from("nexus_isomorphism_connections")
+					.delete()
+					.in("isomorphism_id", isoIds);
+				
+				const { error: connError } = await supabase
+					.from("nexus_isomorphism_connections")
+					.insert(connectionsToInsert);
+				
+				if (connError) throw new Error(`Conexiones: ${connError.message}`);
+				stats.connections = connectionsToInsert.length;
+			}
+		}
+		
+		return {
+			success: true,
+			data: {
+				message: `✅ Carga completada: ${stats.civilizations} civilizaciones, ${stats.isomorphisms} isomorfismos`,
+				stats,
+			},
+		};
+		
+	} catch (err) {
+		return { 
+			success: false, 
+			error: err instanceof Error ? err.message : "Error desconocido" 
+		};
+	}
+}
+
+// ============================================
+// 🗑️ ACTION: Limpiar datos del Nexus
+// ============================================
+
+export async function clearNexusDataAction(): Promise<ResultadoOperacion<{ cleared: boolean }>> {
+	try {
+		const supabase = await createSupabaseServerClient();
+		
+		// Orden importante por foreign keys
+		await supabase.from("nexus_isomorphism_connections").delete().neq("isomorphism_id", "");
+		await supabase.from("nexus_civilization_tags").delete().neq("civilization_id", "");
+		await supabase.from("nexus_civilizations").delete().neq("id", "");
+		await supabase.from("nexus_isomorphisms").delete().neq("id", "");
+		await supabase.from("nexus_pattern_tags").delete().neq("id", "");
+		await supabase.from("nexus_regions").delete().neq("id", "");
+		
+		return { success: true, data: { cleared: true } };
+	} catch (err) {
+		return { 
+			success: false, 
+			error: err instanceof Error ? err.message : "Error desconocido" 
+		};
+	}
+}

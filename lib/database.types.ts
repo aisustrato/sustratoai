@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -27,8 +27,8 @@ export type Database = {
           output_tokens: number | null
           progress: number | null
           project_id: string
-          started_at: string
-          status: Database["public"]["Enums"]["job_status"]
+          started_at: string | null
+          status: Database["public"]["Enums"]["job_status"] | null
           user_id: string
         }
         Insert: {
@@ -43,8 +43,8 @@ export type Database = {
           output_tokens?: number | null
           progress?: number | null
           project_id: string
-          started_at?: string
-          status?: Database["public"]["Enums"]["job_status"]
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"] | null
           user_id: string
         }
         Update: {
@@ -59,8 +59,8 @@ export type Database = {
           output_tokens?: number | null
           progress?: number | null
           project_id?: string
-          started_at?: string
-          status?: Database["public"]["Enums"]["job_status"]
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"] | null
           user_id?: string
         }
         Relationships: [
@@ -116,13 +116,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "article_abstract_highlights_article_id_fkey"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "eligible_articles_for_batching_view"
-            referencedColumns: ["article_id"]
-          },
-          {
             foreignKeyName: "article_abstract_highlights_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -138,13 +131,13 @@ export type Database = {
           ai_process_opinion: string | null
           article_id: string
           batch_id: string
-          created_at: string
+          created_at: string | null
           human_label: string | null
           id: string
           preclassified_at: string | null
           preclassified_by: string | null
           requires_adjudication: boolean | null
-          status: Database["public"]["Enums"]["batch_preclass_status"]
+          status: Database["public"]["Enums"]["batch_preclass_status"] | null
         }
         Insert: {
           ai_keywords?: string[] | null
@@ -152,13 +145,13 @@ export type Database = {
           ai_process_opinion?: string | null
           article_id: string
           batch_id: string
-          created_at?: string
+          created_at?: string | null
           human_label?: string | null
           id?: string
           preclassified_at?: string | null
           preclassified_by?: string | null
           requires_adjudication?: boolean | null
-          status: Database["public"]["Enums"]["batch_preclass_status"]
+          status?: Database["public"]["Enums"]["batch_preclass_status"] | null
         }
         Update: {
           ai_keywords?: string[] | null
@@ -166,13 +159,13 @@ export type Database = {
           ai_process_opinion?: string | null
           article_id?: string
           batch_id?: string
-          created_at?: string
+          created_at?: string | null
           human_label?: string | null
           id?: string
           preclassified_at?: string | null
           preclassified_by?: string | null
           requires_adjudication?: boolean | null
-          status?: Database["public"]["Enums"]["batch_preclass_status"]
+          status?: Database["public"]["Enums"]["batch_preclass_status"] | null
         }
         Relationships: [
           {
@@ -181,13 +174,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "articles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "article_batch_items_article_id_fkey"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "eligible_articles_for_batching_view"
-            referencedColumns: ["article_id"]
           },
           {
             foreignKeyName: "article_batch_items_batch_id_fkey"
@@ -203,40 +189,40 @@ export type Database = {
           assigned_to: string | null
           batch_number: number
           completed_at: string | null
-          created_at: string
+          created_at: string | null
           id: string
           name: string | null
           phase_id: string | null
           project_id: string
           started_at: string | null
           status: Database["public"]["Enums"]["batch_preclass_status"] | null
-          translation_complete: boolean
+          translation_complete: boolean | null
         }
         Insert: {
           assigned_to?: string | null
           batch_number: number
           completed_at?: string | null
-          created_at?: string
+          created_at?: string | null
           id?: string
           name?: string | null
           phase_id?: string | null
           project_id: string
           started_at?: string | null
           status?: Database["public"]["Enums"]["batch_preclass_status"] | null
-          translation_complete?: boolean
+          translation_complete?: boolean | null
         }
         Update: {
           assigned_to?: string | null
           batch_number?: number
           completed_at?: string | null
-          created_at?: string
+          created_at?: string | null
           id?: string
           name?: string | null
           phase_id?: string | null
           project_id?: string
           started_at?: string | null
           status?: Database["public"]["Enums"]["batch_preclass_status"] | null
-          translation_complete?: boolean
+          translation_complete?: boolean | null
         }
         Relationships: [
           {
@@ -261,55 +247,58 @@ export type Database = {
           article_id: string
           classification_value: string | null
           confidence_score: number | null
-          created_at: string
+          created_at: string | null
           dimension_id: string
           id: string
-          is_final: boolean
-          iteration: number
+          is_final: boolean | null
+          iteration: number | null
           option_id: string | null
-          prevalidated: boolean
+          prevalidated: boolean | null
           rationale: string | null
           reviewer_id: string
           reviewer_type: string
+          status: Database["public"]["Enums"]["batch_preclass_status"] | null
         }
         Insert: {
           article_batch_item_id: string
           article_id: string
           classification_value?: string | null
           confidence_score?: number | null
-          created_at?: string
+          created_at?: string | null
           dimension_id: string
           id?: string
-          is_final?: boolean
-          iteration?: number
+          is_final?: boolean | null
+          iteration?: number | null
           option_id?: string | null
-          prevalidated?: boolean
+          prevalidated?: boolean | null
           rationale?: string | null
           reviewer_id: string
           reviewer_type: string
+          status?: Database["public"]["Enums"]["batch_preclass_status"] | null
         }
         Update: {
           article_batch_item_id?: string
           article_id?: string
           classification_value?: string | null
           confidence_score?: number | null
-          created_at?: string
+          created_at?: string | null
           dimension_id?: string
           id?: string
-          is_final?: boolean
-          iteration?: number
+          is_final?: boolean | null
+          iteration?: number | null
           option_id?: string | null
-          prevalidated?: boolean
+          prevalidated?: boolean | null
           rationale?: string | null
           reviewer_id?: string
           reviewer_type?: string
+          status?: Database["public"]["Enums"]["batch_preclass_status"] | null
         }
         Relationships: [
           {
-            foreignKeyName: "article_dimension_reviews_article_batch_item_id_fkey"
-            columns: ["article_batch_item_id"]
+            foreignKeyName: "article_dimension_reviews_article_id_fkey"
+            columns: ["article_id"]
             isOneToOne: false
-            referencedRelation: "article_batch_items"
+            referencedRelation: "articles"
             referencedColumns: ["id"]
           },
           {
@@ -320,21 +309,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_reviews_to_articles"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "articles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_reviews_to_articles"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "eligible_articles_for_batching_view"
-            referencedColumns: ["article_id"]
-          },
-          {
-            foreignKeyName: "fk_reviews_to_options"
+            foreignKeyName: "article_dimension_reviews_option_id_fkey"
             columns: ["option_id"]
             isOneToOne: false
             referencedRelation: "preclass_dimension_options"
@@ -344,7 +319,7 @@ export type Database = {
       }
       article_group_items: {
         Row: {
-          added_at: string
+          added_at: string | null
           article_id: string
           description: string | null
           group_id: string
@@ -352,7 +327,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          added_at?: string
+          added_at?: string | null
           article_id: string
           description?: string | null
           group_id: string
@@ -360,7 +335,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          added_at?: string
+          added_at?: string | null
           article_id?: string
           description?: string | null
           group_id?: string
@@ -376,13 +351,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "article_group_items_article_id_fkey"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "eligible_articles_for_batching_view"
-            referencedColumns: ["article_id"]
-          },
-          {
             foreignKeyName: "article_group_items_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
@@ -393,34 +361,34 @@ export type Database = {
       }
       article_groups: {
         Row: {
-          created_at: string
+          created_at: string | null
           description: string | null
           id: string
           name: string
           project_id: string
-          updated_at: string
+          updated_at: string | null
           user_id: string
-          visibility: Database["public"]["Enums"]["group_visibility"]
+          visibility: Database["public"]["Enums"]["group_visibility"] | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           id?: string
           name: string
           project_id: string
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
-          visibility?: Database["public"]["Enums"]["group_visibility"]
+          visibility?: Database["public"]["Enums"]["group_visibility"] | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           id?: string
           name?: string
           project_id?: string
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
-          visibility?: Database["public"]["Enums"]["group_visibility"]
+          visibility?: Database["public"]["Enums"]["group_visibility"] | null
         }
         Relationships: [
           {
@@ -435,36 +403,36 @@ export type Database = {
       article_notes: {
         Row: {
           article_id: string
-          created_at: string
+          created_at: string | null
           id: string
           note_content: string | null
           project_id: string
           title: string | null
-          updated_at: string
+          updated_at: string | null
           user_id: string
-          visibility: Database["public"]["Enums"]["note_visibility"]
+          visibility: Database["public"]["Enums"]["note_visibility"] | null
         }
         Insert: {
           article_id: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           note_content?: string | null
           project_id: string
           title?: string | null
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
-          visibility?: Database["public"]["Enums"]["note_visibility"]
+          visibility?: Database["public"]["Enums"]["note_visibility"] | null
         }
         Update: {
           article_id?: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           note_content?: string | null
           project_id?: string
           title?: string | null
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
-          visibility?: Database["public"]["Enums"]["note_visibility"]
+          visibility?: Database["public"]["Enums"]["note_visibility"] | null
         }
         Relationships: [
           {
@@ -473,13 +441,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "articles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "article_notes_article_id_fkey"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "eligible_articles_for_batching_view"
-            referencedColumns: ["article_id"]
           },
           {
             foreignKeyName: "article_notes_project_id_fkey"
@@ -494,36 +455,36 @@ export type Database = {
         Row: {
           abstract: string | null
           article_id: string
-          created_at: string
+          created_at: string | null
           id: string
           language: string
           summary: string | null
           title: string
-          translated_at: string
+          translated_at: string | null
           translated_by: string | null
           translator_system: string | null
         }
         Insert: {
           abstract?: string | null
           article_id: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           language: string
           summary?: string | null
           title: string
-          translated_at?: string
+          translated_at?: string | null
           translated_by?: string | null
           translator_system?: string | null
         }
         Update: {
           abstract?: string | null
           article_id?: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           language?: string
           summary?: string | null
           title?: string
-          translated_at?: string
+          translated_at?: string | null
           translated_by?: string | null
           translator_system?: string | null
         }
@@ -535,13 +496,6 @@ export type Database = {
             referencedRelation: "articles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "article_translations_article_id_fkey"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "eligible_articles_for_batching_view"
-            referencedColumns: ["article_id"]
-          },
         ]
       }
       articles: {
@@ -549,7 +503,7 @@ export type Database = {
           abstract: string | null
           authors: string[] | null
           correlativo: number
-          created_at: string
+          created_at: string | null
           doi: string | null
           id: string
           journal: string | null
@@ -557,13 +511,13 @@ export type Database = {
           project_id: string
           publication_year: number | null
           title: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           abstract?: string | null
           authors?: string[] | null
-          correlativo: number
-          created_at?: string
+          correlativo?: number
+          created_at?: string | null
           doi?: string | null
           id?: string
           journal?: string | null
@@ -571,13 +525,13 @@ export type Database = {
           project_id: string
           publication_year?: number | null
           title?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           abstract?: string | null
           authors?: string[] | null
           correlativo?: number
-          created_at?: string
+          created_at?: string | null
           doi?: string | null
           id?: string
           journal?: string | null
@@ -585,11 +539,11 @@ export type Database = {
           project_id?: string
           publication_year?: number | null
           title?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "articles_normalized_project_id_fkey"
+            foreignKeyName: "articles_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -597,91 +551,3121 @@ export type Database = {
           },
         ]
       }
-      articles_legacy: {
+      backup_migration_profiles: {
         Row: {
-          Abstract: string | null
-          "Article Number": string | null
-          "Author Full Names": string | null
-          Authors: string | null
-          correlativo: number
-          DOI: string
-          "DOI Link": string | null
-          eISSN: string | null
-          "End Page": string | null
-          id: string
-          ISBN: string | null
-          ISSN: string | null
-          Issue: string | null
-          Journal: string | null
-          ORCIDs: string | null
-          project_id: string | null
-          "Publication Date": string | null
-          "Publication Type": string | null
-          Publication_Year: number | null
-          "Special Issue": string | null
-          "Start Page": string | null
-          Title: string | null
-          "UT (Unique WOS ID)": string | null
-          Volume: string | null
+          contact_phone: string | null
+          created_at: string | null
+          first_name: string | null
+          general_notes: string | null
+          last_name: string | null
+          preferred_language: string | null
+          primary_institution: string | null
+          pronouns: string | null
+          public_contact_email: string | null
+          public_display_name: string | null
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
-          Abstract?: string | null
-          "Article Number"?: string | null
-          "Author Full Names"?: string | null
-          Authors?: string | null
-          correlativo: number
-          DOI: string
-          "DOI Link"?: string | null
-          eISSN?: string | null
-          "End Page"?: string | null
-          id?: string
-          ISBN?: string | null
-          ISSN?: string | null
-          Issue?: string | null
-          Journal?: string | null
-          ORCIDs?: string | null
-          project_id?: string | null
-          "Publication Date"?: string | null
-          "Publication Type"?: string | null
-          Publication_Year?: number | null
-          "Special Issue"?: string | null
-          "Start Page"?: string | null
-          Title?: string | null
-          "UT (Unique WOS ID)"?: string | null
-          Volume?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          general_notes?: string | null
+          last_name?: string | null
+          preferred_language?: string | null
+          primary_institution?: string | null
+          pronouns?: string | null
+          public_contact_email?: string | null
+          public_display_name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
-          Abstract?: string | null
-          "Article Number"?: string | null
-          "Author Full Names"?: string | null
-          Authors?: string | null
-          correlativo?: number
-          DOI?: string
-          "DOI Link"?: string | null
-          eISSN?: string | null
-          "End Page"?: string | null
-          id?: string
-          ISBN?: string | null
-          ISSN?: string | null
-          Issue?: string | null
-          Journal?: string | null
-          ORCIDs?: string | null
-          project_id?: string | null
-          "Publication Date"?: string | null
-          "Publication Type"?: string | null
-          Publication_Year?: number | null
-          "Special Issue"?: string | null
-          "Start Page"?: string | null
-          Title?: string | null
-          "UT (Unique WOS ID)"?: string | null
-          Volume?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          general_notes?: string | null
+          last_name?: string | null
+          preferred_language?: string | null
+          primary_institution?: string | null
+          pronouns?: string | null
+          public_contact_email?: string | null
+          public_display_name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      backup_migration_reviews: {
+        Row: {
+          article_batch_item_id: string | null
+          article_id: string | null
+          classification_value: string | null
+          confidence_score: number | null
+          created_at: string | null
+          dimension_id: string | null
+          id: string | null
+          is_final: boolean | null
+          iteration: number | null
+          option_id: string | null
+          prevalidated: boolean | null
+          rationale: string | null
+          reviewer_id: string | null
+          reviewer_type: string | null
+          status: Database["public"]["Enums"]["batch_preclass_status"] | null
+        }
+        Insert: {
+          article_batch_item_id?: string | null
+          article_id?: string | null
+          classification_value?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          dimension_id?: string | null
+          id?: string | null
+          is_final?: boolean | null
+          iteration?: number | null
+          option_id?: string | null
+          prevalidated?: boolean | null
+          rationale?: string | null
+          reviewer_id?: string | null
+          reviewer_type?: string | null
+          status?: Database["public"]["Enums"]["batch_preclass_status"] | null
+        }
+        Update: {
+          article_batch_item_id?: string | null
+          article_id?: string | null
+          classification_value?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          dimension_id?: string | null
+          id?: string | null
+          is_final?: boolean | null
+          iteration?: number | null
+          option_id?: string | null
+          prevalidated?: boolean | null
+          rationale?: string | null
+          reviewer_id?: string | null
+          reviewer_type?: string | null
+          status?: Database["public"]["Enums"]["batch_preclass_status"] | null
+        }
+        Relationships: []
+      }
+      cog_artifact_disciplines: {
+        Row: {
+          artifact_id: string
+          discipline_id: string
+          relevance_score: number | null
+        }
+        Insert: {
+          artifact_id: string
+          discipline_id: string
+          relevance_score?: number | null
+        }
+        Update: {
+          artifact_id?: string
+          discipline_id?: string
+          relevance_score?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "articles_project_fk"
+            foreignKeyName: "cog_artifact_disciplines_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_disciplines_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_disciplines_discipline_id_fkey"
+            columns: ["discipline_id"]
+            isOneToOne: false
+            referencedRelation: "cog_disciplines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_artifact_exports: {
+        Row: {
+          artifact_id: string
+          canonical_json: Json
+          content_hash: string
+          created_at: string
+          exported_at: string
+          updated_at: string
+        }
+        Insert: {
+          artifact_id: string
+          canonical_json: Json
+          content_hash: string
+          created_at?: string
+          exported_at?: string
+          updated_at?: string
+        }
+        Update: {
+          artifact_id?: string
+          canonical_json?: Json
+          content_hash?: string
+          created_at?: string
+          exported_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_artifact_exports_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: true
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_exports_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: true
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_artifact_pages: {
+        Row: {
+          artifact_id: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          markdown_original: string | null
+          markdown_translated: string | null
+          marker_metadata: Json | null
+          page_number: number
+          pdf_storage_path: string | null
+          processed_at: string | null
+          retry_count: number | null
+          status: string
+          translated_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          artifact_id: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          markdown_original?: string | null
+          markdown_translated?: string | null
+          marker_metadata?: Json | null
+          page_number: number
+          pdf_storage_path?: string | null
+          processed_at?: string | null
+          retry_count?: number | null
+          status?: string
+          translated_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          artifact_id?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          markdown_original?: string | null
+          markdown_translated?: string | null
+          marker_metadata?: Json | null
+          page_number?: number
+          pdf_storage_path?: string | null
+          processed_at?: string | null
+          retry_count?: number | null
+          status?: string
+          translated_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_artifact_pages_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_pages_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_artifact_references: {
+        Row: {
+          artifact_id: string
+          context_snippet: string | null
+          reference_id: string
+          relevance_score: number | null
+        }
+        Insert: {
+          artifact_id: string
+          context_snippet?: string | null
+          reference_id: string
+          relevance_score?: number | null
+        }
+        Update: {
+          artifact_id?: string
+          context_snippet?: string | null
+          reference_id?: string
+          relevance_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_artifact_references_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_references_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_references_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: false
+            referencedRelation: "cog_references"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_artifact_relations: {
+        Row: {
+          created_at: string | null
+          derived_artifact_id: string
+          generation_metadata: Json | null
+          id: string
+          relation_type: string
+          source_artifact_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          derived_artifact_id: string
+          generation_metadata?: Json | null
+          id?: string
+          relation_type: string
+          source_artifact_id: string
+        }
+        Update: {
+          created_at?: string | null
+          derived_artifact_id?: string
+          generation_metadata?: Json | null
+          id?: string
+          relation_type?: string
+          source_artifact_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_artifact_relations_derived_artifact_id_fkey"
+            columns: ["derived_artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_relations_derived_artifact_id_fkey"
+            columns: ["derived_artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_relations_source_artifact_id_fkey"
+            columns: ["source_artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_relations_source_artifact_id_fkey"
+            columns: ["source_artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_artifact_streams: {
+        Row: {
+          artifact_id: string
+          context_snippet: string | null
+          relevance_score: number | null
+          stream_id: string
+        }
+        Insert: {
+          artifact_id: string
+          context_snippet?: string | null
+          relevance_score?: number | null
+          stream_id: string
+        }
+        Update: {
+          artifact_id?: string
+          context_snippet?: string | null
+          relevance_score?: number | null
+          stream_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_artifact_streams_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_streams_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_streams_stream_id_fkey"
+            columns: ["stream_id"]
+            isOneToOne: false
+            referencedRelation: "cog_thought_streams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_artifact_theories: {
+        Row: {
+          artifact_id: string
+          context_snippet: string | null
+          is_primary_topic: boolean | null
+          relevance_score: number | null
+          theory_id: string
+        }
+        Insert: {
+          artifact_id: string
+          context_snippet?: string | null
+          is_primary_topic?: boolean | null
+          relevance_score?: number | null
+          theory_id: string
+        }
+        Update: {
+          artifact_id?: string
+          context_snippet?: string | null
+          is_primary_topic?: boolean | null
+          relevance_score?: number | null
+          theory_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_artifact_theories_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_theories_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_artifact_theories_theory_id_fkey"
+            columns: ["theory_id"]
+            isOneToOne: false
+            referencedRelation: "cog_theories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_artifacts: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          duration_seconds: number | null
+          error_log: string | null
+          file_size_bytes: number | null
+          id: string
+          mime_type: string | null
+          project_id: string
+          source_metadata: Json | null
+          status: Database["public"]["Enums"]["cog_processing_status"] | null
+          storage_path: string
+          title: string
+          type: Database["public"]["Enums"]["cog_artifact_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          error_log?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string | null
+          project_id: string
+          source_metadata?: Json | null
+          status?: Database["public"]["Enums"]["cog_processing_status"] | null
+          storage_path: string
+          title: string
+          type: Database["public"]["Enums"]["cog_artifact_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          error_log?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string | null
+          project_id?: string
+          source_metadata?: Json | null
+          status?: Database["public"]["Enums"]["cog_processing_status"] | null
+          storage_path?: string
+          title?: string
+          type?: Database["public"]["Enums"]["cog_artifact_type"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_artifacts_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_chat_sessions: {
+        Row: {
+          artifact_context: string | null
+          artifact_id: string
+          avg_f0_score: number | null
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          inference_enabled: boolean | null
+          messages: Json
+          paralloros_count: number | null
+          project_id: string
+          session_title: string | null
+          started_at: string | null
+          total_messages: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          artifact_context?: string | null
+          artifact_id: string
+          avg_f0_score?: number | null
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          inference_enabled?: boolean | null
+          messages?: Json
+          paralloros_count?: number | null
+          project_id: string
+          session_title?: string | null
+          started_at?: string | null
+          total_messages?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          artifact_context?: string | null
+          artifact_id?: string
+          avg_f0_score?: number | null
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          inference_enabled?: boolean | null
+          messages?: Json
+          paralloros_count?: number | null
+          project_id?: string
+          session_title?: string | null
+          started_at?: string | null
+          total_messages?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_chat_sessions_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_chat_sessions_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_chat_sessions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_chronological_data: {
+        Row: {
+          artifact_id: string
+          confidence_score: number | null
+          context: string | null
+          created_at: string | null
+          date_value: string | null
+          description: string
+          event_type: string
+          extracted_by: string | null
+          id: string
+          project_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          artifact_id: string
+          confidence_score?: number | null
+          context?: string | null
+          created_at?: string | null
+          date_value?: string | null
+          description: string
+          event_type: string
+          extracted_by?: string | null
+          id?: string
+          project_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          artifact_id?: string
+          confidence_score?: number | null
+          context?: string | null
+          created_at?: string | null
+          date_value?: string | null
+          description?: string
+          event_type?: string
+          extracted_by?: string | null
+          id?: string
+          project_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_chronological_data_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_chronological_data_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_chronological_data_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_cross_modal_validation: {
+        Row: {
+          created_at: string | null
+          emergent_insights_count: number | null
+          id: string
+          image_id: string
+          interpretation_id: string
+          review_notes: string | null
+          reviewed_by: string | null
+          seed_id: string
+          semantic_similarity: number | null
+          tdc_coherence_preserved: boolean | null
+          validation_status: string | null
+          visual_fidelity: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          emergent_insights_count?: number | null
+          id?: string
+          image_id: string
+          interpretation_id: string
+          review_notes?: string | null
+          reviewed_by?: string | null
+          seed_id: string
+          semantic_similarity?: number | null
+          tdc_coherence_preserved?: boolean | null
+          validation_status?: string | null
+          visual_fidelity?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          emergent_insights_count?: number | null
+          id?: string
+          image_id?: string
+          interpretation_id?: string
+          review_notes?: string | null
+          reviewed_by?: string | null
+          seed_id?: string
+          semantic_similarity?: number | null
+          tdc_coherence_preserved?: boolean | null
+          validation_status?: string | null
+          visual_fidelity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_cross_modal_validation_image_id_fkey"
+            columns: ["image_id"]
+            isOneToOne: false
+            referencedRelation: "cog_generated_images"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_cross_modal_validation_interpretation_id_fkey"
+            columns: ["interpretation_id"]
+            isOneToOne: false
+            referencedRelation: "cog_visual_interpretations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_cross_modal_validation_seed_id_fkey"
+            columns: ["seed_id"]
+            isOneToOne: false
+            referencedRelation: "cog_fractal_seeds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_disciplines: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          geometric_affinity: string | null
+          id: string
+          is_validated: boolean | null
+          name: string
+          parent_discipline_id: string | null
+          project_id: string
+          typical_system_type: Database["public"]["Enums"]["system_type"] | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          geometric_affinity?: string | null
+          id?: string
+          is_validated?: boolean | null
+          name: string
+          parent_discipline_id?: string | null
+          project_id: string
+          typical_system_type?:
+            | Database["public"]["Enums"]["system_type"]
+            | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          geometric_affinity?: string | null
+          id?: string
+          is_validated?: boolean | null
+          name?: string
+          parent_discipline_id?: string | null
+          project_id?: string
+          typical_system_type?:
+            | Database["public"]["Enums"]["system_type"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_disciplines_parent_discipline_id_fkey"
+            columns: ["parent_discipline_id"]
+            isOneToOne: false
+            referencedRelation: "cog_disciplines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_disciplines_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_essay_edit_history: {
+        Row: {
+          artifact_id: string
+          changes_summary: string | null
+          character_count: number | null
+          created_at: string
+          edit_reason: string | null
+          edit_type: string
+          edited_by: string | null
+          essay_content: string
+          estimated_tokens: number | null
+          generation_metadata: Json | null
+          id: string
+          transcription_id: string | null
+          version_number: number
+        }
+        Insert: {
+          artifact_id: string
+          changes_summary?: string | null
+          character_count?: number | null
+          created_at?: string
+          edit_reason?: string | null
+          edit_type: string
+          edited_by?: string | null
+          essay_content: string
+          estimated_tokens?: number | null
+          generation_metadata?: Json | null
+          id?: string
+          transcription_id?: string | null
+          version_number: number
+        }
+        Update: {
+          artifact_id?: string
+          changes_summary?: string | null
+          character_count?: number | null
+          created_at?: string
+          edit_reason?: string | null
+          edit_type?: string
+          edited_by?: string | null
+          essay_content?: string
+          estimated_tokens?: number | null
+          generation_metadata?: Json | null
+          id?: string
+          transcription_id?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_essay_edit_history_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_essay_edit_history_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_essay_edit_history_transcription_id_fkey"
+            columns: ["transcription_id"]
+            isOneToOne: false
+            referencedRelation: "cog_transcriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_fractal_seeds: {
+        Row: {
+          artifact_id: string | null
+          canonical_content: string | null
+          content: string
+          context: string | null
+          created_at: string | null
+          created_by: string | null
+          derived_from_reference_id: string | null
+          geometric_signature: string | null
+          id: string
+          merged_at: string | null
+          merged_by: string | null
+          origin_discipline_id: string | null
+          origin_stream_id: string | null
+          origin_theory_id: string | null
+          project_id: string
+          properties: Json | null
+          system_type: Database["public"]["Enums"]["system_type"] | null
+          tags: string[] | null
+          viability_score: number | null
+        }
+        Insert: {
+          artifact_id?: string | null
+          canonical_content?: string | null
+          content: string
+          context?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          derived_from_reference_id?: string | null
+          geometric_signature?: string | null
+          id?: string
+          merged_at?: string | null
+          merged_by?: string | null
+          origin_discipline_id?: string | null
+          origin_stream_id?: string | null
+          origin_theory_id?: string | null
+          project_id: string
+          properties?: Json | null
+          system_type?: Database["public"]["Enums"]["system_type"] | null
+          tags?: string[] | null
+          viability_score?: number | null
+        }
+        Update: {
+          artifact_id?: string | null
+          canonical_content?: string | null
+          content?: string
+          context?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          derived_from_reference_id?: string | null
+          geometric_signature?: string | null
+          id?: string
+          merged_at?: string | null
+          merged_by?: string | null
+          origin_discipline_id?: string | null
+          origin_stream_id?: string | null
+          origin_theory_id?: string | null
+          project_id?: string
+          properties?: Json | null
+          system_type?: Database["public"]["Enums"]["system_type"] | null
+          tags?: string[] | null
+          viability_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_fractal_seeds_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_fractal_seeds_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_fractal_seeds_derived_from_reference_id_fkey"
+            columns: ["derived_from_reference_id"]
+            isOneToOne: false
+            referencedRelation: "cog_references"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_fractal_seeds_origin_discipline_id_fkey"
+            columns: ["origin_discipline_id"]
+            isOneToOne: false
+            referencedRelation: "cog_disciplines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_fractal_seeds_origin_stream_id_fkey"
+            columns: ["origin_stream_id"]
+            isOneToOne: false
+            referencedRelation: "cog_thought_streams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_fractal_seeds_origin_theory_id_fkey"
+            columns: ["origin_theory_id"]
+            isOneToOne: false
+            referencedRelation: "cog_theories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_fractal_seeds_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_garden_elements: {
+        Row: {
+          added_at: string | null
+          element_content: string | null
+          element_id: string | null
+          element_label: string
+          element_type: string
+          garden_id: string
+          id: string
+          project_id: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          element_content?: string | null
+          element_id?: string | null
+          element_label: string
+          element_type: string
+          garden_id: string
+          id?: string
+          project_id?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          element_content?: string | null
+          element_id?: string | null
+          element_label?: string
+          element_type?: string
+          garden_id?: string
+          id?: string
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_garden_elements_garden_id_fkey"
+            columns: ["garden_id"]
+            isOneToOne: false
+            referencedRelation: "cog_resonance_gardens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_garden_elements_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_generated_images: {
+        Row: {
+          cost_usd: number | null
+          created_at: string | null
+          error_message: string | null
+          file_size_bytes: number | null
+          generation_params: Json | null
+          height: number | null
+          id: string
+          mime_type: string | null
+          model_name: string | null
+          prompt_id: string
+          provider: string
+          status: string | null
+          storage_path: string
+          storage_url: string | null
+          width: number | null
+        }
+        Insert: {
+          cost_usd?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          file_size_bytes?: number | null
+          generation_params?: Json | null
+          height?: number | null
+          id?: string
+          mime_type?: string | null
+          model_name?: string | null
+          prompt_id: string
+          provider: string
+          status?: string | null
+          storage_path: string
+          storage_url?: string | null
+          width?: number | null
+        }
+        Update: {
+          cost_usd?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          file_size_bytes?: number | null
+          generation_params?: Json | null
+          height?: number | null
+          id?: string
+          mime_type?: string | null
+          model_name?: string | null
+          prompt_id?: string
+          provider?: string
+          status?: string | null
+          storage_path?: string
+          storage_url?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_generated_images_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "cog_image_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_image_prompts: {
+        Row: {
+          artifact_id: string
+          created_at: string | null
+          generated_by: string
+          id: string
+          model_version: string | null
+          negative_prompt: string | null
+          prompt_text: string
+          seed_id: string
+          status: string | null
+          style_modifiers: string[] | null
+          temperature: number | null
+        }
+        Insert: {
+          artifact_id: string
+          created_at?: string | null
+          generated_by: string
+          id?: string
+          model_version?: string | null
+          negative_prompt?: string | null
+          prompt_text: string
+          seed_id: string
+          status?: string | null
+          style_modifiers?: string[] | null
+          temperature?: number | null
+        }
+        Update: {
+          artifact_id?: string
+          created_at?: string | null
+          generated_by?: string
+          id?: string
+          model_version?: string | null
+          negative_prompt?: string | null
+          prompt_text?: string
+          seed_id?: string
+          status?: string | null
+          style_modifiers?: string[] | null
+          temperature?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_image_prompts_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_image_prompts_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_image_prompts_seed_id_fkey"
+            columns: ["seed_id"]
+            isOneToOne: false
+            referencedRelation: "cog_fractal_seeds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_references: {
+        Row: {
+          aliases: string[] | null
+          associated_streams: string[] | null
+          associated_theories: string[] | null
+          bio_snippet: string | null
+          created_at: string | null
+          era: string | null
+          id: string
+          is_thinker: boolean | null
+          is_validated: boolean | null
+          key_contributions: string[] | null
+          name: string
+          primary_discipline_id: string | null
+          project_id: string
+        }
+        Insert: {
+          aliases?: string[] | null
+          associated_streams?: string[] | null
+          associated_theories?: string[] | null
+          bio_snippet?: string | null
+          created_at?: string | null
+          era?: string | null
+          id?: string
+          is_thinker?: boolean | null
+          is_validated?: boolean | null
+          key_contributions?: string[] | null
+          name: string
+          primary_discipline_id?: string | null
+          project_id: string
+        }
+        Update: {
+          aliases?: string[] | null
+          associated_streams?: string[] | null
+          associated_theories?: string[] | null
+          bio_snippet?: string | null
+          created_at?: string | null
+          era?: string | null
+          id?: string
+          is_thinker?: boolean | null
+          is_validated?: boolean | null
+          key_contributions?: string[] | null
+          name?: string
+          primary_discipline_id?: string | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_references_primary_discipline_id_fkey"
+            columns: ["primary_discipline_id"]
+            isOneToOne: false
+            referencedRelation: "cog_disciplines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_references_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_resonance_gardens: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          description: string | null
+          emoji: string | null
+          id: string
+          name: string
+          project_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          name: string
+          project_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_resonance_gardens_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_seed_normalizations: {
+        Row: {
+          affected_artifact_ids: string[]
+          affected_rows: number
+          canonical_content: string
+          created_at: string | null
+          id: string
+          performed_by: string
+          project_id: string
+          reason: string | null
+          source_contents: string[]
+        }
+        Insert: {
+          affected_artifact_ids?: string[]
+          affected_rows?: number
+          canonical_content: string
+          created_at?: string | null
+          id?: string
+          performed_by: string
+          project_id: string
+          reason?: string | null
+          source_contents: string[]
+        }
+        Update: {
+          affected_artifact_ids?: string[]
+          affected_rows?: number
+          canonical_content?: string
+          created_at?: string | null
+          id?: string
+          performed_by?: string
+          project_id?: string
+          reason?: string | null
+          source_contents?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_seed_normalizations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_seeds_in_farms: {
+        Row: {
+          added_at: string | null
+          connection_strength: number | null
+          farm_id: string
+          role_in_farm: string | null
+          seed_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          connection_strength?: number | null
+          farm_id: string
+          role_in_farm?: string | null
+          seed_id: string
+        }
+        Update: {
+          added_at?: string | null
+          connection_strength?: number | null
+          farm_id?: string
+          role_in_farm?: string | null
+          seed_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_seeds_in_farms_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "cog_semantic_farms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_seeds_in_farms_seed_id_fkey"
+            columns: ["seed_id"]
+            isOneToOne: false
+            referencedRelation: "cog_fractal_seeds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_segment_bookmarks: {
+        Row: {
+          artifact_id: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          segment_end: number | null
+          segment_index: number
+          segment_start: number | null
+          segment_text: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          artifact_id: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          segment_end?: number | null
+          segment_index: number
+          segment_start?: number | null
+          segment_text?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          artifact_id?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          segment_end?: number | null
+          segment_index?: number
+          segment_start?: number | null
+          segment_text?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_segment_bookmarks_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_segment_bookmarks_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_semantic_equivalences: {
+        Row: {
+          concept_a_id: string
+          concept_b_id: string
+          confidence: number | null
+          created_at: string | null
+          description: string | null
+          domain_a: string
+          domain_b: string
+          equivalence_type: string
+          evidence: string | null
+          geometric_confidence: number | null
+          id: string
+          is_validated: boolean | null
+          project_id: string
+          shared_geometry: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          concept_a_id: string
+          concept_b_id: string
+          confidence?: number | null
+          created_at?: string | null
+          description?: string | null
+          domain_a: string
+          domain_b: string
+          equivalence_type: string
+          evidence?: string | null
+          geometric_confidence?: number | null
+          id?: string
+          is_validated?: boolean | null
+          project_id: string
+          shared_geometry?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          concept_a_id?: string
+          concept_b_id?: string
+          confidence?: number | null
+          created_at?: string | null
+          description?: string | null
+          domain_a?: string
+          domain_b?: string
+          equivalence_type?: string
+          evidence?: string | null
+          geometric_confidence?: number | null
+          id?: string
+          is_validated?: boolean | null
+          project_id?: string
+          shared_geometry?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_semantic_equivalences_concept_a_id_fkey"
+            columns: ["concept_a_id"]
+            isOneToOne: false
+            referencedRelation: "cog_fractal_seeds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_semantic_equivalences_concept_b_id_fkey"
+            columns: ["concept_b_id"]
+            isOneToOne: false
+            referencedRelation: "cog_fractal_seeds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_semantic_equivalences_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_semantic_farms: {
+        Row: {
+          created_at: string | null
+          cross_domain_mappings: Json | null
+          description: string | null
+          farm_type: string | null
+          geometric_equivalence: Json | null
+          id: string
+          name: string
+          project_id: string
+          tdc_status_consensus: Database["public"]["Enums"]["tdc_status"] | null
+          viability_consensus: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          cross_domain_mappings?: Json | null
+          description?: string | null
+          farm_type?: string | null
+          geometric_equivalence?: Json | null
+          id?: string
+          name: string
+          project_id: string
+          tdc_status_consensus?:
+            | Database["public"]["Enums"]["tdc_status"]
+            | null
+          viability_consensus?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          cross_domain_mappings?: Json | null
+          description?: string | null
+          farm_type?: string | null
+          geometric_equivalence?: Json | null
+          id?: string
+          name?: string
+          project_id?: string
+          tdc_status_consensus?:
+            | Database["public"]["Enums"]["tdc_status"]
+            | null
+          viability_consensus?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_semantic_farms_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_theories: {
+        Row: {
+          aliases: string[] | null
+          created_at: string | null
+          description: string | null
+          era: string | null
+          geometric_signature: string | null
+          id: string
+          is_validated: boolean | null
+          key_thinkers: string[] | null
+          name: string
+          origin_discipline_id: string | null
+          project_id: string
+          r_proximity: number | null
+          system_type: Database["public"]["Enums"]["system_type"] | null
+          updated_at: string | null
+          validated_by: string | null
+          viability_score: number | null
+        }
+        Insert: {
+          aliases?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          era?: string | null
+          geometric_signature?: string | null
+          id?: string
+          is_validated?: boolean | null
+          key_thinkers?: string[] | null
+          name: string
+          origin_discipline_id?: string | null
+          project_id: string
+          r_proximity?: number | null
+          system_type?: Database["public"]["Enums"]["system_type"] | null
+          updated_at?: string | null
+          validated_by?: string | null
+          viability_score?: number | null
+        }
+        Update: {
+          aliases?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          era?: string | null
+          geometric_signature?: string | null
+          id?: string
+          is_validated?: boolean | null
+          key_thinkers?: string[] | null
+          name?: string
+          origin_discipline_id?: string | null
+          project_id?: string
+          r_proximity?: number | null
+          system_type?: Database["public"]["Enums"]["system_type"] | null
+          updated_at?: string | null
+          validated_by?: string | null
+          viability_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_theories_origin_discipline_id_fkey"
+            columns: ["origin_discipline_id"]
+            isOneToOne: false
+            referencedRelation: "cog_disciplines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_theories_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_thought_streams: {
+        Row: {
+          aliases: string[] | null
+          created_at: string | null
+          description: string | null
+          era: string | null
+          geographic_origin: string | null
+          id: string
+          is_validated: boolean | null
+          key_figures: string[] | null
+          name: string
+          parent_stream_id: string | null
+          project_id: string
+          related_theories: string[] | null
+          system_type: Database["public"]["Enums"]["system_type"] | null
+          typical_friction_range: unknown
+          updated_at: string | null
+        }
+        Insert: {
+          aliases?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          era?: string | null
+          geographic_origin?: string | null
+          id?: string
+          is_validated?: boolean | null
+          key_figures?: string[] | null
+          name: string
+          parent_stream_id?: string | null
+          project_id: string
+          related_theories?: string[] | null
+          system_type?: Database["public"]["Enums"]["system_type"] | null
+          typical_friction_range?: unknown
+          updated_at?: string | null
+        }
+        Update: {
+          aliases?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          era?: string | null
+          geographic_origin?: string | null
+          id?: string
+          is_validated?: boolean | null
+          key_figures?: string[] | null
+          name?: string
+          parent_stream_id?: string | null
+          project_id?: string
+          related_theories?: string[] | null
+          system_type?: Database["public"]["Enums"]["system_type"] | null
+          typical_friction_range?: unknown
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_thought_streams_parent_stream_id_fkey"
+            columns: ["parent_stream_id"]
+            isOneToOne: false
+            referencedRelation: "cog_thought_streams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_thought_streams_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_transcriptions: {
+        Row: {
+          artifact_id: string
+          confidence_score: number | null
+          created_at: string | null
+          distilled_essay: string | null
+          distilled_essay_metadata: Json | null
+          full_text: string | null
+          id: string
+          language: string | null
+          provider: string | null
+          segments: Json | null
+        }
+        Insert: {
+          artifact_id: string
+          confidence_score?: number | null
+          created_at?: string | null
+          distilled_essay?: string | null
+          distilled_essay_metadata?: Json | null
+          full_text?: string | null
+          id?: string
+          language?: string | null
+          provider?: string | null
+          segments?: Json | null
+        }
+        Update: {
+          artifact_id?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          distilled_essay?: string | null
+          distilled_essay_metadata?: Json | null
+          full_text?: string | null
+          id?: string
+          language?: string | null
+          provider?: string | null
+          segments?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_transcriptions_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_transcriptions_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_viability_analysis: {
+        Row: {
+          analyzed_by: string
+          artifact_id: string
+          confidence: number | null
+          created_at: string | null
+          ethical_debt_score: number
+          ethical_debt_signals: Json | null
+          frequency_proximity: number | null
+          friction_keywords: string[] | null
+          friction_score: number
+          hope_catastrophic_forgetting_risk: number | null
+          hope_memory_type: Database["public"]["Enums"]["hope_memory_type"]
+          id: string
+          raw_analysis_data: Json | null
+          recommendation: string | null
+          reviewed_by: string | null
+          system_type: Database["public"]["Enums"]["system_type"]
+          tdc_action: Database["public"]["Enums"]["tdc_color"]
+          tdc_interpretation: Database["public"]["Enums"]["tdc_color"]
+          tdc_perception: Database["public"]["Enums"]["tdc_color"]
+          tdc_status: Database["public"]["Enums"]["tdc_status"]
+          transcription_id: string | null
+          updated_at: string | null
+          viability_score: number
+        }
+        Insert: {
+          analyzed_by?: string
+          artifact_id: string
+          confidence?: number | null
+          created_at?: string | null
+          ethical_debt_score: number
+          ethical_debt_signals?: Json | null
+          frequency_proximity?: number | null
+          friction_keywords?: string[] | null
+          friction_score: number
+          hope_catastrophic_forgetting_risk?: number | null
+          hope_memory_type: Database["public"]["Enums"]["hope_memory_type"]
+          id?: string
+          raw_analysis_data?: Json | null
+          recommendation?: string | null
+          reviewed_by?: string | null
+          system_type: Database["public"]["Enums"]["system_type"]
+          tdc_action: Database["public"]["Enums"]["tdc_color"]
+          tdc_interpretation: Database["public"]["Enums"]["tdc_color"]
+          tdc_perception: Database["public"]["Enums"]["tdc_color"]
+          tdc_status: Database["public"]["Enums"]["tdc_status"]
+          transcription_id?: string | null
+          updated_at?: string | null
+          viability_score: number
+        }
+        Update: {
+          analyzed_by?: string
+          artifact_id?: string
+          confidence?: number | null
+          created_at?: string | null
+          ethical_debt_score?: number
+          ethical_debt_signals?: Json | null
+          frequency_proximity?: number | null
+          friction_keywords?: string[] | null
+          friction_score?: number
+          hope_catastrophic_forgetting_risk?: number | null
+          hope_memory_type?: Database["public"]["Enums"]["hope_memory_type"]
+          id?: string
+          raw_analysis_data?: Json | null
+          recommendation?: string | null
+          reviewed_by?: string | null
+          system_type?: Database["public"]["Enums"]["system_type"]
+          tdc_action?: Database["public"]["Enums"]["tdc_color"]
+          tdc_interpretation?: Database["public"]["Enums"]["tdc_color"]
+          tdc_perception?: Database["public"]["Enums"]["tdc_color"]
+          tdc_status?: Database["public"]["Enums"]["tdc_status"]
+          transcription_id?: string | null
+          updated_at?: string | null
+          viability_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_viability_analysis_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_viability_analysis_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cog_viability_analysis_transcription_id_fkey"
+            columns: ["transcription_id"]
+            isOneToOne: false
+            referencedRelation: "cog_transcriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cog_visual_interpretations: {
+        Row: {
+          coherence_with_concept: string | null
+          confidence: number | null
+          created_at: string | null
+          fractal_detected: boolean | null
+          geometric_patterns: string[] | null
+          id: string
+          image_id: string
+          interpreted_by: string
+          model_version: string | null
+          new_insights: string | null
+          raw_response: Json | null
+          visual_action: string | null
+          visual_interpretation: string | null
+          visual_perception: string | null
+        }
+        Insert: {
+          coherence_with_concept?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          fractal_detected?: boolean | null
+          geometric_patterns?: string[] | null
+          id?: string
+          image_id: string
+          interpreted_by: string
+          model_version?: string | null
+          new_insights?: string | null
+          raw_response?: Json | null
+          visual_action?: string | null
+          visual_interpretation?: string | null
+          visual_perception?: string | null
+        }
+        Update: {
+          coherence_with_concept?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          fractal_detected?: boolean | null
+          geometric_patterns?: string[] | null
+          id?: string
+          image_id?: string
+          interpreted_by?: string
+          model_version?: string | null
+          new_insights?: string | null
+          raw_response?: Json | null
+          visual_action?: string | null
+          visual_interpretation?: string | null
+          visual_perception?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cog_visual_interpretations_image_id_fkey"
+            columns: ["image_id"]
+            isOneToOne: false
+            referencedRelation: "cog_generated_images"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_export_registry: {
+        Row: {
+          article_count: number
+          created_at: string
+          dimension_count: number
+          export_type: string
+          file_name: string
+          filters_applied: Json | null
+          id: string
+          metadata: Json | null
+          phase_id: string
+          project_id: string
+          sha256_hash: string
+          user_id: string
+        }
+        Insert: {
+          article_count?: number
+          created_at?: string
+          dimension_count?: number
+          export_type: string
+          file_name: string
+          filters_applied?: Json | null
+          id?: string
+          metadata?: Json | null
+          phase_id: string
+          project_id: string
+          sha256_hash: string
+          user_id: string
+        }
+        Update: {
+          article_count?: number
+          created_at?: string
+          dimension_count?: number
+          export_type?: string
+          file_name?: string
+          filters_applied?: Json | null
+          id?: string
+          metadata?: Json | null
+          phase_id?: string
+          project_id?: string
+          sha256_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_export_registry_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "preclassification_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_export_registry_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discrepancy_export_logs: {
+        Row: {
+          batch_id: string
+          created_at: string
+          export_format: string
+          export_metadata: Json | null
+          file_size_bytes: number | null
+          id: string
+          project_id: string
+          storage_path: string | null
+          total_discrepancies: number
+          user_id: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          export_format?: string
+          export_metadata?: Json | null
+          file_size_bytes?: number | null
+          id?: string
+          project_id: string
+          storage_path?: string | null
+          total_discrepancies?: number
+          user_id: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          export_format?: string
+          export_metadata?: Json | null
+          file_size_bytes?: number | null
+          id?: string
+          project_id?: string
+          storage_path?: string | null
+          total_discrepancies?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discrepancy_export_logs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "article_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discrepancy_export_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minotauro_ai_interactions: {
+        Row: {
+          ai_model: string
+          archetype_tone: Database["public"]["Enums"]["archetype_tone"]
+          created_at: string | null
+          error_message: string | null
+          id: string
+          input_tokens: number | null
+          output_tokens: number | null
+          paragraph_id: string
+          prompt_sent: string
+          response_received: string
+          success: boolean | null
+        }
+        Insert: {
+          ai_model: string
+          archetype_tone: Database["public"]["Enums"]["archetype_tone"]
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          input_tokens?: number | null
+          output_tokens?: number | null
+          paragraph_id: string
+          prompt_sent: string
+          response_received: string
+          success?: boolean | null
+        }
+        Update: {
+          ai_model?: string
+          archetype_tone?: Database["public"]["Enums"]["archetype_tone"]
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          input_tokens?: number | null
+          output_tokens?: number | null
+          paragraph_id?: string
+          prompt_sent?: string
+          response_received?: string
+          success?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minotauro_ai_interactions_paragraph_id_fkey"
+            columns: ["paragraph_id"]
+            isOneToOne: false
+            referencedRelation: "minotauro_paragraphs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minotauro_curated_sources: {
+        Row: {
+          artifact_id: string | null
+          chat_session_id: string | null
+          content_excerpt: string | null
+          created_at: string | null
+          galaxy_id: string
+          id: string
+          metadata: Json | null
+          order_index: number | null
+          relevance_note: string | null
+          source_type: string
+        }
+        Insert: {
+          artifact_id?: string | null
+          chat_session_id?: string | null
+          content_excerpt?: string | null
+          created_at?: string | null
+          galaxy_id: string
+          id?: string
+          metadata?: Json | null
+          order_index?: number | null
+          relevance_note?: string | null
+          source_type: string
+        }
+        Update: {
+          artifact_id?: string | null
+          chat_session_id?: string | null
+          content_excerpt?: string | null
+          created_at?: string | null
+          galaxy_id?: string
+          id?: string
+          metadata?: Json | null
+          order_index?: number | null
+          relevance_note?: string | null
+          source_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minotauro_curated_sources_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "minotauro_curated_sources_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "cog_artifacts_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "minotauro_curated_sources_chat_session_id_fkey"
+            columns: ["chat_session_id"]
+            isOneToOne: false
+            referencedRelation: "cog_chat_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "minotauro_curated_sources_galaxy_id_fkey"
+            columns: ["galaxy_id"]
+            isOneToOne: false
+            referencedRelation: "minotauro_galaxies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minotauro_galaxies: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          order_index: number
+          title: string
+          universe_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          order_index?: number
+          title: string
+          universe_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          order_index?: number
+          title?: string
+          universe_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minotauro_galaxies_universe_id_fkey"
+            columns: ["universe_id"]
+            isOneToOne: false
+            referencedRelation: "minotauro_universes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minotauro_paragraph_versions: {
+        Row: {
+          ai_rationale: string | null
+          archetype_tone: Database["public"]["Enums"]["archetype_tone"] | null
+          changes_summary: string | null
+          content: string
+          created_at: string | null
+          created_by: string
+          id: string
+          metadata: Json | null
+          paragraph_id: string
+          version_number: number
+        }
+        Insert: {
+          ai_rationale?: string | null
+          archetype_tone?: Database["public"]["Enums"]["archetype_tone"] | null
+          changes_summary?: string | null
+          content: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          metadata?: Json | null
+          paragraph_id: string
+          version_number: number
+        }
+        Update: {
+          ai_rationale?: string | null
+          archetype_tone?: Database["public"]["Enums"]["archetype_tone"] | null
+          changes_summary?: string | null
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          metadata?: Json | null
+          paragraph_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minotauro_paragraph_versions_paragraph_id_fkey"
+            columns: ["paragraph_id"]
+            isOneToOne: false
+            referencedRelation: "minotauro_paragraphs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minotauro_paragraphs: {
+        Row: {
+          ai_content: string | null
+          archetype_tone: Database["public"]["Enums"]["archetype_tone"] | null
+          created_at: string | null
+          final_content: string | null
+          galaxy_id: string
+          human_content: string
+          id: string
+          metadata: Json | null
+          order_index: number
+          seed_concept: string | null
+          status: Database["public"]["Enums"]["paragraph_status"] | null
+          title_tentative: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_content?: string | null
+          archetype_tone?: Database["public"]["Enums"]["archetype_tone"] | null
+          created_at?: string | null
+          final_content?: string | null
+          galaxy_id: string
+          human_content: string
+          id?: string
+          metadata?: Json | null
+          order_index?: number
+          seed_concept?: string | null
+          status?: Database["public"]["Enums"]["paragraph_status"] | null
+          title_tentative?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_content?: string | null
+          archetype_tone?: Database["public"]["Enums"]["archetype_tone"] | null
+          created_at?: string | null
+          final_content?: string | null
+          galaxy_id?: string
+          human_content?: string
+          id?: string
+          metadata?: Json | null
+          order_index?: number
+          seed_concept?: string | null
+          status?: Database["public"]["Enums"]["paragraph_status"] | null
+          title_tentative?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minotauro_paragraphs_galaxy_id_fkey"
+            columns: ["galaxy_id"]
+            isOneToOne: false
+            referencedRelation: "minotauro_galaxies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minotauro_universes: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          project_id: string
+          purpose: string | null
+          subtitle: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id: string
+          purpose?: string | null
+          subtitle?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string
+          purpose?: string | null
+          subtitle?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minotauro_universes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_calibration_chats: {
+        Row: {
+          completed_at: string | null
+          consumed_by_calibration_id: string | null
+          created_at: string | null
+          id: string
+          is_complete: boolean | null
+          is_public: boolean | null
+          isomorphism_id: string | null
+          message_count: number | null
+          new_evidence_provided: boolean | null
+          node_id: string | null
+          origin_calibration_id: string | null
+          project_id: string
+          suggests_recalibration: boolean | null
+          summary: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          consumed_by_calibration_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_complete?: boolean | null
+          is_public?: boolean | null
+          isomorphism_id?: string | null
+          message_count?: number | null
+          new_evidence_provided?: boolean | null
+          node_id?: string | null
+          origin_calibration_id?: string | null
+          project_id: string
+          suggests_recalibration?: boolean | null
+          summary?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          consumed_by_calibration_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_complete?: boolean | null
+          is_public?: boolean | null
+          isomorphism_id?: string | null
+          message_count?: number | null
+          new_evidence_provided?: boolean | null
+          node_id?: string | null
+          origin_calibration_id?: string | null
+          project_id?: string
+          suggests_recalibration?: boolean | null
+          summary?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_calibration_chats_consumed_by_calibration_id_fkey"
+            columns: ["consumed_by_calibration_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_calibrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_calibration_chats_isomorphism_id_fkey"
+            columns: ["isomorphism_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_isomorphisms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_calibration_chats_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_calibration_stats"
+            referencedColumns: ["node_id"]
+          },
+          {
+            foreignKeyName: "nexus_calibration_chats_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_calibration_chats_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_nodes_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_calibration_chats_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_timeline"
+            referencedColumns: ["node_id"]
+          },
+          {
+            foreignKeyName: "nexus_calibration_chats_origin_calibration_id_fkey"
+            columns: ["origin_calibration_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_calibrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_calibration_chats_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_calibrations: {
+        Row: {
+          ai_model: string
+          ai_model_version: string | null
+          angle_interpretation: string | null
+          calibration_angle: number | null
+          created_at: string | null
+          elegant_closure: string | null
+          evidence_needed: string | null
+          geometric_pattern: string | null
+          id: string
+          input_context: Json | null
+          is_public: boolean | null
+          isomorphism_id: string | null
+          node_id: string | null
+          output_summary: string | null
+          previous_calibration_id: string | null
+          project_id: string
+          published_at: string | null
+          quipu_cognitive: number | null
+          quipu_resonant: number | null
+          reasoning: string
+          requested_by: string
+          result: string
+          version: number
+        }
+        Insert: {
+          ai_model?: string
+          ai_model_version?: string | null
+          angle_interpretation?: string | null
+          calibration_angle?: number | null
+          created_at?: string | null
+          elegant_closure?: string | null
+          evidence_needed?: string | null
+          geometric_pattern?: string | null
+          id?: string
+          input_context?: Json | null
+          is_public?: boolean | null
+          isomorphism_id?: string | null
+          node_id?: string | null
+          output_summary?: string | null
+          previous_calibration_id?: string | null
+          project_id: string
+          published_at?: string | null
+          quipu_cognitive?: number | null
+          quipu_resonant?: number | null
+          reasoning: string
+          requested_by: string
+          result: string
+          version?: number
+        }
+        Update: {
+          ai_model?: string
+          ai_model_version?: string | null
+          angle_interpretation?: string | null
+          calibration_angle?: number | null
+          created_at?: string | null
+          elegant_closure?: string | null
+          evidence_needed?: string | null
+          geometric_pattern?: string | null
+          id?: string
+          input_context?: Json | null
+          is_public?: boolean | null
+          isomorphism_id?: string | null
+          node_id?: string | null
+          output_summary?: string | null
+          previous_calibration_id?: string | null
+          project_id?: string
+          published_at?: string | null
+          quipu_cognitive?: number | null
+          quipu_resonant?: number | null
+          reasoning?: string
+          requested_by?: string
+          result?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_calibrations_isomorphism_id_fkey"
+            columns: ["isomorphism_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_isomorphisms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_calibrations_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_calibration_stats"
+            referencedColumns: ["node_id"]
+          },
+          {
+            foreignKeyName: "nexus_calibrations_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_calibrations_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_nodes_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_calibrations_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_timeline"
+            referencedColumns: ["node_id"]
+          },
+          {
+            foreignKeyName: "nexus_calibrations_previous_calibration_id_fkey"
+            columns: ["previous_calibration_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_calibrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_calibrations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_chat_messages: {
+        Row: {
+          chat_id: string
+          content: string
+          created_at: string | null
+          id: string
+          quipu_data: Json | null
+          role: string
+        }
+        Insert: {
+          chat_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          quipu_data?: Json | null
+          role: string
+        }
+        Update: {
+          chat_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          quipu_data?: Json | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_calibration_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_civilization_glitches: {
+        Row: {
+          civilization_id: string
+          glitch_id: string
+          notes: string | null
+        }
+        Insert: {
+          civilization_id: string
+          glitch_id: string
+          notes?: string | null
+        }
+        Update: {
+          civilization_id?: string
+          glitch_id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_civilization_glitches_glitch_id_fkey"
+            columns: ["glitch_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_fertile_glitches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_fertile_glitches: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id: string
+          name: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      nexus_isomorphism_connections: {
+        Row: {
+          created_at: string | null
+          id: string
+          isomorphism_id: string | null
+          node_id: string | null
+          notes: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          isomorphism_id?: string | null
+          node_id?: string | null
+          notes?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          isomorphism_id?: string | null
+          node_id?: string | null
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_isomorphism_connections_isomorphism_id_fkey"
+            columns: ["isomorphism_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_isomorphisms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_isomorphism_connections_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_calibration_stats"
+            referencedColumns: ["node_id"]
+          },
+          {
+            foreignKeyName: "nexus_isomorphism_connections_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_isomorphism_connections_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_nodes_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_isomorphism_connections_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_timeline"
+            referencedColumns: ["node_id"]
+          },
+        ]
+      }
+      nexus_isomorphisms: {
+        Row: {
+          color: string | null
+          connection_type: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          project_id: string
+          slug: string | null
+          strength: number | null
+        }
+        Insert: {
+          color?: string | null
+          connection_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          project_id: string
+          slug?: string | null
+          strength?: number | null
+        }
+        Update: {
+          color?: string | null
+          connection_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          slug?: string | null
+          strength?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_isomorphisms_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_node_tags: {
+        Row: {
+          node_id: string
+          tag_id: string
+        }
+        Insert: {
+          node_id: string
+          tag_id: string
+        }
+        Update: {
+          node_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_node_tags_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_calibration_stats"
+            referencedColumns: ["node_id"]
+          },
+          {
+            foreignKeyName: "nexus_node_tags_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_node_tags_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_nodes_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_node_tags_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_timeline"
+            referencedColumns: ["node_id"]
+          },
+          {
+            foreignKeyName: "nexus_node_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_pattern_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_nodes: {
+        Row: {
+          anomaly_description: string | null
+          anomaly_level: string | null
+          citation: string | null
+          counter_narrative: string | null
+          country: string | null
+          created_at: string | null
+          created_by: string | null
+          date_precision: string | null
+          description: string | null
+          emoji: string | null
+          foundational_label: string | null
+          id: string
+          is_foundational: boolean | null
+          latitude: number | null
+          longitude: number | null
+          maturity: string
+          maturity_reason: string | null
+          name: string
+          node_type: string
+          official_narrative: string | null
+          project_id: string
+          region_id: string | null
+          search_vector: unknown
+          slug: string | null
+          source_url: string | null
+          subtitle: string | null
+          torsion_angle: number | null
+          torsion_note: string | null
+          updated_at: string | null
+          year_end: number | null
+          year_start: number | null
+        }
+        Insert: {
+          anomaly_description?: string | null
+          anomaly_level?: string | null
+          citation?: string | null
+          counter_narrative?: string | null
+          country?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_precision?: string | null
+          description?: string | null
+          emoji?: string | null
+          foundational_label?: string | null
+          id?: string
+          is_foundational?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          maturity?: string
+          maturity_reason?: string | null
+          name: string
+          node_type?: string
+          official_narrative?: string | null
+          project_id: string
+          region_id?: string | null
+          search_vector?: unknown
+          slug?: string | null
+          source_url?: string | null
+          subtitle?: string | null
+          torsion_angle?: number | null
+          torsion_note?: string | null
+          updated_at?: string | null
+          year_end?: number | null
+          year_start?: number | null
+        }
+        Update: {
+          anomaly_description?: string | null
+          anomaly_level?: string | null
+          citation?: string | null
+          counter_narrative?: string | null
+          country?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_precision?: string | null
+          description?: string | null
+          emoji?: string | null
+          foundational_label?: string | null
+          id?: string
+          is_foundational?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          maturity?: string
+          maturity_reason?: string | null
+          name?: string
+          node_type?: string
+          official_narrative?: string | null
+          project_id?: string
+          region_id?: string | null
+          search_vector?: unknown
+          slug?: string | null
+          source_url?: string | null
+          subtitle?: string | null
+          torsion_angle?: number | null
+          torsion_note?: string | null
+          updated_at?: string | null
+          year_end?: number | null
+          year_start?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_nodes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_nodes_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_diversity_analysis"
+            referencedColumns: ["region_id"]
+          },
+          {
+            foreignKeyName: "nexus_nodes_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_pattern_tags: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          project_id: string
+          slug: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          project_id: string
+          slug: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_pattern_tags_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_regions: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          emoji: string | null
+          id: string
+          name: string
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          emoji?: string | null
+          id: string
+          name: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          emoji?: string | null
+          id?: string
+          name?: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      nexus_researchers: {
+        Row: {
+          access_enabled: boolean | null
+          created_at: string | null
+          email: string | null
+          id: string
+          institution: string | null
+          last_activity: string | null
+          name: string
+          project_active: boolean | null
+          specialization: string | null
+          updated_at: string | null
+          user_id: string | null
+          validation_enabled: boolean | null
+        }
+        Insert: {
+          access_enabled?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          institution?: string | null
+          last_activity?: string | null
+          name: string
+          project_active?: boolean | null
+          specialization?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          validation_enabled?: boolean | null
+        }
+        Update: {
+          access_enabled?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          institution?: string | null
+          last_activity?: string | null
+          name?: string
+          project_active?: boolean | null
+          specialization?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          validation_enabled?: boolean | null
+        }
+        Relationships: []
+      }
+      nexus_technologies: {
+        Row: {
+          anomaly_level: string | null
+          category: string | null
+          civilization_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          anomaly_level?: string | null
+          category?: string | null
+          civilization_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          anomaly_level?: string | null
+          category?: string | null
+          civilization_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      nexus_validation_chats: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          is_complete: boolean | null
+          message_count: number | null
+          validation_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_complete?: boolean | null
+          message_count?: number | null
+          validation_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_complete?: boolean | null
+          message_count?: number | null
+          validation_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_validation_chats_validation_id_fkey"
+            columns: ["validation_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_validations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_validations: {
+        Row: {
+          additional_info: string | null
+          can_be_negated: boolean | null
+          civilization_id: string | null
+          confidence_level: string | null
+          created_at: string | null
+          evidence_needed: string | null
+          evidence_needed_old: string | null
+          geometric_pattern: string | null
+          id: string
+          isomorphism_id: string | null
+          notes: string | null
+          quipu_cognitive: number | null
+          quipu_resonant: number | null
+          reasoning: string | null
+          researcher_id: string | null
+          validated_at: string | null
+        }
+        Insert: {
+          additional_info?: string | null
+          can_be_negated?: boolean | null
+          civilization_id?: string | null
+          confidence_level?: string | null
+          created_at?: string | null
+          evidence_needed?: string | null
+          evidence_needed_old?: string | null
+          geometric_pattern?: string | null
+          id?: string
+          isomorphism_id?: string | null
+          notes?: string | null
+          quipu_cognitive?: number | null
+          quipu_resonant?: number | null
+          reasoning?: string | null
+          researcher_id?: string | null
+          validated_at?: string | null
+        }
+        Update: {
+          additional_info?: string | null
+          can_be_negated?: boolean | null
+          civilization_id?: string | null
+          confidence_level?: string | null
+          created_at?: string | null
+          evidence_needed?: string | null
+          evidence_needed_old?: string | null
+          geometric_pattern?: string | null
+          id?: string
+          isomorphism_id?: string | null
+          notes?: string | null
+          quipu_cognitive?: number | null
+          quipu_resonant?: number | null
+          reasoning?: string | null
+          researcher_id?: string | null
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_validations_researcher_id_fkey"
+            columns: ["researcher_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_researchers"
             referencedColumns: ["id"]
           },
         ]
@@ -689,19 +3673,19 @@ export type Database = {
       phase_eligible_articles: {
         Row: {
           article_id: string
-          created_at: string
+          created_at: string | null
           id: string
           phase_id: string
         }
         Insert: {
           article_id: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           phase_id: string
         }
         Update: {
           article_id?: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           phase_id?: string
         }
@@ -712,13 +3696,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "articles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "phase_eligible_articles_article_id_fkey"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "eligible_articles_for_batching_view"
-            referencedColumns: ["article_id"]
           },
           {
             foreignKeyName: "phase_eligible_articles_phase_id_fkey"
@@ -760,21 +3737,21 @@ export type Database = {
           dimension_id: string
           emoticon: string | null
           id: string
-          ordering: number
+          ordering: number | null
           value: string
         }
         Insert: {
           dimension_id: string
           emoticon?: string | null
           id?: string
-          ordering?: number
+          ordering?: number | null
           value: string
         }
         Update: {
           dimension_id?: string
           emoticon?: string | null
           id?: string
-          ordering?: number
+          ordering?: number | null
           value?: string
         }
         Relationships: [
@@ -791,19 +3768,19 @@ export type Database = {
         Row: {
           dimension_id: string
           id: string
-          ordering: number
+          ordering: number | null
           question: string
         }
         Insert: {
           dimension_id: string
           id?: string
-          ordering?: number
+          ordering?: number | null
           question: string
         }
         Update: {
           dimension_id?: string
           id?: string
-          ordering?: number
+          ordering?: number | null
           question?: string
         }
         Relationships: [
@@ -818,41 +3795,41 @@ export type Database = {
       }
       preclass_dimensions: {
         Row: {
-          created_at: string
+          created_at: string | null
           description: string | null
           icon: string | null
           id: string
           name: string
-          ordering: number
+          ordering: number | null
           phase_id: string | null
           project_id: string
-          status: Database["public"]["Enums"]["dimension_status"]
+          status: Database["public"]["Enums"]["dimension_status"] | null
           type: Database["public"]["Enums"]["dimension_type"]
           updated_at: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           icon?: string | null
           id?: string
           name: string
-          ordering?: number
+          ordering?: number | null
           phase_id?: string | null
           project_id: string
-          status?: Database["public"]["Enums"]["dimension_status"]
+          status?: Database["public"]["Enums"]["dimension_status"] | null
           type: Database["public"]["Enums"]["dimension_type"]
           updated_at?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           icon?: string | null
           id?: string
           name?: string
-          ordering?: number
+          ordering?: number | null
           phase_id?: string | null
           project_id?: string
-          status?: Database["public"]["Enums"]["dimension_status"]
+          status?: Database["public"]["Enums"]["dimension_status"] | null
           type?: Database["public"]["Enums"]["dimension_type"]
           updated_at?: string | null
         }
@@ -875,31 +3852,52 @@ export type Database = {
       }
       preclassification_phases: {
         Row: {
-          created_at: string
+          applied_filters: Json | null
+          created_at: string | null
           description: string | null
           id: string
           name: string
           phase_number: number
           project_id: string
-          status: Database["public"]["Enums"]["preclassification_phase_status"]
+          source_phase_id: string | null
+          status:
+            | Database["public"]["Enums"]["preclassification_phase_status"]
+            | null
+          total_articles: number | null
+          universe_name: string | null
+          universe_type: string | null
         }
         Insert: {
-          created_at?: string
+          applied_filters?: Json | null
+          created_at?: string | null
           description?: string | null
           id?: string
           name: string
           phase_number: number
           project_id: string
-          status?: Database["public"]["Enums"]["preclassification_phase_status"]
+          source_phase_id?: string | null
+          status?:
+            | Database["public"]["Enums"]["preclassification_phase_status"]
+            | null
+          total_articles?: number | null
+          universe_name?: string | null
+          universe_type?: string | null
         }
         Update: {
-          created_at?: string
+          applied_filters?: Json | null
+          created_at?: string | null
           description?: string | null
           id?: string
           name?: string
           phase_number?: number
           project_id?: string
-          status?: Database["public"]["Enums"]["preclassification_phase_status"]
+          source_phase_id?: string | null
+          status?:
+            | Database["public"]["Enums"]["preclassification_phase_status"]
+            | null
+          total_articles?: number | null
+          universe_name?: string | null
+          universe_type?: string | null
         }
         Relationships: [
           {
@@ -909,6 +3907,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "preclassification_phases_source_phase_id_fkey"
+            columns: ["source_phase_id"]
+            isOneToOne: false
+            referencedRelation: "preclassification_phases"
+            referencedColumns: ["id"]
+          },
         ]
       }
       project_members: {
@@ -916,42 +3921,42 @@ export type Database = {
           contact_email_for_project: string | null
           contextual_notes: string | null
           id: string
-          is_active_for_user: boolean
-          joined_at: string
+          is_active_for_user: boolean | null
+          joined_at: string | null
           project_id: string
           project_role_id: string
           ui_font_pair: string | null
-          ui_is_dark_mode: boolean
+          ui_is_dark_mode: boolean | null
           ui_theme: string | null
-          updated_at: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           contact_email_for_project?: string | null
           contextual_notes?: string | null
           id?: string
-          is_active_for_user?: boolean
-          joined_at?: string
+          is_active_for_user?: boolean | null
+          joined_at?: string | null
           project_id: string
           project_role_id: string
           ui_font_pair?: string | null
-          ui_is_dark_mode?: boolean
+          ui_is_dark_mode?: boolean | null
           ui_theme?: string | null
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           contact_email_for_project?: string | null
           contextual_notes?: string | null
           id?: string
-          is_active_for_user?: boolean
-          joined_at?: string
+          is_active_for_user?: boolean | null
+          joined_at?: string | null
           project_id?: string
           project_role_id?: string
           ui_font_pair?: string | null
-          ui_is_dark_mode?: boolean
+          ui_is_dark_mode?: boolean | null
           ui_theme?: string | null
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -973,40 +3978,40 @@ export type Database = {
       }
       project_roles: {
         Row: {
-          can_bulk_edit_master_data: boolean
-          can_create_batches: boolean
-          can_manage_master_data: boolean
-          can_upload_files: boolean
-          created_at: string
+          can_bulk_edit_master_data: boolean | null
+          can_create_batches: boolean | null
+          can_manage_master_data: boolean | null
+          can_upload_files: boolean | null
+          created_at: string | null
           id: string
           project_id: string
           role_description: string | null
           role_name: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          can_bulk_edit_master_data?: boolean
-          can_create_batches?: boolean
-          can_manage_master_data?: boolean
-          can_upload_files?: boolean
-          created_at?: string
+          can_bulk_edit_master_data?: boolean | null
+          can_create_batches?: boolean | null
+          can_manage_master_data?: boolean | null
+          can_upload_files?: boolean | null
+          created_at?: string | null
           id?: string
           project_id: string
           role_description?: string | null
           role_name: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          can_bulk_edit_master_data?: boolean
-          can_create_batches?: boolean
-          can_manage_master_data?: boolean
-          can_upload_files?: boolean
-          created_at?: string
+          can_bulk_edit_master_data?: boolean | null
+          can_create_batches?: boolean | null
+          can_manage_master_data?: boolean | null
+          can_upload_files?: boolean | null
+          created_at?: string | null
           id?: string
           project_id?: string
           role_description?: string | null
           role_name?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -1030,12 +4035,12 @@ export type Database = {
           can_upload_files_old: boolean | null
           history_id: string
           operated_by_user_id: string | null
-          operation_timestamp: string
-          operation_type: string
+          operation_timestamp: string | null
+          operation_type: string | null
           project_id: string | null
           role_description_new: string | null
           role_description_old: string | null
-          role_id: string
+          role_id: string | null
           role_name_new: string | null
           role_name_old: string | null
           transaction_id: number | null
@@ -1051,12 +4056,12 @@ export type Database = {
           can_upload_files_old?: boolean | null
           history_id?: string
           operated_by_user_id?: string | null
-          operation_timestamp?: string
-          operation_type: string
+          operation_timestamp?: string | null
+          operation_type?: string | null
           project_id?: string | null
           role_description_new?: string | null
           role_description_old?: string | null
-          role_id: string
+          role_id?: string | null
           role_name_new?: string | null
           role_name_old?: string | null
           transaction_id?: number | null
@@ -1072,12 +4077,12 @@ export type Database = {
           can_upload_files_old?: boolean | null
           history_id?: string
           operated_by_user_id?: string | null
-          operation_timestamp?: string
-          operation_type?: string
+          operation_timestamp?: string | null
+          operation_type?: string | null
           project_id?: string | null
           role_description_new?: string | null
           role_description_old?: string | null
-          role_id?: string
+          role_id?: string | null
           role_name_new?: string | null
           role_name_old?: string | null
           transaction_id?: number | null
@@ -1088,144 +4093,149 @@ export type Database = {
         Row: {
           active_phase_id: string | null
           code: string | null
-          created_at: string
+          created_at: string | null
           description: string | null
           id: string
           institution_name: string | null
           lead_researcher_user_id: string | null
-          module_bibliography: boolean
-          module_interviews: boolean
-          module_planning: boolean
+          module_bibliography: boolean | null
+          module_cognetica: boolean | null
+          module_interviews: boolean | null
+          module_planning: boolean | null
           name: string
+          owner_id: string | null
           proposal: string | null
           proposal_bibliography: string | null
           proposal_interviews: string | null
-          status: string
-          updated_at: string
+          status: string | null
+          updated_at: string | null
         }
         Insert: {
           active_phase_id?: string | null
           code?: string | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           id?: string
           institution_name?: string | null
           lead_researcher_user_id?: string | null
-          module_bibliography?: boolean
-          module_interviews?: boolean
-          module_planning?: boolean
+          module_bibliography?: boolean | null
+          module_cognetica?: boolean | null
+          module_interviews?: boolean | null
+          module_planning?: boolean | null
           name: string
+          owner_id?: string | null
           proposal?: string | null
           proposal_bibliography?: string | null
           proposal_interviews?: string | null
-          status?: string
-          updated_at?: string
+          status?: string | null
+          updated_at?: string | null
         }
         Update: {
           active_phase_id?: string | null
           code?: string | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           id?: string
           institution_name?: string | null
           lead_researcher_user_id?: string | null
-          module_bibliography?: boolean
-          module_interviews?: boolean
-          module_planning?: boolean
+          module_bibliography?: boolean | null
+          module_cognetica?: boolean | null
+          module_interviews?: boolean | null
+          module_planning?: boolean | null
           name?: string
+          owner_id?: string | null
           proposal?: string | null
           proposal_bibliography?: string | null
           proposal_interviews?: string | null
-          status?: string
-          updated_at?: string
+          status?: string | null
+          updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "projects_active_phase_id_fkey"
-            columns: ["active_phase_id"]
-            isOneToOne: false
-            referencedRelation: "preclassification_phases"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       users_profiles: {
         Row: {
           contact_phone: string | null
-          created_at: string
+          created_at: string | null
           first_name: string | null
           general_notes: string | null
+          is_platform_admin: boolean | null
           last_name: string | null
           preferred_language: string | null
           primary_institution: string | null
           pronouns: string | null
           public_contact_email: string | null
           public_display_name: string | null
-          updated_at: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           contact_phone?: string | null
-          created_at?: string
+          created_at?: string | null
           first_name?: string | null
           general_notes?: string | null
+          is_platform_admin?: boolean | null
           last_name?: string | null
           preferred_language?: string | null
           primary_institution?: string | null
           pronouns?: string | null
           public_contact_email?: string | null
           public_display_name?: string | null
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           contact_phone?: string | null
-          created_at?: string
+          created_at?: string | null
           first_name?: string | null
           general_notes?: string | null
+          is_platform_admin?: boolean | null
           last_name?: string | null
           preferred_language?: string | null
           primary_institution?: string | null
           pronouns?: string | null
           public_contact_email?: string | null
           public_display_name?: string | null
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
       }
     }
     Views: {
-      detailed_article_notes: {
+      cog_artifacts_full: {
         Row: {
-          article_id: string | null
-          author_name: string | null
           created_at: string | null
+          created_by: string | null
+          description: string | null
+          duration_seconds: number | null
+          error_log: string | null
+          ethical_debt_score: number | null
+          file_size_bytes: number | null
+          friction_score: number | null
+          hope_memory_type:
+            | Database["public"]["Enums"]["hope_memory_type"]
+            | null
           id: string | null
-          note_content: string | null
+          mime_type: string | null
           project_id: string | null
+          references_count: number | null
+          seeds_count: number | null
+          source_metadata: Json | null
+          status: Database["public"]["Enums"]["cog_processing_status"] | null
+          storage_path: string | null
+          system_type: Database["public"]["Enums"]["system_type"] | null
+          tdc_status: Database["public"]["Enums"]["tdc_status"] | null
+          theories_count: number | null
           title: string | null
+          transcription_confidence: number | null
+          transcription_text: string | null
+          type: Database["public"]["Enums"]["cog_artifact_type"] | null
           updated_at: string | null
-          user_id: string | null
-          visibility: Database["public"]["Enums"]["note_visibility"] | null
+          viability_score: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "article_notes_article_id_fkey"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "articles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "article_notes_article_id_fkey"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "eligible_articles_for_batching_view"
-            referencedColumns: ["article_id"]
-          },
-          {
-            foreignKeyName: "article_notes_project_id_fkey"
+            foreignKeyName: "cog_artifacts_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -1278,22 +4288,22 @@ export type Database = {
           },
         ]
       }
-      eligible_articles_for_batching_view: {
+      nexus_calibration_stats: {
         Row: {
-          article_id: string | null
+          avg_cognitive: number | null
+          avg_resonant: number | null
+          calibration_count: number | null
+          dominant_pattern: string | null
+          insufficient_count: number | null
+          negable_count: number | null
+          node_id: string | null
+          node_name: string | null
           project_id: string | null
-        }
-        Insert: {
-          article_id?: string | null
-          project_id?: string | null
-        }
-        Update: {
-          article_id?: string | null
-          project_id?: string | null
+          robust_count: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "articles_normalized_project_id_fkey"
+            foreignKeyName: "nexus_nodes_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -1301,138 +4311,260 @@ export type Database = {
           },
         ]
       }
-      latest_article_dimension_reviews: {
+      nexus_diversity_analysis: {
         Row: {
-          article_batch_item_id: string | null
-          confidence_score: number | null
-          created_at: string | null
-          dimension_id: string | null
-          id: string | null
-          iteration: number | null
-          value: string | null
+          green_count: number | null
+          node_count: number | null
+          percentage: number | null
+          project_id: string | null
+          purple_count: number | null
+          red_count: number | null
+          region_emoji: string | null
+          region_id: string | null
+          region_name: string | null
+          white_count: number | null
+          yellow_count: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "article_dimension_reviews_article_batch_item_id_fkey"
-            columns: ["article_batch_item_id"]
+            foreignKeyName: "nexus_nodes_project_id_fkey"
+            columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "article_batch_items"
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_nodes_with_tags: {
+        Row: {
+          anomaly_description: string | null
+          anomaly_level: string | null
+          citation: string | null
+          counter_narrative: string | null
+          country: string | null
+          created_at: string | null
+          created_by: string | null
+          date_precision: string | null
+          description: string | null
+          emoji: string | null
+          foundational_label: string | null
+          id: string | null
+          is_foundational: boolean | null
+          latitude: number | null
+          longitude: number | null
+          maturity: string | null
+          maturity_reason: string | null
+          name: string | null
+          node_type: string | null
+          official_narrative: string | null
+          project_id: string | null
+          region_emoji: string | null
+          region_id: string | null
+          region_name: string | null
+          search_vector: unknown
+          slug: string | null
+          source_url: string | null
+          subtitle: string | null
+          tag_names: string[] | null
+          tag_slugs: string[] | null
+          torsion_angle: number | null
+          torsion_note: string | null
+          updated_at: string | null
+          year_end: number | null
+          year_start: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_nodes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "article_dimension_reviews_dimension_id_fkey"
-            columns: ["dimension_id"]
+            foreignKeyName: "nexus_nodes_region_id_fkey"
+            columns: ["region_id"]
             isOneToOne: false
-            referencedRelation: "preclass_dimensions"
+            referencedRelation: "nexus_diversity_analysis"
+            referencedColumns: ["region_id"]
+          },
+          {
+            foreignKeyName: "nexus_nodes_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_timeline: {
+        Row: {
+          emoji: string | null
+          foundational_label: string | null
+          is_foundational: boolean | null
+          maturity: string | null
+          name: string | null
+          node_id: string | null
+          node_type: string | null
+          project_id: string | null
+          region_color: string | null
+          region_emoji: string | null
+          region_id: string | null
+          region_name: string | null
+          torsion_angle: number | null
+          year_end: number | null
+          year_start: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_nodes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_nodes_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_diversity_analysis"
+            referencedColumns: ["region_id"]
+          },
+          {
+            foreignKeyName: "nexus_nodes_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_regions"
             referencedColumns: ["id"]
           },
         ]
       }
     }
     Functions: {
-      _dim_project_id: {
-        Args: { did: string }
-        Returns: string
+      calculate_article_status_from_dimensions: {
+        Args: { p_article_batch_item_id: string }
+        Returns: Database["public"]["Enums"]["batch_preclass_status"]
       }
-      _is_project_member: {
-        Args: { pid: string }
-        Returns: boolean
-      }
-      bulk_get_notes_info_for_batch: {
-        Args: { p_batch_id: string }
+      get_all_project_batches: {
+        Args: { p_project_id: string }
         Returns: {
-          article_id: string
-          has_notes: boolean
-          item_id: string
-          note_count: number
-          note_ids: string[]
+          article_counts: Json
+          assigned_to: string
+          batch_number: number
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["batch_preclass_status"]
         }[]
       }
-      check_user_has_profile: {
-        Args: { pid: string; uid: string }
-        Returns: boolean
-      }
-      get_article_notes_info_by_batch_item: {
-        Args: { batch_item_id: string }
+      get_all_project_batches_v2: {
+        Args: { p_project_id: string }
         Returns: {
-          article_id: string
-          has_notes: boolean
-          note_count: number
-          note_ids: string[]
+          article_counts: Json
+          assigned_to: string
+          batch_number: number
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["batch_preclass_status"]
+        }[]
+      }
+      get_all_project_batches_v3: {
+        Args: { p_project_id: string }
+        Returns: {
+          article_counts: Json
+          assigned_to: string
+          batch_number: number
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["batch_preclass_status"]
+        }[]
+      }
+      get_all_project_batches_v4: {
+        Args: { p_project_id: string }
+        Returns: {
+          article_counts: Json
+          assigned_to: string
+          batch_number: number
+          id: string
+          name: string
+          phase_id: string
+          status: Database["public"]["Enums"]["batch_preclass_status"]
+        }[]
+      }
+      get_artifact_derivatives: {
+        Args: { artifact_uuid: string }
+        Returns: {
+          artifact_title: string
+          artifact_type: string
+          created_at: string
+          derived_id: string
+          relation_type: string
+        }[]
+      }
+      get_artifact_family_tree: {
+        Args: { artifact_uuid: string }
+        Returns: {
+          artifact_id: string
+          artifact_title: string
+          artifact_type: string
+          depth: number
+          relation_type: string
+        }[]
+      }
+      get_artifact_progress: { Args: { artifact_uuid: string }; Returns: Json }
+      get_artifact_source: {
+        Args: { artifact_uuid: string }
+        Returns: {
+          artifact_title: string
+          artifact_type: string
+          created_at: string
+          relation_type: string
+          source_id: string
         }[]
       }
       get_current_auth_context: {
-        Args: Record<PropertyKey, never>
-        Returns: Record<string, unknown>[]
-      }
-      get_notes_info_for_batch: {
-        Args: { p_batch_id: string }
+        Args: never
         Returns: {
-          article_id: string
-          batch_item_id: string
-          has_notes: boolean
-          note_count: number
+          current_role: string
+          current_uid: string
         }[]
       }
-      get_phase_batches_with_details: {
-        Args: { p_phase_id: string }
+      get_current_essay_version: {
+        Args: { p_artifact_id: string }
         Returns: {
-          article_count: number
-          assigned_researcher_name: string
-          batch_number: number
-          id: string
-          status: Database["public"]["Enums"]["batch_preclass_status"]
+          created_at: string
+          edit_type: string
+          edited_by: string
+          essay_content: string
+          is_manual_edit: boolean
+          version_number: number
         }[]
       }
-      get_preclass_batch_summary: {
-        Args: { p_batch_id: string }
+      get_essay_version_history: {
+        Args: { p_artifact_id: string }
         Returns: {
-          article_abstract: string
-          article_id: string
-          article_title: string
-          batch_item_id: string
-          has_notes: boolean
-          latest_classifications: Json
-          note_count: number
+          changes_summary: string
+          character_count: number
+          created_at: string
+          edit_reason: string
+          edit_type: string
+          edited_by: string
+          editor_email: string
+          version_number: number
         }[]
       }
-      get_project_batches_with_assignee_names: {
-        Args: { p_project_id: string }
-        Returns: {
-          article_count: number
-          assigned_to_member_name: string
-          batch_number: number
-          id: string
-          name: string
-          status: string
-        }[]
+      get_minotauro_universe_full: {
+        Args: { p_universe_id: string }
+        Returns: Json
       }
-      get_project_id_from_article: {
-        Args: { p_article_id: string }
-        Returns: string
+      get_paragraph_curated_sources_with_details: {
+        Args: { p_paragraph_id: string }
+        Returns: Json
       }
-      get_project_id_from_batch_item: {
-        Args: { item_id: string }
-        Returns: string
+      get_paragraph_version_history: {
+        Args: { p_paragraph_id: string }
+        Returns: Json
       }
-      get_user_batches_with_detailed_counts: {
-        Args: { p_project_id: string; p_user_id: string }
-        Returns: {
-          article_counts: Json
-          batch_number: number
-          id: string
-          name: string
-          status: Database["public"]["Enums"]["batch_preclass_status"]
-        }[]
-      }
-      get_user_by_email: {
-        Args: { user_email: string }
-        Returns: string
-      }
-      get_user_project_ids: {
-        Args: { p_user_id: string }
-        Returns: string[]
-      }
+      get_user_by_email: { Args: { user_email: string }; Returns: string }
       has_permission_in_project: {
         Args: {
           p_permission_column: string
@@ -1441,45 +4573,100 @@ export type Database = {
         }
         Returns: boolean
       }
-      increment_job_tokens: {
-        Args: {
-          input_increment: number
-          job_id: string
-          output_increment: number
-        }
-        Returns: undefined
+      is_batch_closed: {
+        Args: { p_batch_id: string }
+        Returns: {
+          finalizedDimensions: number
+          isClosed: boolean
+          percentFinalized: number
+          totalDimensions: number
+        }[]
       }
-      is_user_member_of_project: {
-        Args: { p_project_id_to_check: string; p_user_id: string }
+      is_platform_admin: { Args: never; Returns: boolean }
+      nexus_user_has_permission: {
+        Args: { p_permission: string; p_project_id: string }
         Returns: boolean
       }
+      nexus_user_has_project_access: {
+        Args: { p_project_id: string }
+        Returns: boolean
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
+      archetype_tone: "bufon" | "auditor" | "editor" | "colega"
       batch_preclass_status:
         | "pending"
-        | "translated"
-        | "review_pending"
-        | "reconciliation_pending"
-        | "validated"
-        | "reconciled"
-        | "disputed"
-      batch_status:
-        | "pending"
         | "in_progress"
-        | "ai_prefilled"
-        | "discrepancies"
         | "completed"
-      dimension_status: "active" | "archived"
-      dimension_type: "finite" | "open"
-      group_visibility: "public" | "private"
-      job_status: "running" | "completed" | "failed"
-      job_type: "TRANSLATION" | "PRECLASSIFICATION"
-      note_visibility: "public" | "private"
+        | "validated"
+        | "rejected"
+        | "disputed"
+        | "reconciled"
+        | "reconciliation_pending"
+        | "review_pending"
+        | "translated"
+      batch_status:
+        | "ai_prefilled"
+        | "completed"
+        | "discrepancies"
+        | "in_progress"
+        | "pending"
+      cog_artifact_type:
+        | "video"
+        | "audio"
+        | "document"
+        | "image"
+        | "other"
+        | "markdown"
+        | "pdf_report"
+        | "pdf_slides"
+      cog_processing_status:
+        | "pending"
+        | "uploading"
+        | "transcribing"
+        | "analyzing"
+        | "completed"
+        | "error"
+      dimension_status: "active" | "inactive" | "archived"
+      dimension_type:
+        | "binary"
+        | "categorical"
+        | "text"
+        | "scale"
+        | "finite"
+        | "open"
+      group_visibility: "private" | "project" | "public"
+      hope_memory_type: "Slow" | "Fast" | "Mixed"
+      job_status: "pending" | "processing" | "completed" | "failed" | "running"
+      job_type:
+        | "import_articles"
+        | "generate_embeddings"
+        | "preclassification"
+        | "batch_processing"
+        | "PRECLASSIFICATION"
+        | "RECONCILIATION"
+        | "TRANSLATION"
+      note_visibility: "private" | "project" | "public"
+      paragraph_status:
+        | "draft"
+        | "ai_processing"
+        | "ai_proposal"
+        | "human_review"
+        | "accepted"
+        | "rejected"
+        | "final"
       preclassification_phase_status:
-        | "inactive"
+        | "planning"
         | "active"
         | "completed"
+        | "archived"
         | "annulled"
+        | "inactive"
+      system_type: "F0-SlowMemory" | "F1-FastMemory" | "Mixto"
+      tdc_color: "green" | "yellow" | "red"
+      tdc_status: "coherent" | "broken"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1607,34 +4794,86 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      archetype_tone: ["bufon", "auditor", "editor", "colega"],
       batch_preclass_status: [
         "pending",
-        "translated",
-        "review_pending",
-        "reconciliation_pending",
+        "in_progress",
+        "completed",
         "validated",
-        "reconciled",
+        "rejected",
         "disputed",
+        "reconciled",
+        "reconciliation_pending",
+        "review_pending",
+        "translated",
       ],
       batch_status: [
-        "pending",
-        "in_progress",
         "ai_prefilled",
-        "discrepancies",
         "completed",
+        "discrepancies",
+        "in_progress",
+        "pending",
       ],
-      dimension_status: ["active", "archived"],
-      dimension_type: ["finite", "open"],
-      group_visibility: ["public", "private"],
-      job_status: ["running", "completed", "failed"],
-      job_type: ["TRANSLATION", "PRECLASSIFICATION"],
-      note_visibility: ["public", "private"],
+      cog_artifact_type: [
+        "video",
+        "audio",
+        "document",
+        "image",
+        "other",
+        "markdown",
+        "pdf_report",
+        "pdf_slides",
+      ],
+      cog_processing_status: [
+        "pending",
+        "uploading",
+        "transcribing",
+        "analyzing",
+        "completed",
+        "error",
+      ],
+      dimension_status: ["active", "inactive", "archived"],
+      dimension_type: [
+        "binary",
+        "categorical",
+        "text",
+        "scale",
+        "finite",
+        "open",
+      ],
+      group_visibility: ["private", "project", "public"],
+      hope_memory_type: ["Slow", "Fast", "Mixed"],
+      job_status: ["pending", "processing", "completed", "failed", "running"],
+      job_type: [
+        "import_articles",
+        "generate_embeddings",
+        "preclassification",
+        "batch_processing",
+        "PRECLASSIFICATION",
+        "RECONCILIATION",
+        "TRANSLATION",
+      ],
+      note_visibility: ["private", "project", "public"],
+      paragraph_status: [
+        "draft",
+        "ai_processing",
+        "ai_proposal",
+        "human_review",
+        "accepted",
+        "rejected",
+        "final",
+      ],
       preclassification_phase_status: [
-        "inactive",
+        "planning",
         "active",
         "completed",
+        "archived",
         "annulled",
+        "inactive",
       ],
+      system_type: ["F0-SlowMemory", "F1-FastMemory", "Mixto"],
+      tdc_color: ["green", "yellow", "red"],
+      tdc_status: ["coherent", "broken"],
     },
   },
 } as const

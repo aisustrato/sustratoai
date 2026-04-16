@@ -42,7 +42,7 @@
 		"setup-project.sh": true,
 		"test.css": true,
 		"tsconfig.build.json": true,
-		"tsconfig.json": true,
+		"tsconfig.json": false,
 		"tsconfig.node.json": true,
 		"**/*.png": true,
 		"sai/.next": true,
@@ -147,6 +147,46 @@
 		{
 			"icon": "aurelia",
 			"extensions": ["personal"],
+			"format": "svg"
+		},
+		{
+			"icon": "docs",
+			"extensions": ["docs"],
+			"format": "svg"
+		},
+		{
+			"icon": "config",
+			"extensions": ["providers"],
+			"format": "svg"
+		},
+		{
+			"icon": "lib",
+			"extensions": ["lib"],
+			"format": "svg"
+		},
+		{
+			"icon": "src",
+			"extensions": ["theme"],
+			"format": "svg"
+		},
+		{
+			"icon": "hook",
+			"extensions": ["hooks"],
+			"format": "svg"
+		},
+		{
+			"icon": "context",
+			"extensions": ["contexts"],
+			"format": "svg"
+		},
+		{
+			"icon": "job",
+			"extensions": ["jobs"],
+			"format": "svg"
+		},
+		{
+			"icon": "helper",
+			"extensions": ["ripple"],
 			"format": "svg"
 		}
 	],
@@ -651,10 +691,135 @@
 		},
 
 		"[render]": {
-			"iconColor": "#CE93D8", // Violeta claro
-			"highlightColor": "#F3E5F5", // Violeta muy claro
-			"backgroundColor": "#7B1FA2", // Violeta medio
+			"iconColor": "#CE93D8",
+			"highlightColor": "#F3E5F5",
+			"backgroundColor": "#7B1FA2",
 			"borderStyle": "1px solid #AB47BC",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+
+		// ═══════════════════════════════════════════════════════════════
+		// 🚦 SISTEMA SEMÁFORO - Anchors alineados con metodología SUSTRATO
+		// ═══════════════════════════════════════════════════════════════
+
+		"[context]": {
+			"iconColor": "#FFD700",
+			"highlightColor": "#FFF8DC",
+			"backgroundColor": "#B8860B",
+			"borderStyle": "1px solid #DAA520",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[component]": {
+			"iconColor": "#FF6B35",
+			"highlightColor": "#FFF0E6",
+			"backgroundColor": "#D84315",
+			"borderStyle": "1px solid #FF7043",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[handlers]": {
+			"iconColor": "#4FC3F7",
+			"highlightColor": "#E1F5FE",
+			"backgroundColor": "#0277BD",
+			"borderStyle": "1px solid #29B6F6",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[effects]": {
+			"iconColor": "#00E5FF",
+			"highlightColor": "#E0FFFF",
+			"backgroundColor": "#00838F",
+			"borderStyle": "1px solid #00BCD4",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[exports]": {
+			"iconColor": "#8BC34A",
+			"highlightColor": "#F1F8E9",
+			"backgroundColor": "#558B2F",
+			"borderStyle": "1px solid #9CCC65",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[hook]": {
+			"iconColor": "#80DEEA",
+			"highlightColor": "#E0F7FA",
+			"backgroundColor": "#0097A7",
+			"borderStyle": "1px solid #26C6DA",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[state]": {
+			"iconColor": "#E040FB",
+			"highlightColor": "#FCE4EC",
+			"backgroundColor": "#8E24AA",
+			"borderStyle": "1px solid #BA68C8",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[helpers]": {
+			"iconColor": "#B0BEC5",
+			"highlightColor": "#ECEFF1",
+			"backgroundColor": "#607D8B",
+			"borderStyle": "1px solid #90A4AE",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[core]": {
+			"iconColor": "#EF5350",
+			"highlightColor": "#FFEBEE",
+			"backgroundColor": "#C62828",
+			"borderStyle": "2px solid #EF5350",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[computed]": {
+			"iconColor": "#FFB300",
+			"highlightColor": "#FFF8E1",
+			"backgroundColor": "#FF8F00",
+			"borderStyle": "1px solid #FFB300",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[generators]": {
+			"iconColor": "#8D6E63",
+			"highlightColor": "#EFEBE9",
+			"backgroundColor": "#5D4037",
+			"borderStyle": "1px solid #A1887F",
+			"borderRadius": 6,
+			"styleMode": "full",
+			"behavior": "region",
+			"scope": "file"
+		},
+		"[provider]": {
+			"iconColor": "#00E676",
+			"highlightColor": "#E8F5E9",
+			"backgroundColor": "#00C853",
+			"borderStyle": "2px solid #69F0AE",
 			"borderRadius": 6,
 			"styleMode": "full",
 			"behavior": "region",
@@ -678,6 +843,16 @@
 
 	"better-comments.multilineComments": true,
 	"better-comments.highlightPlainText": false,
+	"mcp.mcpServers": {
+		"supabase": {
+			"command": "npx",
+			"args": ["-y", "@supabase/mcp-server"],
+			"env": {
+				"SUPABASE_URL": "https://vgnteswwvallupuanfiz.supabase.co",
+				"SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnbnRlc3d3dmFsbHVwdWFuZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNDI5ODksImV4cCI6MjA3OTgxODk4OX0.YxCEp7oYdEdbkmdDKo3PAiSEFDvnyRu2QbDnVbzH-Vc"
+			}
+		}
+	},
 	"better-comments.tags": [
 		{
 			"tag": "*", //multiline
@@ -690,12 +865,30 @@
 		},
 
 		{
-			"tag": ". 📍", //hubiacion del archivo
+			"tag": "📍",
 			"color": "#F20574",
 			"strikethrough": false,
 			"underline": false,
-			"backgroundColor": "#EDDFCC",
+			"backgroundColor": "#3D1A2A",
 			"bold": true,
+			"italic": false
+		},
+		{
+			"tag": "🎨",
+			"color": "#AB47BC",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#2A1A30",
+			"bold": false,
+			"italic": false
+		},
+		{
+			"tag": "📦",
+			"color": "#7986CB",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#1A1A30",
+			"bold": false,
 			"italic": false
 		},
 		{
@@ -751,6 +944,65 @@
 			"underline": false,
 			"backgroundColor": "#2e3c37",
 			"bold": true,
+			"italic": false
+		},
+
+		// ═══════════════════════════════════════════════════════════════
+		// 🚦 EMOJIS SISTEMA SUSTRATO - Metodología de documentación viva
+		// ═══════════════════════════════════════════════════════════════
+
+		{
+			"tag": "🎯",
+			"color": "#4CAF50",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#1B2B1E",
+			"bold": true,
+			"italic": false
+		},
+		{
+			"tag": "🔧",
+			"color": "#2196F3",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#1A2530",
+			"bold": true,
+			"italic": false
+		},
+		{
+			"tag": "⚠️",
+			"color": "#FF9800",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#2D2415",
+			"bold": true,
+			"italic": false
+		},
+		{
+			"tag": "🚀",
+			"color": "#E91E63",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#2D1520",
+			"bold": true,
+			"italic": false
+		},
+		{
+			"tag": "💎",
+			"color": "#9C27B0",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#251530",
+			"bold": true,
+			"italic": false
+		},
+		{
+			"tag": "🔄",
+			"color": "#00BCD4",
+			"strikethrough": false,
+			"underline": false,
+			"backgroundColor": "#152530",
+			"bold": false,
 			"italic": false
 		}
 	]

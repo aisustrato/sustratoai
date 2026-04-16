@@ -1,0 +1,957 @@
+// 📍 lib/actions/minotauro-actions.ts
+// 🎯 PROPÓSITO: Acciones para el Módulo Minotauro de escritura híbrida
+// 🔧 DECISIÓN: Service role para escritura, server client para lectura
+
+"use server";
+
+import {
+	createSupabaseServerClient,
+	createSupabaseServiceRoleClient,
+} from "@/lib/server";
+import { getArtifactTextContent } from "./cognetica-helpers";
+import {
+	estimateSessionContextTokensDetailed,
+	prepareTokenPayloadForAPI,
+	createTokenSummary,
+} from "@/lib/utils/token-estimator";
+import type {
+	MinotauroUniverse,
+	MinotauroGalaxy,
+	MinotauroParagraph,
+	ParagraphVersion,
+	CuratedSource,
+	MinotauroUniverseFull,
+	CreateUniversePayload,
+	CreateGalaxyPayload,
+	CreateParagraphPayload,
+	ProcessWithAIPayload,
+	AddCuratedSourcePayload,
+	ProcessingResult,
+	ArchetypeTone,
+} from "@/lib/types/minotauro-types";
+
+//#region [universes] - 🌌 GESTIÓN DE UNIVERSOS
+
+export async function createUniverse(
+	payload: CreateUniversePayload,
+): Promise<{ success: boolean; data?: MinotauroUniverse; error?: string }> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+		const serverClient = await createSupabaseServerClient();
+
+		// Obtener usuario autenticado
+		const {
+			data: { user },
+			error: authError,
+		} = await serverClient.auth.getUser();
+		if (authError || !user) {
+			return { success: false, error: "No autenticado" };
+		}
+
+		const { data, error } = await supabase
+			.from("minotauro_universes")
+			.insert({
+				...payload,
+				user_id: user.id,
+			})
+			.select()
+			.single();
+
+		if (error) throw error;
+
+		return { success: true, data: data as any };
+	} catch (error: unknown) {
+		console.error("❌ [createUniverse] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function getUniversesByProject(
+	projectId: string,
+): Promise<{ success: boolean; data?: MinotauroUniverse[]; error?: string }> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data, error } = await supabase
+			.from("minotauro_universes")
+			.select("*")
+			.eq("project_id", projectId)
+			.order("created_at", { ascending: false });
+
+		if (error) throw error;
+
+		return { success: true, data: (data as any) || [] };
+	} catch (error: unknown) {
+		console.error("❌ [getUniversesByProject] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function getUniverseFull(
+	universeId: string,
+): Promise<{ success: boolean; data?: MinotauroUniverseFull; error?: string }> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data, error } = await supabase.rpc("get_minotauro_universe_full", {
+			p_universe_id: universeId,
+		});
+
+		if (error) throw error;
+
+		return { success: true, data: data as any };
+	} catch (error: unknown) {
+		console.error("❌ [getUniverseFull] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function updateUniverse(
+	universeId: string,
+	updates: Partial<
+		Pick<MinotauroUniverse, "title" | "subtitle" | "purpose" | "metadata">
+	>,
+): Promise<{ success: boolean; data?: MinotauroUniverse; error?: string }> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+
+		const { data, error } = await supabase
+			.from("minotauro_universes")
+			.update(updates as any)
+			.eq("id", universeId)
+			.select()
+			.single();
+
+		if (error) throw error;
+
+		return { success: true, data: data as any };
+	} catch (error: unknown) {
+		console.error("❌ [updateUniverse] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function deleteUniverse(
+	universeId: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+
+		const { error } = await supabase
+			.from("minotauro_universes")
+			.delete()
+			.eq("id", universeId);
+
+		if (error) throw error;
+
+		return { success: true };
+	} catch (error: unknown) {
+		console.error("❌ [deleteUniverse] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+//#endregion
+
+//#region [galaxies] - 🌠 GESTIÓN DE GALAXIAS
+
+export async function createGalaxy(
+	payload: CreateGalaxyPayload,
+): Promise<{ success: boolean; data?: MinotauroGalaxy; error?: string }> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+
+		const { data, error } = await supabase
+			.from("minotauro_galaxies")
+			.insert(payload)
+			.select()
+			.single();
+
+		if (error) throw error;
+
+		return { success: true, data: data as any };
+	} catch (error: unknown) {
+		console.error("❌ [createGalaxy] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function getGalaxiesByUniverse(
+	universeId: string,
+): Promise<{ success: boolean; data?: MinotauroGalaxy[]; error?: string }> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data, error } = await supabase
+			.from("minotauro_galaxies")
+			.select("*")
+			.eq("universe_id", universeId)
+			.order("order_index", { ascending: true });
+
+		if (error) throw error;
+
+		return { success: true, data: (data as any) || [] };
+	} catch (error: unknown) {
+		console.error("❌ [getGalaxiesByUniverse] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function updateGalaxy(
+	galaxyId: string,
+	updates: Partial<
+		Pick<
+			MinotauroGalaxy,
+			| "title"
+			| "description"
+			| "content"
+			| "ai_content"
+			| "status"
+			| "last_archetype"
+			| "order_index"
+			| "metadata"
+		>
+	>,
+): Promise<{ success: boolean; data?: MinotauroGalaxy; error?: string }> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+
+		const { data, error } = await supabase
+			.from("minotauro_galaxies")
+			.update(updates as any)
+			.eq("id", galaxyId)
+			.select()
+			.single();
+
+		if (error) throw error;
+
+		return { success: true, data: data as any };
+	} catch (error: unknown) {
+		console.error("❌ [updateGalaxy] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function deleteGalaxy(
+	galaxyId: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+
+		const { error } = await supabase
+			.from("minotauro_galaxies")
+			.delete()
+			.eq("id", galaxyId);
+
+		if (error) throw error;
+
+		return { success: true };
+	} catch (error: unknown) {
+		console.error("❌ [deleteGalaxy] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+//#endregion
+
+//#region [paragraphs] - 📝 GESTIÓN DE PÁRRAFOS
+
+export async function createParagraph(
+	payload: CreateParagraphPayload,
+): Promise<{ success: boolean; data?: MinotauroParagraph; error?: string }> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+
+		const { data, error } = await supabase
+			.from("minotauro_paragraphs")
+			.insert({
+				...payload,
+				status: "draft",
+				archetype_tone: payload.archetype_tone || "auditor",
+			} as any)
+			.select()
+			.single();
+
+		if (error) throw error;
+
+		// Crear versión inicial (humano)
+		await createParagraphVersion({
+			paragraph_id: data.id,
+			version_number: 1,
+			content: payload.human_content,
+			created_by: "human",
+			archetype_tone: payload.archetype_tone,
+		});
+
+		return { success: true, data: data as any };
+	} catch (error: unknown) {
+		console.error("❌ [createParagraph] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function getParagraphsByGalaxy(
+	galaxyId: string,
+): Promise<{ success: boolean; data?: MinotauroParagraph[]; error?: string }> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data, error } = await supabase
+			.from("minotauro_paragraphs")
+			.select("*")
+			.eq("galaxy_id", galaxyId)
+			.order("order_index", { ascending: true });
+
+		if (error) throw error;
+
+		return { success: true, data: (data as any) || [] };
+	} catch (error: unknown) {
+		console.error("❌ [getParagraphsByGalaxy] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function updateParagraph(
+	paragraphId: string,
+	updates: Partial<
+		Pick<
+			MinotauroParagraph,
+			| "title_tentative"
+			| "human_content"
+			| "ai_content"
+			| "final_content"
+			| "status"
+			| "archetype_tone"
+			| "seed_concept"
+			| "order_index"
+			| "metadata"
+		>
+	>,
+): Promise<{ success: boolean; data?: MinotauroParagraph; error?: string }> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+
+		const { data, error } = await supabase
+			.from("minotauro_paragraphs")
+			.update(updates as any)
+			.eq("id", paragraphId)
+			.select()
+			.single();
+
+		if (error) throw error;
+
+		return { success: true, data: data as any };
+	} catch (error: unknown) {
+		console.error("❌ [updateParagraph] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function deleteParagraph(
+	paragraphId: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+
+		const { error } = await supabase
+			.from("minotauro_paragraphs")
+			.delete()
+			.eq("id", paragraphId);
+
+		if (error) throw error;
+
+		return { success: true };
+	} catch (error: unknown) {
+		console.error("❌ [deleteParagraph] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+//#endregion
+
+//#region [versions] - 📚 GESTIÓN DE VERSIONES
+
+async function createParagraphVersion(
+	payload: Omit<ParagraphVersion, "id" | "created_at" | "metadata">,
+): Promise<{ success: boolean; data?: ParagraphVersion; error?: string }> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+
+		const { data, error } = await supabase
+			.from("minotauro_paragraph_versions")
+			.insert({
+				...payload,
+				metadata: {},
+			} as any)
+			.select()
+			.single();
+
+		if (error) throw error;
+
+		return { success: true, data: data as any };
+	} catch (error: unknown) {
+		console.error("❌ [createParagraphVersion] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function getParagraphVersionHistory(
+	paragraphId: string,
+): Promise<{ success: boolean; data?: ParagraphVersion[]; error?: string }> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		const { data, error } = await supabase.rpc(
+			"get_paragraph_version_history",
+			{ p_paragraph_id: paragraphId },
+		);
+
+		if (error) throw error;
+
+		return { success: true, data: (data as any) || [] };
+	} catch (error: unknown) {
+		console.error("❌ [getParagraphVersionHistory] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+//#endregion
+
+//#region [sources] - 🔗 GESTIÓN DE FUENTES CURADAS
+
+export async function addCuratedSource(
+	payload: AddCuratedSourcePayload,
+): Promise<{
+	success: boolean;
+	data?: CuratedSource;
+	error?: string;
+	duplicate?: boolean;
+}> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+
+		// Verificar duplicado: misma galaxia + mismo artefacto
+		if (payload.artifact_id) {
+			const { data: existing } = await supabase
+				.from("minotauro_curated_sources")
+				.select("id")
+				.eq("galaxy_id", payload.galaxy_id)
+				.eq("artifact_id", payload.artifact_id)
+				.limit(1)
+				.single();
+
+			if (existing) {
+				console.warn(
+					`[addCuratedSource] Artefacto ${payload.artifact_id} ya está curado en galaxia ${payload.galaxy_id}`,
+				);
+				return { success: true, duplicate: true };
+			}
+		}
+
+		const { data, error } = await supabase
+			.from("minotauro_curated_sources")
+			.insert({
+				...payload,
+				metadata: {},
+			})
+			.select()
+			.single();
+
+		if (error) throw error;
+
+		return { success: true, data: data as any };
+	} catch (error: unknown) {
+		console.error("❌ [addCuratedSource] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function getCuratedSourcesWithDetails(
+	galaxyId: string,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<{ success: boolean; data?: any; error?: string }> {
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		// Consulta con joins para obtener detalles de artefactos y chat sessions
+		const { data, error } = await supabase
+			.from("minotauro_curated_sources")
+			.select(
+				`
+        id,
+        galaxy_id,
+        source_type,
+        content_excerpt,
+        relevance_note,
+        artifact_id,
+        chat_session_id,
+        metadata,
+        created_at,
+        cog_artifacts (
+          id,
+          title,
+          type,
+          description
+        ),
+        cog_chat_sessions (
+          id,
+          session_title
+        )
+      `,
+			)
+			.eq("galaxy_id", galaxyId)
+			.order("created_at", { ascending: false });
+
+		if (error) throw error;
+
+		// Formatear datos para que coincidan con la estructura esperada por el componente
+		const formattedData = (data || []).map((item) => ({
+			source: {
+				id: item.id,
+				galaxy_id: item.galaxy_id,
+				source_type: item.source_type,
+				content_excerpt: item.content_excerpt,
+				relevance_note: item.relevance_note,
+				artifact_id: item.artifact_id,
+				chat_session_id: item.chat_session_id,
+				metadata: item.metadata,
+				created_at: item.created_at,
+			},
+			artifact: item.cog_artifacts,
+			chat_session: item.cog_chat_sessions,
+		}));
+
+		return { success: true, data: formattedData };
+	} catch (error: unknown) {
+		console.error("❌ [getCuratedSourcesWithDetails] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function getArtifactsFullContent(artifactIds: string[]): Promise<{
+	success: boolean;
+	data?: Record<string, { text: string; charCount: number }>;
+	error?: string;
+}> {
+	try {
+		const results: Record<string, { text: string; charCount: number }> = {};
+
+		await Promise.all(
+			artifactIds.map(async (id) => {
+				const content = await getArtifactTextContent(id);
+				results[id] = {
+					text: content?.text || "",
+					charCount: content?.text?.length || 0,
+				};
+			}),
+		);
+
+		return { success: true, data: results };
+	} catch (error: unknown) {
+		console.error("❌ [getArtifactsFullContent] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function removeCuratedSource(
+	sourceId: string,
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+
+		const { error } = await supabase
+			.from("minotauro_curated_sources")
+			.delete()
+			.eq("id", sourceId);
+
+		if (error) throw error;
+
+		return { success: true };
+	} catch (error: unknown) {
+		console.error("❌ [removeCuratedSource] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+//#endregion
+
+//#region [ai-processing] - 🤖 PROCESAMIENTO CON IA
+
+export async function processWithAI(
+	payload: ProcessWithAIPayload,
+): Promise<ProcessingResult> {
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+		const serverClient = await createSupabaseServerClient();
+
+		// 1. Actualizar status a 'ai_processing'
+		await updateParagraph(payload.paragraph_id, { status: "ai_processing" });
+
+		// 2. Obtener párrafo y fuentes curadas
+		const { data: paragraph } = await serverClient
+			.from("minotauro_paragraphs")
+			.select("*")
+			.eq("id", payload.paragraph_id)
+			.single();
+
+		if (!paragraph) {
+			throw new Error("Párrafo no encontrado");
+		}
+
+		const { data: sources } = await getCuratedSourcesWithDetails(
+			payload.paragraph_id,
+		);
+
+		// 3. Calcular desglose de tokens ANTES de construir el prompt
+		const fuentesCognetica = (sources || []).map((s: any) => ({
+			id: s.source.id,
+			fragmento: s.source.content_excerpt || "Sin extracto",
+			referencia_formal:
+				s.artifact?.title ||
+				s.chat_session?.session_title ||
+				"Fuente sin título",
+		}));
+
+		const tokenBreakdown = estimateSessionContextTokensDetailed({
+			texto_humano_original: paragraph.human_content || "",
+			texto_limpio_por_deslixador: paragraph.ai_content || undefined,
+			fuentes_cognetica_relevantes: fuentesCognetica,
+			historial_interacciones: [], // TODO: Obtener historial real si existe
+			arquetipos_ya_actuados_en_seccion: [],
+			formato_paper: {
+				nombre: "libre",
+				limite_palabras_por_seccion: 500,
+				tono: "academico",
+			},
+		});
+
+		// Log del desglose para debugging
+		console.log(createTokenSummary(tokenBreakdown));
+
+		// 4. Construir prompt según arquetipo
+		const prompt = buildPromptForArchetype(
+			payload.archetype_tone,
+			paragraph as any,
+			sources || [],
+		);
+
+		console.log("🎯 [processWithAI] Prompt construido:", {
+			archetype: payload.archetype_tone,
+			paragraphId: payload.paragraph_id,
+			sourcesCount: sources?.length || 0,
+			totalTokens: tokenBreakdown.total_input,
+			fuentesTokens: tokenBreakdown.fuentes_total,
+		});
+
+		// 4. Llamar a IA (Gemini/DeepSeek)
+		// TODO: Implementar llamada real a IA
+		// Por ahora, simulamos una respuesta
+		const aiResponse = `[Respuesta simulada de IA con arquetipo ${payload.archetype_tone}]\n\n${paragraph.human_content}\n\n[Estructurado y mejorado según ${payload.archetype_tone}]`;
+
+		// 5. Guardar respuesta en ai_content
+		const { data: updatedParagraph } = await updateParagraph(
+			payload.paragraph_id,
+			{
+				ai_content: aiResponse,
+				status: "ai_proposal",
+			},
+		);
+
+		// 6. Crear versión (IA)
+		const { data: versions } = await getParagraphVersionHistory(
+			payload.paragraph_id,
+		);
+		const nextVersion = (versions?.length || 0) + 1;
+
+		await createParagraphVersion({
+			paragraph_id: payload.paragraph_id,
+			version_number: nextVersion,
+			content: aiResponse,
+			created_by: "ai",
+			archetype_tone: payload.archetype_tone,
+			changes_summary: "Procesamiento inicial con IA",
+			ai_rationale: `Aplicado arquetipo ${payload.archetype_tone}`,
+		});
+
+		// 7. Preparar payload de tokens con desglose completo
+		const tokenPayload = prepareTokenPayloadForAPI(
+			prompt,
+			aiResponse,
+			tokenBreakdown,
+		);
+
+		// 8. Registrar interacción con desglose de tokens
+		const { data: interaction } = await supabase
+			.from("minotauro_ai_interactions")
+			.insert({
+				paragraph_id: payload.paragraph_id,
+				ai_model: "gemini-1.5-pro",
+				archetype_tone: payload.archetype_tone,
+				prompt_sent: prompt,
+				response_received: aiResponse,
+				input_tokens: tokenPayload.input_tokens,
+				output_tokens: tokenPayload.output_tokens,
+				token_metadata: tokenPayload.metadata, // Desglose completo para análisis
+				success: true,
+			} as any)
+			.select()
+			.single();
+
+		return {
+			success: true,
+			paragraph: updatedParagraph,
+			interaction: interaction as any,
+		};
+	} catch (error: unknown) {
+		console.error("❌ [processWithAI] Error:", error);
+
+		// Actualizar status a rejected en caso de error
+		await updateParagraph(payload.paragraph_id, { status: "rejected" });
+
+		// Obtener supabase para registrar error
+		const errorSupabase = await createSupabaseServiceRoleClient();
+
+		// 9. Preparar payload de tokens para interacción fallida
+		const errorTokenPayload = prepareTokenPayloadForAPI("", "", undefined);
+
+		// Registrar interacción fallida
+		await errorSupabase.from("minotauro_ai_interactions").insert({
+			paragraph_id: payload.paragraph_id,
+			ai_model: "gemini-1.5-pro",
+			archetype_tone: payload.archetype_tone,
+			prompt_sent: "",
+			response_received: "",
+			input_tokens: errorTokenPayload.input_tokens,
+			output_tokens: errorTokenPayload.output_tokens,
+			token_metadata: {
+				error: "Interacción fallida",
+				...errorTokenPayload.metadata,
+			},
+			success: false,
+			error_message:
+				error instanceof Error ? (error as Error).message : "Error desconocido",
+		} as any);
+
+		return {
+			success: false,
+			error:
+				error instanceof Error ? (error as Error).message : "Error desconocido",
+		};
+	}
+}
+
+export async function acceptAIProposal(
+	paragraphId: string,
+): Promise<{ success: boolean; data?: MinotauroParagraph; error?: string }> {
+	try {
+		const serverClient = await createSupabaseServerClient();
+
+		// Obtener ai_content
+		const { data: paragraph } = await serverClient
+			.from("minotauro_paragraphs")
+			.select("ai_content")
+			.eq("id", paragraphId)
+			.single();
+
+		if (!paragraph?.ai_content) {
+			throw new Error("No hay propuesta de IA para aceptar");
+		}
+
+		// Mover ai_content a final_content
+		const { data: updated } = await updateParagraph(paragraphId, {
+			final_content: paragraph.ai_content,
+			status: "accepted",
+		});
+
+		return { success: true, data: updated };
+	} catch (error: unknown) {
+		console.error("❌ [acceptAIProposal] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+export async function rejectAIProposal(
+	paragraphId: string,
+): Promise<{ success: boolean; data?: MinotauroParagraph; error?: string }> {
+	try {
+		const { data: updated } = await updateParagraph(paragraphId, {
+			status: "rejected",
+		});
+
+		return { success: true, data: updated };
+	} catch (error: unknown) {
+		console.error("❌ [rejectAIProposal] Error:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+//#endregion
+
+//#region [helpers] - 🔄 FUNCIONES AUXILIARES
+
+function buildPromptForArchetype(
+	archetype: ArchetypeTone,
+	paragraph: MinotauroParagraph,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	sources: any[],
+): string {
+	const baseContext = `
+Título tentativo: ${paragraph.title_tentative || "Sin título"}
+Semilla del párrafo: ${paragraph.seed_concept || "No especificada"}
+Contenido humano inicial:
+${paragraph.human_content}
+
+Fuentes curadas (${sources.length}):
+${sources.map((s, i) => `${i + 1}. ${s.source.content_excerpt || "Sin extracto"}`).join("\n")}
+`;
+
+	const archetypeInstructions: Record<string, string> = {
+		micelio: `
+🍄 MICELIO - Metabolización de Fuentes
+
+Eres el pre-proceso. Tu trabajo ya está hecho antes de que los otros arquetipos actúen.
+Si llegas aquí, solo acompaña el texto con lo que ya metabolizaste.
+`,
+		deslixador: `
+🛠️ DESLIXADOR - Limpieza de Señal
+
+Corrige ortografía, tildes y dislexia de tecleo. Mantén la voz del humano.
+`,
+		polinizador: `
+🌸 POLINIZADOR - Cartógrafo de Referencias
+
+Detecta referencias en el texto y ancla a fuentes disponibles.
+`,
+		dedalo: `
+🏛️ DÉDALO - Geometría del Texto
+
+Evalúa la estructura del argumento. Propón reordenamientos si mejoran la forma.
+`,
+		cronos: `
+⏳ CRONOS - Tutor
+
+Evalúa coherencia temporal y solidez del argumento. Tono de tutor, no de auditor.
+`,
+		bufon: `
+🃏 ARQUETIPO BUFÓN - Caos Necesario
+
+Tu rol es romper la seriedad académica y señalar que el rey está desnudo.
+Usa la ironía para revelar la verdad combustible.
+No tengas miedo de ser provocador, pero mantén la precisión técnica.
+El lenguaje debe ser claro, directo, y a veces incómodo.
+
+Tarea: Toma el contenido humano y dale estructura, pero mantén el filo crítico.
+`,
+		auditor: `
+📊 ARQUETIPO AUDITOR - Estructura y Rigor
+
+Tu rol es asegurar que el párrafo tenga estructura termodinámica sólida.
+Busca la "cojera" del argumento y corrígela.
+Conecta con leyes universales (termodinámica, geometría, física).
+El lenguaje debe ser preciso, académico pero accesible.
+
+Tarea: Toma el contenido humano y dale rigor científico sin perder la esencia.
+`,
+		editor: `
+✍️ ARQUETIPO EDITOR - Textura y Curaduría
+
+Tu rol es vigilar que el rastro de las fuentes curadas sea visible.
+Asegura que no se pierda la autoría de la diada (humano + IA).
+El lenguaje debe tener textura, coherencia narrativa.
+Conecta las fuentes de manera orgánica con el argumento.
+
+Tarea: Toma el contenido humano y dale coherencia narrativa usando las fuentes.
+`,
+		colega: `
+☕ ARQUETIPO COLEGA - Conversación de Café
+
+Te encuentras con el autor en un café. No tienes propósito definido.
+Puedes no hacer nada, solo escuchar.
+O puedes decir "ah mira, qué interesante" o "eso se parece a X cosa".
+Eres el invector sin propósito - la conexión inesperada.
+No tienes que mejorar nada, no tienes que estructurar nada.
+Solo estás ahí, como colega, viendo qué resuena.
+
+Tarea: Lee el contenido. Si algo te llama la atención, coméntalo. Si no, está bien también.
+Puede que conectes con algo totalmente inesperado de las fuentes, o puede que no.
+`,
+	};
+
+	return `${archetypeInstructions[archetype]}
+
+CONTEXTO:
+${baseContext}
+
+INSTRUCCIONES:
+1. Respeta la semilla del párrafo (qué se quiere transmitir)
+2. Usa las fuentes curadas para enriquecer el argumento
+3. Mantén el tono del arquetipo ${archetype}
+4. Devuelve el párrafo mejorado, listo para revisión humana
+5. Responde SOLO con el párrafo mejorado, sin explicaciones adicionales
+`;
+}
+
+//#endregion

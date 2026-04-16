@@ -1,3 +1,8 @@
+// 📍 app/showroom/standard-button/page.tsx
+// 🎯 PROPÓSITO: Showroom interactivo del StandardButton v4.1
+// 🔧 USO: Referencia para desarrolladores humanos y AI
+// 🌸 ONTOLOGÍA: Primera flor del jardín de componentes SUSTRATO.AI
+
 "use client";
 
 import React, { useState, useCallback } from "react";
@@ -14,6 +19,8 @@ import {
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardSelect } from "@/components/ui/StandardSelect";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
+import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
+import { useTranslations } from "next-intl";
 
 // --- INICIO DE LA CORRECCIÓN ---
 import {
@@ -68,6 +75,8 @@ const iconLayoutsForDemo: { value: IconLayout; label: string }[] = [
 
 //#region [main] - 🔧 COMPONENT 🔧
 export default function StandardButtonShowroomPage() {
+	const t = useTranslations("showroom.standardButton");
+	const tCommon = useTranslations("common");
 	const [activeTab, setActiveTab] = useState("interactive");
 	const [demoColorScheme, setDemoColorScheme] =
 		useState<ColorSchemeVariant>("primary");
@@ -82,6 +91,7 @@ export default function StandardButtonShowroomPage() {
 	const [demoDisabled, setDemoDisabled] = useState(false);
 	const [demoIconLayout, setDemoIconLayout] = useState<IconLayout>("both");
 	const [demoTooltip, setDemoTooltip] = useState(false);
+	const [demoBreathing, setDemoBreathing] = useState(false);
 
 	const handleModifierChange = useCallback(
 		(modifier: StandardButtonModifier) => {
@@ -103,17 +113,17 @@ export default function StandardButtonShowroomPage() {
 					weight="bold"
 					colorScheme="primary"
 					className="mb-3">
-					StandardButton Showroom (Beta v3.3)
+					{t("title")}
 				</StandardText>
 				<StandardText
 					size="lg"
 					colorScheme="neutral"
 					className="max-w-2xl mx-auto">
-					Prueba interactiva del componente `StandardButton` con `iconOnly` y
-					`size` corregidos.
+					{t("description")}
 				</StandardText>
-				<div className="mt-4">
+				<div className="mt-4 flex items-center justify-center gap-4">
 					<ThemeSwitcher />
+					<LocaleSwitcher />
 				</div>
 			</header>
 
@@ -245,6 +255,13 @@ export default function StandardButtonShowroomPage() {
 												colorScheme="neutral">
 												Tooltip
 											</StandardButton>
+											<StandardButton
+												onClick={() => setDemoBreathing((p) => !p)}
+												styleType={demoBreathing ? "solid" : "outline"}
+												size="sm"
+												colorScheme="accent">
+												🌸 Breathing
+											</StandardButton>
 										</div>
 									</div>
 								</div>
@@ -273,12 +290,13 @@ export default function StandardButtonShowroomPage() {
 										}
 										iconOnly={demoIconLayout === "iconOnly"}
 										tooltip={
-											demoTooltip ? "Este es un tooltip de prueba" : undefined
-										}>
+											demoTooltip ? t("tooltipExample") : undefined
+										}
+										breathing={demoBreathing}>
 										{demoIconLayout === "iconOnly" ? (
 											<Star />
 										) : (
-											"Botón de Prueba"
+											t("testButton")
 										)}
 									</StandardButton>
 								</div>

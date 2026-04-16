@@ -1,14 +1,14 @@
 // En: /components/ui/standard-tabs-context.ts
 
 import * as React from "react";
-import type { AppColorTokens, ColorSchemeVariant, Mode } from "@/lib/theme/ColorToken";
+import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
+import type { DesignTokens, TabsStyleType, TabsSize } from "@/app/providers/DesignTokensProvider";
 
 interface StandardTabsContextType {
   colorScheme: ColorSchemeVariant;
-  styleType: 'line' | 'enclosed';
-  size: 'sm' | 'md' | 'lg';
-  appColorTokens: AppColorTokens;
-  mode: Mode;
+  styleType: TabsStyleType;
+  size: TabsSize;
+  tokens: DesignTokens | null;
 }
 
 export const StandardTabsContext = React.createContext<StandardTabsContextType | null>(null);

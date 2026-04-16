@@ -1,0 +1,30 @@
+/* 📍 styles/animations/button-animations.css */
+/* 🎯 PROPÓSITO: Animaciones estáticas para StandardButton - breathing effect */
+/* 🔧 DECISIÓN: Mover @keyframes a CSS estático para evitar inyección dinámica */
+/* ✅ ARQUITECTURA: CSS Variables para valores dinámicos + clases estáticas */
+/* 🌸 FILOSOFÍA: Performance optimizado sin style tag injection */
+
+/* 🌸 BREATHING ANIMATION - Respiración sutil para CTAs importantes */
+.btn-breathing:not(:disabled) {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+.btn-breathing:disabled {
+  animation: none;
+}
+
+@keyframes breathe {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 var(--button-base-color, rgba(59, 130, 246, 0.4));
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 0 8px var(--button-base-color, rgba(59, 130, 246, 0));
+    transform: scale(1.02);
+  }
+}
+
+/* 🎨 LINK HOVER STATE */
+.btn-link:not(:disabled):hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,95 @@
+./components/ui/StandardBadge.tsx
+81:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+82:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+85:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+88:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/ui/StandardButton.tsx
+147:55  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+148:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+182:55  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+183:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+218:55  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+219:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+242:54  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+243:57  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+
+./components/ui/StandardCard.tsx
+177:4  Warning: 'outlineColorScheme' is defined but never used.  @typescript-eslint/no-unused-vars
+178:4  Warning: 'accentColorScheme' is defined but never used.  @typescript-eslint/no-unused-vars
+194:4  Warning: 'animateOnChangeKey' is defined but never used.  @typescript-eslint/no-unused-vars
+198:4  Warning: 'elevate' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./components/ui/StandardFileUpload.tsx
+6:29  Warning: 'X' is defined but never used.  @typescript-eslint/no-unused-vars
+134:3  Warning: React Hook useCallback has a missing dependency: 'validateFile'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+147:3  Warning: React Hook useCallback has a missing dependency: 'validateFile'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+169:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+173:5  Error: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+252:54  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/ui/StandardInput.tsx
+126:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+127:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+128:59  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+140:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+141:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+142:59  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+154:57  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+155:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+156:59  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+169:59  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+170:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+171:61  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+182:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+183:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+184:59  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+197:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+198:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+199:59  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+209:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+210:62  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+211:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/ui/StandardMarkdownViewer.tsx
+112:11  Warning: 'originalAsterisks' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+990:8  Warning: React Hook useEffect has a missing dependency: 'sections'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/ui/StandardNavbar.tsx
+30:2  Warning: 'Brain' is defined but never used.  @typescript-eslint/no-unused-vars
+216:23  Error: React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+225:29  Error: React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+245:24  Error: React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+251:2  Error: React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+262:2  Error: React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+314:30  Error: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+493:24  Error: React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+505:26  Error: React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+521:27  Error: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+535:29  Error: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+
+./components/ui/StandardSelect.tsx
+81:14  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+172:4  Warning: 'pulseBorder' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+173:4  Warning: 'pafffMoment' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+174:4  Warning: 'stableOptions' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+569:9  Warning: The 'currentSizeTokens' logical expression could make the dependencies of useMemo Hook (at line 705) change on every render. To fix this, wrap the initialization of 'currentSizeTokens' in its own useMemo() Hook.  react-hooks/exhaustive-deps
+744:14  Warning: 'selectRect' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./components/ui/StandardSphere.tsx
+245:25  Error: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+259:28  Error: React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render.  react-hooks/rules-of-hooks
+
+./components/ui/StandardStepper.tsx
+5:17  Warning: 'useMemo' is defined but never used.  @typescript-eslint/no-unused-vars
+9:10  Warning: 'StandardIcon' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./components/ui/StandardSustratoLogoReactive.tsx
+5:31  Warning: 'useMemo' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./components/ui/StandardTable.tsx
+1066:5  Warning: React Hook useMemo has an unnecessary dependency: 'colorScheme'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/ui/StandardTextarea.tsx
+62:9  Warning: 'textareaId' is assigned a value but never used.  @typescript-eslint/no-unused-vars

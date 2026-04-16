@@ -12,16 +12,36 @@ const LOG_PREFIX_CLIENT = '[AUTH_CLIENT_V5.0]';
 // ✅ PASO 1: CREACIÓN DE LA INSTANCIA ÚNICA (SINGLETON)
 // El cliente se crea UNA SOLA VEZ y se exporta para ser reutilizado.
 // ========================================================================
+// 🔧 CONFIGURACIÓN EXPLÍCITA DE COOKIES para sincronizar con middleware
+// Esto asegura que el cliente y el servidor usen el mismo formato de cookies
 export const supabase = createBrowserClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   {
-    auth: {
-      flowType: 'pkce' as const,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      persistSession: true,
-    },
+    cookies: {
+      get(name: string) {
+        // Usar document.cookie para leer cookies del navegador
+        if (typeof document === 'undefined') return null;
+        const value = document.cookie
+          .split('; ')
+          .find(row => row.startsWith(`${name}=`))
+          ?.split('=')[1];
+        return value ? decodeURIComponent(value) : null;
+      },
+      set(name: string, value: string, options: any) {
+        // Usar document.cookie para escribir cookies del navegador
+        if (typeof document === 'undefined') return;
+        let cookieString = `${name}=${encodeURIComponent(value)}; path=/; samesite=lax`;
+        if (options?.maxAge) cookieString += `; max-age=${options.maxAge}`;
+        if (process.env.NODE_ENV === 'production') cookieString += '; secure';
+        document.cookie = cookieString;
+      },
+      remove(name: string, options: any) {
+        // Eliminar cookie estableciendo maxAge=0
+        if (typeof document === 'undefined') return;
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      }
+    }
   }
 );
 
@@ -54,6 +74,18 @@ export async function signInWithEmail(email: string, password: string): Promise<
     }
     
     console.log(`${LOG_PREFIX_CLIENT} Éxito en signInWithPassword.`);
+    console.log(`${LOG_PREFIX_CLIENT} Session establecida:`, data.session ? 'SÍ' : 'NO');
+    console.log(`${LOG_PREFIX_CLIENT} User ID:`, data.user?.id);
+    
+    // Verificar que la sesión se guardó
+    setTimeout(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log(`${LOG_PREFIX_CLIENT} Verificación post-login - Sesión recuperada:`, session ? 'SÍ' : 'NO');
+      if (session) {
+        console.log(`${LOG_PREFIX_CLIENT} User ID recuperado:`, session.user.id);
+      }
+    }, 100);
+    
     return { data, error: null };
 
   } catch (error: unknown) {

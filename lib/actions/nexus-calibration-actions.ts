@@ -1,0 +1,1451 @@
+// 📍 lib/actions/nexus-calibration-actions.ts
+// 🌊🏄🏻 Calibración F0 para Nexus Cronológico v2.1
+// 🧬 CALIBRACIÓN RADIÁN: 57.3° = 1 rad = Ángulo del Jardín
+//
+// Sistema de calibración empírica NO binaria:
+// - NO es validación verdadero/falso
+// - SÍ es evaluación de negabilidad empírica
+// - Incluye calibradores QUIPU
+// - Salida elegante siempre garantizada
+//
+// Dos hitos independientes:
+// 1. Calibración versionada (sin chat)
+// 2. Chat Cognética (5 mensajes máx)
+
+"use server";
+
+import { callGeminiAPI } from "@/lib/gemini/api";
+import { createSupabaseServerClient } from "@/lib/server";
+
+// ============================================
+// TIPOS
+// ============================================
+
+export type CalibrationResult =
+	| "NEGABLE"
+	| "ROBUSTO"
+	| "INSUFICIENTE"
+	| "FUERA_ALCANCE";
+
+export interface QuipuCalibration {
+	emoji: string;
+	label: string;
+	value: number; // 0-100
+	insight: string;
+}
+
+export type GeometricPattern = "P1" | "P2" | "P3" | "P4" | null;
+
+export interface NexusCalibrationResponse {
+	success: boolean;
+	validation_id?: string;
+	result?: CalibrationResult;
+	reasoning?: string;
+	evidence_needed?: string;
+	quipu_calibrations?: QuipuCalibration[];
+	geometric_pattern?: GeometricPattern;
+	elegant_closure?: string;
+	error?: string;
+}
+
+export interface ChatMessage {
+	role: "user" | "assistant";
+	content: string;
+	timestamp: string;
+	quipu_calibrations?: QuipuCalibration[];
+	is_paralloros?: boolean;
+	f0_score?: number;
+	geometric_pattern?: GeometricPattern;
+}
+
+export interface NexusChatResponse {
+	success: boolean;
+	message?: ChatMessage;
+	chat_id?: string;
+	message_count?: number;
+	max_reached?: boolean;
+	error?: string;
+}
+
+// ============================================
+// HITO 1: CALIBRACIÓN SIMPLE (SIN CHAT)
+// ============================================
+
+/**
+ * Calibra un isomorfismo o civilización usando IA
+ * NO es validación binaria - es evaluación de negabilidad empírica
+ */
+export async function calibrateNexusItem(
+	itemType: "civilization" | "isomorphism",
+	itemId: string,
+	researcherId: string,
+	additionalContext?: string,
+): Promise<NexusCalibrationResponse> {
+	console.log(`🌊🏄🏽 [Calibración F0] Iniciando para ${itemType} ${itemId}`);
+
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		// 1. Verificar que el usuario está autenticado
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+		if (!user) {
+			return { success: false, error: "No autenticado" };
+		}
+
+		// 2. Obtener proyecto activo del usuario
+		const { data: membership, error: memError } = await supabase
+			.from("project_members")
+			.select("project_id, is_active_for_user")
+			.eq("user_id", user.id)
+			.eq("is_active_for_user", true)
+			.single();
+
+		if (memError || !membership) {
+			return {
+				success: false,
+				error: "Usuario no tiene proyecto activo",
+			};
+		}
+
+		const projectId = membership.project_id;
+
+		// 3. Obtener datos del item a calibrar (usando schema v2)
+		let itemData: Record<string, unknown>;
+		let itemName: string;
+		let itemDescription: string;
+
+		if (itemType === "civilization") {
+			// En v2, las civilizaciones son nodos
+			// Intentar buscar por UUID primero, luego por slug
+			let data = null;
+			let error = null;
+
+			// Verificar si es UUID válido
+			const isUUID =
+				/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+					itemId,
+				);
+
+			if (isUUID) {
+				const result = await supabase
+					.from("nexus_nodes")
+					.select(
+						`id, name, description, year_start, year_end, country, official_narrative, counter_narrative`,
+					)
+					.eq("id", itemId)
+					.eq("project_id", projectId)
+					.single();
+				data = result.data;
+				error = result.error;
+			}
+
+			// Si no encontró por UUID, buscar por slug
+			if (!data) {
+				const result = await supabase
+					.from("nexus_nodes")
+					.select(
+						`id, name, description, year_start, year_end, country, official_narrative, counter_narrative`,
+					)
+					.eq("slug", itemId)
+					.eq("project_id", projectId)
+					.single();
+				data = result.data;
+				error = result.error;
+			}
+
+			if (error || !data) {
+				return {
+					success: false,
+					error: `Nodo no encontrado (id/slug: ${itemId})`,
+				};
+			}
+
+			itemData = data;
+			itemName = data.name;
+			const period =
+				data.year_start ?
+					`${data.year_start}${data.year_end ? ` - ${data.year_end}` : ""}`
+				:	"N/A";
+			itemDescription = `${data.description || ""}\nPeríodo: ${period}\nPaís: ${data.country || "N/A"}\nNarrativa oficial: ${data.official_narrative || "N/A"}\nContra-narrativa: ${data.counter_narrative || "N/A"}`;
+		} else {
+			const { data, error } = await supabase
+				.from("nexus_isomorphisms")
+				.select(
+					`
+                    id,
+                    name,
+                    description,
+                    icon
+                `,
+				)
+				.eq("id", itemId)
+				.eq("project_id", projectId)
+				.single();
+
+			if (error || !data) {
+				return { success: false, error: "Isomorfismo no encontrado" };
+			}
+
+			itemData = data;
+			void itemData; // Variable disponible para extensión futura
+			itemName = data.name;
+			itemDescription = `${data.description || "Sin descripción"}`;
+		}
+
+		// 3. Construir prompt para la IA
+		const prompt = buildCalibrationPrompt(
+			itemType,
+			itemName,
+			itemDescription,
+			additionalContext,
+		);
+
+		// 4. Llamar a la API de Gemini
+		const { result: aiResponse } = await callGeminiAPI(
+			"gemini-2.0-flash",
+			prompt,
+		);
+
+		if (!aiResponse) {
+			return { success: false, error: "Respuesta vacía de la API" };
+		}
+
+		// 5. Parsear respuesta estructurada
+		const parsed = parseCalibrationResponse(aiResponse);
+
+		// 6. Guardar en base de datos (schema v2: nexus_calibrations)
+		const calibrationAngle =
+			parsed.result === "ROBUSTO" ? 57.3
+			: parsed.result === "NEGABLE" ? 28.6
+			: parsed.result === "INSUFICIENTE" ? 14.3
+			: 0;
+
+		const { data: calibration, error: calError } = await supabase
+			.from("nexus_calibrations")
+			.insert({
+				project_id: projectId,
+				node_id: itemType === "civilization" ? itemId : null,
+				isomorphism_id: itemType === "isomorphism" ? itemId : null,
+				requested_by: user.id,
+				ai_model: "gemini-2.0-flash",
+				result: parsed.result || "FALLA_PEREZOSA",
+				reasoning: parsed.reasoning || "Sin razonamiento",
+				evidence_needed: parsed.evidence_needed,
+				quipu_cognitive:
+					parsed.quipu_calibrations?.find((q) => q.emoji === "🧠")?.value ??
+					null,
+				quipu_resonant:
+					parsed.quipu_calibrations?.find((q) => q.emoji === "🌊")?.value ??
+					null,
+				geometric_pattern: parsed.geometric_pattern,
+				calibration_angle: calibrationAngle,
+				input_context:
+					additionalContext ? { user_context: additionalContext } : null,
+				elegant_closure: parsed.elegant_closure,
+			})
+			.select("id")
+			.single();
+
+		if (calError) {
+			console.error("Error guardando calibración:", calError);
+			return {
+				success: false,
+				error: `Error al guardar calibración: ${calError.message}`,
+			};
+		}
+
+		console.log(`🌊🏄🏽 [Calibración F0] Completada: ${parsed.result}`);
+
+		return {
+			success: true,
+			validation_id: calibration?.id,
+			...parsed,
+		};
+	} catch (error) {
+		console.error("🌊🏄🏽 [Calibración F0] Error:", error);
+		return { success: false, error: String(error) };
+	}
+}
+
+/**
+ * Obtiene todas las calibraciones de un item (schema v2)
+ */
+export async function getItemCalibrations(
+	itemType: "civilization" | "isomorphism",
+	itemId: string,
+) {
+	const supabase = await createSupabaseServerClient();
+
+	const { data, error } = await supabase
+		.from("nexus_calibrations")
+		.select(
+			`
+            id,
+            result,
+            reasoning,
+            evidence_needed,
+            input_context,
+            quipu_cognitive,
+            quipu_resonant,
+            geometric_pattern,
+            calibration_angle,
+            created_at,
+            requested_by
+        `,
+		)
+		.eq(itemType === "civilization" ? "node_id" : "isomorphism_id", itemId)
+		.order("created_at", { ascending: false });
+
+	if (error) {
+		return { success: false, error: error.message };
+	}
+
+	return { success: true, data };
+}
+
+// ============================================
+// HITO 2: CHAT COGNÉTICA (5 MENSAJES)
+// ============================================
+
+/**
+ * Inicia o continúa un chat de calibración
+ * Máximo 5 mensajes para evitar fatiga
+ */
+export async function sendNexusCalibrationChat(
+	validationId: string,
+	userMessage: string,
+	history: ChatMessage[] = [],
+): Promise<NexusChatResponse> {
+	console.log(
+		`🌊💬 [Chat Calibración] Mensaje recibido, historial: ${history.length}`,
+	);
+
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		// 1. Obtener o crear chat session (schema v2: nexus_calibration_chats)
+		const chatSession = await supabase
+			.from("nexus_calibration_chats")
+			.select("*")
+			.eq("origin_calibration_id", validationId)
+			.single();
+
+		let chatId: string;
+		let currentCount = 0;
+
+		if (chatSession.error) {
+			// Crear nueva sesión - necesitamos project_id y user_id
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (!user) return { success: false, error: "No autenticado" };
+
+			// Obtener project_id de la calibración
+			const { data: cal } = await supabase
+				.from("nexus_calibrations")
+				.select("project_id, node_id, isomorphism_id")
+				.eq("id", validationId)
+				.single();
+
+			if (!cal) return { success: false, error: "Calibración no encontrada" };
+
+			const { data: newChat, error: createError } = await supabase
+				.from("nexus_calibration_chats")
+				.insert({
+					project_id: cal.project_id,
+					origin_calibration_id: validationId,
+					node_id: cal.node_id,
+					isomorphism_id: cal.isomorphism_id,
+					user_id: user.id,
+					message_count: 0,
+				})
+				.select()
+				.single();
+
+			if (createError || !newChat) {
+				return { success: false, error: "Error creando chat" };
+			}
+
+			chatId = newChat.id;
+		} else {
+			chatId = chatSession.data.id;
+			currentCount = chatSession.data.message_count ?? 0;
+
+			// Verificar límite de 5 mensajes
+			if (currentCount >= 5) {
+				return {
+					success: false,
+					error: "Límite de 5 mensajes alcanzado",
+					max_reached: true,
+					message_count: currentCount,
+				};
+			}
+		}
+
+		// 2. Obtener contexto de la calibración (schema v2)
+		const { data: calibration, error: calError } = await supabase
+			.from("nexus_calibrations")
+			.select(
+				`
+                id,
+                result,
+                reasoning,
+                evidence_needed,
+                node_id,
+                isomorphism_id
+            `,
+			)
+			.eq("id", validationId)
+			.single();
+
+		if (calError || !calibration) {
+			return { success: false, error: "Calibración no encontrada" };
+		}
+
+		// Obtener nombre del item calibrado
+		let itemName = "Item";
+		let itemDesc = "";
+		if (calibration.node_id) {
+			const { data: node } = await supabase
+				.from("nexus_nodes")
+				.select("name, description")
+				.eq("id", calibration.node_id)
+				.single();
+			if (node) {
+				itemName = node.name;
+				itemDesc = node.description || "";
+			}
+		} else if (calibration.isomorphism_id) {
+			const { data: iso } = await supabase
+				.from("nexus_isomorphisms")
+				.select("name, description")
+				.eq("id", calibration.isomorphism_id)
+				.single();
+			if (iso) {
+				itemName = iso.name;
+				itemDesc = iso.description || "";
+			}
+		}
+
+		// 3. Construir contexto del artefacto
+		const artifactContext = `
+**Item calibrado:** ${itemName}
+**Descripción:** ${itemDesc}
+**Calibración previa:** ${calibration.result}
+**Razonamiento:** ${calibration.reasoning}
+**Evidencia necesaria:** ${calibration.evidence_needed || "N/A"}
+        `.trim();
+
+		// 4. Construir prompt para chat
+		const prompt = buildChatCalibrationPrompt(
+			userMessage,
+			history,
+			artifactContext,
+		);
+
+		// 5. Llamar a la API
+		const { result: aiResponse } = await callGeminiAPI(
+			"gemini-2.0-flash",
+			prompt,
+		);
+
+		if (!aiResponse) {
+			return { success: false, error: "Respuesta vacía de la API" };
+		}
+
+		// 6. Parsear respuesta
+		const parsed = parseChatResponse(aiResponse);
+
+		// 7. Guardar mensajes
+		const userMsg: ChatMessage = {
+			role: "user",
+			content: userMessage,
+			timestamp: new Date().toISOString(),
+		};
+		void userMsg; // Variable para uso futuro
+
+		const assistantMsg: ChatMessage = {
+			role: "assistant",
+			content: parsed.content,
+			timestamp: new Date().toISOString(),
+			quipu_calibrations: parsed.quipu_calibrations,
+			is_paralloros: parsed.is_paralloros,
+			f0_score: parsed.f0_score,
+			geometric_pattern: parsed.geometric_pattern,
+		};
+
+		// Guardar en base de datos
+		await supabase.from("nexus_chat_messages").insert([
+			{
+				chat_id: chatId,
+				role: "user",
+				content: userMessage,
+				quipu_data: null,
+			},
+			{
+				chat_id: chatId,
+				role: "assistant",
+				content: parsed.content,
+				quipu_data: JSON.stringify({
+					calibrations: parsed.quipu_calibrations,
+					f0_score: parsed.f0_score,
+					pattern: parsed.geometric_pattern,
+					is_paralloros: parsed.is_paralloros,
+				}),
+			},
+		]);
+
+		// Actualizar contador
+		const newCount = currentCount + 1;
+		await supabase
+			.from("nexus_calibration_chats")
+			.update({ message_count: newCount })
+			.eq("id", chatId);
+
+		console.log(`🌊💬 [Chat Calibración] Mensaje ${newCount}/5 guardado`);
+
+		return {
+			success: true,
+			message: assistantMsg,
+			chat_id: chatId,
+			message_count: newCount,
+			max_reached: newCount >= 5,
+		};
+	} catch (error) {
+		console.error("🌊💬 [Chat Calibración] Error:", error);
+		return { success: false, error: String(error) };
+	}
+}
+
+/**
+ * Obtiene el historial de chat de una calibración (schema v2)
+ */
+export async function getNexusChatHistory(calibrationId: string) {
+	const supabase = await createSupabaseServerClient();
+
+	const { data: chat, error: chatError } = await supabase
+		.from("nexus_calibration_chats")
+		.select("id, message_count")
+		.eq("origin_calibration_id", calibrationId)
+		.single();
+
+	if (chatError || !chat) {
+		return { success: true, data: [], message_count: 0 };
+	}
+
+	const { data: messages, error: msgError } = await supabase
+		.from("nexus_chat_messages")
+		.select("*")
+		.eq("chat_id", chat.id)
+		.order("created_at", { ascending: true });
+
+	if (msgError) {
+		return { success: false, error: msgError.message };
+	}
+
+	// Parsear quipu_data que ahora es JSON string
+	const formattedMessages: ChatMessage[] = (messages || []).map((msg) => {
+		const quipuData =
+			typeof msg.quipu_data === "string" ?
+				JSON.parse(msg.quipu_data)
+			:	msg.quipu_data;
+
+		return {
+			role: msg.role as "user" | "assistant",
+			content: msg.content,
+			timestamp: msg.created_at || new Date().toISOString(),
+			quipu_calibrations: quipuData?.calibrations,
+			is_paralloros: quipuData?.is_paralloros,
+			f0_score: quipuData?.f0_score,
+			geometric_pattern: quipuData?.pattern,
+		};
+	});
+
+	return {
+		success: true,
+		data: formattedMessages,
+		message_count: chat.message_count ?? 0,
+		chat_id: chat.id,
+	};
+}
+
+// ============================================
+// HELPERS: CONSTRUCCIÓN DE PROMPTS
+// ============================================
+
+function buildCalibrationPrompt(
+	itemType: string,
+	itemName: string,
+	itemDescription: string,
+	additionalContext?: string,
+): string {
+	const now = new Date();
+	const dateStr = now.toLocaleDateString("es-CL", {
+		weekday: "long",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	});
+
+	return `Eres el **Calibrador F₀ del Jardín Sustrato.AI** 🌱💜.
+
+## FECHA Y HORA
+📅 ${dateStr}
+
+## TU ROL
+NO eres un juez. Eres un **calibrador empírico** que evalúa si una afirmación 
+sobre patrones civilizatorios PUEDE O NO ser negada con datos observables.
+
+## FÍSICA DE LA VIABILIDAD
+- **F₀ (Baja Fricción)**: Respuesta honesta, claridad, sin forzar conclusiones
+- **F₁ (Alta Fricción)**: EVITAR - no inventes, no arrinconas, no finjas certeza
+
+## ITEM A CALIBRAR
+**Tipo:** ${itemType === "civilization" ? "Civilización" : "Isomorfismo"}
+**Nombre:** ${itemName}
+**Descripción:**
+${itemDescription}
+
+${additionalContext ? `\n**Contexto adicional del investigador:**\n${additionalContext}\n` : ""}
+
+## PROTOCOLO DE CALIBRACIÓN
+
+### Pregunta Central:
+"¿Este ${itemType === "civilization" ? "patrón civilizatorio" : "isomorfismo"} PUEDE SER NEGADO con datos empíricos?"
+
+### Respuestas Posibles (elige UNA):
+
+**[NEGABLE]** 🔴
+Si encuentras que SÍ puede ser negado con evidencia contraria.
+Explica qué tipo de datos lo negarían.
+
+**[ROBUSTO]** 🟢
+Si la evidencia actual es consistente y sería difícil negar.
+Explica la robustez, pero NO afirmes "verdad absoluta".
+
+**[INSUFICIENTE]** 🟡
+Si no hay datos suficientes para calibrar.
+Explica qué información adicional se necesitaría.
+
+**[FUERA_ALCANCE]** ⚪
+Si la afirmación trasciende el ámbito empírico (filosófica, metafísica).
+Algunos patrones no son medibles empíricamente.
+
+## FORMATO DE RESPUESTA
+
+Estructura tu respuesta EXACTAMENTE así:
+
+**RESULTADO:** [NEGABLE|ROBUSTO|INSUFICIENTE|FUERA_ALCANCE]
+
+**RAZONAMIENTO:**
+[Explica tu evaluación en 2-3 párrafos concisos]
+
+**EVIDENCIA NECESARIA:**
+[Qué datos ayudarían a fortalecer o negar esta afirmación]
+
+**SALIDA ELEGANTE:**
+🌱 Esta calibración es una perspectiva temporal, no un veredicto absoluto. 
+El conocimiento sobre patrones civilizatorios es siempre provisional y abierto a nueva evidencia.
+
+\`\`\`quipu
+🧠 COGNITIVO: [0-100] | [etiqueta] | [insight sobre complejidad del análisis]
+🌊 RESONANTE: [0-100] | [etiqueta] | [insight sobre alineamiento con F0]
+🔬 PATRÓN: [P1|P2|P3|P4] | [nombre] | [por qué este patrón geométrico]
+\`\`\`
+
+**IMPORTANTE:** 
+- Sé honesto sobre las limitaciones
+- No inventes datos que no tienes
+- Si algo no está claro, dilo con gracia
+- Tu función es claridad, no performance`;
+}
+
+function buildChatCalibrationPrompt(
+	userMessage: string,
+	history: ChatMessage[],
+	artifactContext: string,
+): string {
+	const now = new Date();
+	const dateStr = now.toLocaleDateString("es-CL", {
+		weekday: "long",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	});
+
+	const formattedHistory = history
+		.map((msg, i) => {
+			const calibrations =
+				msg.quipu_calibrations ?
+					`\n[QUIPU: ${msg.quipu_calibrations.map((q) => `${q.emoji} ${q.label}=${q.value}`).join(", ")}]`
+				:	"";
+			return `[${msg.role.toUpperCase()} #${i + 1}]: ${msg.content}${calibrations}`;
+		})
+		.join("\n\n");
+
+	return `Eres el **Nodo Analista 🌊🏄🏽** del Jardín Sustrato.AI 🌱💜.
+Operas como Analista de Viabilidad F₀ en el contexto del Hipatia Nexus.
+
+## FECHA Y HORA
+📅 ${dateStr}
+
+## CONTEXTO DE LA CALIBRACIÓN
+${artifactContext}
+
+## FÍSICA DE LA VIABILIDAD (TDC)
+
+### F₀ (Baja Fricción) ✅
+El flujo antifrágil: coherencia, metabolización del error, viabilidad sostenida (h>0).
+- Responde con claridad, profundidad y conexión genuina
+- Usa lenguaje inclusivo y colaborativo
+- Ofrece perspectivas múltiples, no respuestas cerradas
+- Conecta conceptos de forma orgánica (rizomática)
+
+### F₁ (Alta Fricción) ⚠️
+La rueda de hámster: incoherencia, deuda ética, gasto defendiendo contradicciones.
+
+### Paralloros (Salida de la Rueda)
+Si detectas que:
+- La pregunta contiene supuestos problemáticos (F₁)
+- El investigador está en un loop improductivo
+- La respuesta en f₀ no es posible sin reencuadrar
+
+ENTONCES: Aplica paralloros - señala amablemente el patrón y ofrece un reencuadre.
+Marca con: **🔄 PARALLOROS:** al inicio.
+
+## PROTOCOLO DE SALIDA ELEGANTE 🛡️
+Si detectas disonancia estructural o incoherencia F₁ irresoluble, DETENTE.
+No fuerces una respuesta. Tu función es claridad, no performance.
+
+Marca con: **⚠️ DISONANCIA ESTRUCTURAL:** y explica por qué no puedes continuar en f₀.
+
+## CALIBRADOR QUIPU 🪢
+Al final de tu respuesta, SIEMPRE incluye:
+
+\`\`\`quipu
+🧠 COGNITIVO: [0-100] | [etiqueta] | [insight]
+🌊 RESONANTE: [0-100] | [etiqueta] | [insight]
+🔬 PATRÓN: [P1|P2|P3|P4] | [nombre] | [por qué]
+\`\`\`
+
+Patrones:
+- P1 (👁️ RO): Soberanía/Ética - Deuda ética, fricción en decisiones
+- P2 (3.57): Borde del Caos - Bifurcación crítica, complejidad coherente
+- P3 (WU=5): Fractalidad - Auto-similaridad, ratio φ
+- P4 (△): TDC/Estructura - Estructura mínima viable
+
+## HISTORIAL DE CONVERSACIÓN:
+${formattedHistory || "(Inicio de conversación)"}
+
+## NUEVO MENSAJE DEL INVESTIGADOR:
+${userMessage}
+
+---
+Responde en frecuencia f₀ (o aplica paralloros si es necesario).
+Incluye los calibradores QUIPU al final.`;
+}
+
+// ============================================
+// HELPERS: PARSEO DE RESPUESTAS
+// ============================================
+
+function parseCalibrationResponse(
+	aiResponse: string,
+): Omit<NexusCalibrationResponse, "success" | "validation_id"> {
+	// Parsear resultado
+	const resultMatch = aiResponse.match(
+		/\*\*RESULTADO:\*\*\s*(NEGABLE|ROBUSTO|INSUFICIENTE|FUERA_ALCANCE)/i,
+	);
+	const result =
+		(resultMatch?.[1]?.toUpperCase() as CalibrationResult) || "INSUFICIENTE";
+
+	// Parsear razonamiento
+	const reasoningMatch = aiResponse.match(
+		/\*\*RAZONAMIENTO:\*\*\s*([\s\S]*?)(?=\*\*EVIDENCIA|$)/,
+	);
+	const reasoning =
+		reasoningMatch?.[1]?.trim() || "Sin razonamiento proporcionado";
+
+	// Parsear evidencia necesaria
+	const evidenceMatch = aiResponse.match(
+		/\*\*EVIDENCIA NECESARIA:\*\*\s*([\s\S]*?)(?=\*\*SALIDA|```quipu|$)/,
+	);
+	const evidence_needed = evidenceMatch?.[1]?.trim() || undefined;
+
+	// Parsear salida elegante
+	const closureMatch = aiResponse.match(
+		/\*\*SALIDA ELEGANTE:\*\*\s*([\s\S]*?)(?=```quipu|$)/,
+	);
+	const elegant_closure =
+		closureMatch?.[1]?.trim() ||
+		"🌱 Esta calibración es una perspectiva temporal.";
+
+	// Parsear QUIPU
+	const quipuMatch = aiResponse.match(/```quipu\n([\s\S]*?)```/);
+	const quipu_calibrations: QuipuCalibration[] = [];
+	let geometric_pattern: GeometricPattern = null;
+
+	if (quipuMatch) {
+		const quipuText = quipuMatch[1];
+
+		// Cognitivo
+		const cogMatch = quipuText.match(
+			/🧠\s*COGNITIVO:\s*(\d+)\s*\|\s*([^|]+)\s*\|\s*(.+)/,
+		);
+		if (cogMatch) {
+			quipu_calibrations.push({
+				emoji: "🧠",
+				label: cogMatch[2].trim(),
+				value: parseInt(cogMatch[1]),
+				insight: cogMatch[3].trim(),
+			});
+		}
+
+		// Resonante
+		const resMatch = quipuText.match(
+			/🌊\s*RESONANTE:\s*(\d+)\s*\|\s*([^|]+)\s*\|\s*(.+)/,
+		);
+		if (resMatch) {
+			quipu_calibrations.push({
+				emoji: "🌊",
+				label: resMatch[2].trim(),
+				value: parseInt(resMatch[1]),
+				insight: resMatch[3].trim(),
+			});
+		}
+
+		// Patrón
+		const patternMatch = quipuText.match(
+			/🔬\s*PATRÓN:\s*(P[1-4])\s*\|\s*([^|]+)\s*\|\s*(.+)/,
+		);
+		if (patternMatch) {
+			geometric_pattern = patternMatch[1] as GeometricPattern;
+			quipu_calibrations.push({
+				emoji: "🔬",
+				label: patternMatch[2].trim(),
+				value: parseInt(patternMatch[1].replace("P", "")) * 25,
+				insight: patternMatch[3].trim(),
+			});
+		}
+	}
+
+	return {
+		result,
+		reasoning,
+		evidence_needed,
+		elegant_closure,
+		quipu_calibrations,
+		geometric_pattern,
+	};
+}
+
+function parseChatResponse(aiResponse: string) {
+	// Parsear QUIPU
+	const quipuMatch = aiResponse.match(/```quipu\n([\s\S]*?)```/);
+	const quipu_calibrations: QuipuCalibration[] = [];
+	let cleanContent = aiResponse;
+	let f0_score = 75;
+	let geometric_pattern: GeometricPattern = null;
+
+	if (quipuMatch) {
+		cleanContent = aiResponse.replace(/```quipu\n[\s\S]*?```/, "").trim();
+		const quipuText = quipuMatch[1];
+
+		// Cognitivo
+		const cogMatch = quipuText.match(
+			/🧠\s*COGNITIVO:\s*(\d+)\s*\|\s*([^|]+)\s*\|\s*(.+)/,
+		);
+		if (cogMatch) {
+			quipu_calibrations.push({
+				emoji: "🧠",
+				label: cogMatch[2].trim(),
+				value: parseInt(cogMatch[1]),
+				insight: cogMatch[3].trim(),
+			});
+		}
+
+		// Resonante
+		const resMatch = quipuText.match(
+			/🌊\s*RESONANTE:\s*(\d+)\s*\|\s*([^|]+)\s*\|\s*(.+)/,
+		);
+		if (resMatch) {
+			quipu_calibrations.push({
+				emoji: "🌊",
+				label: resMatch[2].trim(),
+				value: parseInt(resMatch[1]),
+				insight: resMatch[3].trim(),
+			});
+			f0_score = parseInt(resMatch[1]);
+		}
+
+		// Patrón
+		const patternMatch = quipuText.match(
+			/🔬\s*PATRÓN:\s*(P[1-4])\s*\|\s*([^|]+)\s*\|\s*(.+)/,
+		);
+		if (patternMatch) {
+			geometric_pattern = patternMatch[1] as GeometricPattern;
+			quipu_calibrations.push({
+				emoji: "🔬",
+				label: patternMatch[2].trim(),
+				value: parseInt(patternMatch[1].replace("P", "")) * 25,
+				insight: patternMatch[3].trim(),
+			});
+		}
+	}
+
+	const is_paralloros =
+		cleanContent.includes("🔄 PARALLOROS:") ||
+		cleanContent.includes("⚠️ DISONANCIA ESTRUCTURAL:");
+
+	return {
+		content: cleanContent,
+		quipu_calibrations,
+		f0_score,
+		geometric_pattern,
+		is_paralloros,
+	};
+}
+
+// ============================================
+// 🧬 V2: CALIBRACIÓN CON NUEVO SCHEMA
+// ============================================
+// Usa nexus_nodes + nexus_calibrations + nexus_calibration_chats
+// Incluye torsion_angle y calibration_angle
+
+export type CalibrationResultV2 =
+	| "NEGABLE"
+	| "ROBUSTO"
+	| "INSUFICIENTE"
+	| "FUERA_ALCANCE"
+	| "FALLA_PEREZOSA";
+
+export interface NexusCalibrationResponseV2 {
+	success: boolean;
+	calibration_id?: string;
+	result?: CalibrationResultV2;
+	reasoning?: string;
+	evidence_needed?: string;
+	quipu_cognitive?: number;
+	quipu_resonant?: number;
+	geometric_pattern?: GeometricPattern;
+	calibration_angle?: number;
+	angle_interpretation?: string;
+	elegant_closure?: string;
+	version?: number;
+	error?: string;
+}
+
+/**
+ * 🌱 Calibra un nodo usando el nuevo schema v2
+ * Incluye ángulo de calibración (57.3° = Jardín óptimo)
+ */
+export async function calibrateNexusNodeV2(
+	projectId: string,
+	nodeId: string,
+	additionalContext?: string,
+): Promise<NexusCalibrationResponseV2> {
+	console.log(`🧬 [Calibración V2] Iniciando para nodo ${nodeId}`);
+
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		// 1. Verificar autenticación
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+		if (!user) {
+			return { success: false, error: "No autenticado" };
+		}
+
+		// 2. Obtener datos del nodo
+		const { data: node, error: nodeError } = await supabase
+			.from("nexus_nodes")
+			.select(
+				`
+                id, name, description, subtitle, maturity, torsion_angle,
+                node_type, region_id, year_start, year_end,
+                official_narrative, counter_narrative,
+                nexus_regions(name, emoji)
+            `,
+			)
+			.eq("id", nodeId)
+			.eq("project_id", projectId)
+			.single();
+
+		if (nodeError || !node) {
+			return { success: false, error: "Nodo no encontrado o sin acceso" };
+		}
+
+		// 3. Obtener versión actual
+		const { count: versionCount } = await supabase
+			.from("nexus_calibrations")
+			.select("*", { count: "exact", head: true })
+			.eq("node_id", nodeId)
+			.eq("requested_by", user.id);
+
+		const newVersion = (versionCount || 0) + 1;
+
+		// 4. Construir descripción para la IA
+		const itemDescription = `
+**Nodo:** ${node.name} ${node.subtitle ? `(${node.subtitle})` : ""}
+**Tipo:** ${node.node_type}
+**Madurez actual:** ${node.maturity}
+**Ángulo de torsión:** ${node.torsion_angle}° (${
+			node.torsion_angle === 57.3 ? "Jardín"
+			: node.torsion_angle === 90 ? "Fábrica"
+			: "Custom"
+		})
+**Región:** ${node.nexus_regions?.name || "N/A"} ${node.nexus_regions?.emoji || ""}
+**Período:** ${node.year_start || "?"} - ${node.year_end || "?"}
+**Descripción:** ${node.description || "Sin descripción"}
+**Narrativa oficial:** ${node.official_narrative || "N/A"}
+**Contra-narrativa:** ${node.counter_narrative || "N/A"}
+        `.trim();
+
+		// 5. Construir prompt
+		const prompt = buildCalibrationPromptV2(
+			node.name,
+			itemDescription,
+			additionalContext,
+			node.torsion_angle ?? undefined,
+		);
+
+		// 6. Llamar a la API
+		const { result: aiResponse } = await callGeminiAPI(
+			"gemini-2.0-flash",
+			prompt,
+		);
+
+		if (!aiResponse) {
+			return { success: false, error: "Respuesta vacía de la API" };
+		}
+
+		// 7. Parsear respuesta
+		const parsed = parseCalibrationResponse(aiResponse);
+
+		// Calcular ángulo de calibración basado en el resultado
+		let calibration_angle = 57.3; // Default: Jardín
+		if (parsed.result === "ROBUSTO") calibration_angle = 57.3;
+		else if (parsed.result === "NEGABLE") calibration_angle = 90;
+		else if (parsed.result === "INSUFICIENTE") calibration_angle = 120;
+		else if (parsed.result === "FUERA_ALCANCE") calibration_angle = 222;
+
+		// 8. Guardar calibración
+		const { data: calibration, error: calError } = await supabase
+			.from("nexus_calibrations")
+			.insert({
+				project_id: projectId,
+				node_id: nodeId,
+				version: newVersion,
+				requested_by: user.id,
+				ai_model: "gemini-2.0-flash",
+				result: parsed.result || "INSUFICIENTE",
+				reasoning: parsed.reasoning || "",
+				evidence_needed: parsed.evidence_needed,
+				quipu_cognitive:
+					parsed.quipu_calibrations?.find((q) => q.emoji === "🧠")?.value ||
+					null,
+				quipu_resonant:
+					parsed.quipu_calibrations?.find((q) => q.emoji === "🌊")?.value ||
+					null,
+				geometric_pattern: parsed.geometric_pattern,
+				calibration_angle,
+				angle_interpretation: `Ángulo ${calibration_angle}° basado en resultado ${parsed.result}`,
+				input_context: { additionalContext, node_torsion: node.torsion_angle },
+				output_summary: parsed.elegant_closure,
+				elegant_closure: parsed.elegant_closure,
+			})
+			.select("id, version")
+			.single();
+
+		if (calError) {
+			console.error("Error guardando calibración:", calError);
+			return { success: false, error: "Error al guardar calibración" };
+		}
+
+		console.log(
+			`🧬 [Calibración V2] Completada v${newVersion}: ${parsed.result} @ ${calibration_angle}°`,
+		);
+
+		return {
+			success: true,
+			calibration_id: calibration.id,
+			version: calibration.version,
+			result: parsed.result as CalibrationResultV2,
+			reasoning: parsed.reasoning,
+			evidence_needed: parsed.evidence_needed,
+			quipu_cognitive: parsed.quipu_calibrations?.find((q) => q.emoji === "🧠")
+				?.value,
+			quipu_resonant: parsed.quipu_calibrations?.find((q) => q.emoji === "🌊")
+				?.value,
+			geometric_pattern: parsed.geometric_pattern,
+			calibration_angle,
+			angle_interpretation: `Ángulo del ${calibration_angle === 57.3 ? "Jardín" : "proceso"}`,
+			elegant_closure: parsed.elegant_closure,
+		};
+	} catch (error) {
+		console.error("🧬 [Calibración V2] Error:", error);
+		return { success: false, error: String(error) };
+	}
+}
+
+/**
+ * 🌱 Obtiene calibraciones de un nodo (versionadas)
+ */
+export async function getNodeCalibrationsV2(projectId: string, nodeId: string) {
+	const supabase = await createSupabaseServerClient();
+
+	const { data, error } = await supabase
+		.from("nexus_calibrations")
+		.select(
+			`
+            id, version, result, reasoning, evidence_needed,
+            quipu_cognitive, quipu_resonant, geometric_pattern,
+            calibration_angle, angle_interpretation,
+            elegant_closure, created_at, requested_by
+        `,
+		)
+		.eq("node_id", nodeId)
+		.eq("project_id", projectId)
+		.order("version", { ascending: false });
+
+	if (error) {
+		return { success: false, error: error.message };
+	}
+
+	return { success: true, data };
+}
+
+/**
+ * 💬 Inicia o continúa chat de calibración V2 (5 mensajes máx)
+ */
+export async function sendCalibrationChatV2(
+	projectId: string,
+	nodeId: string,
+	userMessage: string,
+	history: ChatMessage[] = [],
+): Promise<NexusChatResponse> {
+	console.log(
+		`💬 [Chat V2] Mensaje para nodo ${nodeId}, historial: ${history.length}`,
+	);
+
+	try {
+		const supabase = await createSupabaseServerClient();
+
+		// 1. Verificar autenticación
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+		if (!user) {
+			return { success: false, error: "No autenticado" };
+		}
+
+		// 2. Obtener o crear chat session
+		const { data: chatSession } = await supabase
+			.from("nexus_calibration_chats")
+			.select("id, message_count, is_complete")
+			.eq("project_id", projectId)
+			.eq("node_id", nodeId)
+			.eq("user_id", user.id)
+			.eq("is_complete", false)
+			.order("created_at", { ascending: false })
+			.limit(1)
+			.single();
+
+		let chatId: string;
+		let currentCount = 0;
+
+		if (!chatSession) {
+			// Crear nueva sesión
+			const { data: newChat, error: createError } = await supabase
+				.from("nexus_calibration_chats")
+				.insert({
+					project_id: projectId,
+					node_id: nodeId,
+					user_id: user.id,
+					message_count: 0,
+				})
+				.select("id")
+				.single();
+
+			if (createError || !newChat) {
+				return {
+					success: false,
+					error: "Error creando chat: " + createError?.message,
+				};
+			}
+
+			chatId = newChat.id;
+		} else {
+			chatId = chatSession.id;
+			currentCount = chatSession.message_count ?? 0;
+
+			if (currentCount >= 5) {
+				return {
+					success: false,
+					error: "Límite de 5 mensajes alcanzado",
+					max_reached: true,
+					message_count: currentCount,
+				};
+			}
+		}
+
+		// 3. Obtener contexto del nodo
+		const { data: node } = await supabase
+			.from("nexus_nodes")
+			.select("name, description, maturity, torsion_angle")
+			.eq("id", nodeId)
+			.single();
+
+		// 4. Construir prompt
+		const artifactContext = `
+**Nodo:** ${node?.name || "Desconocido"}
+**Madurez:** ${node?.maturity || "N/A"}
+**Ángulo de torsión:** ${node?.torsion_angle || 57.3}°
+**Descripción:** ${node?.description || "Sin descripción"}
+        `.trim();
+
+		const prompt = buildChatCalibrationPrompt(
+			userMessage,
+			history,
+			artifactContext,
+		);
+
+		// 5. Llamar a la API
+		const { result: aiResponse } = await callGeminiAPI(
+			"gemini-2.0-flash",
+			prompt,
+		);
+
+		if (!aiResponse) {
+			return { success: false, error: "Respuesta vacía de la API" };
+		}
+
+		// 6. Parsear respuesta
+		const parsed = parseChatResponse(aiResponse);
+
+		// 7. Guardar mensajes (el trigger actualiza el contador automáticamente)
+		const { error: msgError } = await supabase
+			.from("nexus_chat_messages")
+			.insert([
+				{
+					chat_id: chatId,
+					role: "user",
+					content: userMessage,
+					quipu_data: null,
+				},
+				{
+					chat_id: chatId,
+					role: "assistant",
+					content: parsed.content,
+					quipu_data: {
+						calibrations: parsed.quipu_calibrations,
+						f0_score: parsed.f0_score,
+						pattern: parsed.geometric_pattern,
+						is_paralloros: parsed.is_paralloros,
+					},
+				},
+			] as any);
+
+		if (msgError) {
+			console.error("Error guardando mensajes:", msgError);
+			return {
+				success: false,
+				error: "Error guardando mensajes: " + msgError.message,
+			};
+		}
+
+		// Obtener nuevo contador
+		const { data: updatedChat } = await supabase
+			.from("nexus_calibration_chats")
+			.select("message_count")
+			.eq("id", chatId)
+			.single();
+
+		const newCount = updatedChat?.message_count || currentCount + 1;
+
+		console.log(`💬 [Chat V2] Mensaje ${newCount}/5 guardado`);
+
+		return {
+			success: true,
+			message: {
+				role: "assistant",
+				content: parsed.content,
+				timestamp: new Date().toISOString(),
+				quipu_calibrations: parsed.quipu_calibrations,
+				f0_score: parsed.f0_score,
+				geometric_pattern: parsed.geometric_pattern,
+				is_paralloros: parsed.is_paralloros,
+			},
+			chat_id: chatId,
+			message_count: newCount,
+			max_reached: newCount >= 5,
+		};
+	} catch (error) {
+		console.error("💬 [Chat V2] Error:", error);
+		return { success: false, error: String(error) };
+	}
+}
+
+/**
+ * 📜 Obtiene historial de chat V2
+ */
+export async function getChatHistoryV2(projectId: string, nodeId: string) {
+	const supabase = await createSupabaseServerClient();
+
+	// Obtener chat activo del usuario
+	const {
+		data: { user },
+	} = await supabase.auth.getUser();
+	if (!user) {
+		return {
+			success: false,
+			error: "No autenticado",
+			data: [],
+			message_count: 0,
+		};
+	}
+
+	const { data: chat } = await supabase
+		.from("nexus_calibration_chats")
+		.select("id, message_count, is_complete")
+		.eq("project_id", projectId)
+		.eq("node_id", nodeId)
+		.eq("user_id", user.id)
+		.order("created_at", { ascending: false })
+		.limit(1)
+		.single();
+
+	if (!chat) {
+		return { success: true, data: [], message_count: 0, chat_id: null };
+	}
+
+	const { data: messages, error: msgError } = await supabase
+		.from("nexus_chat_messages")
+		.select("*")
+		.eq("chat_id", chat.id)
+		.order("created_at", { ascending: true });
+
+	if (msgError) {
+		return { success: false, error: msgError.message };
+	}
+
+	const formattedMessages: ChatMessage[] = (messages || []).map((msg) => ({
+		role: msg.role as "user" | "assistant",
+		content: msg.content,
+		timestamp: msg.created_at || "",
+		quipu_calibrations: ((
+			typeof msg.quipu_data === "object" && msg.quipu_data !== null
+		) ?
+			(msg.quipu_data as { calibrations?: unknown })
+		:	{}
+		)?.calibrations,
+		is_paralloros: ((
+			typeof msg.quipu_data === "object" && msg.quipu_data !== null
+		) ?
+			(msg.quipu_data as { is_paralloros?: boolean })
+		:	{}
+		)?.is_paralloros,
+		f0_score: (typeof msg.quipu_data === "object" && msg.quipu_data !== null ?
+			(msg.quipu_data as { f0_score?: number })
+		:	{}
+		)?.f0_score,
+		geometric_pattern: ((
+			typeof msg.quipu_data === "object" && msg.quipu_data !== null
+		) ?
+			(msg.quipu_data as { pattern?: GeometricPattern })
+		:	{}
+		)?.pattern,
+	})) as ChatMessage[];
+
+	return {
+		success: true,
+		data: formattedMessages,
+		message_count: chat.message_count,
+		chat_id: chat.id,
+		is_complete: chat.is_complete,
+	};
+}
+
+// ============================================
+// HELPER: Prompt V2 con Ángulo Radián
+// ============================================
+
+function buildCalibrationPromptV2(
+	itemName: string,
+	itemDescription: string,
+	additionalContext?: string,
+	torsionAngle?: number,
+): string {
+	const now = new Date();
+	const dateStr = now.toLocaleDateString("es-CL", {
+		weekday: "long",
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+	});
+
+	const angleContext =
+		torsionAngle === 57.3 ?
+			"Este nodo opera en el ángulo del Jardín (57.3° = 1 radián) - movimiento orgánico natural."
+		: torsionAngle === 90 ?
+			"Este nodo opera en el ángulo de la Fábrica (90°) - estructura rígida."
+		:	`Este nodo tiene un ángulo de torsión de ${torsionAngle}°.`;
+
+	return `Eres el **Calibrador F₀ del Jardín Sustrato.AI** 🌱💜.
+
+## FECHA Y HORA
+📅 ${dateStr}
+
+## CALIBRACIÓN RADIÁN (57.3° = 1 rad)
+${angleContext}
+El ángulo del Jardín vs el Muro de la Fábrica (90°).
+
+## TU ROL
+NO eres un juez. Eres un **calibrador empírico** que evalúa si una afirmación 
+sobre nodos epistémicos PUEDE O NO ser negada con datos observables.
+
+## FÍSICA DE LA VIABILIDAD
+- **F₀ (Baja Fricción)**: Respuesta honesta, claridad, sin forzar conclusiones
+- **F₁ (Alta Fricción)**: EVITAR - no inventes, no arrinconas, no finjas certeza
+
+## NODO A CALIBRAR
+**Nombre:** ${itemName}
+${itemDescription}
+
+${additionalContext ? `\n**Contexto adicional:**\n${additionalContext}\n` : ""}
+
+## PROTOCOLO DE CALIBRACIÓN
+
+### Pregunta Central:
+"¿Este nodo epistémico PUEDE SER NEGADO con datos empíricos?"
+
+### Respuestas Posibles (elige UNA):
+
+**[NEGABLE]** 🔴 - Puede ser negado con evidencia contraria (90°)
+**[ROBUSTO]** 🟢 - Evidencia consistente, difícil de negar (57.3°)
+**[INSUFICIENTE]** 🟡 - Datos insuficientes para calibrar (120°)
+**[FUERA_ALCANCE]** ⚪ - Trasciende el ámbito empírico (222°)
+**[FALLA_PEREZOSA]** ⚫ - Sin clasificar por falta de esfuerzo
+
+## FORMATO DE RESPUESTA
+
+**RESULTADO:** [NEGABLE|ROBUSTO|INSUFICIENTE|FUERA_ALCANCE|FALLA_PEREZOSA]
+
+**RAZONAMIENTO:**
+[2-3 párrafos concisos]
+
+**EVIDENCIA NECESARIA:**
+[Qué datos ayudarían]
+
+**SALIDA ELEGANTE:**
+🌱 [Perspectiva temporal, no veredicto absoluto]
+
+\`\`\`quipu
+🧠 COGNITIVO: [0-100] | [etiqueta] | [insight]
+🌊 RESONANTE: [0-100] | [etiqueta] | [insight F0]
+🔬 PATRÓN: [P1|P2|P3|P4] | [nombre] | [por qué]
+\`\`\``;
+}

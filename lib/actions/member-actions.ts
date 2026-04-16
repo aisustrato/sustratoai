@@ -19,13 +19,13 @@ type ProjectMemberUpdate =
 // Tipos para los datos que vienen de la base de datos
 
 type RoleDataFromRpc = {
-  id: string;
-  role_name: string;
-  role_description: string | null;
-  can_manage_master_data: boolean;
-  can_create_batches?: boolean;
-  can_upload_files?: boolean;
-  can_bulk_edit_master_data?: boolean;
+	id: string;
+	role_name: string;
+	role_description: string | null;
+	can_manage_master_data: boolean;
+	can_create_batches?: boolean;
+	can_upload_files?: boolean;
+	can_bulk_edit_master_data?: boolean;
 };
 
 type GetUserByEmailRpcArgs =
@@ -87,7 +87,7 @@ const PERMISO_GESTIONAR_MIEMBROS = "can_manage_master_data";
 async function verificarPermisoGestionMiembros(
 	supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
 	userId: string,
-	proyectoId: string
+	proyectoId: string,
 ): Promise<boolean> {
 	const { data: tienePermiso, error: rpcError } = await supabase.rpc(
 		"has_permission_in_project",
@@ -95,12 +95,12 @@ async function verificarPermisoGestionMiembros(
 			p_user_id: userId,
 			p_project_id: proyectoId,
 			p_permission_column: PERMISO_GESTIONAR_MIEMBROS,
-		} as HasPermissionRpcArgs
+		} as HasPermissionRpcArgs,
 	);
 	if (rpcError) {
 		console.error(
 			"[AUTH_CHECK_ERROR] Error en RPC has_permission_in_project:",
-			rpcError.message
+			rpcError.message,
 		);
 		return false;
 	}
@@ -111,11 +111,11 @@ async function verificarPermisoGestionMiembros(
 //  ACTION 1: OBTENER MIEMBROS CON PERFILES Y ROLES (USANDO LA VISTA)
 // ========================================================================
 export async function obtenerMiembrosConPerfilesYRolesDelProyecto(
-	proyectoId: string
+	proyectoId: string,
 ): Promise<ResultadoOperacion<ProjectMemberDetails[]>> {
 	const opId = `OMP-VIEW-${Math.floor(Math.random() * 10000)}`;
 	console.log(
-		`📄 [${opId}] Iniciando obtenerMiembrosConPerfilesYRolesDelProyecto (VIEW) para proyecto: ${proyectoId}`
+		`📄 [${opId}] Iniciando obtenerMiembrosConPerfilesYRolesDelProyecto (VIEW) para proyecto: ${proyectoId}`,
 	);
 	if (!proyectoId) {
 		return { success: false, error: "Se requiere un ID de proyecto válido." };
@@ -131,13 +131,13 @@ export async function obtenerMiembrosConPerfilesYRolesDelProyecto(
         first_name, last_name, public_display_name, public_contact_email, 
         primary_institution, contact_phone, general_notes, preferred_language, pronouns,
         ui_theme, ui_font_pair, ui_is_dark_mode 
-      `
+      `,
 			)
 			.eq("project_id", proyectoId);
 		if (miembrosError) {
 			console.error(
 				`❌ [${opId}] Error al obtener miembros desde la vista:`,
-				miembrosError
+				miembrosError,
 			);
 			return {
 				success: false,
@@ -149,33 +149,37 @@ export async function obtenerMiembrosConPerfilesYRolesDelProyecto(
 		}
 		// Asegurarse de que los datos tengan el tipo correcto
 		const miembrosDetallados: ProjectMemberDetails[] = miembrosData.map((m) => {
-			const member = m as unknown as Database['public']['Views']['detailed_project_members']['Row'] & {
-				can_bulk_edit_master_data?: boolean | null;
-				can_create_batches?: boolean | null;
-				can_manage_master_data?: boolean | null;
-				can_upload_files?: boolean | null;
-				contact_email_for_project?: string | null;
-				contextual_notes?: string | null;
-			};
+			const member =
+				m as unknown as Database["public"]["Views"]["detailed_project_members"]["Row"] & {
+					can_bulk_edit_master_data?: boolean | null;
+					can_create_batches?: boolean | null;
+					can_manage_master_data?: boolean | null;
+					can_upload_files?: boolean | null;
+					contact_email_for_project?: string | null;
+					contextual_notes?: string | null;
+				};
 
 			return {
-				project_member_id: member.project_member_id || '',
-				user_id: member.user_id || '',
-				project_id: member.project_id || '',
-				project_role_id: member.project_role_id || '',
+				project_member_id: member.project_member_id || "",
+				user_id: member.user_id || "",
+				project_id: member.project_id || "",
+				project_role_id: member.project_role_id || "",
 				role_name: member.role_name || "Rol no definido",
-				profile: member.user_id ? {
-					user_id: member.user_id,
-					first_name: member.first_name ?? null,
-					last_name: member.last_name ?? null,
-					public_display_name: member.public_display_name ?? null,
-					public_contact_email: member.public_contact_email ?? null,
-					primary_institution: member.primary_institution ?? null,
-					contact_phone: member.contact_phone ?? null,
-					general_notes: member.general_notes ?? null,
-					preferred_language: member.preferred_language ?? null,
-					pronouns: member.pronouns ?? null,
-				} : null,
+				profile:
+					member.user_id ?
+						{
+							user_id: member.user_id,
+							first_name: member.first_name ?? null,
+							last_name: member.last_name ?? null,
+							public_display_name: member.public_display_name ?? null,
+							public_contact_email: member.public_contact_email ?? null,
+							primary_institution: member.primary_institution ?? null,
+							contact_phone: member.contact_phone ?? null,
+							general_notes: member.general_notes ?? null,
+							preferred_language: member.preferred_language ?? null,
+							pronouns: member.pronouns ?? null,
+						}
+					:	null,
 				joined_at: member.joined_at ?? null,
 				ui_theme: member.ui_theme ?? null,
 				ui_font_pair: member.ui_font_pair ?? null,
@@ -183,7 +187,7 @@ export async function obtenerMiembrosConPerfilesYRolesDelProyecto(
 			};
 		});
 		console.log(
-			`🎉 [${opId}] ÉXITO: ${miembrosDetallados.length} miembros obtenidos (VIEW).`
+			`🎉 [${opId}] ÉXITO: ${miembrosDetallados.length} miembros obtenidos (VIEW).`,
 		);
 		return { success: true, data: miembrosDetallados };
 	} catch (error) {
@@ -200,11 +204,11 @@ export async function obtenerMiembrosConPerfilesYRolesDelProyecto(
 // ========================================================================
 export async function obtenerDetallesMiembroProyecto(
 	projectMemberId: string,
-	proyectoId: string
+	proyectoId: string,
 ): Promise<ResultadoOperacion<ProjectMemberDetails | null>> {
 	const opId = `ODM-${Math.floor(Math.random() * 10000)}`;
 	console.log(
-		`📄 [${opId}] Iniciando obtenerDetallesMiembroProyecto para membresía: ${projectMemberId} en proyecto: ${proyectoId}`
+		`📄 [${opId}] Iniciando obtenerDetallesMiembroProyecto para membresía: ${projectMemberId} en proyecto: ${proyectoId}`,
 	);
 	if (!projectMemberId || !proyectoId) {
 		return {
@@ -223,7 +227,7 @@ export async function obtenerDetallesMiembroProyecto(
         first_name, last_name, public_display_name, public_contact_email, 
         primary_institution, contact_phone, general_notes, preferred_language, pronouns,
         ui_theme, ui_font_pair, ui_is_dark_mode
-      `
+      `,
 			)
 			.eq("project_member_id", projectMemberId)
 			.eq("project_id", proyectoId)
@@ -231,7 +235,7 @@ export async function obtenerDetallesMiembroProyecto(
 		if (miembroError) {
 			console.error(
 				`❌ [${opId}] Error al obtener detalles del miembro:`,
-				miembroError
+				miembroError,
 			);
 			return {
 				success: false,
@@ -279,11 +283,11 @@ export async function obtenerDetallesMiembroProyecto(
 //  ACTION: OBTENER ROLES DISPONIBLES PARA UN PROYECTO
 // ========================================================================
 export async function obtenerRolesDisponiblesProyecto(
-	proyectoId: string
+	proyectoId: string,
 ): Promise<ResultadoOperacion<ProjectRoleInfo[]>> {
 	const opId = `ORDP-${Math.floor(Math.random() * 10000)}`;
 	console.log(
-		`📄 [${opId}] Iniciando obtenerRolesDisponiblesProyecto para proyecto: ${proyectoId}`
+		`📄 [${opId}] Iniciando obtenerRolesDisponiblesProyecto para proyecto: ${proyectoId}`,
 	);
 	if (!proyectoId) {
 		return { success: false, error: "Se requiere un ID de proyecto válido." };
@@ -301,14 +305,14 @@ export async function obtenerRolesDisponiblesProyecto(
         can_create_batches,
         can_upload_files,
         can_bulk_edit_master_data
-      `
+      `,
 			)
 			.eq("project_id", proyectoId)
 			.order("role_name", { ascending: true });
 		if (rolesError) {
 			console.error(
 				`❌ [${opId}] Error al obtener roles del proyecto:`,
-				rolesError
+				rolesError,
 			);
 			return {
 				success: false,
@@ -318,17 +322,19 @@ export async function obtenerRolesDisponiblesProyecto(
 		if (!rolesData) {
 			return { success: true, data: [] };
 		}
-		const rolesInfo: ProjectRoleInfo[] = rolesData.map((r: RoleDataFromRpc) => ({
-			id: r.id,
-			role_name: r.role_name,
-			role_description: r.role_description,
-			can_manage_master_data: r.can_manage_master_data,
-			can_create_batches: r.can_create_batches ?? false,
-			can_upload_files: r.can_upload_files ?? false,
-			can_bulk_edit_master_data: r.can_bulk_edit_master_data ?? false,
-		}));
+		const rolesInfo: ProjectRoleInfo[] = (rolesData as any).map(
+			(r: RoleDataFromRpc) => ({
+				id: r.id,
+				role_name: r.role_name,
+				role_description: r.role_description,
+				can_manage_master_data: r.can_manage_master_data,
+				can_create_batches: r.can_create_batches ?? false,
+				can_upload_files: r.can_upload_files ?? false,
+				can_bulk_edit_master_data: r.can_bulk_edit_master_data ?? false,
+			}),
+		);
 		console.log(
-			`🎉 [${opId}] ÉXITO: ${rolesInfo.length} roles obtenidos para el proyecto.`
+			`🎉 [${opId}] ÉXITO: ${rolesInfo.length} roles obtenidos para el proyecto.`,
 		);
 		return { success: true, data: rolesInfo };
 	} catch (error) {
@@ -354,7 +360,7 @@ interface AddMemberPayload {
 }
 
 export async function agregarMiembroAProyecto(
-	payload: AddMemberPayload
+	payload: AddMemberPayload,
 ): Promise<
 	ResultadoOperacion<{
 		project_member_id: string;
@@ -363,7 +369,7 @@ export async function agregarMiembroAProyecto(
 > {
 	const opId = `AMPv3-${Math.floor(Math.random() * 10000)}`;
 	console.log(
-		`📄 [${opId}] Iniciando agregarMiembroAProyecto v3: ${payload.emailUsuarioNuevo} a proyecto ${payload.proyectoId}`
+		`📄 [${opId}] Iniciando agregarMiembroAProyecto v3: ${payload.emailUsuarioNuevo} a proyecto ${payload.proyectoId}`,
 	);
 
 	const { proyectoId, emailUsuarioNuevo, rolIdAsignar, datosPerfilInicial } =
@@ -393,7 +399,7 @@ export async function agregarMiembroAProyecto(
 			!(await verificarPermisoGestionMiembros(
 				supabase,
 				currentUser.id,
-				proyectoId
+				proyectoId,
 			))
 		) {
 			return {
@@ -406,14 +412,11 @@ export async function agregarMiembroAProyecto(
 
 		const { data: rpcData, error: rpcError } = await supabase.rpc(
 			"get_user_by_email",
-			{ user_email: emailUsuarioNuevo } as GetUserByEmailRpcArgs
+			{ user_email: emailUsuarioNuevo } as GetUserByEmailRpcArgs,
 		);
 
 		if (rpcError) {
-			console.error(
-				`❌ [${opId}] Error en RPC get_user_by_email:`,
-				rpcError
-			);
+			console.error(`❌ [${opId}] Error en RPC get_user_by_email:`, rpcError);
 			return {
 				success: false,
 				error: `Error al buscar usuario: ${rpcError.message}`,
@@ -439,7 +442,7 @@ export async function agregarMiembroAProyecto(
 		if (checkMemberError) {
 			console.error(
 				`❌ [${opId}] Error verificando membresía existente:`,
-				checkMemberError
+				checkMemberError,
 			);
 			return {
 				success: false,
@@ -463,7 +466,7 @@ export async function agregarMiembroAProyecto(
 		if (checkProfileError) {
 			console.error(
 				`❌ [${opId}] Error verificando perfil existente:`,
-				checkProfileError
+				checkProfileError,
 			);
 			return {
 				success: false,
@@ -473,7 +476,7 @@ export async function agregarMiembroAProyecto(
 
 		if (!existingProfile) {
 			console.log(
-				`ℹ️ [${opId}] Perfil no existente para ${targetUserId}. Creando...`
+				`ℹ️ [${opId}] Perfil no existente para ${targetUserId}. Creando...`,
 			);
 			const perfilParaInsertar: UserProfileInsert = {
 				user_id: targetUserId,
@@ -497,7 +500,7 @@ export async function agregarMiembroAProyecto(
 			if (profileInsertError) {
 				console.error(
 					`❌ [${opId}] Error al crear perfil para ${targetUserId}:`,
-					profileInsertError
+					profileInsertError,
 				);
 				profile_action_status = "error";
 			} else {
@@ -538,7 +541,7 @@ export async function agregarMiembroAProyecto(
 		}
 
 		console.log(
-			`🎉 [${opId}] ÉXITO: Miembro agregado. ID Membresía: ${nuevaMembresia.id}, Perfil: ${profile_action_status}`
+			`🎉 [${opId}] ÉXITO: Miembro agregado. ID Membresía: ${nuevaMembresia.id}, Perfil: ${profile_action_status}`,
 		);
 		return {
 			success: true,
@@ -579,7 +582,7 @@ interface ModifyMemberPayload {
 }
 
 export async function modificarDetallesMiembroEnProyecto(
-	payload: ModifyMemberPayload
+	payload: ModifyMemberPayload,
 ): Promise<ResultadoOperacion<null>> {
 	const opId = `MDMv3-${Math.floor(Math.random() * 10000)}`; // Versión incrementada
 	const {
@@ -590,7 +593,7 @@ export async function modificarDetallesMiembroEnProyecto(
 	} = payload;
 
 	console.log(
-		`📄 [${opId}] Iniciando modificarDetallesMiembroEnProyecto v3 para membresía ID: ${projectMemberId}`
+		`📄 [${opId}] Iniciando modificarDetallesMiembroEnProyecto v3 para membresía ID: ${projectMemberId}`,
 	);
 	console.log(`[${opId}] Payload recibido:`, JSON.stringify(payload, null, 2));
 
@@ -629,7 +632,7 @@ export async function modificarDetallesMiembroEnProyecto(
 			!(await verificarPermisoGestionMiembros(
 				supabase,
 				currentUser.id,
-				proyectoId
+				proyectoId,
 			))
 		) {
 			return {
@@ -649,7 +652,7 @@ export async function modificarDetallesMiembroEnProyecto(
 		if (miembroFetchError) {
 			console.error(
 				`❌ [${opId}] Error obteniendo datos del miembro:`,
-				miembroFetchError
+				miembroFetchError,
 			);
 			return {
 				success: false,
@@ -687,24 +690,45 @@ export async function modificarDetallesMiembroEnProyecto(
 			if (Object.keys(cleanProfileUpdates).length > 0) {
 				console.log(
 					`🔄 [${opId}] Actualizando perfil de ${targetUserId}:`,
-					cleanProfileUpdates
+					cleanProfileUpdates,
 				);
-				const { error: profileUpdateError } = await supabase
+				const {
+					data: updatedProfile,
+					error: profileUpdateError,
+					count,
+				} = await supabase
 					.from("users_profiles")
-					.update(cleanProfileUpdates) // Usar cleanProfileUpdates
-					.eq("user_id", targetUserId);
+					.update(cleanProfileUpdates)
+					.eq("user_id", targetUserId)
+					.select(); // 🛡️ ANTI-FALLO SILENCIOSO: Obtener datos actualizados
 
 				if (profileUpdateError) {
 					console.error(
 						`❌ [${opId}] Error actualizando perfil de ${targetUserId}:`,
-						profileUpdateError
+						profileUpdateError,
 					);
 					return {
 						success: false,
 						error: `Error al actualizar perfil: ${profileUpdateError.message}`,
 					};
 				}
-				console.log(`✅ [${opId}] Perfil de ${targetUserId} actualizado.`);
+
+				// 🛡️ VERIFICACIÓN CRÍTICA: Confirmar que se actualizó al menos una fila
+				if (!updatedProfile || updatedProfile.length === 0) {
+					console.error(
+						`❌ [${opId}] FALLO SILENCIOSO: No se actualizó ningún perfil para user_id ${targetUserId}`,
+					);
+					return {
+						success: false,
+						error: `No se encontró el perfil del usuario para actualizar. Es posible que el usuario no tenga un perfil creado en users_profiles.`,
+						errorCode: "PROFILE_NOT_FOUND",
+					};
+				}
+
+				console.log(
+					`✅ [${opId}] Perfil de ${targetUserId} actualizado. Filas afectadas: ${updatedProfile.length}`,
+				);
+				console.log(`📊 [${opId}] Datos actualizados:`, updatedProfile[0]);
 			}
 		}
 
@@ -745,7 +769,7 @@ export async function modificarDetallesMiembroEnProyecto(
 			if (Object.keys(updatesParaProjectMembersDb).length > 0) {
 				console.log(
 					`🔄 [${opId}] Actualizando membresía ${projectMemberId}:`,
-					updatesParaProjectMembersDb
+					updatesParaProjectMembersDb,
 				);
 				const { error: memberUpdateError } = await supabase
 					.from("project_members")
@@ -755,7 +779,7 @@ export async function modificarDetallesMiembroEnProyecto(
 				if (memberUpdateError) {
 					console.error(
 						`❌ [${opId}] Error actualizando membresía ${projectMemberId}:`,
-						memberUpdateError
+						memberUpdateError,
 					);
 					return {
 						success: false,
@@ -786,12 +810,12 @@ interface DeleteMemberPayload {
 }
 
 export async function eliminarMiembroDeProyecto(
-	payload: DeleteMemberPayload
+	payload: DeleteMemberPayload,
 ): Promise<ResultadoOperacion<null>> {
 	const opId = `EMPv2-${Math.floor(Math.random() * 10000)}`;
 	const { projectMemberId, proyectoId } = payload;
 	console.log(
-		`📄 [${opId}] Iniciando eliminarMiembroDeProyecto: membresía ID ${projectMemberId} de proyecto ${proyectoId}`
+		`📄 [${opId}] Iniciando eliminarMiembroDeProyecto: membresía ID ${projectMemberId} de proyecto ${proyectoId}`,
 	);
 	if (!projectMemberId || !proyectoId) {
 		return {
@@ -814,7 +838,7 @@ export async function eliminarMiembroDeProyecto(
 			!(await verificarPermisoGestionMiembros(
 				supabase,
 				currentUser.id,
-				proyectoId
+				proyectoId,
 			))
 		) {
 			return {
@@ -832,7 +856,7 @@ export async function eliminarMiembroDeProyecto(
 		if (fetchError) {
 			console.error(
 				`❌ [${opId}] Error obteniendo datos del miembro para eliminar:`,
-				fetchError
+				fetchError,
 			);
 			return {
 				success: false,

@@ -4,33 +4,33 @@
 
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { useTheme } from "@/app/theme-provider";
+import { useDesignTokens } from "@/app/providers/DesignTokensProvider";
 import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
-import { StandardTabsContext } from "./standard-tabs-context"; // Crearemos este contexto
+import type { TabsStyleType, TabsSize } from "@/app/providers/DesignTokensProvider";
+import { StandardTabsContext } from "./standard-tabs-context";
 
 export interface StandardTabsProps
   extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.Root> {
   colorScheme?: ColorSchemeVariant;
-  styleType?: 'line' | 'enclosed';
-  size?: 'sm' | 'md' | 'lg';
+  styleType?: TabsStyleType;
+  size?: TabsSize;
 }
 
 const StandardTabs = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Root>,
   StandardTabsProps
 >(({ className, colorScheme = 'primary', styleType = 'line', size = 'md', ...props }, ref) => {
-  const { appColorTokens, mode } = useTheme();
+  const { tokens } = useDesignTokens();
 
   // El valor del contexto que pasaremos a los componentes hijos.
   const contextValue = React.useMemo(() => ({
     colorScheme,
     styleType,
     size,
-    appColorTokens,
-    mode
-  }), [colorScheme, styleType, size, appColorTokens, mode]);
+    tokens,
+  }), [colorScheme, styleType, size, tokens]);
 
-  if (!appColorTokens) {
+  if (!tokens) {
     // Renderiza un estado base o de carga si los tokens aún no están disponibles.
     return <TabsPrimitive.Root ref={ref} {...props} />;
   }

@@ -4,6 +4,7 @@ import React from 'react';
 import { useJobManager, type Job } from '@/app/contexts/JobManagerContext';
 import { TranslationJobHandler } from '@/components/jobs/TranslationJobHandler';
 import { PreclassificationJobHandler } from '@/components/jobs/PreclassificationJobHandler';
+import { ReconciliationJobHandler } from '@/components/jobs/ReconciliationJobHandler';
 import { StandardCard } from '@/components/ui/StandardCard';
 import { StandardText } from '@/components/ui/StandardText';
 import { StandardButton } from '@/components/ui/StandardButton';
@@ -42,6 +43,8 @@ export const JobManager = () => {
         return <TranslationJobHandler key={job.id} job={job} />;
       case 'PRECLASSIFY_BATCH':
         return <PreclassificationJobHandler key={job.id} job={job} />;
+      case 'RECONCILE_BATCH':
+        return <ReconciliationJobHandler key={job.id} job={job} />;
       default:
         return <div key={job.id}>Trabajo desconocido: {job.title}</div>;
     }
@@ -116,10 +119,7 @@ export const JobManager = () => {
                 size="lg"
                 className="rounded-full shadow-2xl hover:shadow-3xl transition-all duration-200 min-w-[60px] h-[60px] p-3 ring-1 ring-black/5"
               >
-                <div className="flex flex-col items-center justify-center relative">
-                  <History className="h-6 w-6" />
-                  {/* NUNCA mostrar badge numérico en estado inactivo */}
-                </div>
+                <History className="h-6 w-6" />
               </StandardButton>
             )
           }
@@ -191,9 +191,8 @@ export const JobManager = () => {
                   styleType="outline"
                   colorScheme="neutral"
                   onClick={handleHistoryClick}
-                  className="flex items-center gap-2 mx-auto"
+                  leftIcon={History}
                 >
-                  <History className="h-4 w-4" />
                   <StandardText size="sm">
                     Ver Historial de Trabajos
                   </StandardText>
@@ -235,9 +234,8 @@ export const JobManager = () => {
                 styleType="outline"
                 colorScheme="neutral"
                 onClick={handleHistoryClick}
-                className="flex items-center gap-2 mx-auto"
+                leftIcon={History}
               >
-                <History className="h-4 w-4" />
                 <StandardText size="sm">Ver Historial de Trabajos</StandardText>
               </StandardButton>
             </div>

@@ -1,0 +1,129 @@
+/* 📍 styles/animations/card-animations.css */
+/* 🎯 PROPÓSITO: Animaciones estáticas para StandardCard */
+/* 🔧 DECISIÓN: Mover @keyframes a CSS estático para evitar inyección dinámica */
+/* ✅ ARQUITECTURA: CSS Variables para valores dinámicos + clases estáticas */
+/* 🌸 FILOSOFÍA: Performance optimizado sin style tag injection */
+
+/* 🌊 PULSE BORDER - Respiración sutil del borde */
+.card-pulse {
+  animation: card-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes card-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% { 
+    box-shadow: 0 0 0 3px var(--card-focus-ring);
+  }
+}
+
+/* 🪩 PAFFF MOMENT - Latido de coherencia */
+.card-pafff {
+  animation: card-pafff 1.5s ease-in-out infinite;
+}
+
+@keyframes card-pafff {
+  0%, 100% { 
+    box-shadow: inset 0 0 0 1px var(--card-border), 0 0 0 2px var(--card-focus-ring);
+  }
+  50% { 
+    box-shadow: inset 0 0 0 2px var(--card-border-selected), 
+                0 0 0 4px var(--card-focus-ring), 
+                0 0 12px 2px var(--card-focus-ring);
+  }
+}
+
+/* ✨ SHIMMER - Efecto de brillo */
+.card-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: card-shimmer 2s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+@keyframes card-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* 🎭 ENTRANCE - Animación de entrada */
+.card-entrance {
+  animation: card-entrance 0.4s ease-out forwards;
+}
+
+@keyframes card-entrance {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 📦 OVERLAY FADE IN - Animación de overlays */
+.card-overlay-fade-in {
+  animation: card-overlay-fade-in 0.2s ease-out forwards;
+}
+
+@keyframes card-overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 📜 SCROLL HINT - Animación de scroll hint */
+.scroll-hint-fade-in {
+  animation: scroll-hint-fade-in 0.3s ease-out forwards;
+}
+
+@keyframes scroll-hint-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 🎨 ACCENT ELEMENTS - Elementos de acento dinámicos */
+.card-accent {
+  background: var(--card-accent-gradient);
+  height: var(--card-accent-height);
+  width: var(--card-accent-width);
+}
+
+.card-checkbox-border { 
+  color: var(--card-checkbox-border); 
+}
+
+.card-checkbox-icon { 
+  color: var(--card-checkbox-icon); 
+}
+
+.card-disabled-overlay { 
+  background: var(--card-disabled-overlay); 
+}
+
+.card-loading-overlay { 
+  background: var(--card-loading-overlay); 
+}
+
+.card-hover-overlay { 
+  background: var(--card-hover-overlay); 
+}
+
+.card-selected-overlay { 
+  background: var(--card-selected-overlay); 
+}

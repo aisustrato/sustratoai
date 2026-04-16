@@ -10,7 +10,7 @@ import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { Mail, ArrowLeft, Send } from "lucide-react";
 import { toast } from "sonner";
-import { SustratoLogoWithFixedText } from "@/components/ui/sustrato-logo-with-fixed-text";
+import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustratoLogoWithFixedText";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function ResetPasswordPage() {
@@ -46,14 +46,15 @@ export default function ResetPasswordPage() {
 			setSent(true);
 			// Mantenemos un mensaje genérico por seguridad, para no revelar si un email existe o no en la base de datos.
 			toast.success(
-				"Si existe una cuenta, se ha enviado un correo con instrucciones."
+				"Si existe una cuenta, se ha enviado un correo con instrucciones.",
 			);
 		} catch (error: unknown) {
 			console.error("Error al enviar correo de recuperación:", error);
-			const errorMessage = error instanceof Error ? error.message : "Por favor, intenta nuevamente.";
-			toast.error(
-				`Ocurrió un error: ${errorMessage}`
-			);
+			const errorMessage =
+				error instanceof Error ?
+					error.message
+				:	"Por favor, intenta nuevamente.";
+			toast.error(`Ocurrió un error: ${errorMessage}`);
 		} finally {
 			setLoading(false);
 		}
@@ -69,7 +70,7 @@ export default function ResetPasswordPage() {
 					styleType="filled">
 					<StandardCard.Header className="space-y-2 text-center">
 						<div className="flex justify-center mb-2">
-							<SustratoLogoWithFixedText
+							<StandardSustratoLogoWithFixedText
 								size={50}
 								variant="vertical"
 								speed="normal"
@@ -88,14 +89,15 @@ export default function ResetPasswordPage() {
 							asElement="p"
 							colorScheme="neutral"
 							className="text-center text-muted-foreground">
-							{!sent
-								? "Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu contraseña."
-								: "Hemos enviado instrucciones a tu correo electrónico. Sigue los pasos indicados en el mensaje."}
+							{!sent ?
+								"Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu contraseña."
+							:	"Hemos enviado instrucciones a tu correo electrónico. Sigue los pasos indicados en el mensaje."
+							}
 						</StandardText>
 					</StandardCard.Header>
 
 					<StandardCard.Content>
-						{!sent ? (
+						{!sent ?
 							<form onSubmit={handleSubmit} className="space-y-4">
 								<StandardFormField label="Correo electrónico" htmlFor="email">
 									<StandardInput
@@ -121,10 +123,12 @@ export default function ResetPasswordPage() {
 									Enviar instrucciones
 								</StandardButton>
 							</form>
-						) : (
-							<div className="text-center py-4">
+						:	<div className="text-center py-4">
 								<div className="bg-primary/10 rounded-lg p-4 mb-6">
-									<StandardText colorScheme="primary" size="sm" className="text-sm">
+									<StandardText
+										colorScheme="primary"
+										size="sm"
+										className="text-sm">
 										Revisa tu bandeja de entrada y sigue las instrucciones
 										enviadas a <strong>{email}</strong>. Si no encuentras el
 										correo, verifica también tu carpeta de spam.
@@ -139,7 +143,7 @@ export default function ResetPasswordPage() {
 									Intentar con otro correo
 								</StandardButton>
 							</div>
-						)}
+						}
 					</StandardCard.Content>
 
 					<StandardCard.Footer className="text-center">

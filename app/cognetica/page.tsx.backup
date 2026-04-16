@@ -1,0 +1,438 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { 
+    Plus, 
+    FileAudio, 
+    FileText, 
+    Video, 
+    Clock,
+    RefreshCw,
+    AlertCircle,
+    Search,
+    ChevronLeft,
+    ChevronRight
+} from "lucide-react";
+import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
+import { StandardCard } from "@/components/ui/StandardCard";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardText } from "@/components/ui/StandardText";
+import { StandardIcon } from "@/components/ui/StandardIcon";
+import { StandardBadge } from "@/components/ui/StandardBadge";
+import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
+import { StandardInput } from "@/components/ui/StandardInput";
+import { useAuth } from "@/app/auth-provider";
+import { supabase } from "@/app/auth/client";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
+
+interface Artifact {
+    id: string;
+    title: string;
+    type: "audio" | "video" | "document" | "image" | "other";
+    status: "pending" | "uploading" | "transcribing" | "analyzing" | "completed" | "error" | null;
+    created_at: string | null;
+    duration_seconds: number | null;
+}
+
+export default function CogneticaDashboard() {
+    const router = useRouter();
+    const auth = useAuth();
+    const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    // Cargar artefactos reales desde Supabase
+    // Patrón copiado de preclasificacion/page.tsx que funciona correctamente
+    useEffect(() => {
+        async function loadArtifacts() {
+            // Verificar que tenemos proyecto y usuario (mismo patrón que preclasificacion)
+            if (!auth.proyectoActual?.id || !auth.user?.id) {
+                setLoading(false);
+                return;
+            }
+
+            setLoading(true);
+            setError(null);
+
+            try {
+                console.log('🔍 [Cognetica] Cargando artefactos para proyecto:', auth.proyectoActual.id);
+                console.log('🔍 [Cognetica] Usuario ID:', auth.user?.id);
+                console.log('🔍 [Cognetica] Proyecto nombre:', auth.proyectoActual.name);
+
+                const { data, error: fetchError } = await supabase
+                    .from('cog_artifacts')
+                    .select('id, title, type, status, created_at, duration_seconds, project_id')
+                    .eq('project_id', auth.proyectoActual.id)
+                    .order('created_at', { ascending: false });
+
+                if (fetchError) {
+                    console.error('🔍 [Cognetica] Error cargando artefactos:', fetchError.code, fetchError.message);
+                    setError(fetchError.message);
+                    setArtifacts([]);
+                } else {
+                    console.log('🔍 [Cognetica] Artefactos cargados:', data?.length ?? 0);
+                    console.log('🔍 [Cognetica] Datos completos:', data);
+                    // Verificar si algún artefacto tiene project_id diferente
+                    if (data && data.length > 0) {
+                        const projectIds = new Set(data.map(a => a.project_id));
+                        console.log('🔍 [Cognetica] Project IDs únicos en resultados:', Array.from(projectIds));
+                        if (projectIds.size > 1 || !projectIds.has(auth.proyectoActual.id)) {
+                            console.error('⚠️ [Cognetica] PROBLEMA: Artefactos con project_id incorrecto!');
+                        }
+                    }
+                    setArtifacts(data || []);
+                }
+            } catch (err) {
+                console.error('🔍 [Cognetica] Error inesperado:', err);
+                setError('Error inesperado al cargar los datos');
+                setArtifacts([]);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadArtifacts();
+    }, [auth.proyectoActual?.id, auth.user?.id]);
+
+    // Filtrar artefactos por búsqueda
+    const filteredArtifacts = artifacts.filter(artifact => 
+        artifact.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Paginación
+    const totalPages = Math.ceil(filteredArtifacts.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedArtifacts = filteredArtifacts.slice(startIndex, endIndex);
+
+    // Reset página cuando cambia búsqueda
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
+
+    // Formatear duración
+    const formatDuration = (seconds: number | null): string => {
+        if (!seconds) return "-";
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        if (mins >= 60) {
+            const hrs = Math.floor(mins / 60);
+            const remainingMins = mins % 60;
+            return `${hrs}:${remainingMins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    // Formatear fecha relativa
+    const formatDate = (dateStr: string | null): string => {
+        if (!dateStr) return "-";
+        try {
+            return formatDistanceToNow(new Date(dateStr), { addSuffix: true, locale: es });
+        } catch {
+            return "-";
+        }
+    };
+
+    return (
+        <div className="container mx-auto px-4 py-8 max-w-7xl space-y-8">
+            <div className="flex items-start justify-between">
+                <StandardPageTitle 
+                    title="Cognética Forense"
+                    subtitle="Análisis fractal, transcripción y minería de conocimiento."
+                />
+                <StandardButton 
+                    colorScheme="primary" 
+                    leftIcon={Plus}
+                    onClick={() => router.push("/cognetica/nuevo")}
+                >
+                    Nuevo Artefacto
+                </StandardButton>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6">
+                {/* Resumen de Actividad / Stats (Placeholder) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <StandardCard styleType="subtle" className="bg-primary/5 border-primary/20">
+                        <StandardCard.Content className="flex items-center gap-4">
+                            <StandardIcon colorScheme="primary" size="lg" styleType="solid">
+                                <FileAudio />
+                            </StandardIcon>
+                            <div>
+                                <StandardText size="2xl" weight="bold">12</StandardText>
+                                <StandardText size="xs" colorScheme="neutral">Artefactos Procesados</StandardText>
+                            </div>
+                        </StandardCard.Content>
+                    </StandardCard>
+                    {/* Más stats aquí... */}
+                </div>
+
+                {/* Lista de Artefactos Recientes */}
+                <StandardCard>
+                    <StandardCard.Header className="flex items-center justify-between">
+                        <StandardText size="lg" weight="bold">Artefactos ({filteredArtifacts.length})</StandardText>
+                        {loading && <RefreshCw className="h-4 w-4 animate-spin text-neutral-400" />}
+                    </StandardCard.Header>
+                    
+                    {/* Barra de búsqueda */}
+                    {!loading && artifacts.length > 0 && (
+                        <div className="px-6 pt-4 pb-2">
+                            <StandardInput
+                                placeholder="Buscar por título..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                leftIcon={Search}
+                            />
+                        </div>
+                    )}
+                    <StandardCard.Content className="p-0">
+                        {/* Estado de error */}
+                        {error && (
+                            <div className="p-6 flex items-center gap-3 text-red-600">
+                                <AlertCircle className="h-5 w-5" />
+                                <StandardText colorScheme="danger">{error}</StandardText>
+                            </div>
+                        )}
+
+                        {/* Estado vacío - sin artefactos */}
+                        {!loading && !error && artifacts.length === 0 && (
+                            <StandardEmptyState
+                                icon={FileAudio}
+                                title="No hay artefactos en este proyecto"
+                                description="Sube tu primer audio, video o documento para iniciar el análisis cognitivo."
+                                action={
+                                    <StandardButton 
+                                        colorScheme="primary" 
+                                        leftIcon={Plus}
+                                        onClick={() => router.push("/cognetica/nuevo")}
+                                    >
+                                        Cargar Artefacto
+                                    </StandardButton>
+                                }
+                            />
+                        )}
+
+                        {/* Estado vacío - búsqueda sin resultados */}
+                        {!loading && !error && artifacts.length > 0 && filteredArtifacts.length === 0 && (
+                            <div className="p-6 text-center">
+                                <StandardText colorScheme="neutral">No se encontraron artefactos con "{searchQuery}"</StandardText>
+                            </div>
+                        )}
+
+                        {/* Lista de artefactos */}
+                        {!loading && !error && paginatedArtifacts.length > 0 && (
+                            <div className="divide-y divide-neutral-100">
+                                {paginatedArtifacts.map((artifact: Artifact) => (
+                                    <div 
+                                        key={artifact.id} 
+                                        className="p-4 hover:bg-neutral-50 transition-colors flex items-center justify-between group cursor-pointer" 
+                                        onClick={() => router.push(`/cognetica/${artifact.id}`)}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <StandardIcon 
+                                                colorScheme={artifact.status === 'completed' ? 'success' : artifact.status === 'error' ? 'danger' : 'warning'}
+                                                styleType="outline"
+                                            >
+                                                {artifact.type === 'audio' ? <FileAudio /> : 
+                                                 artifact.type === 'video' ? <Video /> : <FileText />}
+                                            </StandardIcon>
+                                            <div>
+                                                <StandardText weight="medium">{artifact.title}</StandardText>
+                                                <div className="flex items-center gap-2 text-xs text-neutral-500">
+                                                    <Clock className="h-3 w-3" />
+                                                    <span>{formatDate(artifact.created_at)}</span>
+                                                    {artifact.duration_seconds && (
+                                                        <>
+                                                            <span>•</span>
+                                                            <span>{formatDuration(artifact.duration_seconds)}</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-3">
+                                            <StandardBadge 
+                                                colorScheme={
+                                                    artifact.status === 'completed' ? 'success' : 
+                                                    artifact.status === 'error' ? 'danger' :
+                                                    (artifact.status === 'analyzing' || artifact.status === 'transcribing') ? 'warning' : 'neutral'
+                                                }
+                                            >
+                                                {artifact.status === 'completed' ? 'Procesado' : 
+                                                 artifact.status === 'error' ? 'Error' :
+                                                 artifact.status === 'analyzing' ? 'Analizando...' : 
+                                                 artifact.status === 'transcribing' ? 'Transcribiendo...' : 
+                                                 artifact.status === 'uploading' ? 'Subiendo...' : 'Pendiente'}
+                                            </StandardBadge>
+                                            
+                                            <StandardButton 
+                                                size="sm" 
+                                                styleType="ghost" 
+                                                onClick={(e: React.MouseEvent) => {
+                                                    e.stopPropagation();
+                                                    router.push(`/cognetica/${artifact.id}`);
+                                                }}
+                                            >
+                                                Ver Estudio
+                                            </StandardButton>
+                    </StandardCard.Content>
+                </StandardCard>
+                {/* Más stats aquí... */}
+            </div>
+
+            {/* Lista de Artefactos Recientes */}
+            <StandardCard>
+                <StandardCard.Header className="flex items-center justify-between">
+                    <StandardText size="lg" weight="bold">Artefactos ({filteredArtifacts.length})</StandardText>
+                    {loading && <RefreshCw className="h-4 w-4 animate-spin text-neutral-400" />}
+                </StandardCard.Header>
+                
+                {/* Barra de búsqueda */}
+                {!loading && artifacts.length > 0 && (
+                    <div className="px-6 pt-4 pb-2">
+                        <StandardInput
+                            placeholder="Buscar por título..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            leftIcon={Search}
+                        />
+                    </div>
+                )}
+                <StandardCard.Content className="p-0">
+                    {/* Estado de error */}
+                    {error && (
+                        <div className="p-6 flex items-center gap-3 text-red-600">
+                            <AlertCircle className="h-5 w-5" />
+                            <StandardText colorScheme="danger">{error}</StandardText>
+                        </div>
+                    )}
+
+                    {/* Estado vacío - sin artefactos */}
+                    {!loading && !error && artifacts.length === 0 && (
+                        <StandardEmptyState
+                            icon={FileAudio}
+                            title="No hay artefactos en este proyecto"
+                            description="Sube tu primer audio, video o documento para iniciar el análisis cognitivo."
+                            action={
+                                <StandardButton 
+                                    colorScheme="primary" 
+                                    leftIcon={Plus}
+                                    onClick={() => router.push("/cognetica/nuevo")}
+                                >
+                                    Cargar Artefacto
+                                </StandardButton>
+                            }
+                        />
+                    )}
+
+                    {/* Estado vacío - búsqueda sin resultados */}
+                    {!loading && !error && artifacts.length > 0 && filteredArtifacts.length === 0 && (
+                        <div className="p-6 text-center">
+                            <StandardText colorScheme="neutral">No se encontraron artefactos con "{searchQuery}"</StandardText>
+                        </div>
+                    )}
+
+                    {/* Lista de artefactos */}
+                    {!loading && !error && paginatedArtifacts.length > 0 && (
+                        <div className="divide-y divide-neutral-100">
+                            {paginatedArtifacts.map((artifact: Artifact) => (
+                                <div 
+                                    key={artifact.id} 
+                                    className="p-4 hover:bg-neutral-50 transition-colors flex items-center justify-between group cursor-pointer" 
+                                    onClick={() => router.push(`/cognetica/${artifact.id}`)}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <StandardIcon 
+                                            colorScheme={artifact.status === 'completed' ? 'success' : artifact.status === 'error' ? 'danger' : 'warning'}
+                                            styleType="outline"
+                                        >
+                                            {artifact.type === 'audio' ? <FileAudio /> : 
+                                             artifact.type === 'video' ? <Video /> : <FileText />}
+                                        </StandardIcon>
+                                        <div>
+                                            <StandardText weight="medium">{artifact.title}</StandardText>
+                                            <div className="flex items-center gap-2 text-xs text-neutral-500">
+                                                <Clock className="h-3 w-3" />
+                                                <span>{formatDate(artifact.created_at)}</span>
+                                                {artifact.duration_seconds && (
+                                                    <>
+                                                        <span>•</span>
+                                                        <span>{formatDuration(artifact.duration_seconds)}</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-3">
+                                        <StandardBadge 
+                                            colorScheme={
+                                                artifact.status === 'completed' ? 'success' : 
+                                                artifact.status === 'error' ? 'danger' :
+                                                (artifact.status === 'analyzing' || artifact.status === 'transcribing') ? 'warning' : 'neutral'
+                                            }
+                                        >
+                                            {artifact.status === 'completed' ? 'Procesado' : 
+                                             artifact.status === 'error' ? 'Error' :
+                                             artifact.status === 'analyzing' ? 'Analizando...' : 
+                                             artifact.status === 'transcribing' ? 'Transcribiendo...' : 
+                                             artifact.status === 'uploading' ? 'Subiendo...' : 'Pendiente'}
+                                        </StandardBadge>
+                                        
+                                        <StandardButton 
+                                            size="sm" 
+                                            styleType="ghost" 
+                                            onClick={(e: React.MouseEvent) => {
+                                                e.stopPropagation();
+                                                router.push(`/cognetica/${artifact.id}`);
+                                            }}
+                                        >
+                                            Ver Estudio
+                                        </StandardButton>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Paginación */}
+                    {!loading && !error && filteredArtifacts.length > itemsPerPage && (
+                        <div className="px-6 py-4 flex items-center justify-between border-t border-neutral-100">
+                            <StandardText size="sm" colorScheme="neutral">
+                                Mostrando {startIndex + 1}-{Math.min(endIndex, filteredArtifacts.length)} de {filteredArtifacts.length}
+                            </StandardText>
+                            <div className="flex items-center gap-2">
+                                <StandardButton
+                                    size="sm"
+                                    styleType="outline"
+                                    leftIcon={ChevronLeft}
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                >
+                                    Anterior
+                                </StandardButton>
+                                <StandardText size="sm" colorScheme="neutral">
+                                    Página {currentPage} de {totalPages}
+                                </StandardText>
+                                <StandardButton
+                                    size="sm"
+                                    styleType="outline"
+                                    rightIcon={ChevronRight}
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                >
+                                    Siguiente
+                                </StandardButton>
+                            </div>
+                        </div>
+                    )}
+                </StandardCard.Content>
+            </StandardCard>
+        </div>
+    </div>
+);

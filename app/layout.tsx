@@ -1,4 +1,3 @@
-
 // app/layout.tsx
 import React, { Suspense } from "react";
 import "./globals.css";
@@ -9,62 +8,71 @@ import { AuthLayoutWrapper } from "./auth-layout-wrapper";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { Toaster } from "@/components/ui/toaster";
 import { LoadingProvider } from "@/contexts/LoadingContext";
-import ProjectStatusBadge from "@/components/ui/ProjectStatusBadge";
-import { JobManagerProvider } from '@/app/contexts/JobManagerContext';
-import { DialogProvider } from '@/app/contexts/DialogContext';
-import { JobManager } from '@/components/jobs/JobManager';
+import { StandardProjectStatusBadge } from "@/components/ui/StandardProjectStatusBadge";
+import { JobManagerProvider } from "@/app/contexts/JobManagerContext";
+import { DialogProvider } from "@/app/contexts/DialogContext";
+import { JobManager } from "@/components/jobs/JobManager";
+import '@/styles/standard-textarea-animations.css';
+import '@/styles/standard-card-animations.css';
+import '@/styles/standard-sphere-animations.css';
+
 
 export const metadata: Metadata = {
-  title: "Sustrato.ai",
-  description: "Investigación Cualitativa Aumentada",
-  // ... otros metadatos ...
+	title: "Sustrato.ai",
+	description: "Investigación Cualitativa Aumentada",
+	// ... otros metadatos ...
 };
 
 const GlobalLoadingIndicator = () => (
-  <div className="fixed inset-0 z-50 flex h-screen w-screen items-center justify-center bg-background/80 backdrop-blur-sm">
-    <SustratoLoadingLogo
-      size={96}
-      variant="spin-pulse"
-      speed="fast"
-      breathingEffect
-      colorTransition={false}
-      text="Cargando página..."
-    />
-  </div>
+	<div className="fixed inset-0 z-50 flex h-screen w-screen items-center justify-center bg-background/80 backdrop-blur-sm">
+		<SustratoLoadingLogo
+			size={96}
+			variant="spin-pulse"
+			speed="fast"
+			breathingEffect
+			colorTransition={false}
+			text="Cargando página..."
+		/>
+	</div>
 );
 
 export default function RootLayout({
-  children,
+	children,
 }: {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-  const fontVariables = getAllFontVariables();
+	const fontVariables = getAllFontVariables();
 
-  return (
-    <html lang="es" suppressHydrationWarning className={fontVariables}>
-      <body className="h-full bg-background text-foreground antialiased">
-        <Providers> {/* Tu provider de tema y otros globales */}
-          <JobManagerProvider>
-            <DialogProvider>
-              <LoadingProvider> {/* <--- ENVUELVE CON LOADINGPROVIDER */}
-              <AuthLayoutWrapper>
-                <Suspense fallback={<GlobalLoadingIndicator />}>
-                  {children}
-                </Suspense>
-                <div className="fixed top-20 right-5 z-50">
-                  <ProjectStatusBadge />
-                </div>
-              </AuthLayoutWrapper>
-              {/* // ANTES: El Toaster estaba aquí dentro de LoadingProvider */}
-              {/* <Toaster /> */}
-            </LoadingProvider> {/* <--- CIERRA LOADINGPROVIDER */}
-            </DialogProvider>
-            <JobManager />
-            <Toaster /> {/* // DESPUÉS: El Toaster ahora está aquí, fuera de LoadingProvider pero dentro de Providers */}
-          </JobManagerProvider>
-        </Providers>
-      </body>
-    </html>
-  );
+	return (
+		<html lang="es" suppressHydrationWarning className={fontVariables}>
+			<body className="h-full bg-background text-foreground antialiased">
+				<Providers>
+					{" "}
+					{/* Tu provider de tema y otros globales */}
+					<JobManagerProvider>
+						<DialogProvider>
+							<LoadingProvider>
+								{" "}
+								{/* <--- ENVUELVE CON LOADINGPROVIDER */}
+								<AuthLayoutWrapper>
+									<Suspense fallback={<GlobalLoadingIndicator />}>
+										{children}
+									</Suspense>
+									<div className="fixed top-20 left-5 z-50">
+										<StandardProjectStatusBadge />
+									</div>
+								</AuthLayoutWrapper>
+								{/* // ANTES: El Toaster estaba aquí dentro de LoadingProvider */}
+								{/* <Toaster /> */}
+							</LoadingProvider>{" "}
+							{/* <--- CIERRA LOADINGPROVIDER */}
+						</DialogProvider>
+						<JobManager />
+						<Toaster />{" "}
+						{/* // DESPUÉS: El Toaster ahora está aquí, fuera de LoadingProvider pero dentro de Providers */}
+					</JobManagerProvider>
+				</Providers>
+			</body>
+		</html>
+	);
 }
-

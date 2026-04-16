@@ -1,0 +1,53 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "close": "Cerrar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "submit": "Enviar",
+    "reset": "Restablecer"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "register": "Registrarse",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña"
+  },
+  "errors": {
+    "required": "Este campo es requerido",
+    "invalid": "Valor inválido",
+    "networkError": "Error de conexión",
+    "unauthorized": "No autorizado",
+    "notFound": "No encontrado"
+  },
+  "input": {
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "clearField": "Limpiar campo",
+    "charactersRemaining": "caracteres restantes"
+  },
+  "showroom": {
+    "standardButton": {
+      "title": "StandardButton Showroom v4.1 🌸",
+      "description": "Tokens precalculados • Transiciones orgánicas • Breathing effect • i18n-ready",
+      "testButton": "Botón de Prueba",
+      "tooltipExample": "Este es un tooltip de prueba"
+    },
+    "standardInput": {
+      "title": "StandardInput Showroom v4.2 🌸",
+      "description": "Soberanía de Animación • Tokens Precalculados • Validación Visual"
+    }
+  }
+}

@@ -1,1 +1,9 @@
 npx supabase gen types typescript --project-id nnzjmsfllrdqxlrzrhur > lib/database.types.ts
+
+
+npx supabase gen types typescript --project-id vgnteswwvallupuanfiz > lib/database.types.ts
+
+Un Manual para la Coherencia en la Era de la Fragmentación
+
+PistachoTorito1!
+Fuegoelecho230

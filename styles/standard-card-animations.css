@@ -1,0 +1,110 @@
+/* 📍 styles/standard-card-animations.css
+ * 🎯 Animaciones estáticas para StandardCard
+ * 🔧 ANTES: Se inyectaban ~130 líneas de CSS por cada instancia de card
+ * 🔧 AHORA: Un solo archivo estático, valores dinámicos via CSS variables
+ * 📋 Importar en layout.tsx o globals.css:
+ *    @import './standard-card-animations.css';
+ */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* 🎬 Animación de entrada                    */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@keyframes sc-entrance {
+	from {
+		opacity: 0;
+		transform: scale(0.98);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+.sc-entrance {
+	animation: sc-entrance 0.4s ease-out forwards;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* 🎭 Fade-in para overlays                    */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@keyframes sc-overlay-fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+.sc-overlay-fade-in {
+	animation: sc-overlay-fade-in 0.2s ease-out forwards;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ✅ Estado seleccionado                       */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.sc-selected {
+	border: 2px solid var(--sc-selected-border-color) !important;
+	box-shadow: 0 0 0 3px var(--sc-focus-ring);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* 🌊 Pulse Border - Respiración sutil         */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@keyframes sc-pulse {
+	0%, 100% { box-shadow: 0 0 0 0 transparent; }
+	50% { box-shadow: 0 0 0 3px var(--sc-focus-ring); }
+}
+
+.sc-pulse {
+	animation: sc-pulse 2.5s ease-in-out infinite;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* 🪩 Pafff Moment - Insight/coherencia        */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@keyframes sc-pafff {
+	0%, 100% {
+		box-shadow: inset 0 0 0 1px var(--sc-border), 0 0 0 2px var(--sc-focus-ring);
+	}
+	50% {
+		box-shadow: inset 0 0 0 2px var(--sc-border-selected), 0 0 0 4px var(--sc-focus-ring), 0 0 12px 2px var(--sc-focus-ring);
+	}
+}
+
+.sc-pafff {
+	animation: sc-pafff 1.5s ease-in-out infinite;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ✨ Shimmer                                   */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@keyframes sc-shimmer {
+	0% { background-position: -200% 0; }
+	100% { background-position: 200% 0; }
+}
+
+.sc-shimmer::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+	background-size: 200% 100%;
+	animation: sc-shimmer 2s ease-in-out infinite;
+	pointer-events: none;
+	border-radius: inherit;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* 📜 Scroll hint                               */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@keyframes sc-scroll-hint {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.sc-scroll-hint {
+	animation: sc-scroll-hint 0.3s ease-out forwards;
+}

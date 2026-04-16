@@ -19,61 +19,47 @@ export async function middleware(request: NextRequest) {
   const requestId = Math.floor(Math.random() * 10000);
 
   const response = NextResponse.next({ request: { headers: request.headers } });
+  const isDev = process.env.NODE_ENV === 'development';
 
-  // 🔍 LOGS DETALLADOS PARA DEBUGGING DE PASSWORD RESET
-  console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 URL COMPLETA: ${request.url}`);
-  console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 PATHNAME: ${pathname}`);
-  console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 SEARCH: ${search}`);
-  console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 HASH: ${hash}`);
-  console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 REFERER: ${request.headers.get('referer') || 'NO REFERER'}`);
+  // 🔍 LOGS REDUCIDOS - Solo en desarrollo y para rutas específicas
+  const shouldLog = isDev && (search.includes('error') || search.includes('code=') || pathname.includes('/update-password'));
+  if (shouldLog) {
+    console.log(`${LOG_PREFIX_MW}:${requestId} 🔍 URL: ${pathname}${search}`);
+  }
   
-  // 🔧 DETECCIÓN DE ENLACE EXPIRADO: Interceptar directamente en middleware
-  // Si detectamos error de enlace expirado Y NO estamos ya en /login, redirigir
+  // 🔧 DETECCIÓN DE ENLACE EXPIRADO
   if ((search.includes('error_code=otp_expired') || search.includes('expired')) && pathname !== '/login') {
-    console.log(`${LOG_PREFIX_MW}:${requestId} 🚨 ENLACE EXPIRADO DETECTADO - Redirigiendo a /login`);
+    if (isDev) console.log(`${LOG_PREFIX_MW}:${requestId} 🚨 Enlace expirado → /login`);
     const loginUrl = new URL('/login', request.url);
-    // Preservar los parámetros de error para que login los detecte
     loginUrl.search = search;
-    console.log(`${LOG_PREFIX_MW}:${requestId} 🎯 Redirigiendo a: ${loginUrl.toString()}`);
     return NextResponse.redirect(loginUrl);
   }
   
-  // 🔧 SOLUCIÓN PARA RECOVERY TOKENS: Detectar tokens de recuperación válidos
+  // 🔧 SOLUCIÓN PARA RECOVERY TOKENS
   const isValidRecoveryFlow = search.includes('type=recovery') || 
                              hash.includes('access_token') || 
                              search.includes('access_token') ||
                              (search.includes('code=') && !search.includes('error'));
   
-  // 🚫 PREVENIR LOOP INFINITO: Si ya estamos en /update-password, no redirigir
   if (isValidRecoveryFlow && pathname !== '/update-password') {
-    console.log(`${LOG_PREFIX_MW}:${requestId} 🚨 DETECTADA URL DE RECUPERACIÓN VÁLIDA!`);
-    console.log(`${LOG_PREFIX_MW}:${requestId} 🔧 Recovery flow válido detectado, redirigiendo a /update-password.`);
-    
+    if (isDev) console.log(`${LOG_PREFIX_MW}:${requestId} Recovery flow → /update-password`);
     const updatePasswordUrl = new URL('/update-password', request.url);
     if (search.includes('code=')) {
       updatePasswordUrl.search = search;
     }
-    
-    console.log(`${LOG_PREFIX_MW}:${requestId} 🎯 Redirigiendo a: ${updatePasswordUrl.toString()}`);
     return NextResponse.redirect(updatePasswordUrl);
   }
   
   if (pathname === '/update-password') {
-    console.log(`${LOG_PREFIX_MW}:${requestId} 🚨 RUTA /update-password detectada, permitiendo paso.`);
     return response;
   }
 
   if (shouldIgnorePathForSession(pathname)) {
-    console.log(`${LOG_PREFIX_MW}:${requestId} Ruta ignorada (sesión): ${pathname}`);
     return response;
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  // Loguear las variables de entorno que usa el middleware
-  console.log(`${LOG_PREFIX_MW}:${requestId} Supabase URL (MW): ${supabaseUrl ? supabaseUrl.substring(0,20) + '...' : 'NO DEFINIDA'}`);
-  console.log(`${LOG_PREFIX_MW}:${requestId} Supabase Anon Key (MW): ${supabaseAnonKey ? supabaseAnonKey.substring(0,10) + '...' : 'NO DEFINIDA'}`);
 
   const supabase = createServerClient<Database>(
     supabaseUrl,
@@ -82,18 +68,16 @@ export async function middleware(request: NextRequest) {
       cookies: {
         get(name: string) {
           const cookieValue = request.cookies.get(name)?.value;
-          console.log(`${LOG_PREFIX_MW}:${requestId} cookies.get('${name}'): ${cookieValue ? 'ENCONTRADA' : 'NO ENCONTRADA'}`);
-          if (name.includes('auth-token') && cookieValue) {
-            console.log(`${LOG_PREFIX_MW}:${requestId} Valor de cookie ${name} (primeros 20 chars): ${cookieValue.substring(0,20)}...`);
+          // Solo loguear cookie principal, no fragmentadas (.0, .1, etc)
+          if (isDev && name === 'sb-vgnteswwvallupuanfiz-auth-token' && !cookieValue) {
+            console.log(`${LOG_PREFIX_MW}:${requestId} ⚠️ Cookie principal no encontrada`);
           }
           return cookieValue;
         },
         set(name: string, value: string, options: CookieOptions) {
-          console.log(`${LOG_PREFIX_MW}:${requestId} cookies.set('${name}') con dominio: ${options.domain}, path: ${options.path}, httpOnly: ${options.httpOnly}, secure: ${options.secure}`);
           response.cookies.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
-          console.log(`${LOG_PREFIX_MW}:${requestId} cookies.remove('${name}') con dominio: ${options.domain}, path: ${options.path}`);
           response.cookies.set({ name, value: '', ...options, maxAge: 0 });
         },
       },
@@ -108,28 +92,29 @@ export async function middleware(request: NextRequest) {
   );
 
   try {
-    console.log(`${LOG_PREFIX_MW}:${requestId} Intentando supabase.auth.getSession()...`);
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    if (sessionError) {
-      console.error(`${LOG_PREFIX_MW}:${requestId} Error en getSession() del middleware:`, sessionError.message);
+    if (sessionError && isDev) {
+      console.error(`${LOG_PREFIX_MW}:${requestId} ❌ Error en getSession():`, sessionError.message);
     }
     
     if (!session) {
-      console.log(`${LOG_PREFIX_MW}:${requestId} SIN SESIÓN en middleware para ${pathname}. Redirigiendo a /login.`);
+      if (isDev) console.log(`${LOG_PREFIX_MW}:${requestId} Sin sesión → /login`);
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('redirectTo', pathname);
       return NextResponse.redirect(loginUrl);
     }
 
-    console.log(`${LOG_PREFIX_MW}:${requestId} SESIÓN VÁLIDA en middleware. User: ${session.user?.id?.substring(0,8)}. Path: ${pathname}`);
+    // Solo loguear sesión válida en desarrollo y para rutas específicas
+    if (shouldLog) {
+      console.log(`${LOG_PREFIX_MW}:${requestId} ✅ Sesión válida: ${session.user?.id?.substring(0,8)}`);
+    }
     return response;
 
   } catch (error) {
-    console.error(`${LOG_PREFIX_MW}:${requestId} Error INESPERADO en middleware para ${pathname}:`, error);
-    // ... (manejo de error genérico)
+    console.error(`${LOG_PREFIX_MW}:${requestId} ❌ Error inesperado:`, error);
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('error', 'Error interno del servidor en middleware');
+    loginUrl.searchParams.set('error', 'Error interno del servidor');
     return NextResponse.redirect(loginUrl);
   }
 }

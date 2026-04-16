@@ -1,319 +1,360 @@
+// 📍 app/theme-provider.tsx
+// 🎯 PROPÓSITO: Orquestador central del sistema de temas de la aplicación
+// 🔧 DECISIÓN: Expone appColorTokens via Context para que los componentes sean agnósticos
+// ⚠️ ADVERTENCIA: Cambios aquí afectan TODA la UI. Validar cambio de temas tras modificaciones.
+
 "use client";
 
+//#region [imports] - 📦 IMPORTS
 import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-
-
 import {
-  createAppColorTokens,
-  updateAppColorTokens,
-  ColorScheme, // Asegúrate que ColorScheme se importa como tipo si es necesario o se actualiza donde se define
-  Mode,
-  type AppColorTokens,
+	createAppColorTokens,
+	updateAppColorTokens,
+	ColorScheme,
+	Mode,
+	type AppColorTokens,
 } from "@/lib/theme/ColorToken";
+//#endregion
 
+//#region [types] - 🎨 TIPOS E INTERFACES
 type ThemeProviderProps = {
-  children: React.ReactNode;
+	children: React.ReactNode;
 };
 
+// 💎 CORE: Contrato del contexto de tema
 type ThemeContextType = {
-  colorScheme: ColorScheme;
-  mode: Mode;
-  setColorScheme: (colorScheme: ColorScheme) => void;
-  setMode: (mode: Mode) => void;
-  appColorTokens: AppColorTokens;
-  theme: string;
-  setTheme: (theme: string) => void;
+	colorScheme: ColorScheme;
+	mode: Mode;
+	setColorScheme: (colorScheme: ColorScheme) => void;
+	setMode: (mode: Mode) => void;
+	appColorTokens: AppColorTokens;
+	theme: string;
+	setTheme: (theme: string) => void;
 };
+//#endregion
 
+//#region [context] - 📦 CONTEXT
 export const ThemeContext = createContext<ThemeContextType | undefined>(
-  undefined
+	undefined,
 );
+//#endregion
 
+//#region [provider] - 🚀 PROVIDER COMPONENT
+// 🚀 ENTRY POINT: Componente que provee el contexto de tema a toda la app
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [colorScheme, setColorSchemeInternal] = useState<ColorScheme>(() => {
-    // Lógica inicial para determinar el colorScheme, puede ser 'blue' o cargado de localStorage
-    if (typeof window !== 'undefined') {
-      const storedScheme = localStorage.getItem("colorScheme") as ColorScheme;
-      // Ensure 'zenith' is recognized if stored from a previous session or by other means
-      if (storedScheme && ["blue", "green", "orange", "artisticGreen", "graphite", "roseGold", "midnight", "burgundy", "zenith"].includes(storedScheme)) {
-        return storedScheme;
-      }
-    }
-    return "zenith"; // Valor por defecto para nuevos usuarios
-  });
-  const [mode, setModeInternal] = useState<Mode>("light");
-  const [mounted, setMounted] = useState(false);
+	//#region [state] - Estado interno del provider
+	const [colorScheme, setColorSchemeInternal] = useState<ColorScheme>(() => {
+		// 🔧 DECISIÓN: Intentar recuperar de localStorage, fallback a 'zenith'
+		if (typeof window !== "undefined") {
+			const storedScheme = localStorage.getItem("colorScheme") as ColorScheme;
+			if (
+				storedScheme &&
+				[
+					"blue",
+					"green",
+					"orange",
+					"artisticGreen",
+					"graphite",
+					"roseGold",
+					"midnight",
+					"burgundy",
+					"zenith",
+				].includes(storedScheme)
+			) {
+				return storedScheme;
+			}
+		}
+		return "zenith";
+	});
+	const [mode, setModeInternal] = useState<Mode>("light");
+	const [mounted, setMounted] = useState(false);
 
-  const [appTokensState, setAppTokensState] = useState<AppColorTokens>(() => {
-    // Default to 'zenith' for initial tokens as well
-    const initialAppTokens = createAppColorTokens("zenith", "light");
-    updateAppColorTokens(initialAppTokens);
-    return initialAppTokens;
-  });
+	const [appTokensState, setAppTokensState] = useState<AppColorTokens>(() => {
+		const initialAppTokens = createAppColorTokens("zenith", "light");
+		updateAppColorTokens(initialAppTokens);
+		return initialAppTokens;
+	});
+	//#endregion
 
+	//#region [computed] - Valores derivados
+	// 🔧 DECISIÓN: Calcular el nombre del tema CSS basado en colorScheme + mode
+	const theme =
+		mode === "dark" ?
+			colorScheme === "burgundy" ?
+				"theme-burgundyDark"
+			:	"dark"
+		: colorScheme === "blue" ? "light"
+		: `theme-${colorScheme}`;
+	//#endregion
 
+	//#region [handlers] - 🔄 FUNCIONES DE ACTUALIZACIÓN
+	// 🔄 HELPER: Evitar problemas de hidratación SSR
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
-  const theme =
-    mode === "dark"
-      ? colorScheme === "burgundy" ? "theme-burgundyDark" : "dark" // Manejo específico para burgundyDark
-      : colorScheme === "blue"
-      ? "light"
-      : `theme-${colorScheme}`;
+	// 💎 CORE: Actualiza todos los tokens cuando cambia tema/modo
+	// 🔧 DECISIÓN: Esta es LA función que regenera tokens - se llama pocas veces
+	const updateAllTokens = (newColorScheme: ColorScheme, newMode: Mode) => {
+		const newAppTokens = createAppColorTokens(newColorScheme, newMode);
+		setAppTokensState(newAppTokens);
+		updateAppColorTokens(newAppTokens);
+	};
 
-  // Evitar problemas de hidratación
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+	const handleSetColorScheme = (newColorScheme: ColorScheme) => {
+		setColorSchemeInternal(newColorScheme);
+		updateAllTokens(newColorScheme, mode);
 
-  const updateAllTokens = (newColorScheme: ColorScheme, newMode: Mode) => {
-    const newAppTokens = createAppColorTokens(newColorScheme, newMode);
-    setAppTokensState(newAppTokens);
-    updateAppColorTokens(newAppTokens);
+		// Emitir evento para que AuthProvider guarde en la base de datos
+		document.dispatchEvent(
+			new CustomEvent("theme-preference-change", {
+				detail: {
+					theme: newColorScheme,
+					isDarkMode: mode === "dark",
+				},
+			}),
+		);
+	};
 
+	const handleSetMode = (newMode: Mode) => {
+		setModeInternal(newMode);
+		updateAllTokens(colorScheme, newMode);
 
-  };
+		// Emitir evento para que AuthProvider guarde en la base de datos
+		document.dispatchEvent(
+			new CustomEvent("theme-preference-change", {
+				detail: {
+					theme: colorScheme,
+					isDarkMode: newMode === "dark",
+				},
+			}),
+		);
+	};
 
-  const handleSetColorScheme = (newColorScheme: ColorScheme) => {
-    setColorSchemeInternal(newColorScheme);
-    updateAllTokens(newColorScheme, mode);
+	// 💎 CORE: Mapeo declarativo de temas → {colorScheme, mode}
+	// 🔧 DECISIÓN: Extensible sin tocar lógica - solo agregar entrada al mapa
+	const THEME_MAP: Record<string, { colorScheme: ColorScheme; mode: Mode }> = {
+		dark: { colorScheme: colorScheme, mode: "dark" }, // Mantiene colorScheme actual
+		light: { colorScheme: "blue", mode: "light" },
+		"theme-green": { colorScheme: "green", mode: "light" },
+		"theme-orange": { colorScheme: "orange", mode: "light" },
+		"theme-artisticGreen": { colorScheme: "artisticGreen", mode: "light" },
+		"theme-graphite": { colorScheme: "graphite", mode: "light" },
+		"theme-roseGold": { colorScheme: "roseGold", mode: "light" },
+		"theme-midnight": { colorScheme: "midnight", mode: "dark" },
+		"theme-burgundy": { colorScheme: "burgundy", mode: "light" },
+		"theme-burgundyDark": { colorScheme: "burgundy", mode: "dark" },
+		"theme-zenith": { colorScheme: "zenith", mode: "light" },
+		"theme-coral": { colorScheme: "coral", mode: "light" },
+		"theme-ocean": { colorScheme: "ocean", mode: "light" },
+	};
 
-    // Emitir evento para que AuthProvider guarde en la base de datos
-    document.dispatchEvent(
-      new CustomEvent("theme-preference-change", {
-        detail: {
-          theme: newColorScheme,
-          isDarkMode: mode === "dark",
-        },
-      })
-    );
-  };
+	const setTheme = (newTheme: string) => {
+		const mapping = THEME_MAP[newTheme];
 
-  const handleSetMode = (newMode: Mode) => {
-    setModeInternal(newMode);
-    updateAllTokens(colorScheme, newMode);
+		// 🔄 HELPER: Si no hay mapeo, aplicar modo dark/light manteniendo colorScheme
+		const newMode: Mode =
+			mapping?.mode ?? (newTheme === "dark" ? "dark" : mode);
+		const newColorScheme: ColorScheme = mapping?.colorScheme ?? colorScheme;
 
-    // Emitir evento para que AuthProvider guarde en la base de datos
-    document.dispatchEvent(
-      new CustomEvent("theme-preference-change", {
-        detail: {
-          theme: colorScheme,
-          isDarkMode: newMode === "dark",
-        },
-      })
-    );
-  };
+		setModeInternal(newMode);
+		setColorSchemeInternal(newColorScheme);
+		updateAllTokens(newColorScheme, newMode);
 
-  const setTheme = (newTheme: string) => {
-    let newMode: Mode = mode;
-    let newColorScheme: ColorScheme = colorScheme;
+		// 🔄 EVENTO: Notificar a AuthProvider para persistir en BD
+		document.dispatchEvent(
+			new CustomEvent("theme-preference-change", {
+				detail: {
+					theme: newColorScheme,
+					isDarkMode: newMode === "dark",
+				},
+			}),
+		);
+	};
+	//#endregion
 
-    if (newTheme === "dark") {
-      newMode = "dark";
-    } else if (newTheme === "light") {
-      newMode = "light";
-      newColorScheme = "blue";
-    } else if (newTheme === "theme-green") {
-      newMode = "light";
-      newColorScheme = "green";
-    } else if (newTheme === "theme-orange") {
-      newMode = "light";
-      newColorScheme = "orange";
-    } else if (newTheme === "theme-artisticGreen") {
-      newMode = "light";
-      newColorScheme = "artisticGreen";
-    } else if (newTheme === "theme-graphite") {
-      newMode = "light";
-      newColorScheme = "graphite";
-    } else if (newTheme === "theme-roseGold") {
-      newMode = "light";
-      newColorScheme = "roseGold";
-    } else if (newTheme === "theme-midnight") { // Midnight es inherentemente oscuro
-      newMode = "dark";
-      newColorScheme = "midnight";
-    } else if (newTheme === "theme-burgundy") {
-      newMode = "light";
-      newColorScheme = "burgundy";
-    } else if (newTheme === "theme-burgundyDark") {
-      newMode = "dark";
-      newColorScheme = "burgundy"; // El colorScheme base es burgundy, el modo lo hace dark
-    }
-    setModeInternal(newMode);
-    setColorSchemeInternal(newColorScheme);
-    updateAllTokens(newColorScheme, newMode);
+	//#region [effects] - 🔄 EFECTOS DE SINCRONIZACIÓN
+	// 🔄 EFFECT: Escuchar eventos de cambio de tema desde AuthProvider
+	useEffect(() => {
+		if (!mounted) return;
 
-    // Emitir evento para que AuthProvider guarde en la base de datos
-    document.dispatchEvent(
-      new CustomEvent("theme-preference-change", {
-        detail: {
-          theme: newColorScheme,
-          isDarkMode: newMode === "dark",
-        },
-      })
-    );
-  };
+		const handleThemeChange = (e: CustomEvent) => {
+			const { theme, isDarkMode } = e.detail;
+			console.log(`📣 Evento theme-change recibido:`, e.detail);
 
-  // Escuchar eventos de cambio de tema desde el AuthProvider
-  useEffect(() => {
-    if (!mounted) return;
+			// Normalizar el tema (eliminar espacios en blanco)
+			const themeNormalized = typeof theme === "string" ? theme.trim() : theme;
 
-    const handleThemeChange = (e: CustomEvent) => {
-      const { theme, isDarkMode } = e.detail;
-      console.log(`📣 Evento theme-change recibido:`, e.detail);
+			console.log(`🔄 Tema normalizado: "${themeNormalized}"`);
 
-      // Normalizar el tema (eliminar espacios en blanco)
-      const themeNormalized = typeof theme === "string" ? theme.trim() : theme;
+			// Mapear el tema recibido a los valores internos del ThemeProvider
+			let newColorScheme: ColorScheme = "blue";
+			if (themeNormalized === "green") newColorScheme = "green";
+			if (themeNormalized === "orange") newColorScheme = "orange";
+			if (themeNormalized === "artisticGreen") newColorScheme = "artisticGreen";
+			if (themeNormalized === "graphite") newColorScheme = "graphite";
+			if (themeNormalized === "roseGold") newColorScheme = "roseGold";
+			if (themeNormalized === "midnight") newColorScheme = "midnight";
+			if (themeNormalized === "burgundy") newColorScheme = "burgundy";
 
-      console.log(`🔄 Tema normalizado: "${themeNormalized}"`);
+			// Establecer el modo según el valor de isDarkMode
+			const newMode: Mode = isDarkMode ? "dark" : "light";
 
-      // Mapear el tema recibido a los valores internos del ThemeProvider
-      let newColorScheme: ColorScheme = "blue";
-      if (themeNormalized === "green") newColorScheme = "green";
-      if (themeNormalized === "orange") newColorScheme = "orange";
-      if (themeNormalized === "artisticGreen") newColorScheme = "artisticGreen";
-      if (themeNormalized === "graphite") newColorScheme = "graphite";
-      if (themeNormalized === "roseGold") newColorScheme = "roseGold";
-      if (themeNormalized === "midnight") newColorScheme = "midnight";
-      if (themeNormalized === "burgundy") newColorScheme = "burgundy";
+			console.log(`✅ Aplicando tema: ${newColorScheme}, modo: ${newMode}`);
 
-      // Establecer el modo según el valor de isDarkMode
-      const newMode: Mode = isDarkMode ? "dark" : "light";
+			// Actualizar estado y tokens
+			setColorSchemeInternal(newColorScheme);
+			setModeInternal(newMode);
+			updateAllTokens(newColorScheme, newMode);
+		};
 
-      console.log(`✅ Aplicando tema: ${newColorScheme}, modo: ${newMode}`);
+		// Añadir el event listener con tipado correcto
+		document.addEventListener(
+			"theme-change",
+			handleThemeChange as EventListener,
+		);
 
-      // Actualizar estado y tokens
-      setColorSchemeInternal(newColorScheme);
-      setModeInternal(newMode);
-      updateAllTokens(newColorScheme, newMode);
-    };
+		// Limpiar el event listener
+		return () => {
+			document.removeEventListener(
+				"theme-change",
+				handleThemeChange as EventListener,
+			);
+		};
+	}, [mounted]);
 
-    // Añadir el event listener con tipado correcto
-    document.addEventListener(
-      "theme-change",
-      handleThemeChange as EventListener
-    );
+	useEffect(() => {
+		updateAllTokens(colorScheme, mode);
+	}, [colorScheme, mode]);
 
-    // Limpiar el event listener
-    return () => {
-      document.removeEventListener(
-        "theme-change",
-        handleThemeChange as EventListener
-      );
-    };
-  }, [mounted]);
+	useEffect(() => {
+		if (!mounted) return;
 
-  useEffect(() => {
-    updateAllTokens(colorScheme, mode);
-  }, [colorScheme, mode]);
+		let initialColorScheme = "zenith" as ColorScheme; // Default for new users
+		let initialMode = "light" as Mode;
 
-  useEffect(() => {
-    if (!mounted) return;
+		try {
+			const storedColorScheme = localStorage.getItem(
+				"colorScheme",
+			) as ColorScheme;
+			const storedMode = localStorage.getItem("mode") as Mode;
 
-    let initialColorScheme = "zenith" as ColorScheme; // Default for new users
-    let initialMode = "light" as Mode;
+			if (
+				storedColorScheme &&
+				[
+					"blue",
+					"green",
+					"orange",
+					"artisticGreen",
+					"graphite",
+					"roseGold",
+					"midnight",
+					"burgundy",
+					"zenith",
+				].includes(storedColorScheme)
+			) {
+				initialColorScheme = storedColorScheme;
+			}
 
-    try {
-      const storedColorScheme = localStorage.getItem(
-        "colorScheme"
-      ) as ColorScheme;
-      const storedMode = localStorage.getItem("mode") as Mode;
+			if (storedMode && ["light", "dark"].includes(storedMode)) {
+				initialMode = storedMode;
+			} else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+				initialMode = "dark";
+			}
+		} catch (error) {
+			console.error("Error reading from localStorage:", error);
+		}
 
-      if (
-        storedColorScheme &&
-        ["blue", "green", "orange", "artisticGreen", "graphite", "roseGold", "midnight", "burgundy", "zenith"].includes(storedColorScheme)
-      ) {
-        initialColorScheme = storedColorScheme;
-      }
+		setColorSchemeInternal(initialColorScheme);
+		setModeInternal(initialMode);
+	}, [mounted]);
 
-      if (storedMode && ["light", "dark"].includes(storedMode)) {
-        initialMode = storedMode;
-      } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        initialMode = "dark";
-      }
-    } catch (error) {
-      console.error("Error reading from localStorage:", error);
-    }
+	useEffect(() => {
+		if (!mounted) return;
 
-    setColorSchemeInternal(initialColorScheme);
-    setModeInternal(initialMode);
-  }, [mounted]);
+		try {
+			const root = window.document.documentElement;
+			root.classList.remove(
+				"dark",
+				"theme-blue",
+				"theme-green",
+				"theme-orange",
+				"theme-artisticGreen",
+				"theme-graphite",
+				"theme-roseGold",
+				"theme-midnight",
+				"theme-burgundy",
+				"theme-burgundyDark",
+				"theme-zenith",
+				"theme-zenithDark",
+			);
 
-  useEffect(() => {
-    if (!mounted) return;
+			if (mode === "dark") {
+				root.classList.add("dark");
+			}
 
-    try {
-      const root = window.document.documentElement;
-      root.classList.remove(
-        "dark",
-        "theme-blue",
-        "theme-green",
-        "theme-orange",
-        "theme-artisticGreen",
-        "theme-graphite",
-        "theme-roseGold",
-        "theme-midnight",
-        "theme-burgundy",
-        "theme-burgundyDark",
-        "theme-zenith",
-        "theme-zenithDark"
-      );
+			// Aplicar clase de tema específico si no es el azul por defecto en modo claro
+			// o si es un tema que tiene su propia variante oscura (como midnight o burgundyDark)
+			if (mode === "dark") {
+				if (colorScheme === "midnight") {
+					root.classList.add("theme-midnight");
+				} else if (colorScheme === "burgundy") {
+					root.classList.add("theme-burgundyDark");
+				} else if (colorScheme === "zenith") {
+					root.classList.add("theme-zenithDark");
+				} else {
+					// Para otros esquemas en modo oscuro, solo se aplica la clase 'dark'
+					// y se confía en las variables CSS definidas para el modo oscuro de esos temas.
+				}
+			} else {
+				// Modo Claro
+				if (colorScheme !== "blue") {
+					root.classList.add(`theme-${colorScheme}`);
+				}
+			}
 
-      if (mode === "dark") {
-        root.classList.add("dark");
-      }
+			localStorage.setItem("colorScheme", colorScheme);
+			localStorage.setItem("mode", mode);
 
-      // Aplicar clase de tema específico si no es el azul por defecto en modo claro
-      // o si es un tema que tiene su propia variante oscura (como midnight o burgundyDark)
-      if (mode === "dark") {
-        if (colorScheme === "midnight") {
-          root.classList.add("theme-midnight");
-        } else if (colorScheme === "burgundy") {
-          root.classList.add("theme-burgundyDark");
-        } else if (colorScheme === "zenith") {
-          root.classList.add("theme-zenithDark");
-        } else {
-          // Para otros esquemas en modo oscuro, solo se aplica la clase 'dark'
-          // y se confía en las variables CSS definidas para el modo oscuro de esos temas.
-        }
-      } else { // Modo Claro
-        if (colorScheme !== "blue") {
-          root.classList.add(`theme-${colorScheme}`);
-        }
-      }
+			console.log(
+				`🎉 Tema aplicado completamente: ${colorScheme}, modo: ${mode}`,
+			);
+		} catch (error) {
+			console.error("Error updating documentElement or localStorage:", error);
+		}
+	}, [colorScheme, mode, mounted]);
+	//#endregion
 
-      localStorage.setItem("colorScheme", colorScheme);
-      localStorage.setItem("mode", mode);
+	//#region [render] - 🎨 RENDER
+	const value = {
+		colorScheme,
+		mode,
+		setColorScheme: handleSetColorScheme,
+		setMode: handleSetMode,
+		appColorTokens: appTokensState,
+		theme,
+		setTheme,
+	};
 
-      console.log(
-        `🎉 Tema aplicado completamente: ${colorScheme}, modo: ${mode}`
-      );
-    } catch (error) {
-      console.error("Error updating documentElement or localStorage:", error);
-    }
-  }, [colorScheme, mode, mounted]);
-
-  const value = {
-    colorScheme,
-    mode,
-    setColorScheme: handleSetColorScheme,
-    setMode: handleSetMode,
-    appColorTokens: appTokensState,
-    theme,
-    setTheme,
-  };
-
-  return (
-    <ThemeContext.Provider value={value}>
-      <AnimatePresence mode="wait">{children}</AnimatePresence>
-    </ThemeContext.Provider>
-  );
+	return (
+		<ThemeContext.Provider value={value}>
+			<AnimatePresence mode="wait">{children}</AnimatePresence>
+		</ThemeContext.Provider>
+	);
+	//#endregion
 }
+//#endregion
 
+//#region [hook] - 🪝 CUSTOM HOOK
+// 🚀 ENTRY POINT: Hook para consumir el contexto de tema
 export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-  return context;
+	const context = useContext(ThemeContext);
+	if (context === undefined) {
+		// ⚠️ Error visible (política anti-callbacks silenciosos)
+		throw new Error("useTheme must be used within a ThemeProvider");
+	}
+	return context;
 };
+//#endregion

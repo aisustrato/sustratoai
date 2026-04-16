@@ -9,7 +9,8 @@ import { StandardButton } from "@/components/ui/StandardButton";
 
 const SAMPLE_ABSTRACT_FULL = `En este estudio exhaustivo, exploramos la convergencia de la inteligencia artificial y la filosofía posestructuralista, un campo emergente que desafía las nociones tradicionales de subjetividad y conocimiento en la era digital. Analizamos cómo estas tecnologías no solo procesan información, sino que reconfiguran activamente los paisajes semióticos. La investigación se centra en la "agencia difusa" de las IA, argumentando que su capacidad para crear narrativas las posiciona como actores semi-autónomos. Examinamos críticamente el concepto de "verdad" en un mundo saturado de información generada algorítmicamente, proponiendo marcos para una deconstrucción rigurosa de los sesgos inherentes a los grandes modelos de lenguaje.`;
 
-const SAMPLE_ABSTRACT_TRUNCATED = SAMPLE_ABSTRACT_FULL.substring(0, 150) + "...";
+const SAMPLE_ABSTRACT_TRUNCATED =
+	SAMPLE_ABSTRACT_FULL.substring(0, 150) + "...";
 
 export default function StandardTooltipShowroomPage() {
 	return (
@@ -40,18 +41,23 @@ export default function StandardTooltipShowroomPage() {
 						Variantes y Posiciones
 					</StandardText>
 					<div className="flex flex-wrap items-center gap-6 mt-4 p-6 border rounded-lg bg-neutral-softBg dark:bg-neutral-softBgDark">
-						<StandardTooltip trigger={<StandardButton>Hover Me (Top)</StandardButton>}>
+						<StandardTooltip
+							trigger={<StandardButton>Hover Me (Top)</StandardButton>}>
 							Tooltip en la parte superior
 						</StandardTooltip>
 						<StandardTooltip
-							trigger={<StandardButton styleType="outline">Hover Me (Right)</StandardButton>}
-                            side="right"
-                            colorScheme="secondary">
+							trigger={
+								<StandardButton styleType="outline">
+									Hover Me (Right)
+								</StandardButton>
+							}
+							side="right"
+							colorScheme="secondary">
 							Tooltip a la derecha
 						</StandardTooltip>
 					</div>
 				</section>
-                
+
 				{/* SECCIÓN 2: MODO TEXTO LARGO (isLongText) */}
 				<section>
 					<StandardText preset="subheading" size="xl" className="mb-4">
@@ -69,8 +75,7 @@ export default function StandardTooltipShowroomPage() {
 									</div>
 								}
 								isLongText={true}
-								colorScheme="neutral"
-                                isAccentuated={false}>
+								colorScheme="neutral">
 								<div className="prose prose-sm dark:prose-invert max-w-none p-2">
 									<h4 className="text-lg font-bold mb-2">Abstract Completo</h4>
 									<p>{SAMPLE_ABSTRACT_FULL}</p>

@@ -250,3 +250,111 @@ export async function listEligibleArticlesForPhase(
 		return { success: false, error: `Error interno del servidor: ${(error as Error).message}` };
     }
 }
+
+// ========================================================================
+// 	ACCIÓN 4: OBTENER ABSTRACT ALEATORIO DEL UNIVERSO ELEGIBLE DE UNA FASE
+// ========================================================================
+export async function getRandomEligibleArticleAbstract(
+    phaseId: string
+): Promise<ResultadoOperacion<{ abstract: string; title: string; articleId: string }>> {
+    const opId = `GREAA-${Math.floor(Math.random() * 10000)}`;
+    console.log(`🎲 [${opId}] Obteniendo abstract aleatorio del universo elegible para fase: ${phaseId}`);
+
+    if (!phaseId) {
+        return { success: false, error: "Se requiere un ID de fase válido.", errorCode: "MISSING_PHASE_ID" };
+    }
+
+    try {
+        const supabase = await createSupabaseServerClient();
+
+        // 1. Contar artículos elegibles en esta fase
+        const { count, error: countError } = await supabase
+            .from('phase_eligible_articles')
+            .select('*', { count: 'exact', head: true })
+            .eq('phase_id', phaseId);
+
+        if (countError) {
+            return { success: false, error: `Error al contar artículos elegibles: ${countError.message}` };
+        }
+
+        if (!count || count === 0) {
+            return { success: false, error: "No hay artículos en el universo elegible de esta fase.", errorCode: "EMPTY_UNIVERSE" };
+        }
+
+        // 2. Seleccionar uno al azar usando offset random
+        const randomOffset = Math.floor(Math.random() * count);
+
+        const { data, error: fetchError } = await supabase
+            .from('phase_eligible_articles')
+            .select(`
+                article_id,
+                articles (
+                    id,
+                    title,
+                    abstract
+                )
+            `)
+            .eq('phase_id', phaseId)
+            .range(randomOffset, randomOffset)
+            .limit(1)
+            .single();
+
+        if (fetchError) {
+            return { success: false, error: `Error al obtener artículo aleatorio: ${fetchError.message}` };
+        }
+
+        // Type assertion para el join
+        const article = (data as unknown as { article_id: string; articles: { id: string; title: string; abstract: string | null } }).articles;
+
+        if (!article || !article.abstract) {
+            // Si el artículo seleccionado no tiene abstract, reintentar una vez
+            console.warn(`[${opId}] Artículo sin abstract, reintentando...`);
+            const retryOffset = Math.floor(Math.random() * count);
+            const { data: retryData, error: retryError } = await supabase
+                .from('phase_eligible_articles')
+                .select(`
+                    article_id,
+                    articles (
+                        id,
+                        title,
+                        abstract
+                    )
+                `)
+                .eq('phase_id', phaseId)
+                .not('articles.abstract', 'is', null)
+                .range(retryOffset, retryOffset)
+                .limit(1)
+                .single();
+
+            if (retryError || !retryData) {
+                return { success: false, error: "No se encontró un artículo con abstract en el universo elegible." };
+            }
+
+            const retryArticle = (retryData as unknown as { article_id: string; articles: { id: string; title: string; abstract: string } }).articles;
+            
+            console.log(`🎉 [${opId}] ÉXITO (reintento): Abstract obtenido de "${retryArticle.title}"`);
+            return {
+                success: true,
+                data: {
+                    abstract: retryArticle.abstract,
+                    title: retryArticle.title,
+                    articleId: retryArticle.id,
+                },
+            };
+        }
+
+        console.log(`🎉 [${opId}] ÉXITO: Abstract obtenido de "${article.title}"`);
+        return {
+            success: true,
+            data: {
+                abstract: article.abstract,
+                title: article.title,
+                articleId: article.id,
+            },
+        };
+
+    } catch (error) {
+        console.error(`❌ [${opId}] Excepción en getRandomEligibleArticleAbstract:`, error);
+        return { success: false, error: `Error interno del servidor: ${(error as Error).message}` };
+    }
+}

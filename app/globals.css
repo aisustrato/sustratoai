@@ -4,6 +4,28 @@
 
 @layer utilities {
   /*
+    🌸 ONTOLOGÍA VISUAL SUSTRATO.AI
+    --------------------------------
+    Animaciones orgánicas que dan vida a la interfaz
+  */
+  
+  /* Breathing: Sutil pulso para CTAs importantes - humanismo digital */
+  .animate-subtle-pulse {
+    animation: subtle-pulse 3s ease-in-out infinite;
+  }
+  
+  @keyframes subtle-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 currentColor;
+      opacity: 1;
+    }
+    50% {
+      box-shadow: 0 0 0 4px transparent;
+      opacity: 0.92;
+    }
+  }
+
+  /*
     SCROLLBAR PERSONALIZADA
     -----------------------
     Una barra de scroll sutil y themable para usar en toda la app.

@@ -1,131 +1,166 @@
-import {
-  colors,
-  type ColorShade,
-  type ThemeColors as RawThemeColors,
-} from "./colors";
+// 📍 lib/theme/ColorToken.ts
+// 🎯 PROPÓSITO: Agregador central de tokens de color para la aplicación
+// 🔧 DECISIÓN: Combina paletas de tema (primary/secondary/tertiary) + semánticas (success/warning/danger)
+// ⚠️ ADVERTENCIA: Este archivo es el NÚCLEO del sistema de tokens. Cambios aquí afectan TODA la UI.
+//    Referencia: advertencia.txt → "nunca modifiques color-tokens.ts"
 
+//#region [imports] - 📦 IMPORTS
+import {
+	colors,
+	type ColorShade,
+	type ThemeColors as RawThemeColors,
+} from "./colors";
+//#endregion
+
+//#region [types] - 🎨 TIPOS Y ESQUEMAS
 export type { ColorShade };
 
-export type ColorScheme = "blue" | "green" | "orange" | "artisticGreen" | "graphite" | "roseGold" | "midnight" | "burgundy" | "zenith";
+// 🎨 Esquemas de color disponibles (temas visuales de la app)
+export type ColorScheme =
+	| "blue"
+	| "green"
+	| "orange"
+	| "artisticGreen"
+	| "graphite"
+	| "roseGold"
+	| "midnight"
+	| "burgundy"
+	| "zenith"
+	| "coral"
+	| "ocean";
+
+// 🎨 Modos de visualización
 export type Mode = "light" | "dark";
-export type ColorSchemeVariant = 'primary' | 'secondary' | 'tertiary' | 'accent' | 'neutral' | 'white' | 'success' | 'warning' | 'danger';
-// Definición de variantes válidas para ProCard y como claves en AppColorTokens
+
+// 🎨 Variantes semánticas para componentes (lo que los componentes conocen)
+export type ColorSchemeVariant =
+	| "primary"
+	| "secondary"
+	| "tertiary"
+	| "accent"
+	| "neutral"
+	| "white"
+	| "success"
+	| "warning"
+	| "danger";
+
+// 🎨 Variantes para ProCard (subset de ColorSchemeVariant)
 export type ProCardVariant =
-  | "primary"
-  | "secondary"
-  | "tertiary"
-  | "accent"
-  | "success"
-  | "warning"
-  | "danger"
-  | "neutral"
-  | "white";
-//test
-/**
- * Estructura de los tokens de color simplificados que consumirán los componentes refactorizados.
- * Proporciona un acceso directo a las paletas principales del tema activo.
- */
-export type ColorShadeName = "pure" | "text" | "textShade" | "bg" | "contrastText" | "subtle";
+	| "primary"
+	| "secondary"
+	| "tertiary"
+	| "accent"
+	| "success"
+	| "warning"
+	| "danger"
+	| "neutral"
+	| "white";
+
+// 🎨 Nombres de shades disponibles en cada paleta
+export type ColorShadeName =
+	| "pure"
+	| "text"
+	| "textShade"
+	| "bg"
+	| "contrastText"
+	| "subtle";
+
+// 💎 CORE: Estructura de tokens que consumen TODOS los componentes
+// 🔧 DECISIÓN: Los componentes son AGNÓSTICOS - solo conocen estas claves, no los valores hex
 export type AppColorTokens = {
-  // Paletas del tema principal (ej. azul, verde, naranja)
-  primary: ColorShade;
-  secondary: ColorShade;
-  tertiary: ColorShade;
+	// Paletas del tema principal (ej. azul, verde, naranja)
+	primary: ColorShade;
+	secondary: ColorShade;
+	tertiary: ColorShade;
 
-  // Paletas semánticas globales (accent, success, etc.)
-  accent: ColorShade;
-  success: ColorShade;
-  warning: ColorShade;
-  danger: ColorShade;
-  neutral: ColorShade; // Paleta neutral unificada (anteriormente también en semantic.neutral)
-  white: ColorShade;
-
-  // Podrías añadir aquí tokens específicos de UI que no encajan en ColorShade
-  // Por ejemplo:
-  // bodyBackground: string;
-  // bodyText: string;
-  // focusRing: string;
+	// Paletas semánticas globales (accent, success, etc.)
+	accent: ColorShade;
+	success: ColorShade;
+	warning: ColorShade;
+	danger: ColorShade;
+	neutral: ColorShade;
+	white: ColorShade;
 };
+//#endregion
 
+// #region [helpers] - 🔄 FUNCIONES AUXILIARES
+// 🔄 HELPER: Obtiene la paleta de tema según colorScheme + mode
 function getThemePalette(colorScheme: ColorScheme, mode: Mode): RawThemeColors {
-  const themeKey = mode === "dark" ? `${colorScheme}Dark` : colorScheme;
-  const palette = colors.themes[themeKey as keyof typeof colors.themes];
+	const themeKey = mode === "dark" ? `${colorScheme}Dark` : colorScheme;
+	const palette = colors.themes[themeKey as keyof typeof colors.themes];
 
-  if (!palette) {
-    console.warn(
-      `[ColorToken] Theme palette not found for themeKey: ${themeKey}. Falling back to blue light.`
-    );
-    return colors.themes.blue; // Fallback seguro
-  }
-  return palette;
+	if (!palette) {
+		// ⚠️ Error visible (política anti-callbacks silenciosos)
+		console.warn(
+			`[ColorToken] Theme palette not found for themeKey: ${themeKey}. Falling back to blue light.`,
+		);
+		return colors.themes.blue;
+	}
+	return palette;
 }
 
+// 🔄 HELPER: Obtiene las paletas semánticas según el modo
 function getActiveSemanticShades(mode: Mode): {
-  accent: ColorShade;
-  success: ColorShade;
-  warning: ColorShade;
-  danger: ColorShade;
-  neutral: ColorShade;
-  white: ColorShade;
+	accent: ColorShade;
+	success: ColorShade;
+	warning: ColorShade;
+	danger: ColorShade;
+	neutral: ColorShade;
+	white: ColorShade;
 } {
-  return {
-    accent:
-      mode === "dark" ? colors.semantic.accentDark : colors.semantic.accent,
-    success:
-      mode === "dark" ? colors.semantic.successDark : colors.semantic.success,
-    warning:
-      mode === "dark" ? colors.semantic.warningDark : colors.semantic.warning,
-    danger:
-      mode === "dark" ? colors.semantic.dangerDark : colors.semantic.danger,
-    neutral:
-      mode === "dark" ? colors.semantic.neutralDark : colors.semantic.neutral,
-    white: mode === "dark" ? colors.semantic.whiteDark : colors.semantic.white,
-  };
+	return {
+		accent:
+			mode === "dark" ? colors.semantic.accentDark : colors.semantic.accent,
+		success:
+			mode === "dark" ? colors.semantic.successDark : colors.semantic.success,
+		warning:
+			mode === "dark" ? colors.semantic.warningDark : colors.semantic.warning,
+		danger:
+			mode === "dark" ? colors.semantic.dangerDark : colors.semantic.danger,
+		neutral:
+			mode === "dark" ? colors.semantic.neutralDark : colors.semantic.neutral,
+		white: mode === "dark" ? colors.semantic.whiteDark : colors.semantic.white,
+	};
 }
+//
 
-/**
- * Crea el conjunto de tokens de color simplificados para la aplicación,
- * basado en el esquema de color y el modo seleccionados.
- */
+//#region [core] - 🚀 FUNCIÓN PRINCIPAL
+// 🚀 ENTRY POINT: Crea el conjunto de tokens para la aplicación
+// 🔧 DECISIÓN: Esta función se llama 1 vez al inicio y cada vez que cambia tema/modo
 export function createAppColorTokens(
-  colorScheme: ColorScheme,
-  mode: Mode
+	colorScheme: ColorScheme,
+	mode: Mode,
 ): AppColorTokens {
-  const themePalette = getThemePalette(colorScheme, mode);
-  const activeSemanticShades = getActiveSemanticShades(mode);
+	const themePalette = getThemePalette(colorScheme, mode);
+	const activeSemanticShades = getActiveSemanticShades(mode);
 
-  return {
-    // Paletas del tema
-    primary: themePalette.primary,
-    secondary: themePalette.secondary,
-    tertiary: themePalette.tertiary,
+	return {
+		// Paletas del tema (varían según colorScheme)
+		primary: themePalette.primary,
+		secondary: themePalette.secondary,
+		tertiary: themePalette.tertiary,
 
-
-    // Paletas semánticas
-    accent: activeSemanticShades.accent,
-    success: activeSemanticShades.success,
-    warning: activeSemanticShades.warning,
-    danger: activeSemanticShades.danger,
-    neutral: activeSemanticShades.neutral,
-    white: activeSemanticShades.white,
-  };
+		// Paletas semánticas (consistentes entre temas, varían con mode)
+		accent: activeSemanticShades.accent,
+		success: activeSemanticShades.success,
+		warning: activeSemanticShades.warning,
+		danger: activeSemanticShades.danger,
+		neutral: activeSemanticShades.neutral,
+		white: activeSemanticShades.white,
+	};
 }
+//#endregion
 
-/**
- * Variable global para acceder a los tokens de color activos de la aplicación.
- * Es actualizada por el ThemeProvider cuando cambia el tema o modo.
- */
+//#region [state] - 📦 ESTADO GLOBAL
+// ⚠️ ADVERTENCIA: Variable global - será reemplazada por Context en futura refactorización
+// 🔧 DECISIÓN: Mantenemos por retrocompatibilidad con código que aún no usa useTheme()
 export let appColorTokens: AppColorTokens = createAppColorTokens(
-  "blue",
-  "light"
+	"blue",
+	"light",
 );
 
-/**
- * Actualiza la variable global de tokens de color de la aplicación.
- * @param newTokens El nuevo conjunto de tokens a activar.
- */
+// 🔄 HELPER: Actualiza la variable global de tokens
 export function updateAppColorTokens(newTokens: AppColorTokens) {
-  appColorTokens = newTokens;
-  // Aquí podrías, opcionalmente, disparar eventos personalizados o actualizar
-  // variables CSS globales si tu sistema lo requiere para partes no-React.
+	appColorTokens = newTokens;
 }
+//#endregion
