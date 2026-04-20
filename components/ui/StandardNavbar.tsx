@@ -332,22 +332,22 @@ export function StandardNavbar() {
 			{
 				id: "cognetica-raiz",
 				label: "Cognética",
-				href: "/cognetica",
+				href: "/cognetica_old",
 				icon: (isActive) => createMenuIcon(Fingerprint, isActive),
 				submenu: [
 					{
 						label: "Cognética",
-						href: "/cognetica",
+						href: "/cognetica_old",
 						icon: (isActive) => createMenuIcon(Fingerprint, isActive),
 					},
 					{
 						label: "Jardines Cogneticos",
-						href: "/cognetica/jardines",
+						href: "/cognetica_old/jardines",
 						icon: (isActive) => createMenuIcon(Sprout, isActive),
 					},
 					{
 						label: "Minotauro - Escritura Híbrida",
-						href: "/cognetica/minotauro",
+						href: "/cognetica_old/minotauro",
 						icon: (isActive) => createMenuIcon(PenTool, isActive),
 					},
 				],
@@ -416,17 +416,17 @@ export function StandardNavbar() {
 			menuItems.push({
 				id: "cognetica",
 				label: "Cognética",
-				href: "/cognetica",
+				href: "/cognetica_old",
 				icon: (isActive) => createMenuIcon(Fingerprint, isActive),
 				submenu: [
 					{
 						label: "Dashboard",
-						href: "/cognetica",
+						href: "/cognetica_old",
 						icon: () => createMenuIcon(LayoutDashboard),
 					},
 					{
 						label: "Nuevo Artefacto",
-						href: "/cognetica/nuevo",
+						href: "/cognetica_old/nuevo",
 						icon: () => createMenuIcon(FileUp),
 					},
 				],

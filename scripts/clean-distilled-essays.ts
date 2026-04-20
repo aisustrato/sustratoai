@@ -2,7 +2,7 @@
 // 🎯 PROPÓSITO: Script para limpiar ensayos destilados envueltos en JSON
 // 🔧 USO: npx tsx scripts/clean-distilled-essays.ts
 
-import { cleanDistilledEssaysJSON } from '../lib/actions/cognetica-migration-clean-essays';
+import { cleanDistilledEssaysJSON } from '../lib/actions/cognetica-old-migration-clean-essays';
 
 async function main() {
     console.log('🧹 Iniciando limpieza de ensayos destilados...\n');

@@ -1,4 +1,4 @@
-//. 📍 app/cognetica/[id]/page.tsx
+//. 📍 app/cognetica/grupos/[id]/page.tsx
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
@@ -9,43 +9,36 @@ import { StandardAlert } from "@/components/ui/StandardAlert";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
-interface CogneticaArtefactoPageProps {
+interface CogneticaGrupoPageProps {
   params: Promise<{ id: string }>;
 }
 //#endregion ![def]
 
 //#region [main] - 🔧 COMPONENT 🔧
 /**
- * Vista de artefacto metabolizado — placeholder de Oleada 1.
- *
- * Cuando se implemente (§6.2 del requerimiento):
- *  - Header con tipo + estado (StandardBadge)
- *  - Metadata (fecha, tamaño, hash SHA-256 copiable, proyecto, grupo)
- *  - StandardAccordion con: contenido original, crónica, destilado, germinal
- *  - Botones "Regenerar crónica/destilado/germinal"
+ * Vista de grupo — placeholder de Oleada 1.
  */
-export default function CogneticaArtefactoPage({
-  params,
-}: CogneticaArtefactoPageProps) {
+export default function CogneticaGrupoPage({ params }: CogneticaGrupoPageProps) {
   const { id } = use(params);
 
   return (
     <div className="container mx-auto py-8">
       <StandardPageTitle
-        title="Artefacto"
+        title="Grupo"
         description={`ID: ${id}`}
         breadcrumbs={[
           { label: "Cognética", href: "/cognetica" },
-          { label: "Artefacto" },
+          { label: "Grupos", href: "/cognetica/grupos" },
+          { label: "Grupo" },
         ]}
-        showBackButton={{ href: "/cognetica" }}
+        showBackButton={{ href: "/cognetica/grupos" }}
       />
 
       <StandardAlert
         colorScheme="primary"
         styleType="subtle"
         className="mt-6"
-        message="Vista de artefacto pendiente — Oleada 1."
+        message="Vista de grupo pendiente — Oleada 1."
       />
     </div>
   );

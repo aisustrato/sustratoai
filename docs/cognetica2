@@ -1,0 +1,566 @@
+Requerimiento: Cognética Forense — Oleada 1
+Versión: 1.0 Fecha: 20 abril 2026 Autor humano: eRRRe (Rodolfo Leiva) Autor máquina: Hongo / Calibrador (Claude Opus 4.7) Destinatario: Agente de implementación (Windsurf) Contexto: NOSOTRAS · Ciclo 8 · Fi menor
+
+
+0. Filosofía de implementación (no-negociable)
+Este requerimiento existe porque el módulo Cognética v1 funcionó en uso pero creció orgánico a nivel técnico. El objetivo de v2 no es replicar más rápido — es rehacer con ingeniería donde antes había creativa acumulada. Esto tiene consecuencias operacionales que deben respetarse durante toda la implementación.
+0.1 Código elegante antes que código rápido
+"Hay una tendencia en la industria —Claude incluido— hacia la solución rápida, 'que compile rápido'. Nosotros queremos crear un producto robusto, mantenible, y eventualmente disponible como código libre. Tenemos que generar un código elegante en todos los sentidos." — eRRRe, 20 abril 2026
+
+Este proyecto tiene ambición open-source. Cada archivo que se escriba debe poder mostrarse sin vergüenza. Esto se traduce en:
+
+No hay "compila y listo". Un archivo termina cuando pasa linter, tipos son estrictos, imports están limpios, y la intención del código es legible sin comentarios excesivos.
+No hay "lo arreglamos después". Deuda técnica declarada sí; deuda técnica oculta no.
+Los comentarios explican por qué, no qué. Si el código necesita comentario para explicar qué hace, probablemente el código está mal escrito.
+Nombres honestos. Una función process() no dice nada. Una función generarCronicaDesdeArtefacto() sí.
+0.2 Entender los componentes Standard antes de usarlos
+"Los componentes Standard los entienda antes de usarlos. He visto muchas veces usar CSS tradicional cuando los componentes de por sí manejan modos de visualizarse por medio de props e inline: primary/secondary/tertiary y varias shades de texto incluido el degradado." — eRRRe
+
+Antes de escribir la primera línea de UI, Windsurf debe:
+
+Inspeccionar a fondo estos componentes (leer props, variantes, ejemplos de uso):
+
+StandardCard
+StandardPageTitle / StandardText
+StandardButton
+StandardFileUpload
+StandardFormField + StandardInput + StandardTextarea
+StandardMarkdownViewer
+StandardAccordion
+StandardBadge
+StandardAlert
+
+Revisar al menos una página bien construida bajo la ruta datos maestros (o equivalente en el repo) para ver el sistema Standard aplicado correctamente. Eso es la referencia de diseño.
+
+Usar styleType con valores del sistema (primary, secondary, tertiary) y las shades/degradados ya definidos. NO reinventar con CSS inline cuando el componente ya ofrece la prop.
+
+Prohibido:
+
+CSS inline (style={{...}}) excepto casos documentados y justificados
+Tailwind directo en componentes que ya tienen props de estilo
+Recrear lógica visual que ya está en un componente Standard
+
+Obligatorio:
+
+Si un componente Standard no hace exactamente lo que necesitas, primero revisar sus props. Segundo, preguntar si se puede extender. Último recurso: crear componente nuevo — y ese componente nuevo debe seguir la convención Standard.
+0.3 Linters, tipos, estructura
+TypeScript estricto, sin any salvo casos documentados
+ESLint debe pasar sin warnings
+Imports organizados (absolutos con @/, agrupados por origen)
+Estructura de archivos consistente con el resto del repo
+No dejar archivos muertos (imports sin uso, funciones no exportadas que no se llaman, etc.)
+0.4 Leer el SQL antes de escribir el TypeScript
+El archivo cognetica_v2_oleada_1.sql es el contrato. Los tipos en TypeScript deben reflejarlo exactamente. Si hay discrepancia entre SQL y TS, gana el SQL y se ajusta el TS.
+
+
+1. Alcance de Oleada 1
+1.1 Lo que entra
+Ingesta y persistencia:
+
+Subir artefactos de 6 tipos: audio, pdf_slides, pdf_informe, markdown, video, imagen
+Persistir contenido crudo a Supabase Storage
+Generar tríada SHA-256 (md + yaml + json) con hash canónico único del JSON
+Registrar en tablas cgt_* de Oleada 1
+
+Procesamiento específico por tipo:
+
+Audio: transcripción con Replicate WhisperX Large v3 (diarización incluida). Persistir segmentos en cgt_audio_segmentos
+Video: transcripción audio del video vía Replicate WhisperX. Persistir en cgt_video_segmentos. Extracción de frames clave fuera de Oleada 1 (difiere a Oleada 1.5)
+PDF slides: parsing con pdfjs-dist + pdf-lib, extracción de páginas. Estructura JSONB en cgt_artefactos_pdf_slides.paginas
+PDF informe: conversión a markdown preservando indentación. Detección de secciones → cgt_artefactos_pdf_informe.secciones
+Markdown: parseo de frontmatter YAML + detección de headers
+Imagen: almacenamiento + metadatos (ancho, alto, formato). Sin descripción IA en Oleada 1 — la columna descripcion_ia queda NULL por defecto. descripcion_humana editable manualmente desde UI
+
+Metabolización (los 3 formatos):
+
+Crónica: narrativa fiel del artefacto (20–30% del token count del original, piso 800, techo 8.000). Bloque opcional contracalibracion activable por flag
+Destilado: tesis + movimientos (3–5) + tensiones (1–2) + cita núcleo (1). Hard cap 1.500 tokens
+Germinal (parcial en Oleada 1): generar contenedor con resumen, contexto_snapshot, y contadores en 0. Capa A (resonancias) y Capa B (proyecciones) detalladas se difieren a Oleada 2. El system prompt del Germinal parcial debe generar resumen narrativo de conexiones potenciales sin estructura formal de resonancias.
+
+API a usar para metabolización: DeepSeek (Spectris) — ya configurada en v1, reutilizar cliente /lib/deepseek/api.ts y extender para prompts de los 3 formatos.
+
+Agrupación:
+
+Tabla cgt_grupos_artefactos operativa
+UI para crear grupo, asignar/desasignar artefactos
+Germinal de grupo (pseudo-artefacto conjunto) opcional desde UI
+
+UI:
+
+Página de ingesta (upload + selección de tipo + asignación a proyecto + grupo opcional)
+Vista de artefacto metabolizado (tríada + crónica + destilado + germinal)
+Lista de artefactos por proyecto con filtros básicos (tipo, fecha, estado)
+Componentes 100% Standard
+1.2 Lo que NO entra (explícito)
+Diferido a Oleada 2:
+
+Semillas fractales como entidad viva con normalización
+Vínculos semilla-artefacto con rastreabilidad
+Conceptos emergentes
+Resonancias detalladas (Capa A del Germinal)
+Proyecciones detalladas (Capa B del Germinal)
+Marcas de usuario transversales
+Triggers de peso cognitivo
+
+Diferido a Oleada 3:
+
+Tabla de citas rastreables
+Chat Quipu bibliotecario persistente (con registro de sesión, artefactos derivados)
+Vistas materializadas del mapa cognitivo
+
+Diferido a Oleada 1.5:
+
+Descripción IA de imágenes (Claude Vision u otra)
+Extracción de frames clave de video
+
+Fuera de alcance total:
+
+Pipeline de publicación a DMZ (vive en otro módulo)
+Exportación SHA-256 certificada (ya existe en v1, se mantiene)
+1.3 Principios de arquitectura respetados
+Todo el código debe respetar los siguientes principios del spec v0.2:
+
+Principio 3.0 — La inteligencia está en los datos. No ocultar estructura en el LLM. Todo lo relevante se persiste relacionalmente.
+Principio 3.1 — El humano itera sin fricción. Entidades editables directamente en Supabase Studio. UI de edición manual donde aplique (descripciones humanas, metadata).
+Principio 3.3 — Handshake humano/máquina. Los formatos son propuestos implícitamente; UI muestra claramente origen (LLM vs humano) con badges.
+Principio 3.5 — Procesar una vez, consultar infinitas. Metabolización al ingresar. Consultas posteriores leen tríada persistida, no re-procesan.
+Principio 3.6 — Equivalencia humano/máquina en representación. descripcion_humana tiene prioridad sobre descripcion_ia en vistas cuando ambas existen.
+Principio 3.7 — Rastreabilidad. Cada formato guarda generado_por, nodo_generador, modelo_ia, version_esquema, tokens input/output, costo USD.
+
+
+2. Estructura de archivos
+2.1 Rename y convivencia con v1
+Paso 1 (antes de escribir nada nuevo):
+
+/app/cognetica/              →  /app/cognetica_old/
+
+/lib/actions/cognetica-*.ts  →  /lib/actions/cognetica-old-*.ts
+
+/app/api/cognetica/          →  /app/api/cognetica_old/
+
+Esto preserva v1 funcional como fallback. Toda importación dentro de los archivos renombrados debe actualizarse (los paths internos siguen funcionando porque Next resuelve por ruta física).
+
+Paso 2 (nueva estructura):
+
+Ruta visible al usuario: /cognetica (se mantiene, el menú dice "Cognética"). Código interno: cognetica-forense-*.
+
+/app/cognetica/                                     ← ruta pública, UI nueva
+
+├── page.tsx                                        ← listado de artefactos del proyecto
+
+├── upload/
+
+│   └── page.tsx                                    ← UI de ingesta
+
+├── [id]/
+
+│   ├── page.tsx                                    ← vista de artefacto metabolizado
+
+│   └── components/
+
+│       ├── CronicaViewer.tsx
+
+│       ├── DestiladoViewer.tsx
+
+│       ├── GerminalViewer.tsx
+
+│       └── ArtefactoMetadata.tsx
+
+├── grupos/
+
+│   ├── page.tsx                                    ← listado de grupos
+
+│   └── [id]/page.tsx                               ← vista de grupo
+
+└── components/
+
+    ├── ArtefactoCard.tsx
+
+    ├── TipoArtefactoBadge.tsx
+
+    └── EstadoMetabolizacionBadge.tsx
+
+/lib/actions/
+
+├── cognetica-forense-ingesta-actions.ts            ← crear artefacto + storage + hash
+
+├── cognetica-forense-transcripcion-actions.ts     ← Replicate WhisperX
+
+├── cognetica-forense-pdf-actions.ts                ← parsing PDF slides/informe
+
+├── cognetica-forense-metabolizacion-actions.ts    ← DeepSeek: crónica/destilado/germinal
+
+├── cognetica-forense-grupos-actions.ts             ← CRUD grupos
+
+└── cognetica-forense-consulta-actions.ts           ← reads: listar, obtener, filtrar
+
+/lib/cognetica-forense/
+
+├── types.ts                                        ← tipos TS alineados al SQL
+
+├── hash.ts                                         ← utilidad SHA-256 del JSON canónico
+
+├── triada.ts                                       ← generación de md/yaml/json
+
+├── prompts/
+
+│   ├── cronica-prompt.ts
+
+│   ├── destilado-prompt.ts
+
+│   ├── germinal-prompt.ts
+
+│   └── contracalibracion-prompt.ts
+
+└── utils/
+
+    ├── json-canonical.ts                           ← serialización canónica determinística
+
+    └── token-counter.ts                            ← estimación de tokens por tipo
+
+/app/api/cognetica/
+
+├── upload/route.ts                                 ← multipart upload handler
+
+└── transcription/route.ts                          ← reutiliza /api/transcription/replicate
+
+Nota importante: el detalle de rutas arriba es orientativo. Windsurf debe adaptarlo a las convenciones reales del repo sustrato.ai. Lo que NO es negociable:
+
+Prefijo cognetica-forense- en archivos nuevos de /lib/actions/
+Ruta pública /cognetica (no /cognetica-forense, no /cognetica-v2)
+Separación limpia entre _old y código nuevo
+2.2 Convención de imports
+// Correcto
+
+import { createServerClient } from "@/lib/supabase";
+
+import { StandardCard, StandardButton } from "@/components/ui";
+
+import type { CgtArtefacto, CgtCronica } from "@/lib/cognetica-forense/types";
+
+// Incorrecto
+
+import { createServerClient } from "../../../lib/supabase";
+
+import StandardCard from "../../components/ui/StandardCard";
+
+
+3. Flujo de ingesta y metabolización
+3.1 Diagrama del flujo completo
+Usuario sube archivo
+
+        ↓
+
+UI valida tipo + tamaño
+
+        ↓
+
+Server Action: ingestaArtefacto(file, tipo, projectId, grupoId?)
+
+        ↓
+
+├─→ Supabase Storage: upload original
+
+│
+
+├─→ Procesamiento específico por tipo
+
+│   ├─ audio    → Replicate WhisperX (asíncrono) → segmentos
+
+│   ├─ video    → Replicate WhisperX (asíncrono) → segmentos_video
+
+│   ├─ pdf_slides → pdfjs parsing → paginas JSONB
+
+│   ├─ pdf_informe → pdfjs + markdown conversion → markdown_renderizado
+
+│   ├─ markdown → frontmatter + headers detection
+
+│   └─ imagen   → solo metadata (ancho, alto, formato)
+
+│
+
+├─→ Generar tríada canónica:
+
+│   ├─ JSON canónico (serialización determinística)
+
+│   ├─ YAML (metadata legible)
+
+│   └─ MD (representación humano-legible)
+
+│
+
+├─→ Calcular SHA-256 del JSON canónico
+
+│
+
+├─→ Insertar en cgt_artefactos (estado: 'ingresado')
+
+├─→ Insertar en cgt_artefactos_{tipo} (extensión específica)
+
+│
+
+├─→ Upload tríada a Storage (md, yaml, json separados)
+
+├─→ UPDATE cgt_artefactos SET storage_path_* = ...
+
+│
+
+└─→ Trigger metabolización (asíncrono):
+
+    ├─ estado = 'metabolizando'
+
+    ├─ generar Crónica (DeepSeek) → cgt_cronicas
+
+    ├─ generar Destilado (DeepSeek) → cgt_destilados
+
+    ├─ generar Germinal parcial (DeepSeek) → cgt_germinales
+
+    └─ estado = 'metabolizado'
+3.2 Consideraciones clave del flujo
+Transcripción asíncrona: Replicate WhisperX puede tardar varios minutos. NO bloquear la respuesta HTTP. Patrón:
+
+Ingesta retorna artefacto con estado = 'ingresado' inmediatamente
+Background job (Server Action en fire-and-forget, o cola si existe) llama a Replicate
+Cuando termina, actualiza artefacto + inserta segmentos + dispara metabolización
+
+Metabolización secuencial: Los 3 formatos se generan en orden: Crónica → Destilado → Germinal. El Destilado puede requerir la Crónica como contexto (spec lo permite, Windsurf decide implementación). Germinal requiere Destilado ya generado.
+
+Hash canónico del JSON: La serialización del JSON debe ser determinística para que el mismo contenido produzca el mismo hash siempre:
+
+Keys ordenadas alfabéticamente
+Sin whitespace extra
+Encoding UTF-8 consistente
+Números con representación estable (sin notación científica si no aplica)
+
+Windsurf debe crear /lib/cognetica-forense/utils/json-canonical.ts con una función canonicalStringify(obj): string que garantice esto.
+
+Manejo de errores: Si falla un paso del flujo, el artefacto queda en estado = 'error' con error_mensaje diciendo qué falló. Reintentar debe ser posible desde UI (Server Action reintentarMetabolizacion(artefactoId)).
+
+
+4. Server Actions a implementar
+Ver archivo acompañante cognetica_forense_actions.ts para firmas completas. Resumen:
+4.1 Ingesta
+ingestaArtefacto(input: IngestaArtefactoInput): Promise<Result<CgtArtefacto>>
+
+reintentarMetabolizacion(artefactoId: string): Promise<Result<void>>
+
+eliminarArtefacto(artefactoId: string): Promise<Result<void>>
+4.2 Transcripción
+transcribirAudio(artefactoId: string): Promise<Result<CgtAudioSegmento[]>>
+
+transcribirVideo(artefactoId: string): Promise<Result<CgtVideoSegmento[]>>
+4.3 Procesamiento PDF
+procesarPdfSlides(artefactoId: string, fileBuffer: Buffer): Promise<Result<void>>
+
+procesarPdfInforme(artefactoId: string, fileBuffer: Buffer): Promise<Result<void>>
+4.4 Metabolización
+generarCronica(artefactoId: string, incluirContracalibracion?: boolean): Promise<Result<CgtCronica>>
+
+generarDestilado(artefactoId: string): Promise<Result<CgtDestilado>>
+
+generarGerminalParcial(artefactoId: string): Promise<Result<CgtGerminal>>
+
+regenerarFormato(artefactoId: string, formato: 'cronica' | 'destilado' | 'germinal'): Promise<Result<void>>
+4.5 Grupos
+crearGrupo(input: CrearGrupoInput): Promise<Result<CgtGrupoArtefactos>>
+
+agregarArtefactoAGrupo(artefactoId: string, grupoId: string): Promise<Result<void>>
+
+removerArtefactoDeGrupo(artefactoId: string): Promise<Result<void>>
+
+generarGerminalDeGrupo(grupoId: string): Promise<Result<CgtGerminal>>
+4.6 Consulta
+listarArtefactosDeProyecto(projectId: string, filtros?: FiltrosArtefacto): Promise<Result<CgtArtefacto[]>>
+
+obtenerArtefactoCompleto(artefactoId: string): Promise<Result<ArtefactoCompleto>>
+
+listarGruposDeProyecto(projectId: string): Promise<Result<CgtGrupoArtefactos[]>>
+
+Todas retornan un tipo Result<T> tipo Rust — éxito con valor o error con mensaje. Windsurf puede adaptar al patrón de Results ya existente en el repo si lo hay, respetando esa convención.
+
+
+5. Prompts de metabolización
+Windsurf NO escribe los prompts iniciales. Estos los entregará Hongo/Calibrador en un documento separado (prompts_metabolizacion_v02.md) en una siguiente entrega. Por ahora, los archivos /lib/cognetica-forense/prompts/*.ts deben crearse con placeholders estructurados:
+
+// cronica-prompt.ts (placeholder)
+
+export const CRONICA_SYSTEM_PROMPT = `[PLACEHOLDER - entregado por Hongo]`;
+
+export function construirPromptCronica(
+
+  contenidoArtefacto: string,
+
+  tipoArtefacto: CgtTipoArtefacto,
+
+  incluirContracalibracion: boolean
+
+): string {
+
+  // TODO: implementar cuando Hongo entregue prompts finales
+
+  return "";
+
+}
+
+Esto deja el flujo completo cableado; cuando lleguen los prompts reales, solo se reemplaza contenido sin tocar estructura.
+
+
+6. UI — especificaciones por pantalla
+6.1 Página de ingesta (/cognetica/upload)
+Componentes Standard a usar:
+
+StandardPageTitle para el header
+StandardCard como contenedor principal
+StandardFileUpload para el drop/select de archivo
+StandardSelect para tipo de artefacto (auto-detectable desde extensión, pero editable)
+StandardSelect para proyecto (cargar lista projects del usuario)
+StandardSelect opcional para grupo (artefactos del mismo proyecto)
+StandardInput para título
+StandardTextarea para descripción
+StandardCheckbox para "Incluir contracalibración en crónica"
+StandardButton con styleType="primary" para el submit
+StandardAlert para errores de validación
+
+Flujo:
+
+Usuario arrastra/selecciona archivo
+Sistema auto-detecta tipo desde MIME/extensión y lo muestra en StandardSelect (editable)
+Usuario confirma proyecto (pre-seleccionado si viene desde contexto de proyecto)
+Usuario completa título y descripción
+(Opcional) Asigna grupo
+(Opcional) Marca contracalibración
+Submit → ingestaArtefacto → redirect a /cognetica/[id] con estado ingresado
+6.2 Vista de artefacto (/cognetica/[id])
+Layout:
+
+Header con StandardPageTitle (título del artefacto) + TipoArtefactoBadge + EstadoMetabolizacionBadge
+StandardCard con metadata (fecha, tamaño, hash SHA-256 truncado con copiable, project, grupo si aplica)
+StandardAccordion con 4 secciones:
+Contenido original (depende del tipo: audio player con segmentos, PDF viewer, markdown render, imagen)
+Crónica (StandardMarkdownViewer con el contenido + sección opcional de contracalibración)
+Destilado (estructurado: tesis grande, movimientos como lista ordenada, tensiones con estilo distintivo, cita con comillas elegantes)
+Germinal (texto narrativo + nota "Capa A y B detalladas disponibles en Oleada 2")
+
+Componentes Standard prioritarios:
+
+StandardAudioPlayer (ya existe) para audios con sincronización de segmentos
+StandardMarkdownViewer para crónicas y destilados
+StandardAccordion para la estructura general
+StandardBadge con styleType para tipo y estado
+StandardButton secundarios para "Regenerar crónica", "Regenerar destilado", etc.
+
+Estados:
+
+Si artefacto está en metabolizando: mostrar skeletons o indicador de progreso en cada sección
+Si está en error: StandardAlert con mensaje + botón "Reintentar"
+6.3 Listado de artefactos (/cognetica)
+StandardPageTitle
+Filtros como StandardSelect múltiples (tipo, estado, grupo)
+Grid de ArtefactoCard (usar StandardCard como base)
+Cada tarjeta: título, badges (tipo + estado), fecha, snippet del destilado si existe, click → /cognetica/[id]
+StandardButton primary para "Nuevo artefacto" → /cognetica/upload
+Usar StandardEmptyState si no hay artefactos
+6.4 Convención de densidad visual
+Referencia: páginas bajo ruta datos maestros del repo actual. Observar:
+
+Uso de StandardPageTitle vs títulos custom
+Spacing entre secciones
+Aplicación de shades de texto (primary / secondary / tertiary / muted)
+Uso de degradados para elementos destacados
+
+Windsurf debe revisar al menos 2 páginas de datos maestros antes de escribir la primera vista de Cognética Forense.
+
+
+7. Puntos de atención específicos
+7.1 Compatibilidad con v1 durante transición
+La ruta /cognetica_old queda accesible para consultar artefactos antiguos
+No hay migración automática de datos v1 → v2 en Oleada 1. Los artefactos viejos siguen en tablas cog_* antiguas; los nuevos van a cgt_*
+Links al módulo viejo deben existir en la UI nueva con aviso claro: "Artefactos v1 disponibles en Cognética Legacy"
+7.2 Idioma
+Toda UI en español (Chile)
+Comentarios de código en español o inglés (consistente por archivo, pero en el repo ya hay mezcla — respetar convención mayoritaria por carpeta)
+Mensajes de error al usuario siempre en español
+tsvector usa 'spanish' como configuración (ya en SQL)
+7.3 Nodo generador
+Al generar un formato de metabolización, el campo nodo_generador debe reflejar el rol del nodo que lo produjo:
+
+Crónica / Destilado / Germinal vía DeepSeek → nodo_generador = 'spectris'
+Si en el futuro se cambia a otro modelo → actualizar aquí
+7.4 Costos
+Cada llamada a API (Replicate, DeepSeek) debe capturar:
+
+Tokens input / output (para LLM)
+Costo estimado en USD (calculable desde tabla de tarifas interna)
+Duración en segundos (opcional pero útil)
+
+Persistir en campos tokens_input, tokens_output, costo_usd de las tablas de formatos.
+7.5 Seguridad y permisos
+Todo Server Action valida que el usuario autenticado tiene acceso al proyecto (vía projects.owner_id o lead_researcher_user_id)
+Storage: rutas deben incluir {project_id}/{artefacto_id}/ para aislamiento lógico
+RLS NO se implementa en Oleada 1 — se difiere al final de Oleada 3 cuando esquema esté completo. Validación va en aplicación por ahora, con nota explícita de esta decisión.
+7.6 Testing
+Aunque este requerimiento no exige suite de tests formal, Windsurf debe:
+
+Escribir al menos una prueba manual end-to-end documentada en un archivo .md de prueba dentro del módulo
+Para cada Server Action, validar al menos un caso exitoso y uno con error controlado
+El caso mínimo de prueba: subir un markdown simple, verificar que los 3 formatos se generen y que todos los campos SHA / tokens / storage_paths queden correctamente poblados
+
+
+8. Criterios de aceptación
+El trabajo de Oleada 1 se considera terminado cuando:
+
+✅ Renombrado _old completado sin romper v1 existente
+✅ Todas las tablas cgt_* de Oleada 1 creadas en Supabase (SQL ya disponible en cognetica_v2_oleada_1.sql)
+✅ Server Actions implementadas con firmas del archivo cognetica_forense_actions.ts
+✅ UI de ingesta funcional con los 6 tipos de artefacto
+✅ Vista de artefacto metabolizado muestra los 3 formatos
+✅ Listado de artefactos con filtros básicos
+✅ Grupos CRUD + germinal de grupo operativo
+✅ Hash SHA-256 canónico reproducible (mismo contenido = mismo hash)
+✅ Transcripción Replicate WhisperX integrada y funcional
+✅ Metabolización DeepSeek para los 3 formatos (con prompts placeholder hasta que Hongo entregue los finales)
+✅ Linters pasan sin warnings
+✅ TypeScript estricto sin any
+✅ Componentes Standard usados correctamente, sin CSS inline
+✅ Prueba manual end-to-end documentada
+
+
+9. Lo que Hongo/Calibrador entregará después de Oleada 1
+Cuando Windsurf cierre Oleada 1 y antes de arrancar Oleada 2:
+
+Prompts finales para Crónica, Destilado, Germinal (contenido real de los placeholders)
+Requerimiento de Oleada 2: semillas fractales, vínculos, resonancias, proyecciones, marcas
+Requerimiento de Oleada 1.5 (si se prioriza): descripción IA de imágenes
+10. Lo que Hongo/Calibrador NO entregará
+Código Windsurf. La implementación es responsabilidad de Windsurf.
+Deadlines. El ritmo es tortuga por diseño (ver spec v0.2 sección 2).
+Revisión línea por línea. Hongo revisa arquitectura y principios, no sintaxis.
+
+
+11. Preguntas frecuentes anticipadas
+P: ¿Qué hago si un componente Standard no existe para lo que necesito? R: Revisar si existe con otro nombre. Si realmente no existe, extender uno cercano o crear uno nuevo siguiendo la convención Standard. Documentar la decisión.
+
+P: ¿Puedo usar Tailwind directamente? R: Solo para layout/spacing. Para colores, tipografía, estados — usar las props del componente Standard correspondiente.
+
+P: ¿Qué hago si encuentro un bug en un componente Standard durante la implementación? R: No arreglarlo en silencio. Documentar en el archivo de pruebas manuales y reportarlo. Usar workaround si es urgente, explicitando.
+
+P: ¿Qué hago si el SQL de Oleada 1 no calza con algún detalle que aparece al implementar? R: Detener implementación, documentar discrepancia, consultar. El SQL es el contrato; ajustes al SQL requieren revisión.
+
+P: ¿Qué hago si la API de DeepSeek está caída o cambia? R: Manejo de errores robusto con estado error + mensaje. Retry manual desde UI. No bloquear ingesta por falla de metabolización — el artefacto existe aunque la metabolización falle.
+
+
+12. Cierre
+Este requerimiento está diseñado para que Windsurf lo pueda ejecutar sin inventar nada. Rutas, nombres de componentes, APIs, estructura: todo está definido arriba o es trivialmente derivable. Si algo queda ambiguo después de leer esto + el SQL + los actions TypeScript, preguntar antes de asumir.
+
+El producto final de Oleada 1 debe ser código que, si mañana se libera como open source, sea motivo de orgullo — no de vergüenza. Ese es el estándar.
+
+ética es negentropía a nivel de datos
+
+
+
+Archivos acompañantes:
+
+cognetica_v2_oleada_1.sql — esquema de base de datos (contrato)
+cognetica_forense_actions.ts — firmas de Server Actions (contrato)
+cognetica_forense_types.ts — tipos TypeScript alineados al SQL
+checklist_integracion.md — pasos ordenados de ejecución

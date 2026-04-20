@@ -72,8 +72,8 @@ export async function generateArtifactImages(artifactId: string) {
             .eq('id', artifactId);
     }
     
-    revalidatePath(`/cognetica/${artifactId}`);
-    revalidatePath('/cognetica');
+    revalidatePath(`/cognetica_old/${artifactId}`);
+    revalidatePath('/cognetica_old');
     
     console.log(`🎨 [Seedream Action] Completado: ${result.generated} imágenes`);
     

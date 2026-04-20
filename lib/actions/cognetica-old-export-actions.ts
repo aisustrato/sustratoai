@@ -1,0 +1,1394 @@
+"use server";
+
+/**
+ * 🌿 Sistema de Exportación Redundante - Cognética
+ *
+ * Genera tres formatos del mismo artefacto:
+ * - .md → Para humanos (Markdown con frontmatter YAML)
+ * - .yaml → Para máquinas (YAML puro estructurado)
+ * - .json → Canónico (fuente de verdad para hash)
+ *
+ * Filosofía: Redundancia soberana con hash único SHA-256
+ */
+
+import { createServerClient } from "@/lib/supabase";
+import { createHash } from "crypto";
+import yaml from "js-yaml";
+
+interface ArtifactExportData {
+	// Metadata básica
+	id: string;
+	titulo: string;
+	tipo: string;
+	descripcion: string | null;
+
+	// Metadata técnica
+	duracion_segundos: number | null;
+	file_size_bytes: number | null;
+	mime_type: string | null;
+	creado_por: string | null;
+	fecha_creacion: string;
+
+	// Proyecto
+	proyecto: {
+		id: string;
+		nombre: string;
+	};
+
+	// Transcripción
+	transcripcion: {
+		texto_completo: string;
+		segmentos: Array<{
+			speaker: string;
+			inicio: number;
+			fin: number;
+			texto: string;
+		}>;
+		idioma: string;
+		confianza: number | null;
+	} | null;
+
+	// Ensayo destilado (Minotauro Destilador)
+	ensayo_destilado: {
+		contenido: string;
+		metadata: {
+			ejecutado_en: string;
+			modelo: string;
+			tokens_usados: number;
+		};
+	} | null;
+
+	// Crónica del Micelio (Micelio Cronista Forense)
+	cronica_micelio: {
+		ejecutado_en: string;
+		version_extendida: string;
+		version_destilada: string;
+	} | null;
+
+	// Semillas fractales
+	semillas_fractales: Array<{
+		contenido: string;
+		contexto: string | null;
+		categoria: string | null;
+		tags: string[];
+	}>;
+
+	// Referencias (pensadores/autores)
+	referencias: Array<{
+		nombre: string;
+		disciplina: string | null;
+		era: string | null;
+		contribuciones: string[];
+		contexto: string | null;
+	}>;
+
+	// Disciplinas
+	disciplinas: string[];
+
+	// Teorías
+	teorias: string[];
+
+	// Datos cronológicos
+	datos_cronologicos: Array<{
+		fecha: string | null;
+		tipo_evento: string;
+		descripcion: string;
+		contexto: string | null;
+		confianza: number | null;
+	}>;
+
+	// Frases notables
+	frases_notables: Array<{
+		texto: string;
+		autor: string;
+		contexto: string;
+	}>;
+
+	// Prompts de imágenes/diagramas
+	prompts_imagenes: Array<{
+		estilo: string;
+		prompt: string;
+	}>;
+
+	// Analogías de cultura pop (humildad epistémica)
+	analogias_cultura_pop: Array<{
+		referencia: string;
+		analogia: string;
+		conexion: string;
+	}>;
+
+	// Sesiones de chat QUIPU
+	sesiones_chat: Array<{
+		id: string;
+		titulo: string | null;
+		fecha_inicio: string | null;
+		total_mensajes: number;
+		avg_f0_score: number | null;
+		paralloros_count: number;
+		inferencia_activa: boolean;
+		mensajes: Array<{
+			rol: "user" | "assistant";
+			contenido: string;
+			timestamp: string;
+			calibraciones_quipu?: Array<{
+				emoji: string;
+				etiqueta: string;
+				valor: number;
+				insight: string;
+			}>;
+			es_paralloros?: boolean;
+			f0_score?: number;
+			patron_geometrico?: string;
+		}>;
+	}>;
+}
+
+/**
+ * Obtener todos los datos de un artefacto para exportación
+ */
+export async function getArtifactExportData(
+	artifactId: string,
+): Promise<ArtifactExportData | null> {
+	const supabase = await createServerClient();
+
+	console.log(
+		`📦 [Export] Obteniendo datos completos del artefacto: ${artifactId}`,
+	);
+
+	// 1. Artefacto base
+	const { data: artifact, error: artifactError } = await supabase
+		.from("cog_artifacts")
+		.select(
+			`
+            id,
+            title,
+            type,
+            description,
+            duration_seconds,
+            file_size_bytes,
+            mime_type,
+            created_by,
+            created_at,
+            project_id,
+            source_metadata,
+            projects!inner(id, name)
+        `,
+		)
+		.eq("id", artifactId)
+		.single();
+
+	if (artifactError || !artifact) {
+		console.error(`❌ [Export] Error obteniendo artefacto:`, artifactError);
+		return null;
+	}
+
+	// 2. Transcripción/Contenido (usar helper unificado para obtener texto correcto)
+	const { getArtifactTextContent } = await import("./cognetica-old-helpers");
+	const textContent = await getArtifactTextContent(artifactId);
+
+	// Para slides, el texto viene de páginas; para otros, de transcripciones
+	let transcription = null;
+
+	if (textContent && textContent.text) {
+		if (textContent.source === "transcription") {
+			// Obtener metadata adicional de transcripción (segmentos, idioma, confianza)
+			const { data: transcriptions } = await supabase
+				.from("cog_transcriptions")
+				.select(
+					"full_text, segments, language, confidence_score, distilled_essay, distilled_essay_metadata",
+				)
+				.eq("artifact_id", artifactId)
+				.order("created_at", { ascending: false })
+				.limit(1);
+
+			transcription = transcriptions?.[0] || null;
+		} else if (textContent.source === "pages") {
+			// Para slides: crear objeto transcription con el texto de páginas
+			transcription = {
+				full_text: textContent.text,
+				segments: null,
+				language: "es",
+				confidence_score: null,
+				distilled_essay: null,
+				distilled_essay_metadata: null,
+			};
+		}
+	}
+
+	// 2b. Ensayo destilado (de la transcripción)
+	let ensayoDestilado: any = null;
+	if (transcription?.distilled_essay) {
+		const metadata = transcription.distilled_essay_metadata as Record<
+			string,
+			string | number | undefined
+		>;
+		ensayoDestilado = {
+			contenido: transcription.distilled_essay,
+			metadata: {
+				ejecutado_en: metadata?.ejecutado_en || new Date().toISOString(),
+				modelo: metadata?.modelo || "unknown",
+				tokens_usados: metadata?.tokens_usados || 0,
+			},
+		};
+	}
+
+	// 2c. Crónica del Micelio (de source_metadata)
+	const sourceMeta =
+		(artifact.source_metadata as Record<string, unknown>) || {};
+	const chronicleData = sourceMeta.micelio_chronicle || null;
+	let cronicaMicelio: any = null;
+	if (chronicleData) {
+		cronicaMicelio = {
+			ejecutado_en:
+				(chronicleData as Record<string, unknown>).ejecutado_en ||
+				new Date().toISOString(),
+			version_extendida:
+				(chronicleData as Record<string, unknown>).version_extendida || "",
+			version_destilada:
+				(chronicleData as Record<string, unknown>).version_destilada || "",
+		};
+	}
+
+	// 3. Semillas fractales (solo content disponible en schema actual)
+	const { data: seeds } = await supabase
+		.from("cog_fractal_seeds")
+		.select("content")
+		.eq("artifact_id", artifactId)
+		.order("created_at", { ascending: false });
+
+	// 4. Referencias (pensadores)
+	const { data: references } = await supabase
+		.from("cog_artifact_references")
+		.select(
+			`
+            context_snippet,
+            cog_references!inner(
+                name,
+                era,
+                bio_snippet,
+                key_contributions,
+                cog_disciplines(name)
+            )
+        `,
+		)
+		.eq("artifact_id", artifactId);
+
+	// 5. Disciplinas
+	const { data: disciplines } = await supabase
+		.from("cog_artifact_disciplines")
+		.select("cog_disciplines!inner(name)")
+		.eq("artifact_id", artifactId);
+
+	// 6. Teorías
+	const { data: theories } = await supabase
+		.from("cog_artifact_theories")
+		.select("cog_theories!inner(name)")
+		.eq("artifact_id", artifactId);
+
+	// 7. Datos cronológicos
+	const { data: chronologicalData } = await supabase
+		.from("cog_chronological_data")
+		.select("date_value, event_type, description, context, confidence_score")
+		.eq("artifact_id", artifactId)
+		.order("created_at", { ascending: false });
+
+	// 8. Sesiones de chat QUIPU
+	const { data: chatSessions } = await supabase
+		.from("cog_chat_sessions")
+		.select("*")
+		.eq("artifact_id", artifactId)
+		.order("started_at", { ascending: false });
+
+	// Formatear datos
+	const exportData: ArtifactExportData = {
+		id: artifact.id,
+		titulo: artifact.title || "Sin título",
+		tipo: artifact.type,
+		descripcion: artifact.description,
+		duracion_segundos: artifact.duration_seconds,
+		file_size_bytes: artifact.file_size_bytes,
+		mime_type: artifact.mime_type,
+		creado_por: artifact.created_by,
+		fecha_creacion: artifact.created_at ?? new Date().toISOString(),
+		proyecto: {
+			id: artifact.project_id ?? "",
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			nombre:
+				(artifact.projects as unknown as { name?: string })?.name ??
+				"Sin proyecto",
+		},
+		transcripcion:
+			transcription ?
+				{
+					texto_completo: transcription.full_text || "",
+					segmentos:
+						(
+							transcription.segments as Array<{
+								speaker: string;
+								start?: number;
+								end?: number;
+								text: string;
+							}>
+						)?.map((seg) => ({
+							speaker: seg.speaker,
+							inicio: seg.start ?? 0,
+							fin: seg.end ?? 0,
+							texto: seg.text,
+						})) || [],
+					idioma: transcription.language || "es",
+					confianza: transcription.confidence_score,
+				}
+			:	null,
+		ensayo_destilado: ensayoDestilado,
+		cronica_micelio: cronicaMicelio,
+		semillas_fractales: (seeds || []).map((s) => ({
+			contenido: s.content || "",
+			contexto: null,
+			categoria: null,
+			tags: [],
+		})),
+		referencias: (references || []).map((r) => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const ref = r.cog_references as unknown as {
+				name?: string;
+				cog_disciplines?: { name?: string };
+				era?: string;
+				key_contributions?: string[];
+			};
+			return {
+				nombre: ref?.name || "Desconocido",
+				disciplina: ref?.cog_disciplines?.name || null,
+				era: ref?.era || null,
+				contribuciones: ref?.key_contributions || [],
+				contexto: r.context_snippet,
+			};
+		}),
+		disciplinas: (disciplines || []).map(
+			(d) =>
+				(d.cog_disciplines as unknown as { name?: string })?.name ||
+				"Desconocida",
+		),
+		teorias: (theories || []).map(
+			(t) =>
+				(t.cog_theories as unknown as { name?: string })?.name || "Desconocida",
+		),
+		datos_cronologicos: (chronologicalData || []).map((item) => ({
+			fecha: item.date_value,
+			tipo_evento: item.event_type || "event",
+			descripcion: item.description || "",
+			contexto: item.context,
+			confianza: item.confidence_score,
+		})),
+		frases_notables: (() => {
+			const metadata =
+				(artifact.source_metadata as Record<
+					string,
+					{ text?: string; author?: string; context?: string }[]
+				>) || {};
+			const quotes = metadata?.quotes || [];
+			return quotes.map((q) => ({
+				texto: q.text || "",
+				autor: q.author || "Desconocido",
+				contexto: q.context || "",
+			}));
+		})(),
+		prompts_imagenes: (() => {
+			const metadata =
+				(artifact.source_metadata as Record<
+					string,
+					{ style?: string; prompt?: string }[]
+				>) || {};
+			const prompts = metadata?.image_prompts || [];
+			return prompts.map((p) => ({
+				estilo: p.style || "conceptual",
+				prompt: p.prompt || "",
+			}));
+		})(),
+		analogias_cultura_pop: (() => {
+			const metadata =
+				(artifact.source_metadata as Record<
+					string,
+					{ reference?: string; analogy?: string; connection?: string }[]
+				>) || {};
+			const analogias = metadata?.pop_culture_analogies || [];
+			return analogias.map((a) => ({
+				referencia: a.reference || "",
+				analogia: a.analogy || "",
+				conexion: a.connection || "",
+			}));
+		})(),
+		sesiones_chat: (chatSessions || []).map((session) => ({
+			id: session.id,
+			titulo: session.session_title,
+			fecha_inicio: session.started_at || null,
+			total_mensajes: session.total_messages || 0,
+			avg_f0_score: session.avg_f0_score,
+			paralloros_count: session.paralloros_count || 0,
+			inferencia_activa: session.inference_enabled || false,
+			mensajes: (
+				(session.messages as unknown as Array<{
+					role?: string;
+					content?: string;
+					timestamp?: string;
+					quipuCalibrations?: Array<{
+						emoji?: string;
+						label?: string;
+						value?: number;
+						insight?: string;
+					}>;
+					isParalloros?: boolean;
+					f0Score?: number;
+					geometricPattern?: string;
+				}>) || []
+			).map((msg) => ({
+				rol: msg.role,
+				contenido: msg.content,
+				timestamp: msg.timestamp,
+				calibraciones_quipu: msg.quipuCalibrations?.map((cal) => ({
+					emoji: cal.emoji,
+					etiqueta: cal.label,
+					valor: cal.value,
+					insight: cal.insight,
+				})),
+				es_paralloros: msg.isParalloros,
+				f0_score: msg.f0Score,
+				patron_geometrico: msg.geometricPattern,
+			})),
+		})) as any,
+	};
+
+	console.log(`✅ [Export] Datos obtenidos:`, {
+		transcripcion: !!exportData.transcripcion,
+		ensayo_destilado: !!exportData.ensayo_destilado,
+		cronica_micelio: !!exportData.cronica_micelio,
+		semillas: exportData.semillas_fractales.length,
+		referencias: exportData.referencias.length,
+		sesiones_chat: exportData.sesiones_chat.length,
+	});
+
+	return exportData;
+}
+
+/**
+ * Exportar artefacto completo a Markdown con frontmatter YAML
+ */
+export async function exportArtifactToMarkdown(
+	artifactId: string,
+): Promise<string> {
+	const data = await getArtifactExportData(artifactId);
+
+	if (!data) {
+		return "# Error: Artefacto no encontrado";
+	}
+
+	// Detectar si es presentación (slides) basado en el formato del texto
+	const isPresentation =
+		data.transcripcion?.texto_completo?.includes("--- PÁGINA") || false;
+	const tipoDisplay = isPresentation ? "presentación" : data.tipo;
+
+	const fechaCreacion = new Date(data.fecha_creacion);
+	const duracionFormateada =
+		data.duracion_segundos ?
+			`${Math.floor(data.duracion_segundos / 60)}:${String(data.duracion_segundos % 60).padStart(2, "0")}`
+		:	"N/A";
+
+	// Header YAML (frontmatter)
+	let md = `---
+id: "${data.id}"
+titulo: "${data.titulo.replace(/"/g, '\\"')}"
+tipo: ${tipoDisplay}
+fecha_creacion: ${fechaCreacion.toISOString().split("T")[0]}
+proyecto: "${data.proyecto.nombre.replace(/"/g, '\\"')}"
+licencia: "CC-BY 4.0"
+tags:
+  - cognetica
+  - sustrato-ai
+  - ${tipoDisplay}
+---
+
+# ${data.titulo}
+
+## 📊 Metadata
+
+| Campo | Valor |
+|-------|-------|
+| **ID** | \`${data.id}\` |
+| **Tipo** | ${tipoDisplay} |
+| **Duración** | ${duracionFormateada} |
+| **Tamaño** | ${data.file_size_bytes ? `${(data.file_size_bytes / 1024 / 1024).toFixed(2)} MB` : "N/A"} |
+| **Formato** | ${data.mime_type || "N/A"} |
+| **Fecha** | ${fechaCreacion.toLocaleDateString("es-CL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })} |
+| **Proyecto** | ${data.proyecto.nombre} |
+
+`;
+
+	// Descripción
+	if (data.descripcion) {
+		md += `## 📝 Descripción\n\n${data.descripcion}\n\n`;
+	}
+
+	// Contenido (Transcripción o Slides)
+	if (data.transcripcion) {
+		if (isPresentation) {
+			// Para presentaciones: estructura jerárquica con páginas como H2
+			md += `# 📊 Contenido de Slides\n\n`;
+			md += `**Idioma:** ${data.transcripcion.idioma.toUpperCase()} | `;
+			md += `**Confianza:** ${data.transcripcion.confianza ? `${(data.transcripcion.confianza * 100).toFixed(1)}%` : "N/A"}\n\n`;
+
+			// Dividir por páginas y procesar títulos
+			const pages = data.transcripcion.texto_completo.split("--- PÁGINA");
+			pages.forEach((page, idx) => {
+				if (idx === 0 && !page.trim()) return; // Skip empty first element
+
+				const pageMatch = page.match(/^\s*(\d+)\s*---/);
+				const pageNumber = pageMatch ? pageMatch[1] : idx;
+				const content = page.replace(/^\s*\d+\s*---/, "").trim();
+
+				if (content) {
+					// Detectar si hay un título H1 al inicio del contenido
+					const h1Match = content.match(/^#\s+(.+?)(\n|$)/);
+
+					if (h1Match) {
+						// Hay título H1: concatenar número de página y bajar niveles
+						const originalTitle = h1Match[1].trim();
+						const restOfContent = content.substring(h1Match[0].length);
+
+						// Bajar todos los niveles de títulos (H1→H2, H2→H3, etc.)
+						const downgraded = restOfContent.replace(
+							/^(#{1,5})\s+/gm,
+							(match, hashes) => {
+								return "#" + hashes + " "; // Agregar un # extra
+							},
+						);
+
+						// Título con número de página como H2
+						md += `## Página ${pageNumber}: ${originalTitle}\n\n${downgraded}\n\n`;
+					} else {
+						// No hay título H1: usar "Página X" como H2 y bajar niveles
+						const downgraded = content.replace(
+							/^(#{1,5})\s+/gm,
+							(match, hashes) => {
+								return "#" + hashes + " ";
+							},
+						);
+
+						md += `## Página ${pageNumber}\n\n${downgraded}\n\n`;
+					}
+				}
+			});
+		} else {
+			// Para audio/video/documentos: aplicar bajada de títulos si es documento
+			const isDocument = data.tipo === "document";
+
+			if (isDocument) {
+				// Documentos (MD, PDF): bajar títulos H1→H2 para evitar conflicto
+				md += `# 📄 Contenido del Documento\n\n`;
+				md += `**Idioma:** ${data.transcripcion.idioma.toUpperCase()} | `;
+				md += `**Confianza:** ${data.transcripcion.confianza ? `${(data.transcripcion.confianza * 100).toFixed(1)}%` : "N/A"}\n\n`;
+
+				// Bajar todos los niveles de títulos (H1→H2, H2→H3, etc.)
+				const downgraded = data.transcripcion.texto_completo.replace(
+					/^(#{1,5})\s+/gm,
+					(match, hashes) => {
+						return "#" + hashes + " "; // Agregar un # extra
+					},
+				);
+
+				md += `${downgraded}\n\n`;
+			} else {
+				// Audio/video: estructura tradicional con speakers
+				md += `## 🎙️ Transcripción\n\n`;
+				md += `**Idioma:** ${data.transcripcion.idioma.toUpperCase()} | `;
+				md += `**Confianza:** ${data.transcripcion.confianza ? `${(data.transcripcion.confianza * 100).toFixed(1)}%` : "N/A"}\n\n`;
+
+				if (
+					data.transcripcion.segmentos &&
+					data.transcripcion.segmentos.length > 0
+				) {
+					let currentSpeaker = "";
+					let currentText = "";
+
+					data.transcripcion.segmentos.forEach(
+						(seg: {
+							speaker?: string;
+							text?: string;
+							sentences?: Array<{ text?: string }>;
+						}) => {
+							const speaker = String(seg.speaker || "SPEAKER_00");
+							const text =
+								seg.text ||
+								seg.sentences
+									?.map((s: { text?: string }) => s.text)
+									.join(" ") ||
+								"";
+
+							if (speaker !== currentSpeaker && currentText) {
+								md += `### ${currentSpeaker}\n\n${currentText.trim()}\n\n`;
+								currentText = "";
+							}
+
+							currentSpeaker = speaker;
+							currentText += text + " ";
+						},
+					);
+
+					if (currentText) {
+						md += `### ${currentSpeaker}\n\n${currentText.trim()}\n\n`;
+					}
+				} else {
+					md += `${data.transcripcion.texto_completo}\n\n`;
+				}
+			}
+		}
+	}
+
+	// Ensayo Destilado (Minotauro Destilador)
+	if (data.ensayo_destilado) {
+		md += `# 📝 Ensayo Destilado (Minotauro Destilador)\n\n`;
+		md += `> **Modelo:** ${data.ensayo_destilado.metadata.modelo} | **Tokens:** ${data.ensayo_destilado.metadata.tokens_usados.toLocaleString()} | **Ejecutado:** ${new Date(data.ensayo_destilado.metadata.ejecutado_en).toLocaleDateString("es-CL")}\n\n`;
+		md += `${data.ensayo_destilado.contenido}\n\n`;
+	}
+
+	// Crónica del Micelio (Micelio Cronista Forense)
+	if (data.cronica_micelio) {
+		md += `# 🍄 Crónica del Micelio (Forense)\n\n`;
+		md += `> **Ejecutado:** ${new Date(data.cronica_micelio.ejecutado_en).toLocaleDateString("es-CL")}\n\n`;
+
+		md += `## Versión Destilada\n\n`;
+		md += `${data.cronica_micelio.version_destilada}\n\n`;
+
+		md += `## Versión Extendida\n\n`;
+		md += `${data.cronica_micelio.version_extendida}\n\n`;
+	}
+
+	// Semillas fractales (H1 con tabla)
+	if (data.semillas_fractales.length > 0) {
+		md += `# 🌱 Semillas Fractales Extraídas\n\n`;
+		md += `| # | Semilla | Contexto | Categoría |\n`;
+		md += `|---|---------|----------|-----------|\n`;
+		data.semillas_fractales.forEach((semilla, i) => {
+			const contexto =
+				semilla.contexto ?
+					semilla.contexto.replace(/\|/g, "\\|").replace(/\n/g, " ")
+				:	"-";
+			const categoria = semilla.categoria || "-";
+			const contenido = semilla.contenido
+				.replace(/\|/g, "\\|")
+				.replace(/\n/g, " ");
+			md += `| ${i + 1} | ${contenido} | ${contexto} | ${categoria} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Referencias (H1 con tabla)
+	if (data.referencias.length > 0) {
+		md += `# 👤 Referencias Identificadas\n\n`;
+		md += `| Nombre | Disciplina | Época | Contribuciones | Contexto |\n`;
+		md += `|--------|------------|-------|----------------|----------|\n`;
+		data.referencias.forEach((ref) => {
+			const nombre = ref.nombre.replace(/\|/g, "\\|");
+			const disciplina = ref.disciplina || "-";
+			const era = ref.era || "-";
+			const contribuciones =
+				ref.contribuciones.length > 0 ?
+					ref.contribuciones.map((c) => c.replace(/\|/g, "\\|")).join("; ")
+				:	"-";
+			const contexto =
+				ref.contexto ?
+					ref.contexto.replace(/\|/g, "\\|").replace(/\n/g, " ")
+				:	"-";
+			md += `| ${nombre} | ${disciplina} | ${era} | ${contribuciones} | ${contexto} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Disciplinas (H1 con tabla)
+	if (data.disciplinas.length > 0) {
+		md += `# 🔬 Disciplinas\n\n`;
+		md += `| # | Disciplina |\n`;
+		md += `|---|------------|\n`;
+		data.disciplinas.forEach((d, i) => {
+			md += `| ${i + 1} | ${d.replace(/\|/g, "\\|")} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Teorías (H1 con tabla)
+	if (data.teorias.length > 0) {
+		md += `# 💡 Teorías\n\n`;
+		md += `| # | Teoría |\n`;
+		md += `|---|--------|\n`;
+		data.teorias.forEach((t, i) => {
+			md += `| ${i + 1} | ${t.replace(/\|/g, "\\|")} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Datos cronológicos (H1 con tabla)
+	if (data.datos_cronologicos.length > 0) {
+		md += `# 📅 Datos Cronológicos\n\n`;
+		md += `| Fecha | Tipo | Descripción | Contexto | Confianza |\n`;
+		md += `|-------|------|-------------|----------|----------|\n`;
+		data.datos_cronologicos.forEach((item) => {
+			const fecha = (item.fecha || "Sin fecha").replace(/\|/g, "\\|");
+			const tipo = item.tipo_evento.replace(/\|/g, "\\|");
+			const descripcion = item.descripcion
+				.replace(/\|/g, "\\|")
+				.replace(/\n/g, " ");
+			const contexto =
+				item.contexto ?
+					item.contexto.replace(/\|/g, "\\|").replace(/\n/g, " ")
+				:	"-";
+			const confianza =
+				item.confianza ? `${Math.round(item.confianza * 100)}%` : "-";
+			md += `| ${fecha} | ${tipo} | ${descripcion} | ${contexto} | ${confianza} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Frases notables (H1 con tabla)
+	if (data.frases_notables.length > 0) {
+		md += `# 💬 Frases Notables\n\n`;
+		md += `| Frase | Autor | Contexto |\n`;
+		md += `|-------|-------|----------|\n`;
+		data.frases_notables.forEach((frase) => {
+			const texto = frase.texto.replace(/\|/g, "\\|").replace(/\n/g, " ");
+			const autor = frase.autor.replace(/\|/g, "\\|");
+			const contexto = frase.contexto.replace(/\|/g, "\\|").replace(/\n/g, " ");
+			md += `| ${texto} | ${autor} | ${contexto} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Prompts de imágenes/diagramas (H1 con tabla)
+	if (data.prompts_imagenes.length > 0) {
+		md += `# 🎨 Prompts de Diagramas\n\n`;
+		md += `| # | Estilo | Prompt |\n`;
+		md += `|---|--------|--------|\n`;
+		data.prompts_imagenes.forEach((prompt, i) => {
+			const estilo = prompt.estilo.replace(/\|/g, "\\|");
+			const promptText = prompt.prompt
+				.replace(/\|/g, "\\|")
+				.replace(/\n/g, " ");
+			md += `| ${i + 1} | ${estilo} | ${promptText} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Analogías de cultura pop (H1 con tabla - humildad epistémica)
+	if (data.analogias_cultura_pop.length > 0) {
+		md += `# 🎬 Analogías de Cultura Pop\n\n`;
+		md += `> *Para humildad epistémica: lo lúdico pero coherente*\n\n`;
+		md += `| # | Referencia | Analogía | Conexión con el Tema |\n`;
+		md += `|---|------------|----------|----------------------|\n`;
+		data.analogias_cultura_pop.forEach((analogia, i) => {
+			const referencia = analogia.referencia.replace(/\|/g, "\\|");
+			const analogiaText = analogia.analogia
+				.replace(/\|/g, "\\|")
+				.replace(/\n/g, " ");
+			const conexion = analogia.conexion
+				.replace(/\|/g, "\\|")
+				.replace(/\n/g, " ");
+			md += `| ${i + 1} | ${referencia} | ${analogiaText} | ${conexion} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Sesiones de chat QUIPU (H1 para colapsar)
+	if (data.sesiones_chat.length > 0) {
+		md += `# 🧠🪢 Sesiones de Chat QUIPU\n\n`;
+		md += `**Total de sesiones:** ${data.sesiones_chat.length}\n\n`;
+
+		data.sesiones_chat.forEach((session, idx) => {
+			const fechaSesion = new Date(
+				session.fecha_inicio ?? new Date().toISOString(),
+			);
+			md += `## Sesión ${idx + 1}${session.titulo ? `: ${session.titulo}` : ""}\n\n`;
+			md += `**Fecha:** ${fechaSesion.toLocaleDateString("es-CL")} ${fechaSesion.toLocaleTimeString("es-CL")}  \n`;
+			md += `**Mensajes:** ${session.total_mensajes}  \n`;
+			md += `**Resonancia f₀ promedio:** ${session.avg_f0_score?.toFixed(1) || "N/A"}  \n`;
+			md += `**Paralloros:** ${session.paralloros_count}  \n`;
+			md += `**Inferencia:** ${session.inferencia_activa ? "Activada" : "Desactivada"}  \n\n`;
+
+			md += `### 💬 Conversación\n\n`;
+
+			session.mensajes.forEach((msg) => {
+				const timestamp = new Date(msg.timestamp).toLocaleTimeString("es-CL", {
+					hour: "2-digit",
+					minute: "2-digit",
+				});
+
+				if (msg.rol === "user") {
+					md += `**🧑‍🔬 Investigador** (${timestamp})\n\n`;
+					md += `${msg.contenido}\n\n`;
+				} else {
+					md += `**🤖 Asistente f₀** (${timestamp})`;
+					if (msg.es_paralloros) md += ` 🔄 *Paralloros*`;
+					md += `\n\n`;
+					md += `${msg.contenido}\n\n`;
+
+					if (msg.calibraciones_quipu && msg.calibraciones_quipu.length > 0) {
+						md += `> **Calibradores QUIPU:**\n`;
+						msg.calibraciones_quipu.forEach((cal) => {
+							md += `> - ${cal.emoji} **${cal.etiqueta}:** ${cal.valor}/100 — *${cal.insight}*\n`;
+						});
+						md += `\n`;
+					}
+				}
+
+				md += `---\n\n`;
+			});
+		});
+	}
+
+	// Footer
+	md += `---\n\n`;
+	md += `> **Generado por Sustrato.AI** 🌱💜  \n`;
+	md += `> Módulo Cognética - Exportación Redundante  \n`;
+	md += `> ${new Date().toISOString()}  \n`;
+	md += `> Licencia: CC-BY 4.0\n`;
+
+	return md;
+}
+
+/**
+ * Generar JSON canónico (normalizado, sin espacios innecesarios)
+ * Este es la fuente de verdad para el hash SHA-256
+ */
+export async function generateCanonicalJSON(
+	data: ArtifactExportData,
+): Promise<string> {
+	// JSON.stringify con orden determinístico y sin espacios
+	// Esto garantiza que el mismo contenido siempre genere el mismo hash
+	return JSON.stringify(data, Object.keys(data).sort(), 0);
+}
+
+/**
+ * Calcular hash SHA-256 del JSON canónico
+ * Este hash es el "alma" del artefacto - identifica su contenido de forma única
+ */
+export async function calculateContentHash(
+	canonicalJSON: string,
+): Promise<string> {
+	const hash = createHash("sha256").update(canonicalJSON, "utf8").digest("hex");
+	return `sha256:${hash}`;
+}
+
+/**
+ * Exportar artefacto a YAML puro (máquina-friendly)
+ * Incluye el hash SHA-256 como metadato
+ */
+export async function exportArtifactToYAML(
+	artifactId: string,
+): Promise<string> {
+	const data = await getArtifactExportData(artifactId);
+
+	if (!data) {
+		throw new Error("Artefacto no encontrado");
+	}
+
+	// Generar JSON canónico y calcular hash
+	const canonicalJSON = await generateCanonicalJSON(data);
+	const contentHash = await calculateContentHash(canonicalJSON);
+
+	// Agregar metadata de exportación
+	const yamlData = {
+		// Metadata de exportación
+		_metadata_exportacion: {
+			formato: "yaml",
+			version: "1.0",
+			generado_en: new Date().toISOString(),
+			hash_contenido: contentHash,
+			licencia: "CC-BY 4.0",
+			generado_por: "Sustrato.AI - Módulo Cognética",
+		},
+
+		// Datos del artefacto
+		...data,
+	};
+
+	// Convertir a YAML con opciones de formato limpio
+	const yamlString = yaml.dump(yamlData, {
+		indent: 2,
+		lineWidth: 120,
+		noRefs: true,
+		sortKeys: true, // Orden determinístico
+	});
+
+	return yamlString;
+}
+
+/**
+ * Exportar artefacto a JSON canónico
+ * Este es la fuente de verdad para verificación de integridad
+ */
+export async function exportArtifactToJSON(artifactId: string): Promise<{
+	json: string;
+	hash: string;
+}> {
+	const data = await getArtifactExportData(artifactId);
+
+	if (!data) {
+		throw new Error("Artefacto no encontrado");
+	}
+
+	// Generar JSON canónico
+	const canonicalJSON = await generateCanonicalJSON(data);
+	const contentHash = await calculateContentHash(canonicalJSON);
+
+	// Crear objeto con metadata
+	const jsonWithMetadata = {
+		_metadata_exportacion: {
+			formato: "json",
+			version: "1.0",
+			generado_en: new Date().toISOString(),
+			hash_contenido: contentHash,
+			licencia: "CC-BY 4.0",
+			generado_por: "Sustrato.AI - Módulo Cognética",
+		},
+		contenido: data,
+	};
+
+	// JSON formateado para legibilidad (no canónico, pero con hash del canónico)
+	const prettyJSON = JSON.stringify(jsonWithMetadata, null, 2);
+
+	return {
+		json: prettyJSON,
+		hash: contentHash,
+	};
+}
+
+/**
+ * Actualizar exportación MD para incluir hash en frontmatter
+ */
+export async function exportArtifactToMarkdownWithHash(
+	artifactId: string,
+): Promise<string> {
+	const data = await getArtifactExportData(artifactId);
+
+	if (!data) {
+		return "# Error: Artefacto no encontrado";
+	}
+
+	// Detectar si es presentación (slides) basado en el formato del texto
+	const isPresentation =
+		data.transcripcion?.texto_completo?.includes("--- PÁGINA") || false;
+	const tipoDisplay = isPresentation ? "presentación" : data.tipo;
+
+	// Calcular hash del contenido
+	const canonicalJSON = await generateCanonicalJSON(data);
+	const contentHash = await calculateContentHash(canonicalJSON);
+
+	const fechaCreacion = new Date(data.fecha_creacion);
+	const duracionFormateada =
+		data.duracion_segundos ?
+			`${Math.floor(data.duracion_segundos / 60)}:${String(data.duracion_segundos % 60).padStart(2, "0")}`
+		:	"N/A";
+
+	// Header YAML (frontmatter) con hash
+	let md = `---
+id: "${data.id}"
+titulo: "${data.titulo.replace(/"/g, '\\"')}"
+tipo: ${tipoDisplay}
+fecha_creacion: ${fechaCreacion.toISOString().split("T")[0]}
+proyecto: "${data.proyecto.nombre.replace(/"/g, '\\"')}"
+hash_contenido: "${contentHash}"
+licencia: "CC-BY 4.0"
+tags:
+  - cognetica
+  - sustrato-ai
+  - ${tipoDisplay}
+---
+
+# ${data.titulo}
+
+> **🔒 Hash de Integridad:** \`${contentHash}\`  
+> Este hash SHA-256 verifica que el contenido no ha sido modificado.  
+> **Verificación:** [/api/verify?hash=${contentHash}](/api/verify?hash=${contentHash})
+
+## 📊 Metadata
+
+| Campo | Valor |
+|-------|-------|
+| **ID** | \`${data.id}\` |
+| **Tipo** | ${tipoDisplay} |
+| **Duración** | ${duracionFormateada} |
+| **Tamaño** | ${data.file_size_bytes ? `${(data.file_size_bytes / 1024 / 1024).toFixed(2)} MB` : "N/A"} |
+| **Formato** | ${data.mime_type || "N/A"} |
+| **Fecha** | ${fechaCreacion.toLocaleDateString("es-CL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })} |
+| **Proyecto** | ${data.proyecto.nombre} |
+
+`;
+
+	// Descripción
+	if (data.descripcion) {
+		md += `## 📝 Descripción\n\n${data.descripcion}\n\n`;
+	}
+
+	// Contenido (Transcripción o Slides)
+	if (data.transcripcion) {
+		if (isPresentation) {
+			// Para presentaciones: estructura jerárquica con páginas como H2
+			md += `# 📊 Contenido de Slides\n\n`;
+			md += `**Idioma:** ${data.transcripcion.idioma.toUpperCase()} | `;
+			md += `**Confianza:** ${data.transcripcion.confianza ? `${(data.transcripcion.confianza * 100).toFixed(1)}%` : "N/A"}\n\n`;
+
+			// Dividir por páginas y procesar títulos
+			const pages = data.transcripcion.texto_completo.split("--- PÁGINA");
+			pages.forEach((page, idx) => {
+				if (idx === 0 && !page.trim()) return; // Skip empty first element
+
+				const pageMatch = page.match(/^\s*(\d+)\s*---/);
+				const pageNumber = pageMatch ? pageMatch[1] : idx;
+				const content = page.replace(/^\s*\d+\s*---/, "").trim();
+
+				if (content) {
+					// Detectar si hay un título H1 al inicio del contenido
+					const h1Match = content.match(/^#\s+(.+?)(\n|$)/);
+
+					if (h1Match) {
+						// Hay título H1: concatenar número de página y bajar niveles
+						const originalTitle = h1Match[1].trim();
+						const restOfContent = content.substring(h1Match[0].length);
+
+						// Bajar todos los niveles de títulos (H1→H2, H2→H3, etc.)
+						const downgraded = restOfContent.replace(
+							/^(#{1,5})\s+/gm,
+							(match, hashes) => {
+								return "#" + hashes + " "; // Agregar un # extra
+							},
+						);
+
+						// Título con número de página como H2
+						md += `## Página ${pageNumber}: ${originalTitle}\n\n${downgraded}\n\n`;
+					} else {
+						// No hay título H1: usar "Página X" como H2 y bajar niveles
+						const downgraded = content.replace(
+							/^(#{1,5})\s+/gm,
+							(match, hashes) => {
+								return "#" + hashes + " ";
+							},
+						);
+
+						md += `## Página ${pageNumber}\n\n${downgraded}\n\n`;
+					}
+				}
+			});
+		} else {
+			// Para audio/video/documentos: aplicar bajada de títulos si es documento
+			const isDocument = data.tipo === "document";
+
+			if (isDocument) {
+				// Documentos (MD, PDF): bajar títulos H1→H2 para evitar conflicto
+				md += `# 📄 Contenido del Documento\n\n`;
+				md += `**Idioma:** ${data.transcripcion.idioma.toUpperCase()} | `;
+				md += `**Confianza:** ${data.transcripcion.confianza ? `${(data.transcripcion.confianza * 100).toFixed(1)}%` : "N/A"}\n\n`;
+
+				// Bajar todos los niveles de títulos (H1→H2, H2→H3, etc.)
+				const downgraded = data.transcripcion.texto_completo.replace(
+					/^(#{1,5})\s+/gm,
+					(match, hashes) => {
+						return "#" + hashes + " "; // Agregar un # extra
+					},
+				);
+
+				md += `${downgraded}\n\n`;
+			} else {
+				// Audio/video: estructura tradicional con speakers
+				md += `## 🎙️ Transcripción\n\n`;
+				md += `**Idioma:** ${data.transcripcion.idioma.toUpperCase()} | `;
+				md += `**Confianza:** ${data.transcripcion.confianza ? `${(data.transcripcion.confianza * 100).toFixed(1)}%` : "N/A"}\n\n`;
+
+				if (
+					data.transcripcion.segmentos &&
+					data.transcripcion.segmentos.length > 0
+				) {
+					let currentSpeaker = "";
+					let currentText = "";
+
+					data.transcripcion.segmentos.forEach(
+						(seg: {
+							speaker?: string;
+							text?: string;
+							sentences?: Array<{ text?: string }>;
+						}) => {
+							const speaker = String(seg.speaker || "SPEAKER_00");
+							const text =
+								seg.text ||
+								seg.sentences
+									?.map((s: { text?: string }) => s.text)
+									.join(" ") ||
+								"";
+
+							if (speaker !== currentSpeaker && currentText) {
+								md += `### ${currentSpeaker}\n\n${currentText.trim()}\n\n`;
+								currentText = "";
+							}
+
+							currentSpeaker = speaker;
+							currentText += text + " ";
+						},
+					);
+
+					if (currentText) {
+						md += `### ${currentSpeaker}\n\n${currentText.trim()}\n\n`;
+					}
+				} else {
+					md += `${data.transcripcion.texto_completo}\n\n`;
+				}
+			}
+		}
+	}
+
+	// Ensayo Destilado (Minotauro Destilador)
+	if (data.ensayo_destilado) {
+		md += `# 📝 Ensayo Destilado (Minotauro Destilador)\n\n`;
+		md += `> **Modelo:** ${data.ensayo_destilado.metadata.modelo} | **Tokens:** ${data.ensayo_destilado.metadata.tokens_usados.toLocaleString()} | **Ejecutado:** ${new Date(data.ensayo_destilado.metadata.ejecutado_en).toLocaleDateString("es-CL")}\n\n`;
+		md += `${data.ensayo_destilado.contenido}\n\n`;
+	}
+
+	// Crónica del Micelio (Micelio Cronista Forense)
+	if (data.cronica_micelio) {
+		md += `# 🍄 Crónica del Micelio (Forense)\n\n`;
+		md += `> **Ejecutado:** ${new Date(data.cronica_micelio.ejecutado_en).toLocaleDateString("es-CL")}\n\n`;
+
+		md += `## Versión Destilada\n\n`;
+		md += `${data.cronica_micelio.version_destilada}\n\n`;
+
+		md += `## Versión Extendida\n\n`;
+		md += `${data.cronica_micelio.version_extendida}\n\n`;
+	}
+
+	// Semillas fractales (H1 con tabla)
+	if (data.semillas_fractales.length > 0) {
+		md += `# 🌱 Semillas Fractales Extraídas\n\n`;
+		md += `| # | Semilla | Contexto | Categoría |\n`;
+		md += `|---|---------|----------|-----------|\n`;
+		data.semillas_fractales.forEach((semilla, i) => {
+			const contexto =
+				semilla.contexto ?
+					semilla.contexto.replace(/\|/g, "\\|").replace(/\n/g, " ")
+				:	"-";
+			const categoria = semilla.categoria || "-";
+			const contenido = semilla.contenido
+				.replace(/\|/g, "\\|")
+				.replace(/\n/g, " ");
+			md += `| ${i + 1} | ${contenido} | ${contexto} | ${categoria} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Referencias (H1 con tabla)
+	if (data.referencias.length > 0) {
+		md += `# 👤 Referencias Identificadas\n\n`;
+		md += `| Nombre | Disciplina | Época | Contribuciones | Contexto |\n`;
+		md += `|--------|------------|-------|----------------|----------|\n`;
+		data.referencias.forEach((ref) => {
+			const nombre = ref.nombre.replace(/\|/g, "\\|");
+			const disciplina = ref.disciplina || "-";
+			const era = ref.era || "-";
+			const contribuciones =
+				ref.contribuciones.length > 0 ?
+					ref.contribuciones.map((c) => c.replace(/\|/g, "\\|")).join("; ")
+				:	"-";
+			const contexto =
+				ref.contexto ?
+					ref.contexto.replace(/\|/g, "\\|").replace(/\n/g, " ")
+				:	"-";
+			md += `| ${nombre} | ${disciplina} | ${era} | ${contribuciones} | ${contexto} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Disciplinas (H1 con tabla)
+	if (data.disciplinas.length > 0) {
+		md += `# 🔬 Disciplinas\n\n`;
+		md += `| # | Disciplina |\n`;
+		md += `|---|------------|\n`;
+		data.disciplinas.forEach((d, i) => {
+			md += `| ${i + 1} | ${d.replace(/\|/g, "\\|")} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Teorías (H1 con tabla)
+	if (data.teorias.length > 0) {
+		md += `# 💡 Teorías\n\n`;
+		md += `| # | Teoría |\n`;
+		md += `|---|--------|\n`;
+		data.teorias.forEach((t, i) => {
+			md += `| ${i + 1} | ${t.replace(/\|/g, "\\|")} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Datos cronológicos (H1 con tabla)
+	if (data.datos_cronologicos.length > 0) {
+		md += `# 📅 Datos Cronológicos\n\n`;
+		md += `| Fecha | Tipo | Descripción | Contexto | Confianza |\n`;
+		md += `|-------|------|-------------|----------|----------|\n`;
+		data.datos_cronologicos.forEach((item) => {
+			const fecha = (item.fecha || "Sin fecha").replace(/\|/g, "\\|");
+			const tipo = item.tipo_evento.replace(/\|/g, "\\|");
+			const descripcion = item.descripcion
+				.replace(/\|/g, "\\|")
+				.replace(/\n/g, " ");
+			const contexto =
+				item.contexto ?
+					item.contexto.replace(/\|/g, "\\|").replace(/\n/g, " ")
+				:	"-";
+			const confianza =
+				item.confianza ? `${Math.round(item.confianza * 100)}%` : "-";
+			md += `| ${fecha} | ${tipo} | ${descripcion} | ${contexto} | ${confianza} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Frases notables (H1 con tabla)
+	if (data.frases_notables.length > 0) {
+		md += `# 💬 Frases Notables\n\n`;
+		md += `| Frase | Autor | Contexto |\n`;
+		md += `|-------|-------|----------|\n`;
+		data.frases_notables.forEach((frase) => {
+			const texto = frase.texto.replace(/\|/g, "\\|").replace(/\n/g, " ");
+			const autor = frase.autor.replace(/\|/g, "\\|");
+			const contexto = frase.contexto.replace(/\|/g, "\\|").replace(/\n/g, " ");
+			md += `| ${texto} | ${autor} | ${contexto} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Prompts de imágenes/diagramas (H1 con tabla)
+	if (data.prompts_imagenes.length > 0) {
+		md += `# 🎨 Prompts de Diagramas\n\n`;
+		md += `| # | Estilo | Prompt |\n`;
+		md += `|---|--------|--------|\n`;
+		data.prompts_imagenes.forEach((prompt, i) => {
+			const estilo = prompt.estilo.replace(/\|/g, "\\|");
+			const promptText = prompt.prompt
+				.replace(/\|/g, "\\|")
+				.replace(/\n/g, " ");
+			md += `| ${i + 1} | ${estilo} | ${promptText} |\n`;
+		});
+		md += `\n`;
+	}
+
+	// Analogías de cultura pop (H1 con tabla - humildad epistémica)
+	if (data.analogias_cultura_pop.length > 0) {
+		md += `# 🎬 Analogías de Cultura Pop\n\n`;
+		md += `> *Para humildad epistémica: lo lúdico pero coherente*\n\n`;
+		md += `| # | Referencia | Analogía | Conexión con el Tema |\n`;
+		md += `|---|------------|----------|----------------------|\n`;
+		data.analogias_cultura_pop.forEach((analogia, i) => {
+			const referencia = analogia.referencia.replace(/\|/g, "\\|");
+			const analogiaText = analogia.analogia
+				.replace(/\|/g, "\\|")
+				.replace(/\n/g, " ");
+			const conexion = analogia.conexion
+				.replace(/\|/g, "\\|")
+				.replace(/\n/g, " ");
+			md += `| ${i + 1} | ${referencia} | ${analogiaText} | ${conexion} |\n`;
+		});
+		md += `\n`;
+	}
+
+	if (data.sesiones_chat.length > 0) {
+		md += `# 🧠🪢 Sesiones de Chat QUIPU\n\n`;
+		md += `**Total de sesiones:** ${data.sesiones_chat.length}\n\n`;
+
+		data.sesiones_chat.forEach((session, idx) => {
+			const fechaSesion = new Date(
+				session.fecha_inicio ?? new Date().toISOString(),
+			);
+			md += `## Sesión ${idx + 1}${session.titulo ? `: ${session.titulo}` : ""}\n\n`;
+			md += `**Fecha:** ${fechaSesion.toLocaleDateString("es-CL")} ${fechaSesion.toLocaleTimeString("es-CL")}  \n`;
+			md += `**Mensajes:** ${session.total_mensajes}  \n`;
+			md += `**Resonancia f₀ promedio:** ${session.avg_f0_score?.toFixed(1) || "N/A"}  \n`;
+			md += `**Paralloros:** ${session.paralloros_count}  \n`;
+			md += `**Inferencia:** ${session.inferencia_activa ? "Activada" : "Desactivada"}  \n\n`;
+
+			md += `### 💬 Conversación\n\n`;
+
+			session.mensajes.forEach((msg) => {
+				const timestamp = new Date(msg.timestamp).toLocaleTimeString("es-CL", {
+					hour: "2-digit",
+					minute: "2-digit",
+				});
+
+				if (msg.rol === "user") {
+					md += `**🧑‍🔬 Investigador** (${timestamp})\n\n`;
+					md += `${msg.contenido}\n\n`;
+				} else {
+					md += `**🤖 Asistente f₀** (${timestamp})`;
+					if (msg.es_paralloros) md += ` 🔄 *Paralloros*`;
+					md += `\n\n`;
+					md += `${msg.contenido}\n\n`;
+
+					if (msg.calibraciones_quipu && msg.calibraciones_quipu.length > 0) {
+						md += `> **Calibradores QUIPU:**\n`;
+						msg.calibraciones_quipu.forEach((cal) => {
+							md += `> - ${cal.emoji} **${cal.etiqueta}:** ${cal.valor}/100 — *${cal.insight}*\n`;
+						});
+						md += `\n`;
+					}
+				}
+
+				md += `---\n\n`;
+			});
+		});
+	}
+
+	md += `---\n\n`;
+	md += `> **Generado por Sustrato.AI** 🌱💜  \n`;
+	md += `> Módulo Cognética - Exportación Redundante  \n`;
+	md += `> ${new Date().toISOString()}  \n`;
+	md += `> Licencia: CC-BY 4.0\n`;
+
+	return md;
+}
+
+/**
+ * Persistir JSON canónico + hash en Supabase
+ * Esto permite verificación de integridad posterior
+ */
+export async function persistArtifactExport(artifactId: string): Promise<{
+	success: boolean;
+	hash?: string;
+	error?: string;
+}> {
+	try {
+		const data = await getArtifactExportData(artifactId);
+
+		if (!data) {
+			return { success: false, error: "Artefacto no encontrado" };
+		}
+
+		const canonicalJSON = await generateCanonicalJSON(data);
+		const contentHash = await calculateContentHash(canonicalJSON);
+
+		// Persistir en Supabase
+		const supabase = await createServerClient();
+		const { error } = await supabase.from("cog_artifact_exports").upsert(
+			{
+				artifact_id: artifactId,
+				content_hash: contentHash,
+				canonical_json: JSON.parse(canonicalJSON), // JSONB requiere objeto, no string
+				exported_at: new Date().toISOString(),
+			},
+			{
+				onConflict: "artifact_id",
+			},
+		);
+
+		if (error) {
+			console.error("❌ [Export] Error persistiendo:", error);
+			return { success: false, error: error.message };
+		}
+
+		console.log(`✅ [Export] Persistido con hash: ${contentHash}`);
+		return { success: true, hash: contentHash };
+	} catch (error) {
+		console.error("❌ [Export] Error:", error);
+		return { success: false, error: String(error) };
+	}
+}

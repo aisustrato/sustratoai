@@ -8,7 +8,7 @@ import {
 	createSupabaseServerClient,
 	createSupabaseServiceRoleClient,
 } from "@/lib/server";
-import { getArtifactTextContent } from "./cognetica-helpers";
+import { getArtifactTextContent } from "./cognetica-old-helpers";
 import {
 	estimateSessionContextTokensDetailed,
 	prepareTokenPayloadForAPI,
