@@ -18,22 +18,31 @@
  * Versión: v0.2
  */
 
+/* eslint-disable @typescript-eslint/no-unused-vars --
+   Este archivo es el CONTRATO de Server Actions entregado por Hongo/Calibrador.
+   Los parámetros están declarados pero no usados todavía: se consumirán a
+   medida que cada dominio (ingesta, transcripción, pdf, metabolización,
+   grupos, consulta) sea implementado en `cognetica-forense-<dominio>-actions.ts`.
+   Conforme se porten las firmas, este disable debe ir removiéndose o
+   replicándose solo en los archivos donde persista deuda declarada.
+*/
+
 "use server";
 
 import type {
-  ArtefactoCompleto,
-  CgtArtefacto,
-  CgtAudioSegmento,
-  CgtCronica,
-  CgtDestilado,
-  CgtGerminal,
-  CgtGrupoArtefactos,
-  CgtVideoSegmento,
-  CrearGrupoInput,
-  FiltrosArtefacto,
-  IngestaArtefactoInput,
-  Result,
-} from "./cognetica_forense_types";
+	ArtefactoCompleto,
+	CgtArtefacto,
+	CgtAudioSegmento,
+	CgtCronica,
+	CgtDestilado,
+	CgtGerminal,
+	CgtGrupoArtefactos,
+	CgtVideoSegmento,
+	CrearGrupoInput,
+	FiltrosArtefacto,
+	IngestaArtefactoInput,
+	Result,
+} from "@/lib/cognetica-forense/cognetica_forense_types";
 
 // =============================================================================
 // INGESTA
@@ -71,10 +80,10 @@ import type {
  *   - Falla de Storage → "Error al guardar el archivo, reintenta"
  */
 export async function ingestaArtefacto(
-  input: IngestaArtefactoInput
+	input: IngestaArtefactoInput,
 ): Promise<Result<CgtArtefacto>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 /**
@@ -89,10 +98,10 @@ export async function ingestaArtefacto(
  *   5. Retorna éxito (el flujo es asíncrono)
  */
 export async function reintentarMetabolizacion(
-  artefactoId: string
+	artefactoId: string,
 ): Promise<Result<void>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 /**
@@ -107,10 +116,10 @@ export async function reintentarMetabolizacion(
  * Valida permisos antes de borrar.
  */
 export async function eliminarArtefacto(
-  artefactoId: string
+	artefactoId: string,
 ): Promise<Result<void>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 // =============================================================================
@@ -136,10 +145,10 @@ export async function eliminarArtefacto(
  * Si falla: estado = 'error', error_mensaje poblado.
  */
 export async function transcribirAudio(
-  artefactoId: string
+	artefactoId: string,
 ): Promise<Result<CgtAudioSegmento[]>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 /**
@@ -151,10 +160,10 @@ export async function transcribirAudio(
  *   - Extracción de frames clave NO se hace en Oleada 1 (Oleada 1.5)
  */
 export async function transcribirVideo(
-  artefactoId: string
+	artefactoId: string,
 ): Promise<Result<CgtVideoSegmento[]>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 // =============================================================================
@@ -177,11 +186,11 @@ export async function transcribirVideo(
  *   5. Retorna éxito
  */
 export async function procesarPdfSlides(
-  artefactoId: string,
-  fileBuffer: Buffer
+	artefactoId: string,
+	fileBuffer: Buffer,
 ): Promise<Result<void>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 /**
@@ -204,11 +213,11 @@ export async function procesarPdfSlides(
  * Windsurf debe manejar este caso con nota en error_mensaje.
  */
 export async function procesarPdfInforme(
-  artefactoId: string,
-  fileBuffer: Buffer
+	artefactoId: string,
+	fileBuffer: Buffer,
 ): Promise<Result<void>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 // =============================================================================
@@ -245,11 +254,11 @@ export async function procesarPdfInforme(
  * según definido en spec v0.2 sección 4.1.
  */
 export async function generarCronica(
-  artefactoId: string,
-  incluirContracalibracion = false
+	artefactoId: string,
+	incluirContracalibracion = false,
 ): Promise<Result<CgtCronica>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 /**
@@ -273,10 +282,10 @@ export async function generarCronica(
  *   7. Retorna CgtDestilado
  */
 export async function generarDestilado(
-  artefactoId: string
+	artefactoId: string,
 ): Promise<Result<CgtDestilado>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 /**
@@ -305,10 +314,10 @@ export async function generarDestilado(
  *   6. Retorna CgtGerminal
  */
 export async function generarGerminalParcial(
-  artefactoId: string
+	artefactoId: string,
 ): Promise<Result<CgtGerminal>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 /**
@@ -330,11 +339,11 @@ export async function generarGerminalParcial(
  * (En Oleada 1 esto no aplica porque esas tablas aún no existen.)
  */
 export async function regenerarFormato(
-  artefactoId: string,
-  formato: "cronica" | "destilado" | "germinal"
+	artefactoId: string,
+	formato: "cronica" | "destilado" | "germinal",
 ): Promise<Result<void>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 // =============================================================================
@@ -350,10 +359,10 @@ export async function regenerarFormato(
  *   3. Retorna grupo creado
  */
 export async function crearGrupo(
-  input: CrearGrupoInput
+	input: CrearGrupoInput,
 ): Promise<Result<CgtGrupoArtefactos>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 /**
@@ -368,21 +377,21 @@ export async function crearGrupo(
  *   3. Retorna éxito
  */
 export async function agregarArtefactoAGrupo(
-  artefactoId: string,
-  grupoId: string
+	artefactoId: string,
+	grupoId: string,
 ): Promise<Result<void>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 /**
  * Remueve un artefacto de su grupo actual (lo deja sin grupo).
  */
 export async function removerArtefactoDeGrupo(
-  artefactoId: string
+	artefactoId: string,
 ): Promise<Result<void>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 /**
@@ -401,10 +410,10 @@ export async function removerArtefactoDeGrupo(
  *   7. Retorna germinal
  */
 export async function generarGerminalDeGrupo(
-  grupoId: string
+	grupoId: string,
 ): Promise<Result<CgtGerminal>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 // =============================================================================
@@ -427,11 +436,11 @@ export async function generarGerminalDeGrupo(
  *   - cgt_audio_segmentos.texto
  */
 export async function listarArtefactosDeProyecto(
-  projectId: string,
-  filtros: FiltrosArtefacto = {}
+	projectId: string,
+	filtros: FiltrosArtefacto = {},
 ): Promise<Result<CgtArtefacto[]>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 /**
@@ -448,20 +457,20 @@ export async function listarArtefactosDeProyecto(
  * Valida permisos (usuario tiene acceso al proyecto).
  */
 export async function obtenerArtefactoCompleto(
-  artefactoId: string
+	artefactoId: string,
 ): Promise<Result<ArtefactoCompleto>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 /**
  * Lista grupos de un proyecto con conteo de artefactos por grupo.
  */
 export async function listarGruposDeProyecto(
-  projectId: string
+	projectId: string,
 ): Promise<Result<Array<CgtGrupoArtefactos & { num_artefactos: number }>>> {
-  // TODO: Windsurf implementa
-  throw new Error("Not implemented");
+	// TODO: Windsurf implementa
+	throw new Error("Not implemented");
 }
 
 // =============================================================================

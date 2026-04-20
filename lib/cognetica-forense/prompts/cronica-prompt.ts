@@ -7,12 +7,14 @@
  * la firma — el flujo completo ya está cableado al resto del sistema.
  */
 
+import type { CgtTipoArtefacto } from "../cognetica_forense_types";
+
 // TODO(hongo): reemplazar con system prompt final (§5 del requerimiento).
 export const CRONICA_SYSTEM_PROMPT = "[PLACEHOLDER — entregado por Hongo]";
 
 export interface ConstruirPromptCronicaInput {
 	contenidoArtefacto: string;
-	tipoArtefacto: string; // CgtTipoArtefacto cuando types.ts esté completo
+	tipoArtefacto: CgtTipoArtefacto;
 	incluirContracalibracion: boolean;
 	floorTokens: number;
 	ceilingTokens: number;

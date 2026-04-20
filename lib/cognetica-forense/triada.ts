@@ -8,18 +8,11 @@
  * cuando se active cada pipeline de ingesta. La firma aquí fija el contrato.
  */
 
+import type { TriadaCanonica } from "./cognetica_forense_types";
 import { canonicalStringify } from "./utils/json-canonical";
 import { sha256Hex } from "./hash";
 
-export interface TriadaCanonica {
-	version_esquema: string;
-	tipo: string; // CgtTipoArtefacto cuando types.ts esté completo
-	titulo: string;
-	descripcion: string | null;
-	contenido_estructurado: Record<string, unknown>;
-	metadata: Record<string, unknown>;
-	fecha_ingesta: string; // ISO timestamp
-}
+export type { TriadaCanonica };
 
 export interface TriadaGenerada {
 	md: string;
