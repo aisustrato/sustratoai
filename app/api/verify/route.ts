@@ -1,5 +1,5 @@
 // 📍 app/api/verify/route.ts
-// Alias simple para /api/cognetica/verify-hash
+// Alias simple para /api/cognetica_old/verify-hash
 // Ruta corta para verificación de hash en documentos exportados
 
 import { NextRequest, NextResponse } from 'next/server';

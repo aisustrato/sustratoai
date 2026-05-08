@@ -3,7 +3,7 @@
 "use client";
 
 import React from "react";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { useDesignTokens } from "@/app/providers/DesignTokensProvider";
 import { cn } from "@/lib/utils";
 import { StandardText } from "./StandardText";
@@ -12,11 +12,14 @@ import {
 	type StandardStepperTokens,
 } from "@/lib/theme/components/standard-stepper-tokens";
 
+export type StepStatus = "pending" | "active" | "completed" | "error";
+
 export interface StepItem {
 	id: string | number;
 	label: string;
 	description?: string;
 	icon?: React.ElementType;
+	status?: StepStatus;
 }
 
 export interface StandardStepperProps {
@@ -56,6 +59,8 @@ export function StandardStepper({
 				const isCurrent = index === currentStepIndex;
 				const isPending = index > currentStepIndex;
 				const isLast = index === steps.length - 1;
+				const isActive = step.status === "active";
+				const isError = step.status === "error";
 
 				// Determinar estilos según estado
 				const stateStyles =
@@ -99,19 +104,25 @@ export function StandardStepper({
 						{/* BURBUJA / CIRCULO */}
 						<div
 							className={cn(
-								"relative z-10 flex items-center justify-center rounded-full border-2 shadow-sm",
+								"relative z-10 flex items-center justify-center rounded-full border-2 shadow-sm transition-all duration-500",
 								orientation === "vertical" ? "mr-4" : "mb-2",
+								// Animación de pulso para el paso activo
+								isActive && "animate-pulse ring-4 ring-offset-2 ring-primary-400/40 shadow-lg shadow-primary-500/20",
+								// Borde rojo para error
+								isError && "ring-4 ring-offset-2 ring-red-400/40",
 							)}
 							style={{
 								width: tokens.base.bubbleSize,
 								height: tokens.base.bubbleSize,
 								backgroundColor: stateStyles.background,
-								borderColor: stateStyles.border,
+								borderColor: isError ? "#ef4444" : stateStyles.border,
 								color: stateStyles.text,
 								transition: tokens.base.transition,
 							}}>
 							{isCompleted ?
 								<Check className="w-5 h-5" />
+							: isActive ?
+								<Loader2 className="w-5 h-5 animate-spin" />
 							: step.icon ?
 								<step.icon className="w-5 h-5" />
 							:	<span className="font-bold text-sm">{index + 1}</span>}
@@ -126,16 +137,21 @@ export function StandardStepper({
 							<StandardText
 								weight={isCurrent || isCompleted ? "bold" : "medium"}
 								size="sm"
+								className={cn(
+									isActive && "text-primary-700 font-semibold",
+									isError && "text-red-600",
+								)}
 								style={{ color: isPending ? stateStyles.text : undefined }}>
 								{step.label}
 							</StandardText>
 							{step.description && (
 								<StandardText
 									size="xs"
-									colorScheme="neutral"
+									colorScheme={isActive ? "primary" : isError ? "danger" : "neutral"}
 									className={cn(
 										orientation === "horizontal" &&
 											"hidden md:block max-w-[120px]",
+										isActive && "animate-pulse",
 									)}>
 									{step.description}
 								</StandardText>

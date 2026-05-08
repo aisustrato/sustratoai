@@ -1,0 +1,1 @@
+./node_modules/.bin/supabase gen types typescript --project-id vgnteswwvallupuanfiz > lib/database.types.ts

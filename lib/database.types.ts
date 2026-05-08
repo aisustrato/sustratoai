@@ -650,6 +650,2104 @@ export type Database = {
         }
         Relationships: []
       }
+      cgt_artefactos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          descripcion: string | null
+          error_mensaje: string | null
+          estado: Database["public"]["Enums"]["cgt_estado_metabolizacion"]
+          grupo_id: string | null
+          id: string
+          metadata: Json | null
+          project_id: string
+          sha256_json: string
+          storage_path_json: string | null
+          storage_path_md: string | null
+          storage_path_original: string | null
+          storage_path_yaml: string | null
+          tipo: Database["public"]["Enums"]["cgt_tipo_artefacto"]
+          titulo: string
+          updated_at: string
+          visibilidad: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string | null
+          error_mensaje?: string | null
+          estado?: Database["public"]["Enums"]["cgt_estado_metabolizacion"]
+          grupo_id?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id: string
+          sha256_json: string
+          storage_path_json?: string | null
+          storage_path_md?: string | null
+          storage_path_original?: string | null
+          storage_path_yaml?: string | null
+          tipo: Database["public"]["Enums"]["cgt_tipo_artefacto"]
+          titulo: string
+          updated_at?: string
+          visibilidad?: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string | null
+          error_mensaje?: string | null
+          estado?: Database["public"]["Enums"]["cgt_estado_metabolizacion"]
+          grupo_id?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string
+          sha256_json?: string
+          storage_path_json?: string | null
+          storage_path_md?: string | null
+          storage_path_original?: string | null
+          storage_path_yaml?: string | null
+          tipo?: Database["public"]["Enums"]["cgt_tipo_artefacto"]
+          titulo?: string
+          updated_at?: string
+          visibilidad?: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_artefactos_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_grupos_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_artefactos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_artefactos_audio: {
+        Row: {
+          artefacto_id: string
+          bitrate: number | null
+          created_at: string
+          duracion_seg: number | null
+          formato_original: string | null
+          hablantes: Json | null
+          idioma: string | null
+          sample_rate: number | null
+          transcripcion_completa: string | null
+          updated_at: string
+        }
+        Insert: {
+          artefacto_id: string
+          bitrate?: number | null
+          created_at?: string
+          duracion_seg?: number | null
+          formato_original?: string | null
+          hablantes?: Json | null
+          idioma?: string | null
+          sample_rate?: number | null
+          transcripcion_completa?: string | null
+          updated_at?: string
+        }
+        Update: {
+          artefacto_id?: string
+          bitrate?: number | null
+          created_at?: string
+          duracion_seg?: number | null
+          formato_original?: string | null
+          hablantes?: Json | null
+          idioma?: string | null
+          sample_rate?: number | null
+          transcripcion_completa?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_artefactos_audio_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: true
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_artefactos_imagen: {
+        Row: {
+          alto_px: number | null
+          ancho_px: number | null
+          artefacto_id: string
+          created_at: string
+          formato_original: string | null
+          imagen_descrita_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          alto_px?: number | null
+          ancho_px?: number | null
+          artefacto_id: string
+          created_at?: string
+          formato_original?: string | null
+          imagen_descrita_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alto_px?: number | null
+          ancho_px?: number | null
+          artefacto_id?: string
+          created_at?: string
+          formato_original?: string | null
+          imagen_descrita_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_artefactos_imagen_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: true
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_imagen_descrita"
+            columns: ["imagen_descrita_id"]
+            isOneToOne: true
+            referencedRelation: "cgt_imagenes_descritas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_artefactos_markdown: {
+        Row: {
+          artefacto_id: string
+          autor_original: string | null
+          contenido: string
+          created_at: string
+          fecha_original: string | null
+          frontmatter: Json | null
+          headers: Json | null
+          updated_at: string
+        }
+        Insert: {
+          artefacto_id: string
+          autor_original?: string | null
+          contenido: string
+          created_at?: string
+          fecha_original?: string | null
+          frontmatter?: Json | null
+          headers?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          artefacto_id?: string
+          autor_original?: string | null
+          contenido?: string
+          created_at?: string
+          fecha_original?: string | null
+          frontmatter?: Json | null
+          headers?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_artefactos_markdown_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: true
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_artefactos_pdf_informe: {
+        Row: {
+          artefacto_id: string
+          autor_original: string | null
+          citas_bibliograficas: Json | null
+          created_at: string
+          doi: string | null
+          fecha_original: string | null
+          markdown_renderizado: string
+          num_paginas: number | null
+          secciones: Json | null
+          updated_at: string
+        }
+        Insert: {
+          artefacto_id: string
+          autor_original?: string | null
+          citas_bibliograficas?: Json | null
+          created_at?: string
+          doi?: string | null
+          fecha_original?: string | null
+          markdown_renderizado: string
+          num_paginas?: number | null
+          secciones?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          artefacto_id?: string
+          autor_original?: string | null
+          citas_bibliograficas?: Json | null
+          created_at?: string
+          doi?: string | null
+          fecha_original?: string | null
+          markdown_renderizado?: string
+          num_paginas?: number | null
+          secciones?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_artefactos_pdf_informe_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: true
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_artefactos_pdf_slides: {
+        Row: {
+          artefacto_id: string
+          autor_original: string | null
+          created_at: string
+          fecha_original: string | null
+          num_paginas: number
+          paginas: Json
+          updated_at: string
+        }
+        Insert: {
+          artefacto_id: string
+          autor_original?: string | null
+          created_at?: string
+          fecha_original?: string | null
+          num_paginas: number
+          paginas?: Json
+          updated_at?: string
+        }
+        Update: {
+          artefacto_id?: string
+          autor_original?: string | null
+          created_at?: string
+          fecha_original?: string | null
+          num_paginas?: number
+          paginas?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_artefactos_pdf_slides_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: true
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_artefactos_referencias: {
+        Row: {
+          apariciones: Json
+          artefacto_id: string
+          confianza_extraccion: number
+          created_at: string
+          formato_cita_inline: string | null
+          hash_extractor_crudo: string
+          id: string
+          notas_extractor: string | null
+          numero_en_artefacto: number | null
+          project_id: string
+          referencia_id: string
+        }
+        Insert: {
+          apariciones?: Json
+          artefacto_id: string
+          confianza_extraccion?: number
+          created_at?: string
+          formato_cita_inline?: string | null
+          hash_extractor_crudo: string
+          id?: string
+          notas_extractor?: string | null
+          numero_en_artefacto?: number | null
+          project_id: string
+          referencia_id: string
+        }
+        Update: {
+          apariciones?: Json
+          artefacto_id?: string
+          confianza_extraccion?: number
+          created_at?: string
+          formato_cita_inline?: string | null
+          hash_extractor_crudo?: string
+          id?: string
+          notas_extractor?: string | null
+          numero_en_artefacto?: number | null
+          project_id?: string
+          referencia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_artefactos_referencias_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_artefactos_referencias_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_artefactos_referencias_referencia_id_fkey"
+            columns: ["referencia_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_referencias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_artefactos_referencias_referencia_id_fkey"
+            columns: ["referencia_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_referencias_con_conteo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_artefactos_video: {
+        Row: {
+          artefacto_id: string
+          created_at: string
+          duracion_seg: number | null
+          formato_original: string | null
+          fps: number | null
+          hablantes: Json | null
+          idioma: string | null
+          resolucion: string | null
+          transcripcion_completa: string | null
+          updated_at: string
+        }
+        Insert: {
+          artefacto_id: string
+          created_at?: string
+          duracion_seg?: number | null
+          formato_original?: string | null
+          fps?: number | null
+          hablantes?: Json | null
+          idioma?: string | null
+          resolucion?: string | null
+          transcripcion_completa?: string | null
+          updated_at?: string
+        }
+        Update: {
+          artefacto_id?: string
+          created_at?: string
+          duracion_seg?: number | null
+          formato_original?: string | null
+          fps?: number | null
+          hablantes?: Json | null
+          idioma?: string | null
+          resolucion?: string | null
+          transcripcion_completa?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_artefactos_video_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: true
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_audio_segmentos: {
+        Row: {
+          artefacto_id: string
+          confianza: number | null
+          created_at: string
+          hablante_id: string | null
+          id: string
+          texto: string
+          timestamp_fin: number
+          timestamp_inicio: number
+        }
+        Insert: {
+          artefacto_id: string
+          confianza?: number | null
+          created_at?: string
+          hablante_id?: string | null
+          id?: string
+          texto: string
+          timestamp_fin: number
+          timestamp_inicio: number
+        }
+        Update: {
+          artefacto_id?: string
+          confianza?: number | null
+          created_at?: string
+          hablante_id?: string | null
+          id?: string
+          texto?: string
+          timestamp_fin?: number
+          timestamp_inicio?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_audio_segmentos_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos_audio"
+            referencedColumns: ["artefacto_id"]
+          },
+        ]
+      }
+      cgt_citas: {
+        Row: {
+          aliases: Json
+          ano: string | null
+          autor: string | null
+          created_at: string
+          id: string
+          project_id: string
+          referencia: string | null
+          texto: string
+          tipo_cita: Database["public"]["Enums"]["cgt_tipo_cita"]
+          updated_at: string
+        }
+        Insert: {
+          aliases?: Json
+          ano?: string | null
+          autor?: string | null
+          created_at?: string
+          id?: string
+          project_id: string
+          referencia?: string | null
+          texto: string
+          tipo_cita?: Database["public"]["Enums"]["cgt_tipo_cita"]
+          updated_at?: string
+        }
+        Update: {
+          aliases?: Json
+          ano?: string | null
+          autor?: string | null
+          created_at?: string
+          id?: string
+          project_id?: string
+          referencia?: string | null
+          texto?: string
+          tipo_cita?: Database["public"]["Enums"]["cgt_tipo_cita"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_citas_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_citas_ediciones_humanas: {
+        Row: {
+          campo_editado: string
+          created_at: string
+          id: string
+          justificacion: string | null
+          mencion_id: string
+          project_id: string
+          user_id: string
+          valor_anterior: string | null
+          valor_nuevo: string | null
+        }
+        Insert: {
+          campo_editado: string
+          created_at?: string
+          id?: string
+          justificacion?: string | null
+          mencion_id: string
+          project_id: string
+          user_id: string
+          valor_anterior?: string | null
+          valor_nuevo?: string | null
+        }
+        Update: {
+          campo_editado?: string
+          created_at?: string
+          id?: string
+          justificacion?: string | null
+          mencion_id?: string
+          project_id?: string
+          user_id?: string
+          valor_anterior?: string | null
+          valor_nuevo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_citas_ediciones_humanas_mencion_id_fkey"
+            columns: ["mencion_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_citas_menciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_citas_ediciones_humanas_mencion_id_fkey"
+            columns: ["mencion_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_citas_valor_canonico"
+            referencedColumns: ["mencion_id"]
+          },
+          {
+            foreignKeyName: "cgt_citas_ediciones_humanas_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_citas_menciones: {
+        Row: {
+          artefacto_id: string
+          autor_cartografiador: string | null
+          autor_extractor_crudo: string | null
+          cartografiado_at: string | null
+          cita_id: string | null
+          confianza_cartografiador: number | null
+          created_at: string
+          decision_cartografiador: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          hash_extractor_crudo: string
+          id: string
+          justificacion_cartografiador: string | null
+          project_id: string
+          referencia_cartografiador: string | null
+          referencia_extractor_cruda: string | null
+          texto_cartografiador: string | null
+          texto_extractor_crudo: string
+          tipo_cita_cartografiador:
+            | Database["public"]["Enums"]["cgt_tipo_cita"]
+            | null
+          tipo_cita_extractor:
+            | Database["public"]["Enums"]["cgt_tipo_cita"]
+            | null
+          ubicacion_en_artefacto: string | null
+        }
+        Insert: {
+          artefacto_id: string
+          autor_cartografiador?: string | null
+          autor_extractor_crudo?: string | null
+          cartografiado_at?: string | null
+          cita_id?: string | null
+          confianza_cartografiador?: number | null
+          created_at?: string
+          decision_cartografiador?: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          hash_extractor_crudo: string
+          id?: string
+          justificacion_cartografiador?: string | null
+          project_id: string
+          referencia_cartografiador?: string | null
+          referencia_extractor_cruda?: string | null
+          texto_cartografiador?: string | null
+          texto_extractor_crudo: string
+          tipo_cita_cartografiador?:
+            | Database["public"]["Enums"]["cgt_tipo_cita"]
+            | null
+          tipo_cita_extractor?:
+            | Database["public"]["Enums"]["cgt_tipo_cita"]
+            | null
+          ubicacion_en_artefacto?: string | null
+        }
+        Update: {
+          artefacto_id?: string
+          autor_cartografiador?: string | null
+          autor_extractor_crudo?: string | null
+          cartografiado_at?: string | null
+          cita_id?: string | null
+          confianza_cartografiador?: number | null
+          created_at?: string
+          decision_cartografiador?: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          hash_extractor_crudo?: string
+          id?: string
+          justificacion_cartografiador?: string | null
+          project_id?: string
+          referencia_cartografiador?: string | null
+          referencia_extractor_cruda?: string | null
+          texto_cartografiador?: string | null
+          texto_extractor_crudo?: string
+          tipo_cita_cartografiador?:
+            | Database["public"]["Enums"]["cgt_tipo_cita"]
+            | null
+          tipo_cita_extractor?:
+            | Database["public"]["Enums"]["cgt_tipo_cita"]
+            | null
+          ubicacion_en_artefacto?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_citas_menciones_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_citas_menciones_cita_id_fkey"
+            columns: ["cita_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_citas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_citas_menciones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_conceptos: {
+        Row: {
+          aliases: Json
+          created_at: string
+          descripcion_canonica: string | null
+          es_semilla_fractal: boolean
+          id: string
+          nombre_canonico: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          aliases?: Json
+          created_at?: string
+          descripcion_canonica?: string | null
+          es_semilla_fractal?: boolean
+          id?: string
+          nombre_canonico: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          aliases?: Json
+          created_at?: string
+          descripcion_canonica?: string | null
+          es_semilla_fractal?: boolean
+          id?: string
+          nombre_canonico?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_conceptos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_conceptos_ediciones_humanas: {
+        Row: {
+          campo_editado: string
+          created_at: string
+          id: string
+          justificacion: string | null
+          mencion_id: string
+          project_id: string
+          user_id: string
+          valor_anterior: string | null
+          valor_nuevo: string | null
+        }
+        Insert: {
+          campo_editado: string
+          created_at?: string
+          id?: string
+          justificacion?: string | null
+          mencion_id: string
+          project_id: string
+          user_id: string
+          valor_anterior?: string | null
+          valor_nuevo?: string | null
+        }
+        Update: {
+          campo_editado?: string
+          created_at?: string
+          id?: string
+          justificacion?: string | null
+          mencion_id?: string
+          project_id?: string
+          user_id?: string
+          valor_anterior?: string | null
+          valor_nuevo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_conceptos_ediciones_humanas_mencion_id_fkey"
+            columns: ["mencion_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_conceptos_menciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_conceptos_ediciones_humanas_mencion_id_fkey"
+            columns: ["mencion_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_conceptos_valor_canonico"
+            referencedColumns: ["mencion_id"]
+          },
+          {
+            foreignKeyName: "cgt_conceptos_ediciones_humanas_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_conceptos_menciones: {
+        Row: {
+          artefacto_id: string
+          cartografiado_at: string | null
+          concepto_id: string | null
+          confianza_cartografiador: number | null
+          created_at: string
+          decision_cartografiador: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          descripcion_cartografiador: string | null
+          descripcion_extractor_cruda: string | null
+          hash_extractor_crudo: string
+          id: string
+          justificacion_cartografiador: string | null
+          nombre_cartografiador: string | null
+          nombre_extractor_crudo: string
+          project_id: string
+        }
+        Insert: {
+          artefacto_id: string
+          cartografiado_at?: string | null
+          concepto_id?: string | null
+          confianza_cartografiador?: number | null
+          created_at?: string
+          decision_cartografiador?: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          descripcion_cartografiador?: string | null
+          descripcion_extractor_cruda?: string | null
+          hash_extractor_crudo: string
+          id?: string
+          justificacion_cartografiador?: string | null
+          nombre_cartografiador?: string | null
+          nombre_extractor_crudo: string
+          project_id: string
+        }
+        Update: {
+          artefacto_id?: string
+          cartografiado_at?: string | null
+          concepto_id?: string | null
+          confianza_cartografiador?: number | null
+          created_at?: string
+          decision_cartografiador?: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          descripcion_cartografiador?: string | null
+          descripcion_extractor_cruda?: string | null
+          hash_extractor_crudo?: string
+          id?: string
+          justificacion_cartografiador?: string | null
+          nombre_cartografiador?: string | null
+          nombre_extractor_crudo?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_conceptos_menciones_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_conceptos_menciones_concepto_id_fkey"
+            columns: ["concepto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_conceptos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_conceptos_menciones_concepto_id_fkey"
+            columns: ["concepto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_conceptos_con_conteo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_conceptos_menciones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_cronicas: {
+        Row: {
+          artefacto_id: string
+          contenido: string
+          contracalibracion: string | null
+          contracalibracion_activada: boolean
+          costo_usd: number | null
+          created_at: string
+          generado_por: Database["public"]["Enums"]["cgt_origen"]
+          id: string
+          modelo_ia: string | null
+          nodo_generador: string | null
+          project_id: string
+          tokens_count: number | null
+          tokens_input: number | null
+          tokens_output: number | null
+          updated_at: string
+          version_esquema: string
+          visibilidad: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Insert: {
+          artefacto_id: string
+          contenido: string
+          contracalibracion?: string | null
+          contracalibracion_activada?: boolean
+          costo_usd?: number | null
+          created_at?: string
+          generado_por?: Database["public"]["Enums"]["cgt_origen"]
+          id?: string
+          modelo_ia?: string | null
+          nodo_generador?: string | null
+          project_id: string
+          tokens_count?: number | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          updated_at?: string
+          version_esquema?: string
+          visibilidad?: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Update: {
+          artefacto_id?: string
+          contenido?: string
+          contracalibracion?: string | null
+          contracalibracion_activada?: boolean
+          costo_usd?: number | null
+          created_at?: string
+          generado_por?: Database["public"]["Enums"]["cgt_origen"]
+          id?: string
+          modelo_ia?: string | null
+          nodo_generador?: string | null
+          project_id?: string
+          tokens_count?: number | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          updated_at?: string
+          version_esquema?: string
+          visibilidad?: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_cronicas_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: true
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_cronicas_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_destilados: {
+        Row: {
+          artefacto_id: string
+          cita_nucleo: Json | null
+          costo_usd: number | null
+          created_at: string
+          estructura_documento: Json | null
+          generado_por: Database["public"]["Enums"]["cgt_origen"]
+          id: string
+          modelo_ia: string | null
+          movimientos: Json
+          nodo_generador: string | null
+          project_id: string
+          tensiones: Json
+          tesis: string
+          tokens_count: number | null
+          tokens_input: number | null
+          tokens_output: number | null
+          updated_at: string
+          version_esquema: string
+          visibilidad: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Insert: {
+          artefacto_id: string
+          cita_nucleo?: Json | null
+          costo_usd?: number | null
+          created_at?: string
+          estructura_documento?: Json | null
+          generado_por?: Database["public"]["Enums"]["cgt_origen"]
+          id?: string
+          modelo_ia?: string | null
+          movimientos?: Json
+          nodo_generador?: string | null
+          project_id: string
+          tensiones?: Json
+          tesis: string
+          tokens_count?: number | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          updated_at?: string
+          version_esquema?: string
+          visibilidad?: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Update: {
+          artefacto_id?: string
+          cita_nucleo?: Json | null
+          costo_usd?: number | null
+          created_at?: string
+          estructura_documento?: Json | null
+          generado_por?: Database["public"]["Enums"]["cgt_origen"]
+          id?: string
+          modelo_ia?: string | null
+          movimientos?: Json
+          nodo_generador?: string | null
+          project_id?: string
+          tensiones?: Json
+          tesis?: string
+          tokens_count?: number | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          updated_at?: string
+          version_esquema?: string
+          visibilidad?: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_destilados_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: true
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_destilados_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_disciplinas: {
+        Row: {
+          aliases: Json
+          created_at: string
+          descripcion_canonica: string | null
+          disciplina_madre_id: string | null
+          id: string
+          nombre_canonico: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          aliases?: Json
+          created_at?: string
+          descripcion_canonica?: string | null
+          disciplina_madre_id?: string | null
+          id?: string
+          nombre_canonico: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          aliases?: Json
+          created_at?: string
+          descripcion_canonica?: string | null
+          disciplina_madre_id?: string | null
+          id?: string
+          nombre_canonico?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_disciplinas_disciplina_madre_id_fkey"
+            columns: ["disciplina_madre_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_disciplinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_disciplinas_disciplina_madre_id_fkey"
+            columns: ["disciplina_madre_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_disciplinas_con_conteo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_disciplinas_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_disciplinas_ediciones_humanas: {
+        Row: {
+          campo_editado: string
+          created_at: string
+          id: string
+          justificacion: string | null
+          mencion_id: string
+          project_id: string
+          user_id: string
+          valor_anterior: string | null
+          valor_nuevo: string | null
+        }
+        Insert: {
+          campo_editado: string
+          created_at?: string
+          id?: string
+          justificacion?: string | null
+          mencion_id: string
+          project_id: string
+          user_id: string
+          valor_anterior?: string | null
+          valor_nuevo?: string | null
+        }
+        Update: {
+          campo_editado?: string
+          created_at?: string
+          id?: string
+          justificacion?: string | null
+          mencion_id?: string
+          project_id?: string
+          user_id?: string
+          valor_anterior?: string | null
+          valor_nuevo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_disciplinas_ediciones_humanas_mencion_id_fkey"
+            columns: ["mencion_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_disciplinas_menciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_disciplinas_ediciones_humanas_mencion_id_fkey"
+            columns: ["mencion_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_disciplinas_valor_canonico"
+            referencedColumns: ["mencion_id"]
+          },
+          {
+            foreignKeyName: "cgt_disciplinas_ediciones_humanas_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_disciplinas_menciones: {
+        Row: {
+          artefacto_id: string
+          cartografiado_at: string | null
+          confianza_cartografiador: number | null
+          created_at: string
+          decision_cartografiador: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          descripcion_cartografiador: string | null
+          descripcion_extractor_cruda: string | null
+          disciplina_id: string | null
+          hash_extractor_crudo: string
+          id: string
+          justificacion_cartografiador: string | null
+          nombre_cartografiador: string | null
+          nombre_extractor_crudo: string
+          project_id: string
+        }
+        Insert: {
+          artefacto_id: string
+          cartografiado_at?: string | null
+          confianza_cartografiador?: number | null
+          created_at?: string
+          decision_cartografiador?: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          descripcion_cartografiador?: string | null
+          descripcion_extractor_cruda?: string | null
+          disciplina_id?: string | null
+          hash_extractor_crudo: string
+          id?: string
+          justificacion_cartografiador?: string | null
+          nombre_cartografiador?: string | null
+          nombre_extractor_crudo: string
+          project_id: string
+        }
+        Update: {
+          artefacto_id?: string
+          cartografiado_at?: string | null
+          confianza_cartografiador?: number | null
+          created_at?: string
+          decision_cartografiador?: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          descripcion_cartografiador?: string | null
+          descripcion_extractor_cruda?: string | null
+          disciplina_id?: string | null
+          hash_extractor_crudo?: string
+          id?: string
+          justificacion_cartografiador?: string | null
+          nombre_cartografiador?: string | null
+          nombre_extractor_crudo?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_disciplinas_menciones_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_disciplinas_menciones_disciplina_id_fkey"
+            columns: ["disciplina_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_disciplinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_disciplinas_menciones_disciplina_id_fkey"
+            columns: ["disciplina_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_disciplinas_con_conteo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_disciplinas_menciones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_germinales: {
+        Row: {
+          artefacto_id: string | null
+          contexto_snapshot: Json | null
+          costo_usd: number | null
+          created_at: string
+          generado_por: Database["public"]["Enums"]["cgt_origen"]
+          grupo_id: string | null
+          hash_cronica_upstream: string | null
+          hash_destilado_upstream: string | null
+          id: string
+          modelo_ia: string | null
+          nodo_generador: string | null
+          num_proyecciones_propuestas: number | null
+          num_resonancias_propuestas: number | null
+          project_id: string
+          resumen: string | null
+          tokens_count: number | null
+          tokens_input: number | null
+          tokens_output: number | null
+          updated_at: string
+          version_esquema: string
+          visibilidad: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Insert: {
+          artefacto_id?: string | null
+          contexto_snapshot?: Json | null
+          costo_usd?: number | null
+          created_at?: string
+          generado_por?: Database["public"]["Enums"]["cgt_origen"]
+          grupo_id?: string | null
+          hash_cronica_upstream?: string | null
+          hash_destilado_upstream?: string | null
+          id?: string
+          modelo_ia?: string | null
+          nodo_generador?: string | null
+          num_proyecciones_propuestas?: number | null
+          num_resonancias_propuestas?: number | null
+          project_id: string
+          resumen?: string | null
+          tokens_count?: number | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          updated_at?: string
+          version_esquema?: string
+          visibilidad?: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Update: {
+          artefacto_id?: string | null
+          contexto_snapshot?: Json | null
+          costo_usd?: number | null
+          created_at?: string
+          generado_por?: Database["public"]["Enums"]["cgt_origen"]
+          grupo_id?: string | null
+          hash_cronica_upstream?: string | null
+          hash_destilado_upstream?: string | null
+          id?: string
+          modelo_ia?: string | null
+          nodo_generador?: string | null
+          num_proyecciones_propuestas?: number | null
+          num_resonancias_propuestas?: number | null
+          project_id?: string
+          resumen?: string | null
+          tokens_count?: number | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          updated_at?: string
+          version_esquema?: string
+          visibilidad?: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_germinales_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: true
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_germinales_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: true
+            referencedRelation: "cgt_grupos_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_germinales_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_grupos_artefactos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          descripcion: string | null
+          id: string
+          metadata: Json | null
+          nombre: string
+          project_id: string
+          updated_at: string
+          visibilidad: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string | null
+          id?: string
+          metadata?: Json | null
+          nombre: string
+          project_id: string
+          updated_at?: string
+          visibilidad?: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          descripcion?: string | null
+          id?: string
+          metadata?: Json | null
+          nombre?: string
+          project_id?: string
+          updated_at?: string
+          visibilidad?: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_grupos_artefactos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_imagenes_descritas: {
+        Row: {
+          alto_px: number | null
+          ancho_px: number | null
+          artefacto_id: string
+          created_at: string
+          descripcion_humana: string | null
+          descripcion_humana_at: string | null
+          descripcion_humana_por: string | null
+          descripcion_ia: string | null
+          formato: string | null
+          id: string
+          modelo_ia: string | null
+          pagina_num: number | null
+          posicion_en_pagina: number | null
+          storage_path: string
+          timestamp_seg: number | null
+          updated_at: string
+        }
+        Insert: {
+          alto_px?: number | null
+          ancho_px?: number | null
+          artefacto_id: string
+          created_at?: string
+          descripcion_humana?: string | null
+          descripcion_humana_at?: string | null
+          descripcion_humana_por?: string | null
+          descripcion_ia?: string | null
+          formato?: string | null
+          id?: string
+          modelo_ia?: string | null
+          pagina_num?: number | null
+          posicion_en_pagina?: number | null
+          storage_path: string
+          timestamp_seg?: number | null
+          updated_at?: string
+        }
+        Update: {
+          alto_px?: number | null
+          ancho_px?: number | null
+          artefacto_id?: string
+          created_at?: string
+          descripcion_humana?: string | null
+          descripcion_humana_at?: string | null
+          descripcion_humana_por?: string | null
+          descripcion_ia?: string | null
+          formato?: string | null
+          id?: string
+          modelo_ia?: string | null
+          pagina_num?: number | null
+          posicion_en_pagina?: number | null
+          storage_path?: string
+          timestamp_seg?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_imagenes_descritas_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_logs_cartografiador: {
+        Row: {
+          artefacto_id: string
+          costo_usd: number
+          created_at: string
+          duracion_ms: number
+          error_mensaje: string | null
+          finish_reason: string | null
+          id: string
+          intento: number
+          modelo: string
+          project_id: string
+          temperatura: number
+          tokens_cached: number
+          tokens_input: number
+          tokens_output: number
+          total_ambigua: number
+          total_match_existente: number
+          total_menciones: number
+          total_nueva_entidad: number
+          universo_citas_count: number
+          universo_conceptos_count: number
+          universo_disciplinas_count: number
+          universo_pensadores_count: number
+          universo_teorias_count: number
+          user_id: string | null
+        }
+        Insert: {
+          artefacto_id: string
+          costo_usd?: number
+          created_at?: string
+          duracion_ms?: number
+          error_mensaje?: string | null
+          finish_reason?: string | null
+          id?: string
+          intento?: number
+          modelo: string
+          project_id: string
+          temperatura: number
+          tokens_cached?: number
+          tokens_input?: number
+          tokens_output?: number
+          total_ambigua?: number
+          total_match_existente?: number
+          total_menciones?: number
+          total_nueva_entidad?: number
+          universo_citas_count?: number
+          universo_conceptos_count?: number
+          universo_disciplinas_count?: number
+          universo_pensadores_count?: number
+          universo_teorias_count?: number
+          user_id?: string | null
+        }
+        Update: {
+          artefacto_id?: string
+          costo_usd?: number
+          created_at?: string
+          duracion_ms?: number
+          error_mensaje?: string | null
+          finish_reason?: string | null
+          id?: string
+          intento?: number
+          modelo?: string
+          project_id?: string
+          temperatura?: number
+          tokens_cached?: number
+          tokens_input?: number
+          tokens_output?: number
+          total_ambigua?: number
+          total_match_existente?: number
+          total_menciones?: number
+          total_nueva_entidad?: number
+          universo_citas_count?: number
+          universo_conceptos_count?: number
+          universo_disciplinas_count?: number
+          universo_pensadores_count?: number
+          universo_teorias_count?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_logs_cartografiador_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_logs_cartografiador_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_logs_deepseek: {
+        Row: {
+          artefacto_id: string | null
+          costo_usd: number
+          created_at: string
+          duracion_ms: number
+          error_mensaje: string | null
+          finish_reason: string | null
+          formato: string
+          id: string
+          intento: number
+          modelo: string
+          project_id: string | null
+          temperatura: number
+          tokens_cached: number
+          tokens_input: number
+          tokens_output: number
+        }
+        Insert: {
+          artefacto_id?: string | null
+          costo_usd?: number
+          created_at?: string
+          duracion_ms?: number
+          error_mensaje?: string | null
+          finish_reason?: string | null
+          formato: string
+          id?: string
+          intento?: number
+          modelo: string
+          project_id?: string | null
+          temperatura: number
+          tokens_cached?: number
+          tokens_input?: number
+          tokens_output?: number
+        }
+        Update: {
+          artefacto_id?: string | null
+          costo_usd?: number
+          created_at?: string
+          duracion_ms?: number
+          error_mensaje?: string | null
+          finish_reason?: string | null
+          formato?: string
+          id?: string
+          intento?: number
+          modelo?: string
+          project_id?: string | null
+          temperatura?: number
+          tokens_cached?: number
+          tokens_input?: number
+          tokens_output?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_logs_deepseek_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_logs_deepseek_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_nucleos: {
+        Row: {
+          artefacto_id: string
+          cita_nucleo: Json | null
+          costo_usd: number | null
+          created_at: string
+          generado_por: Database["public"]["Enums"]["cgt_origen"]
+          hash_destilado_upstream: string
+          id: string
+          modelo_ia: string | null
+          movimientos_esenciales: Json
+          nodo_generador: string | null
+          project_id: string
+          tension_irreductible: string | null
+          tesis: string
+          tokens_count: number | null
+          tokens_input: number | null
+          tokens_output: number | null
+          updated_at: string
+          version_esquema: string
+          visibilidad: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Insert: {
+          artefacto_id: string
+          cita_nucleo?: Json | null
+          costo_usd?: number | null
+          created_at?: string
+          generado_por?: Database["public"]["Enums"]["cgt_origen"]
+          hash_destilado_upstream: string
+          id?: string
+          modelo_ia?: string | null
+          movimientos_esenciales?: Json
+          nodo_generador?: string | null
+          project_id: string
+          tension_irreductible?: string | null
+          tesis: string
+          tokens_count?: number | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          updated_at?: string
+          version_esquema?: string
+          visibilidad?: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Update: {
+          artefacto_id?: string
+          cita_nucleo?: Json | null
+          costo_usd?: number | null
+          created_at?: string
+          generado_por?: Database["public"]["Enums"]["cgt_origen"]
+          hash_destilado_upstream?: string
+          id?: string
+          modelo_ia?: string | null
+          movimientos_esenciales?: Json
+          nodo_generador?: string | null
+          project_id?: string
+          tension_irreductible?: string | null
+          tesis?: string
+          tokens_count?: number | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          updated_at?: string
+          version_esquema?: string
+          visibilidad?: Database["public"]["Enums"]["cgt_visibilidad"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_nucleos_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: true
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_nucleos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_pensadores: {
+        Row: {
+          aliases: Json
+          created_at: string
+          descripcion_canonica: string | null
+          id: string
+          nombre_canonico: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          aliases?: Json
+          created_at?: string
+          descripcion_canonica?: string | null
+          id?: string
+          nombre_canonico: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          aliases?: Json
+          created_at?: string
+          descripcion_canonica?: string | null
+          id?: string
+          nombre_canonico?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_pensadores_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_pensadores_ediciones_humanas: {
+        Row: {
+          campo_editado: string
+          created_at: string
+          id: string
+          justificacion: string | null
+          mencion_id: string
+          project_id: string
+          user_id: string
+          valor_anterior: string | null
+          valor_nuevo: string | null
+        }
+        Insert: {
+          campo_editado: string
+          created_at?: string
+          id?: string
+          justificacion?: string | null
+          mencion_id: string
+          project_id: string
+          user_id: string
+          valor_anterior?: string | null
+          valor_nuevo?: string | null
+        }
+        Update: {
+          campo_editado?: string
+          created_at?: string
+          id?: string
+          justificacion?: string | null
+          mencion_id?: string
+          project_id?: string
+          user_id?: string
+          valor_anterior?: string | null
+          valor_nuevo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_pensadores_ediciones_humanas_mencion_id_fkey"
+            columns: ["mencion_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_pensadores_menciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_pensadores_ediciones_humanas_mencion_id_fkey"
+            columns: ["mencion_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_pensadores_valor_canonico"
+            referencedColumns: ["mencion_id"]
+          },
+          {
+            foreignKeyName: "cgt_pensadores_ediciones_humanas_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_pensadores_menciones: {
+        Row: {
+          artefacto_id: string
+          cartografiado_at: string | null
+          confianza_cartografiador: number | null
+          created_at: string
+          decision_cartografiador: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          descripcion_cartografiador: string | null
+          descripcion_extractor_cruda: string | null
+          hash_extractor_crudo: string
+          id: string
+          justificacion_cartografiador: string | null
+          nombre_cartografiador: string | null
+          nombre_extractor_crudo: string
+          pensador_id: string | null
+          project_id: string
+        }
+        Insert: {
+          artefacto_id: string
+          cartografiado_at?: string | null
+          confianza_cartografiador?: number | null
+          created_at?: string
+          decision_cartografiador?: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          descripcion_cartografiador?: string | null
+          descripcion_extractor_cruda?: string | null
+          hash_extractor_crudo: string
+          id?: string
+          justificacion_cartografiador?: string | null
+          nombre_cartografiador?: string | null
+          nombre_extractor_crudo: string
+          pensador_id?: string | null
+          project_id: string
+        }
+        Update: {
+          artefacto_id?: string
+          cartografiado_at?: string | null
+          confianza_cartografiador?: number | null
+          created_at?: string
+          decision_cartografiador?: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          descripcion_cartografiador?: string | null
+          descripcion_extractor_cruda?: string | null
+          hash_extractor_crudo?: string
+          id?: string
+          justificacion_cartografiador?: string | null
+          nombre_cartografiador?: string | null
+          nombre_extractor_crudo?: string
+          pensador_id?: string | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_pensadores_menciones_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_pensadores_menciones_pensador_id_fkey"
+            columns: ["pensador_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_pensadores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_pensadores_menciones_pensador_id_fkey"
+            columns: ["pensador_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_pensadores_con_conteo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_pensadores_menciones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_referencias: {
+        Row: {
+          aliases: Json
+          ano: string | null
+          autores: Json
+          created_at: string
+          descripcion_canonica: string | null
+          doi: string | null
+          fuente: string | null
+          id: string
+          isbn: string | null
+          project_id: string
+          tipo_referencia: Database["public"]["Enums"]["cgt_tipo_referencia"]
+          titulo: string | null
+          updated_at: string
+          url: string | null
+          url_normalizada: string | null
+        }
+        Insert: {
+          aliases?: Json
+          ano?: string | null
+          autores?: Json
+          created_at?: string
+          descripcion_canonica?: string | null
+          doi?: string | null
+          fuente?: string | null
+          id?: string
+          isbn?: string | null
+          project_id: string
+          tipo_referencia?: Database["public"]["Enums"]["cgt_tipo_referencia"]
+          titulo?: string | null
+          updated_at?: string
+          url?: string | null
+          url_normalizada?: string | null
+        }
+        Update: {
+          aliases?: Json
+          ano?: string | null
+          autores?: Json
+          created_at?: string
+          descripcion_canonica?: string | null
+          doi?: string | null
+          fuente?: string | null
+          id?: string
+          isbn?: string | null
+          project_id?: string
+          tipo_referencia?: Database["public"]["Enums"]["cgt_tipo_referencia"]
+          titulo?: string | null
+          updated_at?: string
+          url?: string | null
+          url_normalizada?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_referencias_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_teorias: {
+        Row: {
+          aliases: Json
+          autores_principales: Json
+          created_at: string
+          descripcion_canonica: string | null
+          id: string
+          nombre_canonico: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          aliases?: Json
+          autores_principales?: Json
+          created_at?: string
+          descripcion_canonica?: string | null
+          id?: string
+          nombre_canonico: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          aliases?: Json
+          autores_principales?: Json
+          created_at?: string
+          descripcion_canonica?: string | null
+          id?: string
+          nombre_canonico?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_teorias_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_teorias_ediciones_humanas: {
+        Row: {
+          campo_editado: string
+          created_at: string
+          id: string
+          justificacion: string | null
+          mencion_id: string
+          project_id: string
+          user_id: string
+          valor_anterior: string | null
+          valor_nuevo: string | null
+        }
+        Insert: {
+          campo_editado: string
+          created_at?: string
+          id?: string
+          justificacion?: string | null
+          mencion_id: string
+          project_id: string
+          user_id: string
+          valor_anterior?: string | null
+          valor_nuevo?: string | null
+        }
+        Update: {
+          campo_editado?: string
+          created_at?: string
+          id?: string
+          justificacion?: string | null
+          mencion_id?: string
+          project_id?: string
+          user_id?: string
+          valor_anterior?: string | null
+          valor_nuevo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_teorias_ediciones_humanas_mencion_id_fkey"
+            columns: ["mencion_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_teorias_menciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_teorias_ediciones_humanas_mencion_id_fkey"
+            columns: ["mencion_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_teorias_valor_canonico"
+            referencedColumns: ["mencion_id"]
+          },
+          {
+            foreignKeyName: "cgt_teorias_ediciones_humanas_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_teorias_menciones: {
+        Row: {
+          artefacto_id: string
+          cartografiado_at: string | null
+          confianza_cartografiador: number | null
+          created_at: string
+          decision_cartografiador: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          descripcion_cartografiador: string | null
+          descripcion_extractor_cruda: string | null
+          hash_extractor_crudo: string
+          id: string
+          justificacion_cartografiador: string | null
+          nombre_cartografiador: string | null
+          nombre_extractor_crudo: string
+          project_id: string
+          teoria_id: string | null
+        }
+        Insert: {
+          artefacto_id: string
+          cartografiado_at?: string | null
+          confianza_cartografiador?: number | null
+          created_at?: string
+          decision_cartografiador?: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          descripcion_cartografiador?: string | null
+          descripcion_extractor_cruda?: string | null
+          hash_extractor_crudo: string
+          id?: string
+          justificacion_cartografiador?: string | null
+          nombre_cartografiador?: string | null
+          nombre_extractor_crudo: string
+          project_id: string
+          teoria_id?: string | null
+        }
+        Update: {
+          artefacto_id?: string
+          cartografiado_at?: string | null
+          confianza_cartografiador?: number | null
+          created_at?: string
+          decision_cartografiador?: Database["public"]["Enums"]["cgt_decision_cartografiador"]
+          descripcion_cartografiador?: string | null
+          descripcion_extractor_cruda?: string | null
+          hash_extractor_crudo?: string
+          id?: string
+          justificacion_cartografiador?: string | null
+          nombre_cartografiador?: string | null
+          nombre_extractor_crudo?: string
+          project_id?: string
+          teoria_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_teorias_menciones_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_teorias_menciones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_teorias_menciones_teoria_id_fkey"
+            columns: ["teoria_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_teorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_teorias_menciones_teoria_id_fkey"
+            columns: ["teoria_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_teorias_con_conteo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_video_segmentos: {
+        Row: {
+          artefacto_id: string
+          confianza: number | null
+          created_at: string
+          frames_clave_ids: string[] | null
+          hablante_id: string | null
+          id: string
+          texto: string | null
+          timestamp_fin: number
+          timestamp_inicio: number
+        }
+        Insert: {
+          artefacto_id: string
+          confianza?: number | null
+          created_at?: string
+          frames_clave_ids?: string[] | null
+          hablante_id?: string | null
+          id?: string
+          texto?: string | null
+          timestamp_fin: number
+          timestamp_inicio: number
+        }
+        Update: {
+          artefacto_id?: string
+          confianza?: number | null
+          created_at?: string
+          frames_clave_ids?: string[] | null
+          hablante_id?: string | null
+          id?: string
+          texto?: string | null
+          timestamp_fin?: number
+          timestamp_inicio?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_video_segmentos_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos_video"
+            referencedColumns: ["artefacto_id"]
+          },
+        ]
+      }
       cog_artifact_disciplines: {
         Row: {
           artifact_id: string
@@ -3670,6 +5768,152 @@ export type Database = {
           },
         ]
       }
+      paper_images: {
+        Row: {
+          alt_text: string
+          created_at: string
+          description_ai: string
+          file_size: number | null
+          height: number | null
+          id: string
+          is_uploaded: boolean
+          mime_type: string | null
+          original_filename: string | null
+          original_placeholder: string
+          paper_id: string
+          position: number
+          public_url: string | null
+          storage_path: string | null
+          updated_at: string
+          width: number | null
+        }
+        Insert: {
+          alt_text?: string
+          created_at?: string
+          description_ai?: string
+          file_size?: number | null
+          height?: number | null
+          id?: string
+          is_uploaded?: boolean
+          mime_type?: string | null
+          original_filename?: string | null
+          original_placeholder: string
+          paper_id: string
+          position: number
+          public_url?: string | null
+          storage_path?: string | null
+          updated_at?: string
+          width?: number | null
+        }
+        Update: {
+          alt_text?: string
+          created_at?: string
+          description_ai?: string
+          file_size?: number | null
+          height?: number | null
+          id?: string
+          is_uploaded?: boolean
+          mime_type?: string | null
+          original_filename?: string | null
+          original_placeholder?: string
+          paper_id?: string
+          position?: number
+          public_url?: string | null
+          storage_path?: string | null
+          updated_at?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_images_paper_id_fkey"
+            columns: ["paper_id"]
+            isOneToOne: false
+            referencedRelation: "papers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      papers: {
+        Row: {
+          abstract_en: string | null
+          abstract_es: string
+          authors: Json
+          citation_apa: string | null
+          content_md: string
+          created_at: string
+          created_by: string | null
+          doi: string | null
+          id: string
+          is_published: boolean
+          keywords: string[]
+          language: string
+          license: string
+          pdf_sha256: string | null
+          pdf_storage_path: string | null
+          pdf_url: string | null
+          processing_status: string
+          published_at: string | null
+          slug: string
+          subtitle: string | null
+          title: string
+          updated_at: string
+          version: string
+          zenodo_url: string | null
+        }
+        Insert: {
+          abstract_en?: string | null
+          abstract_es: string
+          authors?: Json
+          citation_apa?: string | null
+          content_md: string
+          created_at?: string
+          created_by?: string | null
+          doi?: string | null
+          id?: string
+          is_published?: boolean
+          keywords?: string[]
+          language?: string
+          license?: string
+          pdf_sha256?: string | null
+          pdf_storage_path?: string | null
+          pdf_url?: string | null
+          processing_status?: string
+          published_at?: string | null
+          slug: string
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+          version?: string
+          zenodo_url?: string | null
+        }
+        Update: {
+          abstract_en?: string | null
+          abstract_es?: string
+          authors?: Json
+          citation_apa?: string | null
+          content_md?: string
+          created_at?: string
+          created_by?: string | null
+          doi?: string | null
+          id?: string
+          is_published?: boolean
+          keywords?: string[]
+          language?: string
+          license?: string
+          pdf_sha256?: string | null
+          pdf_storage_path?: string | null
+          pdf_url?: string | null
+          processing_status?: string
+          published_at?: string | null
+          slug?: string
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+          version?: string
+          zenodo_url?: string | null
+        }
+        Relationships: []
+      }
       phase_eligible_articles: {
         Row: {
           article_id: string
@@ -4202,6 +6446,689 @@ export type Database = {
       }
     }
     Views: {
+      cgt_vw_citas_valor_canonico: {
+        Row: {
+          artefacto_id: string | null
+          autor_canonico_actual: string | null
+          autor_extractor_crudo: string | null
+          cartografiado_at: string | null
+          cita_id: string | null
+          confianza_cartografiador: number | null
+          decision_cartografiador:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          mencion_id: string | null
+          project_id: string | null
+          referencia_canonica_actual: string | null
+          referencia_extractor_cruda: string | null
+          texto_canonico_actual: string | null
+          texto_extractor_crudo: string | null
+          tipo_cita_canonico_actual:
+            | Database["public"]["Enums"]["cgt_tipo_cita"]
+            | null
+          tipo_cita_extractor:
+            | Database["public"]["Enums"]["cgt_tipo_cita"]
+            | null
+          ubicacion_en_artefacto: string | null
+        }
+        Insert: {
+          artefacto_id?: string | null
+          autor_canonico_actual?: never
+          autor_extractor_crudo?: string | null
+          cartografiado_at?: string | null
+          cita_id?: string | null
+          confianza_cartografiador?: number | null
+          decision_cartografiador?:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          mencion_id?: string | null
+          project_id?: string | null
+          referencia_canonica_actual?: never
+          referencia_extractor_cruda?: string | null
+          texto_canonico_actual?: never
+          texto_extractor_crudo?: string | null
+          tipo_cita_canonico_actual?: never
+          tipo_cita_extractor?:
+            | Database["public"]["Enums"]["cgt_tipo_cita"]
+            | null
+          ubicacion_en_artefacto?: string | null
+        }
+        Update: {
+          artefacto_id?: string | null
+          autor_canonico_actual?: never
+          autor_extractor_crudo?: string | null
+          cartografiado_at?: string | null
+          cita_id?: string | null
+          confianza_cartografiador?: number | null
+          decision_cartografiador?:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          mencion_id?: string | null
+          project_id?: string | null
+          referencia_canonica_actual?: never
+          referencia_extractor_cruda?: string | null
+          texto_canonico_actual?: never
+          texto_extractor_crudo?: string | null
+          tipo_cita_canonico_actual?: never
+          tipo_cita_extractor?:
+            | Database["public"]["Enums"]["cgt_tipo_cita"]
+            | null
+          ubicacion_en_artefacto?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_citas_menciones_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_citas_menciones_cita_id_fkey"
+            columns: ["cita_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_citas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_citas_menciones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_vw_conceptos_con_conteo: {
+        Row: {
+          aliases: Json | null
+          created_at: string | null
+          descripcion_canonica: string | null
+          es_semilla_fractal: boolean | null
+          id: string | null
+          menciones_count: number | null
+          nombre_canonico: string | null
+          project_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          aliases?: Json | null
+          created_at?: string | null
+          descripcion_canonica?: string | null
+          es_semilla_fractal?: boolean | null
+          id?: string | null
+          menciones_count?: never
+          nombre_canonico?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          aliases?: Json | null
+          created_at?: string | null
+          descripcion_canonica?: string | null
+          es_semilla_fractal?: boolean | null
+          id?: string | null
+          menciones_count?: never
+          nombre_canonico?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_conceptos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_vw_conceptos_valor_canonico: {
+        Row: {
+          artefacto_id: string | null
+          cartografiado_at: string | null
+          concepto_id: string | null
+          confianza_cartografiador: number | null
+          decision_cartografiador:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          descripcion_canonica_actual: string | null
+          descripcion_extractor_cruda: string | null
+          descripcion_humano_ultimo: string | null
+          mencion_id: string | null
+          nombre_canonico_actual: string | null
+          nombre_extractor_crudo: string | null
+          nombre_humano_ultimo: string | null
+          project_id: string | null
+        }
+        Insert: {
+          artefacto_id?: string | null
+          cartografiado_at?: string | null
+          concepto_id?: string | null
+          confianza_cartografiador?: number | null
+          decision_cartografiador?:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          descripcion_canonica_actual?: never
+          descripcion_extractor_cruda?: string | null
+          descripcion_humano_ultimo?: never
+          mencion_id?: string | null
+          nombre_canonico_actual?: never
+          nombre_extractor_crudo?: string | null
+          nombre_humano_ultimo?: never
+          project_id?: string | null
+        }
+        Update: {
+          artefacto_id?: string | null
+          cartografiado_at?: string | null
+          concepto_id?: string | null
+          confianza_cartografiador?: number | null
+          decision_cartografiador?:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          descripcion_canonica_actual?: never
+          descripcion_extractor_cruda?: string | null
+          descripcion_humano_ultimo?: never
+          mencion_id?: string | null
+          nombre_canonico_actual?: never
+          nombre_extractor_crudo?: string | null
+          nombre_humano_ultimo?: never
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_conceptos_menciones_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_conceptos_menciones_concepto_id_fkey"
+            columns: ["concepto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_conceptos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_conceptos_menciones_concepto_id_fkey"
+            columns: ["concepto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_conceptos_con_conteo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_conceptos_menciones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_vw_disciplinas_con_conteo: {
+        Row: {
+          aliases: Json | null
+          created_at: string | null
+          descripcion_canonica: string | null
+          disciplina_madre_id: string | null
+          id: string | null
+          menciones_count: number | null
+          nombre_canonico: string | null
+          project_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          aliases?: Json | null
+          created_at?: string | null
+          descripcion_canonica?: string | null
+          disciplina_madre_id?: string | null
+          id?: string | null
+          menciones_count?: never
+          nombre_canonico?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          aliases?: Json | null
+          created_at?: string | null
+          descripcion_canonica?: string | null
+          disciplina_madre_id?: string | null
+          id?: string | null
+          menciones_count?: never
+          nombre_canonico?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_disciplinas_disciplina_madre_id_fkey"
+            columns: ["disciplina_madre_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_disciplinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_disciplinas_disciplina_madre_id_fkey"
+            columns: ["disciplina_madre_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_disciplinas_con_conteo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_disciplinas_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_vw_disciplinas_valor_canonico: {
+        Row: {
+          artefacto_id: string | null
+          cartografiado_at: string | null
+          confianza_cartografiador: number | null
+          decision_cartografiador:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          descripcion_canonica_actual: string | null
+          descripcion_extractor_cruda: string | null
+          descripcion_humano_ultimo: string | null
+          disciplina_id: string | null
+          mencion_id: string | null
+          nombre_canonico_actual: string | null
+          nombre_extractor_crudo: string | null
+          nombre_humano_ultimo: string | null
+          project_id: string | null
+        }
+        Insert: {
+          artefacto_id?: string | null
+          cartografiado_at?: string | null
+          confianza_cartografiador?: number | null
+          decision_cartografiador?:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          descripcion_canonica_actual?: never
+          descripcion_extractor_cruda?: string | null
+          descripcion_humano_ultimo?: never
+          disciplina_id?: string | null
+          mencion_id?: string | null
+          nombre_canonico_actual?: never
+          nombre_extractor_crudo?: string | null
+          nombre_humano_ultimo?: never
+          project_id?: string | null
+        }
+        Update: {
+          artefacto_id?: string | null
+          cartografiado_at?: string | null
+          confianza_cartografiador?: number | null
+          decision_cartografiador?:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          descripcion_canonica_actual?: never
+          descripcion_extractor_cruda?: string | null
+          descripcion_humano_ultimo?: never
+          disciplina_id?: string | null
+          mencion_id?: string | null
+          nombre_canonico_actual?: never
+          nombre_extractor_crudo?: string | null
+          nombre_humano_ultimo?: never
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_disciplinas_menciones_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_disciplinas_menciones_disciplina_id_fkey"
+            columns: ["disciplina_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_disciplinas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_disciplinas_menciones_disciplina_id_fkey"
+            columns: ["disciplina_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_disciplinas_con_conteo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_disciplinas_menciones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_vw_pensadores_con_conteo: {
+        Row: {
+          aliases: Json | null
+          created_at: string | null
+          descripcion_canonica: string | null
+          id: string | null
+          menciones_count: number | null
+          nombre_canonico: string | null
+          project_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          aliases?: Json | null
+          created_at?: string | null
+          descripcion_canonica?: string | null
+          id?: string | null
+          menciones_count?: never
+          nombre_canonico?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          aliases?: Json | null
+          created_at?: string | null
+          descripcion_canonica?: string | null
+          id?: string | null
+          menciones_count?: never
+          nombre_canonico?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_pensadores_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_vw_pensadores_valor_canonico: {
+        Row: {
+          artefacto_id: string | null
+          cartografiado_at: string | null
+          confianza_cartografiador: number | null
+          decision_cartografiador:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          descripcion_canonica_actual: string | null
+          descripcion_extractor_cruda: string | null
+          descripcion_humano_ultimo: string | null
+          mencion_id: string | null
+          nombre_canonico_actual: string | null
+          nombre_extractor_crudo: string | null
+          nombre_humano_ultimo: string | null
+          pensador_id: string | null
+          project_id: string | null
+        }
+        Insert: {
+          artefacto_id?: string | null
+          cartografiado_at?: string | null
+          confianza_cartografiador?: number | null
+          decision_cartografiador?:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          descripcion_canonica_actual?: never
+          descripcion_extractor_cruda?: string | null
+          descripcion_humano_ultimo?: never
+          mencion_id?: string | null
+          nombre_canonico_actual?: never
+          nombre_extractor_crudo?: string | null
+          nombre_humano_ultimo?: never
+          pensador_id?: string | null
+          project_id?: string | null
+        }
+        Update: {
+          artefacto_id?: string | null
+          cartografiado_at?: string | null
+          confianza_cartografiador?: number | null
+          decision_cartografiador?:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          descripcion_canonica_actual?: never
+          descripcion_extractor_cruda?: string | null
+          descripcion_humano_ultimo?: never
+          mencion_id?: string | null
+          nombre_canonico_actual?: never
+          nombre_extractor_crudo?: string | null
+          nombre_humano_ultimo?: never
+          pensador_id?: string | null
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_pensadores_menciones_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_pensadores_menciones_pensador_id_fkey"
+            columns: ["pensador_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_pensadores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_pensadores_menciones_pensador_id_fkey"
+            columns: ["pensador_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_pensadores_con_conteo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_pensadores_menciones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_vw_referencias_con_conteo: {
+        Row: {
+          aliases: Json | null
+          ano: string | null
+          artefactos_count: number | null
+          autores: Json | null
+          created_at: string | null
+          descripcion_canonica: string | null
+          doi: string | null
+          fuente: string | null
+          id: string | null
+          isbn: string | null
+          project_id: string | null
+          tipo_referencia:
+            | Database["public"]["Enums"]["cgt_tipo_referencia"]
+            | null
+          titulo: string | null
+          updated_at: string | null
+          url: string | null
+          url_normalizada: string | null
+        }
+        Insert: {
+          aliases?: Json | null
+          ano?: string | null
+          artefactos_count?: never
+          autores?: Json | null
+          created_at?: string | null
+          descripcion_canonica?: string | null
+          doi?: string | null
+          fuente?: string | null
+          id?: string | null
+          isbn?: string | null
+          project_id?: string | null
+          tipo_referencia?:
+            | Database["public"]["Enums"]["cgt_tipo_referencia"]
+            | null
+          titulo?: string | null
+          updated_at?: string | null
+          url?: string | null
+          url_normalizada?: string | null
+        }
+        Update: {
+          aliases?: Json | null
+          ano?: string | null
+          artefactos_count?: never
+          autores?: Json | null
+          created_at?: string | null
+          descripcion_canonica?: string | null
+          doi?: string | null
+          fuente?: string | null
+          id?: string | null
+          isbn?: string | null
+          project_id?: string | null
+          tipo_referencia?:
+            | Database["public"]["Enums"]["cgt_tipo_referencia"]
+            | null
+          titulo?: string | null
+          updated_at?: string | null
+          url?: string | null
+          url_normalizada?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_referencias_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_vw_teorias_con_conteo: {
+        Row: {
+          aliases: Json | null
+          autores_principales: Json | null
+          created_at: string | null
+          descripcion_canonica: string | null
+          id: string | null
+          menciones_count: number | null
+          nombre_canonico: string | null
+          project_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          aliases?: Json | null
+          autores_principales?: Json | null
+          created_at?: string | null
+          descripcion_canonica?: string | null
+          id?: string | null
+          menciones_count?: never
+          nombre_canonico?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          aliases?: Json | null
+          autores_principales?: Json | null
+          created_at?: string | null
+          descripcion_canonica?: string | null
+          id?: string | null
+          menciones_count?: never
+          nombre_canonico?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_teorias_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_vw_teorias_valor_canonico: {
+        Row: {
+          artefacto_id: string | null
+          cartografiado_at: string | null
+          confianza_cartografiador: number | null
+          decision_cartografiador:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          descripcion_canonica_actual: string | null
+          descripcion_extractor_cruda: string | null
+          descripcion_humano_ultimo: string | null
+          mencion_id: string | null
+          nombre_canonico_actual: string | null
+          nombre_extractor_crudo: string | null
+          nombre_humano_ultimo: string | null
+          project_id: string | null
+          teoria_id: string | null
+        }
+        Insert: {
+          artefacto_id?: string | null
+          cartografiado_at?: string | null
+          confianza_cartografiador?: number | null
+          decision_cartografiador?:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          descripcion_canonica_actual?: never
+          descripcion_extractor_cruda?: string | null
+          descripcion_humano_ultimo?: never
+          mencion_id?: string | null
+          nombre_canonico_actual?: never
+          nombre_extractor_crudo?: string | null
+          nombre_humano_ultimo?: never
+          project_id?: string | null
+          teoria_id?: string | null
+        }
+        Update: {
+          artefacto_id?: string | null
+          cartografiado_at?: string | null
+          confianza_cartografiador?: number | null
+          decision_cartografiador?:
+            | Database["public"]["Enums"]["cgt_decision_cartografiador"]
+            | null
+          descripcion_canonica_actual?: never
+          descripcion_extractor_cruda?: string | null
+          descripcion_humano_ultimo?: never
+          mencion_id?: string | null
+          nombre_canonico_actual?: never
+          nombre_extractor_crudo?: string | null
+          nombre_humano_ultimo?: never
+          project_id?: string | null
+          teoria_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_teorias_menciones_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_teorias_menciones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_teorias_menciones_teoria_id_fkey"
+            columns: ["teoria_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_teorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_teorias_menciones_teoria_id_fkey"
+            columns: ["teoria_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_vw_teorias_con_conteo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cog_artifacts_full: {
         Row: {
           created_at: string | null
@@ -4445,6 +7372,97 @@ export type Database = {
         Args: { p_article_batch_item_id: string }
         Returns: Database["public"]["Enums"]["batch_preclass_status"]
       }
+      cgt_artefactos_por_concepto: {
+        Args: { p_concepto_id: string }
+        Returns: {
+          artefacto_id: string
+          mencion_id: string
+          nombre_canonico_actual: string
+          primera_aparicion: string
+        }[]
+      }
+      cgt_artefactos_por_disciplina: {
+        Args: { p_disciplina_id: string }
+        Returns: {
+          artefacto_id: string
+          mencion_id: string
+          nombre_canonico_actual: string
+          primera_aparicion: string
+        }[]
+      }
+      cgt_artefactos_por_pensador: {
+        Args: { p_pensador_id: string }
+        Returns: {
+          artefacto_id: string
+          mencion_id: string
+          nombre_canonico_actual: string
+          primera_aparicion: string
+        }[]
+      }
+      cgt_artefactos_por_referencia: {
+        Args: { p_referencia_id: string }
+        Returns: {
+          apariciones_count: number
+          artefacto_id: string
+          formato_cita_inline: string
+          numero_en_artefacto: number
+          primera_aparicion: string
+          puente_id: string
+        }[]
+      }
+      cgt_artefactos_por_teoria: {
+        Args: { p_teoria_id: string }
+        Returns: {
+          artefacto_id: string
+          mencion_id: string
+          nombre_canonico_actual: string
+          primera_aparicion: string
+        }[]
+      }
+      cgt_borrar_artefacto_completo: {
+        Args: { p_artefacto_id: string }
+        Returns: undefined
+      }
+      cgt_contar_artefactos_referencia: {
+        Args: { p_referencia_id: string }
+        Returns: number
+      }
+      cgt_contar_menciones_concepto: {
+        Args: { p_concepto_id: string }
+        Returns: number
+      }
+      cgt_contar_menciones_disciplina: {
+        Args: { p_disciplina_id: string }
+        Returns: number
+      }
+      cgt_contar_menciones_pensador: {
+        Args: { p_pensador_id: string }
+        Returns: number
+      }
+      cgt_contar_menciones_teoria: {
+        Args: { p_teoria_id: string }
+        Returns: number
+      }
+      cgt_referencias_por_artefacto: {
+        Args: { p_artefacto_id: string }
+        Returns: {
+          ano: string
+          apariciones: Json
+          artefactos_count: number
+          autores: Json
+          confianza_extraccion: number
+          doi: string
+          formato_cita_inline: string
+          fuente: string
+          notas_extractor: string
+          numero_en_artefacto: number
+          puente_id: string
+          referencia_id: string
+          tipo_referencia: Database["public"]["Enums"]["cgt_tipo_referencia"]
+          titulo: string
+          url: string
+        }[]
+      }
       get_all_project_batches: {
         Args: { p_project_id: string }
         Returns: {
@@ -4613,6 +7631,36 @@ export type Database = {
         | "discrepancies"
         | "in_progress"
         | "pending"
+      cgt_decision_cartografiador:
+        | "match_existente"
+        | "nueva_entidad"
+        | "ambigua"
+        | "sin_cartografiar"
+      cgt_estado_metabolizacion:
+        | "ingresado"
+        | "metabolizando"
+        | "metabolizado"
+        | "error"
+      cgt_origen: "llm" | "humano" | "nodo" | "sistema"
+      cgt_tipo_artefacto:
+        | "audio"
+        | "pdf_slides"
+        | "pdf_informe"
+        | "markdown"
+        | "video"
+        | "imagen"
+      cgt_tipo_cita: "academica" | "hecho_historico" | "obra" | "otra"
+      cgt_tipo_referencia:
+        | "paper"
+        | "libro"
+        | "web"
+        | "dataset"
+        | "video"
+        | "norma_legal"
+        | "reporte"
+        | "otro"
+        | "desconocido"
+      cgt_visibilidad: "privado" | "proyecto"
       cog_artifact_type:
         | "video"
         | "audio"
@@ -4814,6 +7862,40 @@ export const Constants = {
         "in_progress",
         "pending",
       ],
+      cgt_decision_cartografiador: [
+        "match_existente",
+        "nueva_entidad",
+        "ambigua",
+        "sin_cartografiar",
+      ],
+      cgt_estado_metabolizacion: [
+        "ingresado",
+        "metabolizando",
+        "metabolizado",
+        "error",
+      ],
+      cgt_origen: ["llm", "humano", "nodo", "sistema"],
+      cgt_tipo_artefacto: [
+        "audio",
+        "pdf_slides",
+        "pdf_informe",
+        "markdown",
+        "video",
+        "imagen",
+      ],
+      cgt_tipo_cita: ["academica", "hecho_historico", "obra", "otra"],
+      cgt_tipo_referencia: [
+        "paper",
+        "libro",
+        "web",
+        "dataset",
+        "video",
+        "norma_legal",
+        "reporte",
+        "otro",
+        "desconocido",
+      ],
+      cgt_visibilidad: ["privado", "proyecto"],
       cog_artifact_type: [
         "video",
         "audio",

@@ -43,6 +43,10 @@ import type {
 	IngestaArtefactoInput,
 	Result,
 } from "@/lib/cognetica-forense/cognetica_forense_types";
+import { ok, fail } from "@/lib/cognetica-forense/types";
+import { createServerClient } from "@/lib/supabase";
+import Replicate from "replicate";
+import { revalidatePath } from "next/cache";
 
 // =============================================================================
 // INGESTA
@@ -129,26 +133,384 @@ export async function eliminarArtefacto(
 /**
  * Transcribe un artefacto de audio usando Replicate WhisperX Large v3.
  *
- * Llamada a la API existente en `/app/api/transcription/replicate/route.ts`
- * (o reutilizar el cliente directamente).
- *
  * Flujo:
  *   1. Obtiene artefacto, valida tipo = 'audio'
- *   2. Lee archivo original desde Storage
- *   3. Llama Replicate con diarización activada
- *   4. Parsea respuesta a ResultadoTranscripcion
- *   5. INSERT en cgt_artefactos_audio (metadata + transcripción completa + hablantes)
+ *   2. Genera URL firmada del archivo en Storage
+ *   3. Llama API Route /api/transcription/replicate con diarización activada
+ *   4. Parsea respuesta: transcripción completa + segmentos con hablantes
+ *   5. INSERT en cgt_artefactos_audio (metadata + transcripción + hablantes)
  *   6. INSERT batch en cgt_audio_segmentos
- *   7. UPDATE cgt_artefactos SET estado = 'ingresado' (listo para metabolización)
- *   8. Dispara metabolización
+ *   7. UPDATE cgt_artefactos SET estado = 'ingresado'
  *
  * Si falla: estado = 'error', error_mensaje poblado.
  */
 export async function transcribirAudio(
 	artefactoId: string,
-): Promise<Result<CgtAudioSegmento[]>> {
-	// TODO: Windsurf implementa
-	throw new Error("Not implemented");
+	fileBuffer: Buffer,
+	fileName: string,
+): Promise<Result<void>> {
+	console.log(
+		`🎙️ [transcribirAudio] Iniciando para artefacto: ${artefactoId}`,
+	);
+
+	const supabase = await createServerClient();
+
+	try {
+		// (1) Obtener artefacto y validar tipo
+		const { data: artefacto, error: artefactoError } = await supabase
+			.from("cgt_artefactos")
+			.select("id, tipo, storage_path_original, titulo")
+			.eq("id", artefactoId)
+			.single();
+
+		if (artefactoError || !artefacto) {
+			console.error(
+				"🎙️ [transcribirAudio] Artefacto no encontrado:",
+				artefactoError,
+			);
+			return fail("NOT_FOUND");
+		}
+
+		if (artefacto.tipo !== "audio") {
+			console.error(
+				`🎙️ [transcribirAudio] Tipo incorrecto: ${artefacto.tipo}`,
+			);
+			return fail("INVALID_INPUT");
+		}
+
+		// (2) Llamar Replicate directamente (sin API route intermedia)
+		if (!process.env.REPLICATE_API_TOKEN) {
+			console.error("❌ [transcribirAudio] REPLICATE_API_TOKEN no configurado");
+			await supabase
+				.from("cgt_artefactos")
+				.update({
+					estado: "error",
+					error_mensaje: "Servicio de transcripción no configurado (falta REPLICATE_API_TOKEN)",
+					updated_at: new Date().toISOString(),
+				})
+				.eq("id", artefactoId);
+			return fail("TRANSCRIPTION_ERROR");
+		}
+
+		const replicate = new Replicate({
+			auth: process.env.REPLICATE_API_TOKEN,
+		});
+
+		// Convertir buffer a data URI (Replicate acepta data URIs)
+		const base64Audio = fileBuffer.toString("base64");
+		// Detectar MIME type correcto desde el nombre de archivo
+		const ext = fileName.toLowerCase().split('.').pop() ?? "";
+		const mimeMap: Record<string, string> = {
+			mp3: "audio/mpeg",
+			m4a: "audio/mp4",
+			mpeg: "audio/mpeg",
+			mpga: "audio/mpeg",
+			wav: "audio/wav",
+			webm: "audio/webm",
+			flac: "audio/flac",
+			ogg: "audio/ogg",
+			oga: "audio/ogg",
+			opus: "audio/opus",
+		};
+		const mimeType = mimeMap[ext] ?? "audio/mpeg";
+		const dataUri = `data:${mimeType};base64,${base64Audio}`;
+
+		console.log(`🎙️ [transcribirAudio] Enviando audio a WhisperX vía Replicate (mimeType=${mimeType}, size=${fileBuffer.length} bytes)...`);
+
+		let output;
+		try {
+			output = await replicate.run(
+				"victor-upmeet/whisperx:84d2ad2d6194fe98a17d2b60bef1c7f910c46b2f6fd38996ca457afd9c8abfcb",
+				{
+					input: {
+						audio_file: dataUri,
+						debug: false,
+						batch_size: 64,
+						diarization: true,
+						align_output: true,
+						temperature: 0,
+						vad_onset: 0.5,
+						vad_offset: 0.363,
+						language_detection_min_prob: 0,
+						language_detection_max_tries: 5,
+					},
+				},
+			);
+			console.log("✅ [transcribirAudio] Transcripción Replicate exitosa");
+		} catch (error: unknown) {
+			const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+			const errorStack = error instanceof Error ? error.stack : "";
+			const errorFull = error instanceof Error ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : String(error);
+			
+			console.error("❌ [transcribirAudio] Error Replicate completo:");
+			console.error("  Message:", errorMessage);
+			console.error("  Stack:", errorStack);
+			console.error("  Full:", errorFull);
+			console.error("  Token exists:", !!process.env.REPLICATE_API_TOKEN);
+			console.error("  Token length:", process.env.REPLICATE_API_TOKEN?.length ?? 0);
+
+			await supabase
+				.from("cgt_artefactos")
+				.update({
+					estado: "error",
+					error_mensaje: `Transcripción fallida: ${errorMessage}`,
+					updated_at: new Date().toISOString(),
+				})
+				.eq("id", artefactoId);
+
+			return fail("TRANSCRIPTION_ERROR");
+		}
+
+		// Extraer texto y segmentos de la respuesta de WhisperX
+		console.log("🎙️ [transcribirAudio] Output crudo de Replicate:", JSON.stringify(output, null, 2).slice(0, 2000));
+
+		let transcription = "";
+		let segments: Array<{
+			start: number;
+			end: number;
+			text: string;
+			speaker?: string | number;
+		}> = [];
+		let detectedLanguage = "";
+
+		if (typeof output === "string") {
+			transcription = output;
+		} else if (output && typeof output === "object") {
+			const outputObj = output as Record<string, unknown>;
+			detectedLanguage =
+				(outputObj.detected_language as string) ||
+				(outputObj.language as string) ||
+				"";
+
+			// Intentar múltiples formatos de segmentos que Replicate/WhisperX puede devolver
+			const rawSegments = outputObj.segments || outputObj.chunks || outputObj.words;
+			if (rawSegments && Array.isArray(rawSegments)) {
+				segments = (rawSegments as Array<Record<string, unknown>>).map((s) => ({
+					start: Number(s.start ?? s.timestamp ?? s.start_time ?? 0),
+					end: Number(s.end ?? s.timestamp_end ?? s.end_time ?? 0),
+					text: String(s.text ?? s.word ?? s.content ?? ""),
+					speaker: (s.speaker ?? s.speaker_id ?? s.speaker_label) as string | number | undefined,
+				}));
+				transcription = segments
+					.map((s) => s.text)
+					.filter(Boolean)
+					.join(" ");
+				console.log(`🎙️ [transcribirAudio] ${segments.length} segmentos extraídos`);
+			} else if (outputObj.transcription) {
+				transcription = outputObj.transcription as string;
+			} else if (outputObj.text) {
+				transcription = outputObj.text as string;
+			} else {
+				console.error("⚠️ [transcribirAudio] Formato inesperado — keys:", Object.keys(outputObj));
+				transcription = JSON.stringify(output);
+			}
+		}
+
+		const transcriptionData = {
+			success: true,
+			transcription,
+			segments,
+			detectedLanguage,
+			metadata: {
+				fileName,
+				fileSize: fileBuffer.length,
+				segmentCount: segments.length,
+			},
+		};
+
+		console.log(
+			`🎙️ [transcribirAudio] Transcripción exitosa: ${transcriptionData.transcription?.length ?? 0} chars, ${transcriptionData.segments?.length ?? 0} segmentos`,
+		);
+
+		// (3) Construir lista de hablantes únicos desde segmentos
+		const hablantesMap = new Map<string, string>();
+		for (const seg of transcriptionData.segments ?? []) {
+			const speakerId = String(seg.speaker ?? "SPEAKER_00");
+			if (!hablantesMap.has(speakerId)) {
+				hablantesMap.set(speakerId, speakerId);
+			}
+		}
+		const hablantes = Array.from(hablantesMap.entries()).map(
+			([id, nombre]) => ({ id, nombre }),
+		);
+
+		// (4) Calcular duración total a partir de los segmentos
+		const duracionSeg =
+			transcriptionData.segments?.length > 0
+				? Math.max(
+						...transcriptionData.segments.map((s) => s.end ?? 0),
+					)
+				: null;
+
+		// (5) Detectar formato original del nombre de archivo
+		const formatoOriginal = fileName.includes(".")
+			? fileName.slice(fileName.lastIndexOf(".")).toLowerCase()
+			: null;
+
+		// (6) INSERT en cgt_artefactos_audio
+		const { error: audioInsertError } = await supabase
+			.from("cgt_artefactos_audio")
+			.insert({
+				artefacto_id: artefactoId,
+				duracion_seg: duracionSeg,
+				idioma: transcriptionData.detectedLanguage ?? "es",
+				transcripcion_completa:
+					transcriptionData.transcription ?? "",
+				hablantes: hablantes as unknown as import("@/lib/database.types").Json[],
+				sample_rate: null,
+				bitrate: null,
+				formato_original: formatoOriginal,
+			});
+
+		if (audioInsertError) {
+			console.error(
+				"🎙️ [transcribirAudio] Error insertando cgt_artefactos_audio:",
+				audioInsertError,
+			);
+
+			await supabase
+				.from("cgt_artefactos")
+				.update({
+					estado: "error",
+					error_mensaje: `Error guardando transcripción: ${audioInsertError.message}`,
+					updated_at: new Date().toISOString(),
+				})
+				.eq("id", artefactoId);
+
+			return fail("INTERNAL");
+		}
+
+		// (7) INSERT batch en cgt_audio_segmentos
+		if (
+			transcriptionData.segments &&
+			transcriptionData.segments.length > 0
+		) {
+			// Sanitizar segmentos: asegurar que start < end y ambos >= 0
+			const segmentosRaw = transcriptionData.segments
+				.map((seg) => {
+					const start = Math.max(0, Number(seg.start ?? 0));
+					const end = Math.max(0, Number(seg.end ?? 0));
+					return {
+						artefacto_id: artefactoId,
+						timestamp_inicio: start,
+						timestamp_fin: end,
+						hablante_id: String(seg.speaker ?? "SPEAKER_00"),
+						texto: String(seg.text ?? "").trim(),
+						confianza: null,
+					};
+				})
+				.filter((seg) => {
+					// Filtrar segmentos inválidos: deben tener duración positiva y texto no vacío
+					if (seg.timestamp_inicio >= seg.timestamp_fin) {
+						console.warn(
+							`🎙️ [transcribirAudio] Segmento inválido descartado: start=${seg.timestamp_inicio} >= end=${seg.timestamp_fin}`,
+						);
+						return false;
+					}
+					if (!seg.texto) {
+						return false;
+					}
+					return true;
+				});
+
+			if (segmentosRaw.length > 0) {
+				const { error: segInsertError } = await supabase
+					.from("cgt_audio_segmentos")
+					.insert(segmentosRaw);
+
+				if (segInsertError) {
+					console.error(
+						"🎙️ [transcribirAudio] Error insertando segmentos (no bloqueante):",
+						segInsertError,
+					);
+				} else {
+					console.log(
+						`🎙️ [transcribirAudio] ${segmentosRaw.length} segmentos insertados correctamente`,
+					);
+				}
+			} else {
+				console.warn(
+					"🎙️ [transcribirAudio] Todos los segmentos fueron descartados por timestamps inválidos",
+				);
+			}
+		}
+
+		// (8) INSERT en cgt_artefactos_markdown (transcripción como contenido)
+		const markdownContent = `# Transcripción: ${artefacto.titulo}\n\n${(transcriptionData.transcription ?? "").split("\n").map((line: string) => line.trim()).filter((line: string) => line.length > 0).join("\n\n")}`;
+
+		const { error: mdInsertError } = await supabase
+			.from("cgt_artefactos_markdown")
+			.insert({
+				artefacto_id: artefactoId,
+				contenido: markdownContent,
+				frontmatter: {
+					tipo: "audio",
+					fuente: "whisperx-replicate",
+					idioma: transcriptionData.detectedLanguage ?? "es",
+				} as unknown as import("@/lib/database.types").Json,
+				headers: [] as unknown as import("@/lib/database.types").Json,
+				autor_original: "WhisperX Large v3",
+				fecha_original: new Date().toISOString(),
+			});
+
+		if (mdInsertError) {
+			console.error(
+				"🎙️ [transcribirAudio] ⚠️ Error insertando markdown (no bloqueante):",
+				mdInsertError,
+			);
+		}
+
+		// (9) Actualizar estado a 'ingresado' (listo para metabolización)
+		const { error: updateError } = await supabase
+			.from("cgt_artefactos")
+			.update({
+				estado: "ingresado",
+				descripcion: `Audio transcrito con WhisperX: ${transcriptionData.transcription?.substring(0, 100) ?? "Sin transcripción"}${(transcriptionData.transcription?.length ?? 0) > 100 ? "..." : ""}`,
+				updated_at: new Date().toISOString(),
+			})
+			.eq("id", artefactoId);
+
+		if (updateError) {
+			console.error(
+				"🎙️ [transcribirAudio] ⚠️ Error actualizando estado:",
+				updateError,
+			);
+		}
+
+		console.log(
+			`🎙️ [transcribirAudio] ✅ Audio transcrito, listo para metabolización: ${artefactoId}`,
+		);
+
+		// Invalidar cache para que el frontend vea la transcripción
+		revalidatePath(`/cognetica/${artefactoId}`);
+		revalidatePath("/cognetica");
+
+		return ok(void 0);
+	} catch (error) {
+		console.error("🎙️ [transcribirAudio] ❌ Error:", error);
+
+		// Actualizar estado a error
+		try {
+			await supabase
+				.from("cgt_artefactos")
+				.update({
+					estado: "error",
+					error_mensaje:
+						error instanceof Error
+							? error.message
+							: "Error desconocido en transcripción",
+					updated_at: new Date().toISOString(),
+				})
+				.eq("id", artefactoId);
+		} catch (e) {
+			console.error(
+				"🎙️ [transcribirAudio] ⚠️ Error marcando fallo:",
+				e,
+			);
+		}
+
+		return fail("TRANSCRIPTION_ERROR");
+	}
 }
 
 /**
@@ -174,23 +536,79 @@ export async function transcribirVideo(
  * Procesa un PDF de presentación (slides).
  *
  * Flujo:
- *   1. Valida artefacto tipo = 'pdf_slides'
- *   2. Con pdfjs-dist + pdf-lib:
- *      - Extrae texto por página
- *      - Detecta imágenes embedidas → cgt_imagenes_descritas (con pagina_num)
- *      - Genera estructura JSONB paginas = [{numero, titulo, texto, notas}, ...]
- *   3. Para cada imagen extraída:
- *      - Upload a Storage
- *      - INSERT en cgt_imagenes_descritas (descripcion_ia = NULL en Oleada 1)
- *   4. INSERT en cgt_artefactos_pdf_slides
- *   5. Retorna éxito
+ *   1. Descarga PDF desde Storage
+ *   2. Divide PDF en páginas individuales con splitPDFIntoPagesV2
+ *   3. Procesa cada página con Marker (en batches de 3)
+ *   4. Construye JSONB paginas en cgt_artefactos_pdf_slides
+ *   5. Actualiza estado del artefacto
+ *   6. Retorna éxito
+ *
+ * Nota: a diferencia de procesarPdfInforme, este procesamiento es más
+ * complejo porque primero debe dividir el PDF en páginas individuales
+ * y luego procesar cada una con Marker.
  */
 export async function procesarPdfSlides(
 	artefactoId: string,
 	fileBuffer: Buffer,
+	storagePath: string,
 ): Promise<Result<void>> {
-	// TODO: Windsurf implementa
-	throw new Error("Not implemented");
+	console.log(`📗 [procesarPdfSlides] Iniciando para artefacto: ${artefactoId}`);
+
+	const supabase = await createServerClient();
+
+	try {
+		// (1) Split PDF en páginas individuales
+		console.log(`📗 [procesarPdfSlides] Dividiendo PDF en páginas...`);
+		const { splitPDFIntoPagesV2 } = await import(
+			"@/lib/actions/cognetica-forense-slides-actions"
+		);
+		const splitResult = await splitPDFIntoPagesV2(artefactoId, storagePath);
+		if (!splitResult.success) {
+			throw new Error(`Error dividiendo PDF: ${splitResult.error}`);
+		}
+		console.log(`📗 [procesarPdfSlides] PDF dividido en ${splitResult.data.totalPages} páginas`);
+
+		// (2) Procesar todas las páginas con Marker
+		console.log(`📗 [procesarPdfSlides] Procesando páginas con Marker...`);
+		const { procesarTodasLasPaginas } = await import(
+			"@/lib/actions/cognetica-forense-slides-actions"
+		);
+		const batchResult = await procesarTodasLasPaginas(artefactoId);
+		if (!batchResult.success) {
+			throw new Error(`Error procesando páginas: ${batchResult.error}`);
+		}
+		console.log(
+			`📗 [procesarPdfSlides] Procesamiento completado: ${batchResult.data.processed} OK, ${batchResult.data.failed} FAIL`,
+		);
+
+		// (3) Invalidar cache para que el frontend vea el contenido
+		const { revalidatePath } = await import("next/cache");
+		revalidatePath(`/cognetica/${artefactoId}`);
+		revalidatePath("/cognetica");
+
+		console.log(`📗 [procesarPdfSlides] ✅ Procesamiento completo: ${artefactoId}`);
+		return ok(void 0);
+	} catch (error) {
+		console.error(`📗 [procesarPdfSlides] ❌ Error:`, error);
+
+		try {
+			await supabase
+				.from("cgt_artefactos")
+				.update({
+					estado: "error",
+					error_mensaje:
+						error instanceof Error ? error.message : "Error desconocido procesando slides",
+					updated_at: new Date().toISOString(),
+				})
+				.eq("id", artefactoId);
+		} catch (e) {
+			console.error("📗 [procesarPdfSlides] ⚠️ Error marcando fallo:", e);
+		}
+
+		return fail(
+			error instanceof Error ? error.message : "Error procesando PDF slides",
+		);
+	}
 }
 
 /**
@@ -198,26 +616,234 @@ export async function procesarPdfSlides(
  *
  * Flujo:
  *   1. Valida artefacto tipo = 'pdf_informe'
- *   2. Con pdfjs-dist:
- *      - Extrae texto plano preservando estructura (indentación, saltos)
- *      - Convierte a markdown
- *      - Detecta headers (h1-h6) → secciones JSONB
- *      - Extrae imágenes/figuras → cgt_imagenes_descritas
- *      - Detecta DOI si existe en primeras páginas
- *      - Parsea bibliografía si es detectable → citas_bibliograficas
- *   3. INSERT en cgt_artefactos_pdf_informe
+ *   2. Envía PDF a API Route /api/cognetica/process-pdf
+ *   3. Recibe markdown estructurado
+ *   4. Parsea headers (h1-h6) → secciones JSONB
+ *   5. Detecta DOI si existe en primeras páginas
+ *   6. INSERT en cgt_artefactos_pdf_informe
+ *   7. Actualiza estado del artefacto a 'procesado'
  *   4. Retorna éxito
  *
  * Nota: la calidad de conversión PDF→MD depende del PDF original.
  * PDFs escaneados sin OCR quedarán con texto vacío o incorrecto.
- * Windsurf debe manejar este caso con nota en error_mensaje.
  */
 export async function procesarPdfInforme(
 	artefactoId: string,
 	fileBuffer: Buffer,
+	storagePath: string,
 ): Promise<Result<void>> {
-	// TODO: Windsurf implementa
-	throw new Error("Not implemented");
+	console.log(
+		`📕 [procesarPdfInforme] Iniciando para artefacto: ${artefactoId}`,
+	);
+
+	const supabase = await createServerClient();
+
+	try {
+		// (1) Enviar PDF a API Route para procesamiento
+		const formData = new FormData();
+		formData.append(
+			"file",
+			new Blob([new Uint8Array(fileBuffer)], { type: "application/pdf" }),
+		);
+		formData.append("mode", "balanced");
+
+		const apiUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+		const response = await fetch(`${apiUrl}/api/cognetica/process-pdf`, {
+			method: "POST",
+			body: formData,
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({}));
+			throw new Error(
+				errorData.error || `Error en API de procesamiento: ${response.status}`,
+			);
+		}
+
+		const { markdown, metadata } = (await response.json()) as {
+			markdown: string;
+			metadata: { title: string; originalFileName: string; fileSize: number };
+		};
+
+		console.log(
+			`📕 [procesarPdfInforme] Markdown recibido: ${markdown.length} caracteres`,
+		);
+
+		// Sanitizar el markdown crudo de Marker antes de guardarlo en DB.
+		// Esto previene backtracking catastrófico en el renderizado de inline markdown.
+		const { sanitizeMarkdown } = await import(
+			"@/lib/cognetica-forense/markdown-sanitizer"
+		);
+		const markdownSanitizado = sanitizeMarkdown(markdown);
+
+		// (2) Parsear markdown sanitizado (igual que ingesta de MD nativo)
+		const { parseMarkdownArtefacto } = await import(
+			"@/lib/cognetica-forense/parsers/markdown"
+		);
+		const parsed = parseMarkdownArtefacto(markdownSanitizado);
+
+		// (3) Parsear secciones (headers h1-h6) para tabla pdf_informe
+		const secciones = parsearSecciones(markdownSanitizado);
+
+		// (4) Detectar DOI en primeras 2000 caracteres
+		const doi = detectarDOI(markdownSanitizado);
+
+		// (5) INSERT en cgt_artefactos_pdf_informe (registro del procesamiento)
+		const { error: pdfInsertError } = await supabase
+			.from("cgt_artefactos_pdf_informe")
+			.insert({
+				artefacto_id: artefactoId,
+				markdown_renderizado: markdownSanitizado,
+				num_paginas: null,
+				secciones: secciones as unknown as import("@/lib/database.types").Json,
+				autor_original: parsed.autor_original,
+				fecha_original: parsed.fecha_original,
+				doi,
+				citas_bibliograficas: null,
+			});
+
+		if (pdfInsertError) {
+			throw new Error(
+				`Error insertando en cgt_artefactos_pdf_informe: ${pdfInsertError.message}`,
+			);
+		}
+
+		// (6) INSERT en cgt_artefactos_markdown (contenido parseado para metabolización)
+		// Esto permite que el PDF se comporte como un MD nativo en el pipeline
+		const { error: mdInsertError } = await supabase
+			.from("cgt_artefactos_markdown")
+			.insert({
+				artefacto_id: artefactoId,
+				contenido: parsed.contenido,
+				frontmatter: parsed.frontmatter as import("@/lib/database.types").Json,
+				headers:
+					parsed.headers as unknown as import("@/lib/database.types").Json,
+				autor_original: parsed.autor_original,
+				fecha_original: parsed.fecha_original,
+			});
+
+		if (mdInsertError) {
+			console.error(
+				"📕 [procesarPdfInforme] ⚠️ Error insertando en cgt_artefactos_markdown:",
+				mdInsertError,
+			);
+			// Continuamos - el PDF está procesado aunque no se pueda metabolizar
+		}
+
+		// (7) Actualizar estado a "ingresado" (listo para metabolización)
+		// El artefacto ahora tiene contenido markdown disponible
+		const { error: updateError } = await supabase
+			.from("cgt_artefactos")
+			.update({
+				estado: "ingresado",
+				descripcion: `PDF procesado por Marker: ${metadata.title || metadata.originalFileName}`,
+				updated_at: new Date().toISOString(),
+			})
+			.eq("id", artefactoId);
+
+		if (updateError) {
+			console.error(
+				`📕 [procesarPdfInforme] ⚠️ Error actualizando estado: ${updateError.message}`,
+			);
+		}
+
+		console.log(
+			`📕 [procesarPdfInforme] ✅ PDF procesado, listo para metabolización: ${artefactoId}`,
+		);
+
+		// Invalidar cache para que el frontend vea el contenido
+		revalidatePath(`/cognetica/${artefactoId}`);
+		revalidatePath("/cognetica");
+
+		return ok(void 0);
+	} catch (error) {
+		console.error(`📕 [procesarPdfInforme] ❌ Error:`, error);
+
+		// Actualizar estado a error (ignorar error de update)
+		try {
+			await supabase
+				.from("cgt_artefactos")
+				.update({
+					estado: "error",
+					error_mensaje:
+						error instanceof Error ? error.message : "Error desconocido",
+					updated_at: new Date().toISOString(),
+				})
+				.eq("id", artefactoId);
+		} catch (e) {
+			console.error("📕 [procesarPdfInforme] ⚠️ Error marcando fallo:", e);
+		}
+
+		return fail(
+			error instanceof Error ? error.message : "Error procesando PDF informe",
+		);
+	}
+}
+
+/**
+ * Parsea headers del markdown para extraer secciones estructuradas.
+ */
+function parsearSecciones(markdown: string): Array<{
+	titulo: string;
+	nivel: number;
+	inicio_char: number;
+	fin_char: number;
+}> {
+	const secciones: Array<{
+		titulo: string;
+		nivel: number;
+		inicio_char: number;
+		fin_char: number;
+	}> = [];
+
+	// Regex para detectar headers (# ## ### etc)
+	const headerRegex = /^(#{1,6})\s+(.+)$/gm;
+	let match;
+
+	while ((match = headerRegex.exec(markdown)) !== null) {
+		const nivel = match[1].length; // Cantidad de #
+		const titulo = match[2].trim();
+		const inicio_char = match.index;
+
+		secciones.push({
+			titulo,
+			nivel,
+			inicio_char,
+			fin_char: -1, // Se calculará después
+		});
+	}
+
+	// Calcular fin_char basado en el inicio del siguiente header
+	for (let i = 0; i < secciones.length - 1; i++) {
+		secciones[i].fin_char = secciones[i + 1].inicio_char - 1;
+	}
+	// El último va hasta el final del documento
+	if (secciones.length > 0) {
+		secciones[secciones.length - 1].fin_char = markdown.length;
+	}
+
+	return secciones;
+}
+
+/**
+ * Detecta DOI en el texto (primeros 2000 caracteres).
+ */
+function detectarDOI(text: string): string | null {
+	const primerosChars = text.slice(0, 2000);
+	// Patrones comunes de DOI
+	const doiPatterns = [
+		/doi:\s*(10\.\d{4,}\/[^\s]+)/i,
+		/10\.\d{4,}\/[^\s]+/,
+		/DOI:\s*(10\.\d{4,}\/[^\s]+)/i,
+	];
+
+	for (const pattern of doiPatterns) {
+		const match = primerosChars.match(pattern);
+		if (match) {
+			return match[1] || match[0];
+		}
+	}
+	return null;
 }
 
 // =============================================================================
@@ -502,3 +1128,25 @@ export async function listarGruposDeProyecto(
  * No bloquea el retorno al cliente.
  */
 // async function dispararMetabolizacion(artefactoId: string): Promise<void>
+
+/**
+ * Obtiene una URL firmada para descargar un archivo de Supabase Storage.
+ * Útil para reproducir audio/video directamente en el navegador.
+ */
+export async function obtenerUrlFirmadaStorage(
+	path: string,
+	bucket: string = "cognetica-files",
+): Promise<Result<string>> {
+	const supabase = await createServerClient();
+
+	const { data, error } = await supabase.storage
+		.from(bucket)
+		.createSignedUrl(path, 3600); // 1 hora
+
+	if (error || !data?.signedUrl) {
+		console.error("[obtenerUrlFirmadaStorage] Error:", error);
+		return fail("STORAGE_ERROR");
+	}
+
+	return ok(data.signedUrl);
+}

@@ -29,16 +29,20 @@ import type { Result } from "./cognetica_forense_types";
  * defecto) sigue siendo válido y está pensado para errores user-facing.
  */
 export type ResultErrorCode =
-  | "NOT_IMPLEMENTED"
-  | "UNAUTHORIZED"
-  | "FORBIDDEN"
-  | "NOT_FOUND"
-  | "INVALID_INPUT"
-  | "DUPLICATE"
-  | "STORAGE_ERROR"
-  | "TRANSCRIPTION_ERROR"
-  | "LLM_ERROR"
-  | "INTERNAL";
+	| "NOT_IMPLEMENTED"
+	| "UNAUTHORIZED"
+	| "FORBIDDEN"
+	| "NOT_FOUND"
+	| "INVALID_INPUT"
+	| "DUPLICATE"
+	| "STORAGE_ERROR"
+	| "TRANSCRIPTION_ERROR"
+	| "LLM_ERROR"
+	/** Faltante de un formato upstream requerido (ej. Núcleo requiere Destilado). */
+	| "MISSING_UPSTREAM"
+	/** Umbral no cumplido (ej. Germinal requiere ≥3 artefactos con Núcleo previos). */
+	| "THRESHOLD_NOT_MET"
+	| "INTERNAL";
 //#endregion ![def]
 
 //#region [helpers] - 🛠️ CONSTRUCTORES 🛠️
@@ -60,7 +64,7 @@ export const ok = <T>(data: T): Result<T, never> => ({ ok: true, data });
  * ```
  */
 export const fail = <E = string>(error: E): Result<never, E> => ({
-  ok: false,
-  error,
+	ok: false,
+	error,
 });
 //#endregion ![helpers]

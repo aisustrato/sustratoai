@@ -36,6 +36,13 @@ export interface StandardBadgeProps
 	// 🌊 Efectos SUSTRATO - Retroalimentación visual al humano
 	pulseBorder?: boolean; // Respiración sutil del borde (2.5s ciclo)
 	pafffMoment?: boolean; // Latido de coherencia (1.5s ciclo)
+	/**
+	 * Modo multilínea: permite que el contenido del badge crezca verticalmente
+	 * y ajuste el radio de borde para que el badge no reviente con texto largo.
+	 * Cuando es `true`, el badge usa `min-height` en vez de `height` fijo,
+	 * y el texto interno usa `leading-snug` en vez de `leading-none`.
+	 */
+	multiline?: boolean;
 }
 
 // 💎 CORE: Componente StandardBadge (v4 - Patrón Flex + Tokens Provider)
@@ -52,6 +59,7 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
 			children,
 			pulseBorder = false,
 			pafffMoment = false,
+			multiline = false,
 			...props
 		},
 		ref,
@@ -77,7 +85,9 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
 
 			return {
 				// 📐 Dimensiones estructurales
-				height: sizeTokens.height,
+				...(multiline
+					? { minHeight: sizeTokens.height }
+					: { height: sizeTokens.height }),
 				padding: sizeTokens.padding,
 				fontSize: sizeTokens.fontSize,
 				gap: sizeTokens.gap,
@@ -114,7 +124,8 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
 				ref={ref}
 				className={cn(
 					// Clases base utilitarias (Layout & Shape)
-					"inline-flex items-center justify-center rounded-full font-medium transition-colors duration-200",
+					"inline-flex items-center justify-center font-medium transition-colors duration-200",
+					multiline ? "rounded-xl flex-wrap" : "rounded-full",
 					// 🌊 Efectos SUSTRATO - Retroalimentación visual al humano (solo animaciones)
 					pulseBorder && "badge-pulse-border",
 					pafffMoment && "badge-pafff-moment",
@@ -137,7 +148,7 @@ const StandardBadge = React.forwardRef<HTMLDivElement, StandardBadgeProps>(
 				<StandardText
 					asElement="span"
 					size={size === "2xs" ? "4xs" : size}
-					className="leading-none text-inherit">
+					className={cn("text-inherit", multiline ? "leading-snug" : "leading-none")}>
 					{children}
 				</StandardText>
 

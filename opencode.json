@@ -1,0 +1,170 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "default_agent": "plan",
+
+  "permission": {
+    "edit": "ask",
+    "write": "ask",
+    "bash": {
+      "*": "ask",
+      "git *": "deny",
+      "grep *": "allow",
+      "ls *": "allow",
+      "cat *": "allow",
+      "find *": "allow",
+      "rg *": "allow",
+      "npm run lint*": "allow",
+      "npm run build*": "allow",
+      "npm test*": "allow",
+      "tsc --noEmit*": "allow"
+    },
+    "webfetch": "ask"
+  },
+
+  "agent": {
+    "plan": {
+      "description": "Planificación arquitectural. Solo lectura. Puede delegar búsquedas al @practicante. Salida: plan destilado.",
+      "mode": "primary",
+      "model": "opencode-go/deepseek-v4-pro",
+      "temperature": 0.2,
+      "prompt": "{file:./.opencode/prompts/ingeniero.md}",
+      "permission": {
+        "edit": "deny",
+        "write": "deny",
+        "bash": {
+          "*": "deny",
+          "grep *": "allow",
+          "ls *": "allow",
+          "cat *": "allow",
+          "find *": "allow",
+          "rg *": "allow"
+        },
+        "task": {
+          "*": "deny",
+          "practicante": "allow"
+        },
+        "webfetch": "ask"
+      }
+    },
+
+    "build": {
+      "description": "Implementa según plan aprobado. NO ejecuta git. Si corrompe archivo, se detiene y espera.",
+      "mode": "primary",
+      "model": "opencode-go/qwen3.6-plus",
+      "temperature": 0.3,
+      "prompt": "{file:./.opencode/prompts/implementador.md}",
+      "permission": {
+        "edit": "ask",
+        "write": "ask",
+        "bash": {
+          "*": "ask",
+          "git *": "deny",
+          "grep *": "allow",
+          "ls *": "allow",
+          "cat *": "allow",
+          "find *": "allow",
+          "rg *": "allow",
+          "npm run lint*": "allow",
+          "npm run build*": "allow",
+          "npm test*": "allow",
+          "tsc --noEmit*": "allow"
+        }
+      }
+    },
+
+    "estilista": {
+      "description": "Mejoras visuales y estéticas. Sistema Standard* y variables de tema. Propone antes de ejecutar. NO toca lógica ni git.",
+      "mode": "primary",
+      "model": "opencode-go/deepseek-v4-flash",
+      "temperature": 0.2,
+      "prompt": "{file:./.opencode/prompts/estilista.md}",
+      "permission": {
+        "edit": "ask",
+        "write": "ask",
+        "bash": {
+          "*": "deny",
+          "grep *": "allow",
+          "find *": "allow",
+          "rg *": "allow",
+          "cat *": "allow",
+          "ls *": "allow",
+          "npm run lint*": "allow"
+        }
+      }
+    },
+
+    "practicante": {
+      "description": "Agente ágil: explorador de código, secretario de planes (escribe en docs/), y cambios chicos. Invócalo con @practicante o el Ingeniero lo delega.",
+      "mode": "primary",
+      "model": "opencode-go/deepseek-v4-flash",
+      "temperature": 0.2,
+      "prompt": "{file:./.opencode/prompts/practicante.md}",
+      "permission": {
+        "edit": {
+          "*": "ask",
+          "docs/**": "allow"
+        },
+        "write": {
+          "*": "ask",
+          "docs/**": "allow"
+        },
+        "bash": {
+          "*": "deny",
+          "grep *": "allow",
+          "find *": "allow",
+          "rg *": "allow",
+          "cat *": "allow",
+          "ls *": "allow",
+          "npm run lint*": "allow"
+        }
+      }
+    },
+
+    "gitero": {
+      "description": "ÚNICO agente con permiso git. Soberano por worktree. Pídele commits, branches, merges, diff, log. Recuerda hacer commits con frecuencia.",
+      "mode": "primary",
+      "model": "opencode-go/deepseek-v4-pro",
+      "temperature": 0.1,
+      "prompt": "{file:./.opencode/prompts/gitero.md}",
+      "permission": {
+        "edit": "deny",
+        "write": "deny",
+        "bash": {
+          "*": "deny",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "git branch*": "allow",
+          "git stash list*": "allow",
+          "git add *": "ask",
+          "git commit *": "ask",
+          "git push *": "ask",
+          "git pull *": "ask",
+          "git merge *": "ask",
+          "git rebase *": "ask",
+          "git checkout *": "ask",
+          "git reset *": "ask",
+          "git revert *": "ask",
+          "git stash*": "ask",
+          "git tag *": "ask",
+          "git remote *": "ask",
+          "ls *": "allow",
+          "cat *": "allow"
+        }
+      }
+    }
+  },
+
+  "watcher": {
+    "ignore": [
+      "node_modules/**",
+      ".next/**",
+      "dist/**",
+      "build/**",
+      ".git/**",
+      "coverage/**",
+      ".turbo/**"
+    ]
+  }
+}

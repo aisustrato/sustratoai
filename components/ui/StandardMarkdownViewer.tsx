@@ -43,165 +43,15 @@ interface MarkdownSection {
 	id: string;
 }
 
+import { sanitizeMarkdown } from "@/lib/cognetica-forense/markdown-sanitizer";
+import { renderLatexInline, renderLatexBlock, extractLatexBlocks } from "./latex-renderer";
+
+// Re-exportar para compatibilidad con código existente
+export { sanitizeMarkdown };
+
 // ========================================================================
-// SANITIZADOR: Limpia caracteres y patrones problemáticos del markdown
+// SANITIZADOR: Implementación en lib/cognetica-forense/markdown-sanitizer.ts
 // ========================================================================
-function sanitizeMarkdown(markdown: string): string {
-	let sanitized = markdown;
-	const corrections: string[] = [];
-
-	// 1. Normalizar saltos de línea (CRLF → LF)
-	sanitized = sanitized.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-
-	// 2. Eliminar caracteres de control invisibles (excepto \n y \t)
-	sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
-
-	// 3. Normalizar espacios en blanco múltiples (excepto saltos de línea)
-	sanitized = sanitized.replace(/[^\S\n]+/g, " ");
-
-	// 4. Detectar y corregir bloques de código mal cerrados
-	const codeBlockMatches = sanitized.match(/```/g);
-	if (codeBlockMatches && codeBlockMatches.length % 2 !== 0) {
-		console.warn(
-			"⚠️ [Sanitizer] Bloques de código mal cerrados detectados, corrigiendo...",
-		);
-		sanitized += "\n```\n"; // Cerrar el bloque abierto
-	}
-
-	// 5. Limpiar comillas tipográficas problemáticas que pueden causar parsing issues
-	sanitized = sanitized.replace(/[""]/g, '"');
-	sanitized = sanitized.replace(/['']/g, "'");
-
-	// 6. Eliminar secuencias de más de 3 saltos de línea consecutivos
-	sanitized = sanitized.replace(/\n{4,}/g, "\n\n\n");
-
-	// 7. Detectar y escapar asteriscos sueltos que pueden romper el parsing de negritas
-	// Solo si no están en pares (bold/italic)
-	const lines = sanitized.split("\n");
-	const cleanedLines = lines.map((line) => {
-		// Contar asteriscos en la línea
-		const asteriskCount = (line.match(/\*/g) || []).length;
-
-		// Si hay número impar de asteriscos y no es un item de lista
-		if (
-			asteriskCount > 0 &&
-			asteriskCount % 2 !== 0 &&
-			!line.trim().startsWith("*")
-		) {
-			// Escapar asteriscos sueltos al final
-			return line.replace(/\*(?!\*)(?![^*]*\*)/g, "\\*");
-		}
-		return line;
-	});
-	sanitized = cleanedLines.join("\n");
-
-	// 8. Normalizar headers con espacios inconsistentes
-	// Detectar headers con múltiples espacios para logging
-	const headersWithMultipleSpaces = sanitized.match(/^#{1,6}\s{2,}.+$/gm);
-	if (headersWithMultipleSpaces) {
-		console.warn(
-			"⚠️ [Sanitizer] Headers con espacios múltiples detectados:",
-			headersWithMultipleSpaces.length,
-		);
-		headersWithMultipleSpaces.forEach((h) =>
-			console.log("   📝", h.substring(0, 50)),
-		);
-	}
-
-	// Normalizar: ## + múltiples espacios + texto → ## + un espacio + texto
-	sanitized = sanitized.replace(/^(#{1,6})\s{2,}(.+)$/gm, "$1 $2");
-
-	// Normalizar: ## + sin espacio + texto → ## + un espacio + texto
-	sanitized = sanitized.replace(/^(#{1,6})([^\s#].+)$/gm, "$1 $2");
-
-	// 9. Eliminar espacios al final de las líneas
-	sanitized = sanitized.replace(/[^\S\n]+$/gm, "");
-
-	// 10. Normalizar comillas tipográficas (previene problemas de parsing)
-	const originalQuotes = sanitized;
-	sanitized = sanitized.replace(/[""]/g, '"');
-	sanitized = sanitized.replace(/['']/g, "'");
-	if (sanitized !== originalQuotes) {
-		corrections.push("Comillas tipográficas normalizadas");
-	}
-
-	// 11. Sanitizar asteriscos desbalanceados (Solo heurísticas específicas y seguras)
-
-	// Heurística 1: * seguido de " sin cierre antes de — (em dash)
-	// Caso específico: *"texto"— donde el * no tiene cierre
-	const h1Matches = sanitized.match(/\*"([^"]*)"—/g);
-	sanitized = sanitized.replace(/\*"([^"]*)"—/g, '"$1"—');
-	if (h1Matches) {
-		corrections.push(
-			`Asteriscos antes de comillas+em-dash: ${h1Matches.length}`,
-		);
-	}
-
-	// Heurística 2: * seguido de " sin cierre antes de fin de línea
-	const h2Matches = sanitized.match(/\*"([^"]*)"$/gm);
-	sanitized = sanitized.replace(/\*"([^"]*)"$/gm, '"$1"');
-	if (h2Matches) {
-		corrections.push(
-			`Asteriscos antes de comillas al final de línea: ${h2Matches.length}`,
-		);
-	}
-
-	// Heurística 3: Limpiar patrón corrupto *\* que debería ser **
-	// Esto ocurre cuando se corrompe el cierre de negritas
-	const h3Matches = sanitized.match(/\*\\\*/g);
-	sanitized = sanitized.replace(/\*\\\*/g, "**");
-	if (h3Matches) {
-		corrections.push(
-			`Patrones corruptos *\\* corregidos a **: ${h3Matches.length}`,
-		);
-	}
-
-	// 12. Romper líneas extremadamente largas (>500 caracteres) que pueden bloquear el parser
-	const linesArray = sanitized.split("\n");
-	const brokenLines = linesArray.map((line) => {
-		if (
-			line.length > 500 &&
-			!line.trim().startsWith("#") &&
-			!line.trim().startsWith("```")
-		) {
-			// Romper en oraciones (por puntos seguidos de espacio)
-			const sentences = line.match(/[^.!?]+[.!?]+\s*/g) || [line];
-			let result = "";
-			let currentLine = "";
-
-			sentences.forEach((sentence) => {
-				if ((currentLine + sentence).length > 500) {
-					if (currentLine) result += currentLine.trim() + "\n";
-					currentLine = sentence;
-				} else {
-					currentLine += sentence;
-				}
-			});
-
-			if (currentLine) result += currentLine.trim();
-
-			console.log(
-				`⚠️ [Sanitizer] Línea larga rota: ${line.length} → ${result.split("\n").length} líneas`,
-			);
-			return result;
-		}
-		return line;
-	});
-	sanitized = brokenLines.join("\n");
-
-	// 11. Asegurar que el documento termine con un salto de línea
-	if (!sanitized.endsWith("\n")) {
-		sanitized += "\n";
-	}
-
-	// Log final solo si hubo correcciones
-	if (corrections.length > 0) {
-		console.log("🧹 [SANITIZADOR] Correcciones aplicadas:");
-		corrections.forEach((c) => console.log(`   ✓ ${c}`));
-	}
-
-	return sanitized;
-}
 
 // ========================================================================
 // PRE-PROCESADOR: Genera headers automáticamente si el markdown carece de estructura
@@ -359,7 +209,9 @@ function renderMarkdownContent(
 		);
 	}
 
-	const lines = safeContent.split("\n");
+	// Extraer bloques LaTeX $$...$$ antes de procesar líneas
+	const segments = extractLatexBlocks(safeContent);
+
 	const elements: React.ReactNode[] = [];
 	let listItems: string[] = [];
 	let inList = false;
@@ -434,84 +286,107 @@ function renderMarkdownContent(
 		}
 	};
 
-	lines.forEach((line, idx) => {
-		// Detectar tabla markdown
-		if (line.includes("|")) {
-			if (!inTable) {
-				flushList();
-				inTable = true;
-			}
-			tableRows.push(line);
-			return;
-		} else if (inTable) {
-			flushTable();
-		}
+	// Procesar cada segmento (texto o bloque LaTeX)
+	let elementKey = 0;
 
-		// Lista desordenada
-		if (line.match(/^\s*[-*+]\s+/)) {
-			if (!inList || listType !== "ul") {
-				flushList();
-				inList = true;
-				listType = "ul";
-			}
-			listItems.push(line.replace(/^\s*[-*+]\s+/, ""));
-			return;
-		}
-
-		// Lista ordenada
-		if (line.match(/^\s*\d+\.\s+/)) {
-			if (!inList || listType !== "ol") {
-				flushList();
-				inList = true;
-				listType = "ol";
-			}
-			listItems.push(line.replace(/^\s*\d+\.\s+/, ""));
-			return;
-		}
-
-		// Si no es lista, flush lista anterior
-		if (inList) {
+	for (const segment of segments) {
+		if (segment.type === "latex-block") {
 			flushList();
-		}
-
-		// Línea vacía
-		if (line.trim() === "") {
-			elements.push(<div key={`space-${idx}`} className="h-2" />);
-			return;
-		}
-
-		// Blockquote
-		if (line.startsWith(">")) {
-			const quoteContent = line.replace(/^>\s*/, "");
+			flushTable();
 			elements.push(
-				<blockquote
-					key={`quote-${idx}`}
-					className="border-l-4 border-primary/30 pl-4 italic text-muted-foreground my-3">
-					{renderInlineMarkdown(quoteContent, options)}
-				</blockquote>,
+				<div key={`latex-block-${elementKey++}`}>
+					{renderLatexBlock(segment.content)}
+				</div>,
 			);
-			return;
+			continue;
 		}
 
-		// Código inline (línea completa con backticks)
-		if (line.trim().startsWith("```")) {
+		// Procesar segmento de texto línea por línea
+		const lines = segment.content.split("\n");
+		for (const line of lines) {
+			const MAX_LINE_LENGTH = 2000;
+			const safeLine = line.length > MAX_LINE_LENGTH
+				? line.slice(0, MAX_LINE_LENGTH) + "…"
+				: line;
+
+			// Detectar tabla markdown
+			if (safeLine.includes("|")) {
+				if (!inTable) {
+					flushList();
+					inTable = true;
+				}
+				tableRows.push(safeLine);
+				continue;
+			} else if (inTable) {
+				flushTable();
+			}
+
+			// Lista desordenada
+			if (safeLine.match(/^\s*[-*+]\s+/)) {
+				if (!inList || listType !== "ul") {
+					flushList();
+					inList = true;
+					listType = "ul";
+				}
+				listItems.push(safeLine.replace(/^\s*[-*+]\s+/, ""));
+				continue;
+			}
+
+			// Lista ordenada
+			if (safeLine.match(/^\s*\d+\.\s+/)) {
+				if (!inList || listType !== "ol") {
+					flushList();
+					inList = true;
+					listType = "ol";
+				}
+				listItems.push(safeLine.replace(/^\s*\d+\.\s+/, ""));
+				continue;
+			}
+
+			// Si no es lista, flush lista anterior
+			if (inList) {
+				flushList();
+			}
+
+			// Línea vacía
+			if (safeLine.trim() === "") {
+				elements.push(<div key={`space-${elementKey++}`} className="h-2" />);
+				continue;
+			}
+
+			// Blockquote
+			if (safeLine.startsWith(">")) {
+				const quoteContent = safeLine.replace(/^>\s*/, "");
+				elements.push(
+					<blockquote
+						key={`quote-${elementKey++}`}
+						className="border-l-4 border-primary/30 pl-4 italic text-muted-foreground my-3">
+						{renderInlineMarkdown(quoteContent, options)}
+					</blockquote>,
+				);
+				continue;
+			}
+
+			// Código inline (línea completa con backticks)
+			if (safeLine.trim().startsWith("```")) {
+				elements.push(
+					<pre
+						key={`code-${elementKey++}`}
+						className="bg-muted/50 p-3 rounded-md my-3 overflow-x-auto">
+						<code className="text-sm font-mono">{safeLine.replace(/```/g, "")}</code>
+					</pre>,
+				);
+				continue;
+			}
+
+			// Párrafo normal
 			elements.push(
-				<pre
-					key={`code-${idx}`}
-					className="bg-muted/50 p-3 rounded-md my-3 overflow-x-auto">
-					<code className="text-sm font-mono">{line.replace(/```/g, "")}</code>
-				</pre>,
+				<p key={`p-${elementKey++}`} className="text-base leading-relaxed mb-2">
+					{renderInlineMarkdown(safeLine, options)}
+				</p>,
 			);
-			return;
 		}
-
-		// Párrafo normal
-		elements.push(
-			<p key={`p-${idx}`} className="text-base leading-relaxed mb-2">
-				{renderInlineMarkdown(line, options)}
-			</p>,
-		);
-	});
+	}
 
 	// Flush lista y tabla final si existen
 	flushList();
@@ -539,127 +414,207 @@ function renderMarkdownContent(
 }
 
 // Renderizar markdown inline (negritas, cursivas, código, enlaces)
+// Parser iterativo O(n) — evita backtracking catastrófico con contenido de PDF
 function renderInlineMarkdown(
 	text: string,
 	options?: RenderContentOptions,
 ): React.ReactNode {
 	const parts: React.ReactNode[] = [];
-	let remaining = text;
+	let i = 0;
 	let key = 0;
 
-	while (remaining.length > 0) {
-		// Negrita (**texto** o __texto__) - Prioridad ALTA para capturar antes que cursiva
-		// Usar regex que NO capture asteriscos individuales internos
-		const boldMatch = remaining.match(/^\*\*([^*]+(?:\*(?!\*)[^*]+)*)\*\*/);
-		if (boldMatch) {
-			// Renderizar el contenido interno recursivamente para manejar cursivas anidadas
-			const innerContent = boldMatch[1];
+	const pushText = (chunk: string) => {
+		if (!chunk) return;
+		if (options?.shouldHighlight && options?.highlightTerm) {
 			parts.push(
-				<StandardText
-					key={key++}
-					weight="semibold"
-					colorScheme="accent"
-					colorShade="textShade"
-					asElement="span">
-					{renderInlineMarkdown(innerContent, options)}
-				</StandardText>,
-			);
-			remaining = remaining.slice(boldMatch[0].length);
-			continue;
-		}
-
-		// Negrita con __ (alternativa)
-		const boldUnderscoreMatch = remaining.match(/^__(.+?)__/);
-		if (boldUnderscoreMatch) {
-			parts.push(
-				<StandardText
-					key={key++}
-					weight="semibold"
-					colorScheme="accent"
-					colorShade="textShade"
-					asElement="span">
-					{renderInlineMarkdown(boldUnderscoreMatch[1], options)}
-				</StandardText>,
-			);
-			remaining = remaining.slice(boldUnderscoreMatch[0].length);
-			continue;
-		}
-
-		// Cursiva con * (solo un asterisco, no dos)
-		const italicAsteriskMatch = remaining.match(/^\*([^*]+)\*/);
-		if (italicAsteriskMatch) {
-			parts.push(
-				<em key={key++} className="italic">
-					{italicAsteriskMatch[1]}
-				</em>,
-			);
-			remaining = remaining.slice(italicAsteriskMatch[0].length);
-			continue;
-		}
-
-		// Cursiva con _ (alternativa)
-		const italicUnderscoreMatch = remaining.match(/^_([^_]+)_/);
-		if (italicUnderscoreMatch) {
-			parts.push(
-				<em key={key++} className="italic">
-					{italicUnderscoreMatch[1]}
-				</em>,
-			);
-			remaining = remaining.slice(italicUnderscoreMatch[0].length);
-			continue;
-		}
-
-		// Código inline (`código`)
-		const codeMatch = remaining.match(/^`(.+?)`/);
-		if (codeMatch) {
-			parts.push(
-				<code
-					key={key++}
-					className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">
-					{codeMatch[1]}
-				</code>,
-			);
-			remaining = remaining.slice(codeMatch[0].length);
-			continue;
-		}
-
-		// Enlace ([texto](url))
-		const linkMatch = remaining.match(/^\[(.+?)\]\((.+?)\)/);
-		if (linkMatch) {
-			parts.push(
-				<a
-					key={key++}
-					href={linkMatch[2]}
-					className="text-primary hover:underline"
-					target="_blank"
-					rel="noopener noreferrer">
-					{linkMatch[1]}
-				</a>,
-			);
-			remaining = remaining.slice(linkMatch[0].length);
-			continue;
-		}
-
-		// Texto normal (hasta el próximo marcador)
-		const nextSpecial = remaining.search(/[\*_`\[]/);
-		const textChunk =
-			nextSpecial === -1 ? remaining : remaining.slice(0, nextSpecial);
-
-		// Aplicar highlight si está habilitado
-		if (options?.shouldHighlight && options?.highlightTerm && textChunk) {
-			parts.push(
-				<span key={key++}>
-					{highlightSearchTerm(textChunk, options.highlightTerm)}
-				</span>,
+				<span key={key++}>{highlightSearchTerm(chunk, options.highlightTerm)}</span>,
 			);
 		} else {
-			parts.push(<span key={key++}>{textChunk}</span>);
+			parts.push(<span key={key++}>{chunk}</span>);
+		}
+	};
+
+	while (i < text.length) {
+		const ch = text[i];
+
+		// LaTeX inline $...$ (pero no $$ que es block-level)
+		if (ch === "$" && i + 1 < text.length && text[i + 1] !== "$") {
+			// Buscar cierre $ (pero no $$)
+			let found = false;
+			for (let j = i + 1; j < text.length && j < i + 2000; j++) {
+				if (text[j] === "$" && (j + 1 >= text.length || text[j + 1] !== "$")) {
+					const latex = text.slice(i + 1, j);
+					if (latex.length > 0) {
+						parts.push(renderLatexInline(latex));
+						i = j + 1;
+						found = true;
+					}
+					break;
+				}
+			}
+			if (!found) {
+				pushText("$");
+				i += 1;
+			}
+			continue;
 		}
 
+		// Negrita con **
+		if (ch === "*" && i + 1 < text.length && text[i + 1] === "*") {
+			const closeIdx = text.indexOf("**", i + 2);
+			if (closeIdx !== -1) {
+				const inner = text.slice(i + 2, closeIdx);
+				if (inner.length > 0 && inner.length < 5000) {
+					parts.push(
+						<StandardText
+							key={key++}
+							weight="semibold"
+							colorScheme="accent"
+							colorShade="textShade"
+							asElement="span">
+							{renderInlineMarkdown(inner, options)}
+						</StandardText>,
+					);
+					i = closeIdx + 2;
+					continue;
+				}
+			}
+			pushText("**");
+			i += 2;
+			continue;
+		}
+
+		// Negrita o cursiva con _ (un solo _ = cursiva, __ = negrita)
+		if (ch === "_") {
+			if (i + 1 < text.length && text[i + 1] === "_") {
+				// __negrita__
+				const closeIdx = text.indexOf("__", i + 2);
+				if (closeIdx !== -1) {
+					const inner = text.slice(i + 2, closeIdx);
+					if (inner.length > 0 && inner.length < 5000) {
+						parts.push(
+							<StandardText
+								key={key++}
+								weight="semibold"
+								colorScheme="accent"
+								colorShade="textShade"
+								asElement="span">
+								{renderInlineMarkdown(inner, options)}
+							</StandardText>,
+						);
+						i = closeIdx + 2;
+						continue;
+					}
+				}
+				pushText("__");
+				i += 2;
+				continue;
+			} else {
+				// _cursiva_
+				const closeIdx = text.indexOf("_", i + 1);
+				if (closeIdx !== -1 && closeIdx > i + 1 && closeIdx < i + 2000) {
+					// Verificar que no sea doble underscore en closeIdx
+					if (text[closeIdx + 1] !== "_") {
+						const inner = text.slice(i + 1, closeIdx);
+						parts.push(
+							<em key={key++} className="italic">
+								{inner}
+							</em>,
+						);
+						i = closeIdx + 1;
+						continue;
+					}
+				}
+				pushText("_");
+				i += 1;
+				continue;
+			}
+		}
+
+		// Cursiva con * (asterisco simple, no doble)
+		if (ch === "*") {
+			// Ya manejamos ** arriba; si llegamos aquí es un * soltero
+			// Buscar cierre * pero no **
+			let found = false;
+			for (let j = i + 1; j < text.length && j < i + 2000; j++) {
+				if (text[j] === "*" && (j + 1 >= text.length || text[j + 1] !== "*")) {
+					const inner = text.slice(i + 1, j);
+					if (inner.length > 0) {
+						parts.push(
+							<em key={key++} className="italic">
+								{inner}
+							</em>,
+						);
+						i = j + 1;
+						found = true;
+					}
+					break;
+				}
+			}
+			if (!found) {
+				pushText("*");
+				i += 1;
+			}
+			continue;
+		}
+
+		// Código inline
+		if (ch === "`") {
+			const closeIdx = text.indexOf("`", i + 1);
+			if (closeIdx !== -1 && closeIdx < i + 5000) {
+				const inner = text.slice(i + 1, closeIdx);
+				parts.push(
+					<code
+						key={key++}
+						className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">
+						{inner}
+					</code>,
+				);
+				i = closeIdx + 1;
+				continue;
+			}
+			pushText("`");
+			i += 1;
+			continue;
+		}
+
+		// Enlace [texto](url)
+		if (ch === "[") {
+			const closeBracket = text.indexOf("]", i + 1);
+			if (closeBracket !== -1 && closeBracket < i + 500 && closeBracket + 1 < text.length && text[closeBracket + 1] === "(") {
+				const closeParen = text.indexOf(")", closeBracket + 2);
+				if (closeParen !== -1 && closeParen < closeBracket + 2000) {
+					const linkText = text.slice(i + 1, closeBracket);
+					const href = text.slice(closeBracket + 2, closeParen);
+					if (href.length > 0 && href.length < 3000) {
+						parts.push(
+							<a
+								key={key++}
+								href={href}
+								className="text-primary hover:underline"
+								target="_blank"
+								rel="noopener noreferrer">
+								{linkText}
+							</a>,
+						);
+						i = closeParen + 1;
+						continue;
+					}
+				}
+			}
+			pushText("[");
+			i += 1;
+			continue;
+		}
+
+		// Texto normal: acumular hasta el próximo carácter especial
+		const nextSpecial = text.slice(i).search(/[\*_`\[$]/);
 		if (nextSpecial === -1) {
+			pushText(text.slice(i));
 			break;
 		} else {
-			remaining = remaining.slice(nextSpecial);
+			pushText(text.slice(i, i + nextSpecial));
+			i += nextSpecial;
 		}
 	}
 
@@ -877,7 +832,7 @@ function MarkdownSection({
 						applyGradient={config.gradient}
 						asElement="h1"
 						className="text-left">
-						{section.title}
+						{renderInlineMarkdown(section.title)}
 					</StandardText>
 				</div>
 				{/* H1 siempre muestra su contenido si existe */}
@@ -915,7 +870,7 @@ function MarkdownSection({
 					applyGradient={config.gradient}
 					asElement="span"
 					className="flex-1 text-left">
-					{section.title}
+					{renderInlineMarkdown(section.title)}
 				</StandardText>
 			</button>
 
@@ -939,15 +894,8 @@ export function StandardMarkdownViewer({
 	currentMatchIndex,
 	onSearch,
 }: StandardMarkdownViewerProps) {
-	// Guardar markdown sanitizado para debugging
-	const [sanitizedMarkdown, setSanitizedMarkdown] = useState<string>("");
-
 	const sections = useMemo(() => {
-		const result = parseMarkdownToSections(content);
-		// Guardar el markdown sanitizado para poder descargarlo
-		const sanitized = sanitizeMarkdown(content);
-		setSanitizedMarkdown(sanitized);
-		return result;
+		return parseMarkdownToSections(content);
 	}, [content]);
 
 	const [highlightedSectionId, setHighlightedSectionId] = useState<
@@ -962,19 +910,6 @@ export function StandardMarkdownViewer({
 	>(new Set());
 	const onSearchRef = useRef(onSearch);
 	const manuallyExpandedRef = useRef<Set<string>>(new Set());
-
-	// Función para descargar markdown sanitizado
-	const downloadSanitized = useCallback(() => {
-		const blob = new Blob([sanitizedMarkdown], { type: "text/markdown" });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = "markdown-sanitizado.md";
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
-	}, [sanitizedMarkdown]);
 
 	// Mantener refs actualizadas
 	useEffect(() => {
@@ -1167,16 +1102,6 @@ export function StandardMarkdownViewer({
 
 	return (
 		<div className={cn("space-y-2", className)}>
-			{/* Botón de debugging para descargar markdown sanitizado */}
-			<div className="flex justify-end mb-2">
-				<button
-					onClick={downloadSanitized}
-					className="px-3 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
-					title="Descargar markdown sanitizado para verificar qué cambios hizo el sanitizador">
-					🔍 Descargar Markdown Sanitizado
-				</button>
-			</div>
-
 			{sections.map((section, index) => {
 				// H1 y H2 siempre visibles
 				const isH1orH2 = section.level <= 2;

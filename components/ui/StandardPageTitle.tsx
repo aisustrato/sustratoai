@@ -31,6 +31,8 @@ export interface StandardPageTitleProps {
   subtitle?: string;
   description?: string;
   mainIcon?: React.ComponentType<IconProps>;
+  /** Emoji opcional delante del título (prioridad sobre mainIcon si ambos se pasan). */
+  emoji?: string;
   breadcrumbs?: BreadcrumbItem[];
   showBackButton?: BackButtonProps | boolean;
   className?: string;
@@ -43,6 +45,7 @@ export function StandardPageTitle({
   subtitle,
   description,
   mainIcon: MainIcon,
+  emoji,
   breadcrumbs,
   showBackButton,
   className,
@@ -94,11 +97,13 @@ export function StandardPageTitle({
           </div>
         )}
         <div className="flex items-center gap-3">
-          {MainIcon && (
+          {emoji ? (
+            <span className="text-[2.5rem] leading-none mt-0.5">{emoji}</span>
+          ) : MainIcon ? (
             <StandardIcon styleType="inverseStroke" colorScheme="primary" colorShade="pure" size="xl" className="mt-0.5">
               <MainIcon />
             </StandardIcon>
-          )}
+          ) : null}
           <div className="flex flex-col justify-center">
             <StandardText preset="heading" applyGradient={true}>
               {title}

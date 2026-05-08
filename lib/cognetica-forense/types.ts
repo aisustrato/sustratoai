@@ -18,6 +18,9 @@
 //#region [re-export] - 🔁 CONTRATO CANÓNICO + HELPERS 🔁
 // Tipos de tabla, enums, inputs, Result<T,E> — entregable de Hongo.
 export * from "./cognetica_forense_types";
+// Addendum v1.1: Núcleo, hashes upstream, cliente DeepSeek, descargas, etc.
+// Ver `docs/cognetica/addendum_requerimiento_windsurf_v11.md`.
+export * from "./cognetica_forense_types_addendum_v11";
 // Helpers ok()/fail() y ResultErrorCode específicos del módulo.
 export * from "./result";
 //#endregion ![re-export]
