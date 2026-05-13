@@ -16,12 +16,20 @@
  */
 
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase";
+import { getScenario, MOCK_COOKIE_NAME } from "@/lib/grafo/mock-data";
 
 export interface EntityNode {
   id: string;
   label: string;
   freq: number;
+  /**
+   * Tipo opcional del nodo. Referencia a `GraphNodeType.id` que el cliente
+   * define en su catálogo. El handler real aún no lo provee (queda undefined),
+   * el mock sí lo usa para ejercitar la feature de tipos en StandardGrafo.
+   */
+  typeId?: string;
 }
 
 export interface EntitiesResponse {
@@ -31,6 +39,16 @@ export interface EntitiesResponse {
 
 export async function GET(): Promise<NextResponse> {
   try {
+    const mockId = cookies().get(MOCK_COOKIE_NAME)?.value;
+    const mockScenario = getScenario(mockId);
+    if (mockScenario) {
+      const response: EntitiesResponse = {
+        entities: mockScenario.entities,
+        total: mockScenario.total,
+      };
+      return NextResponse.json(response);
+    }
+
     const supabase = await createServerClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();

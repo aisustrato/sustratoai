@@ -21,7 +21,9 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createServerClient } from "@/lib/supabase";
+import { getScenario, MOCK_COOKIE_NAME } from "@/lib/grafo/mock-data";
 
 export interface CooccurrenceEdge {
   source: string;
@@ -35,13 +37,6 @@ export interface CooccurrenceResponse {
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    const supabase = await createServerClient();
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const minWeightParam = searchParams.get("min_weight");
     const minWeight = minWeightParam !== null ? parseInt(minWeightParam, 10) : 1;
@@ -51,6 +46,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         { error: "Parámetro min_weight debe ser un entero >= 1" },
         { status: 400 }
       );
+    }
+
+    const mockId = cookies().get(MOCK_COOKIE_NAME)?.value;
+    const mockScenario = getScenario(mockId);
+    if (mockScenario) {
+      const edges = mockScenario.edges.filter((e) => e.weight >= minWeight);
+      const response: CooccurrenceResponse = { edges };
+      return NextResponse.json(response);
+    }
+
+    const supabase = await createServerClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
     }
 
     // Self-join en cgt_conceptos_menciones: para cada par (a, b) con a < b
