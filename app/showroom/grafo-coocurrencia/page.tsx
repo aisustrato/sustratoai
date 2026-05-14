@@ -73,22 +73,24 @@ function setMockCookie(value: string | null): void {
 // Catálogos por escenario — el cliente decide qué icono y color tiene cada tipo
 // ---------------------------------------------------------------------------
 
+// Los `id` coinciden con el enum `cgt_tipo_artefacto` de Supabase, así el
+// mismo catálogo sirve para el mock y para el flujo real sin mapeo extra.
 const CATALOG_COGNETICA_ICON: GraphNodeType[] = [
-  { id: "md",          label: "Markdown",     subtitle: "Notas y documentos planos", icon: FileText,     colorScheme: "primary" },
-  { id: "pdf-informe", label: "PDF Informe",  subtitle: "Documento extenso",          icon: FileBadge,    colorScheme: "secondary" },
-  { id: "pdf-slide",   label: "PDF Slides",   subtitle: "Presentación",               icon: Presentation, colorScheme: "tertiary" },
-  { id: "audio",       label: "Audio",        subtitle: "Entrevistas, podcasts",      icon: Mic,          colorScheme: "accent" },
-  { id: "video",       label: "Video",        subtitle: "Grabaciones",                icon: Video,        colorScheme: "success" },
-  { id: "album",       label: "Álbum",        subtitle: "Conjunto de imágenes",       icon: Images,       colorScheme: "warning" },
+  { id: "markdown",    label: "Markdown",    subtitle: "Notas y documentos planos", icon: FileText,     colorScheme: "primary" },
+  { id: "pdf_informe", label: "PDF Informe", subtitle: "Documento extenso",          icon: FileBadge,    colorScheme: "secondary" },
+  { id: "pdf_slides",  label: "PDF Slides",  subtitle: "Presentación",               icon: Presentation, colorScheme: "tertiary" },
+  { id: "audio",       label: "Audio",       subtitle: "Entrevistas, podcasts",      icon: Mic,          colorScheme: "accent" },
+  { id: "video",       label: "Video",       subtitle: "Grabaciones",                icon: Video,        colorScheme: "success" },
+  { id: "imagen",      label: "Imagen/Álbum", subtitle: "Imágenes en un contenedor", icon: Images,       colorScheme: "warning" },
 ];
 
 const CATALOG_COGNETICA_EMOJI: GraphNodeType[] = [
-  { id: "md",          label: "Markdown",     subtitle: "Notas y documentos planos", icon: "📝", colorScheme: "primary" },
-  { id: "pdf-informe", label: "PDF Informe",  subtitle: "Documento extenso",          icon: "📄", colorScheme: "secondary" },
-  { id: "pdf-slide",   label: "PDF Slides",   subtitle: "Presentación",               icon: "📊", colorScheme: "tertiary" },
-  { id: "audio",       label: "Audio",        subtitle: "Entrevistas, podcasts",      icon: "🎙️", colorScheme: "accent" },
-  { id: "video",       label: "Video",        subtitle: "Grabaciones",                icon: "🎬", colorScheme: "success" },
-  { id: "album",       label: "Álbum",        subtitle: "Conjunto de imágenes",       icon: "🖼️", colorScheme: "warning" },
+  { id: "markdown",    label: "Markdown",    subtitle: "Notas y documentos planos", icon: "📝", colorScheme: "primary" },
+  { id: "pdf_informe", label: "PDF Informe", subtitle: "Documento extenso",          icon: "📄", colorScheme: "secondary" },
+  { id: "pdf_slides",  label: "PDF Slides",  subtitle: "Presentación",               icon: "📊", colorScheme: "tertiary" },
+  { id: "audio",       label: "Audio",       subtitle: "Entrevistas, podcasts",      icon: "🎙️", colorScheme: "accent" },
+  { id: "video",       label: "Video",       subtitle: "Grabaciones",                icon: "🎬", colorScheme: "success" },
+  { id: "imagen",      label: "Imagen/Álbum", subtitle: "Imágenes en un contenedor", icon: "🖼️", colorScheme: "warning" },
 ];
 
 const CATALOG_GENERIC_BY_TYPEID: Record<string, GraphNodeType> = {

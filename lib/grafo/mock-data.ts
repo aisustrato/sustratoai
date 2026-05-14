@@ -203,20 +203,20 @@ const SCENARIO_PESOS_MIXTOS: GraphScenario = {
 const SCENARIO_COGNETICA_ARTEFACTOS: GraphScenario = {
   id: "cognetica-artefactos",
   label: "Cognética: artefactos",
-  description: "Caso real del primer cliente: 6 tipos de artefacto (MD, PDF informe, PDF slide, audio, video, álbum).",
+  description: "Caso real del primer cliente. Los typeIds coinciden con el enum `cgt_tipo_artefacto` de Supabase (markdown, pdf_informe, pdf_slides, audio, video, imagen).",
   entities: [
-    { id: "ca01", label: "Notas Sustrato v2", freq: 18, typeId: "md" },
-    { id: "ca02", label: "Informe Forense Q1", freq: 16, typeId: "pdf-informe" },
-    { id: "ca03", label: "Slides: Oleada 1", freq: 14, typeId: "pdf-slide" },
-    { id: "ca04", label: "Entrevista Hongo", freq: 12, typeId: "audio" },
-    { id: "ca05", label: "Demo cartografiado", freq: 11, typeId: "video" },
-    { id: "ca06", label: "Álbum corpus 2026", freq: 10, typeId: "album" },
-    { id: "ca07", label: "Notas metabolización", freq: 9, typeId: "md" },
-    { id: "ca08", label: "Informe destilado", freq: 8, typeId: "pdf-informe" },
-    { id: "ca09", label: "Slides destilado", freq: 7, typeId: "pdf-slide" },
-    { id: "ca10", label: "Podcast cognición", freq: 6, typeId: "audio" },
-    { id: "ca11", label: "Tutorial ingesta", freq: 5, typeId: "video" },
-    { id: "ca12", label: "Álbum referencias", freq: 4, typeId: "album" },
+    { id: "ca01", label: "Notas Sustrato v2",     freq: 18, typeId: "markdown" },
+    { id: "ca02", label: "Informe Forense Q1",    freq: 16, typeId: "pdf_informe" },
+    { id: "ca03", label: "Slides: Oleada 1",      freq: 14, typeId: "pdf_slides" },
+    { id: "ca04", label: "Entrevista Hongo",      freq: 12, typeId: "audio" },
+    { id: "ca05", label: "Demo cartografiado",    freq: 11, typeId: "video" },
+    { id: "ca06", label: "Álbum corpus 2026",     freq: 10, typeId: "imagen" },
+    { id: "ca07", label: "Notas metabolización",  freq: 9,  typeId: "markdown" },
+    { id: "ca08", label: "Informe destilado",     freq: 8,  typeId: "pdf_informe" },
+    { id: "ca09", label: "Slides destilado",      freq: 7,  typeId: "pdf_slides" },
+    { id: "ca10", label: "Podcast cognición",     freq: 6,  typeId: "audio" },
+    { id: "ca11", label: "Tutorial ingesta",      freq: 5,  typeId: "video" },
+    { id: "ca12", label: "Álbum referencias",     freq: 4,  typeId: "imagen" },
   ],
   edges: [
     { source: "ca01", target: "ca02", weight: 5 },
@@ -239,7 +239,7 @@ const SCENARIO_COGNETICA_ARTEFACTOS: GraphScenario = {
     { source: "ca07", target: "ca10", weight: 1 },
   ],
   total: 40,
-  typeIds: ["md", "pdf-informe", "pdf-slide", "audio", "video", "album"],
+  typeIds: ["markdown", "pdf_informe", "pdf_slides", "audio", "video", "imagen"],
 };
 
 export const GRAPH_SCENARIOS: Record<GraphScenarioId, GraphScenario> = {
