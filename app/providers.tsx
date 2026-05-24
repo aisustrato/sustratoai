@@ -13,7 +13,7 @@ import { DesignTokensProvider } from "@/app/providers/DesignTokensProvider";
 import { FontThemeProvider } from "@/app/font-provider";
 import { RippleProvider } from "@/components/ripple/RippleProvider";
 import { AuthProvider } from "@/app/auth-provider";
-import { Toaster } from "sonner";
+import { StandardToaster } from "@/components/ui/StandardToaster";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -25,7 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <FontThemeProvider>
             <RippleProvider>
               <AuthProvider>
-                <Toaster position="top-right" richColors />
+                <StandardToaster />
                 {children}
               </AuthProvider>
             </RippleProvider>
