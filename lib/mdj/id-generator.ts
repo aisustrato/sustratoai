@@ -2,7 +2,7 @@
 // Generación de IDs deterministas para el árbol MDJ
 //
 // Esquema: {abrev}_{indice} anidado con punto como separador
-// Ej: "h1_0.p_0", "h1_0.ul_0.li_2", "root.p_1"
+// Ej: "h1_0.p_0", "h1_0.ul_0.li_2", "p_1"
 //
 // Invariante: mismo MD → misma estructura → mismos IDs siempre
 
@@ -47,3 +47,10 @@ export function crearGeneradorIds(prefijoPadre?: string) {
 }
 
 export type GeneradorIds = ReturnType<typeof crearGeneradorIds>;
+
+/** Genera un ID único para anotaciones (no determinista, solo para UI) */
+let _anotacionCounter = 0;
+export function generarIdAnotacion(): string {
+  _anotacionCounter += 1;
+  return `anot-ui-${Date.now()}-${_anotacionCounter}`;
+}

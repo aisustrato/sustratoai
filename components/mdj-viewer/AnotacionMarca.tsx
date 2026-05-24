@@ -1,41 +1,68 @@
 // 📍 components/mdj-viewer/AnotacionMarca.tsx
-// 'use client' — highlight visual para anotaciones (frase_notable, referencia, nota)
+// 'use client' — highlight visual para anotaciones, usa el sistema de tema.
+// Recibe colorScheme (primary, secondary, tertiary, accent, success, etc.)
+// y aplica colores vía useTheme() → appColorTokens → inline styles.
+//
+// Uso:
+//   <AnotacionMarca colorScheme="accent">texto</AnotacionMarca>
+//   <AnotacionMarca colorScheme="secondary" activa>texto</AnotacionMarca>
 
 "use client";
 
-import type { TipoAnotacion } from "@/lib/mdj/types";
+import { useTheme } from "@/app/theme-provider";
+import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
 
 interface AnotacionMarcaProps {
-  tipo: TipoAnotacion;
+  colorScheme: ColorSchemeVariant;
   children: React.ReactNode;
   onClick?: () => void;
   activa?: boolean;
+  className?: string;
 }
 
-const ESTILOS: Record<TipoAnotacion, string> = {
-  frase_notable:
-    "bg-yellow-200 dark:bg-yellow-900/40 border-b-2 border-yellow-400 dark:border-yellow-600 cursor-pointer hover:bg-yellow-300 dark:hover:bg-yellow-900/60",
-  referencia:
-    "bg-blue-100 dark:bg-blue-900/30 border-b-2 border-blue-400 dark:border-blue-500 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-900/50",
-  nota:
-    "bg-green-100 dark:bg-green-900/20 border-b-2 border-green-400 dark:border-green-500 cursor-pointer hover:bg-green-200 dark:hover:bg-green-900/40",
-};
-
 export function AnotacionMarca({
-  tipo,
+  colorScheme,
   children,
   onClick,
   activa = false,
+  className = "",
 }: AnotacionMarcaProps) {
-  const base = ESTILOS[tipo] || "";
-  const pulso = activa ? "ring-2 ring-primary ring-offset-1" : "";
+  const { appColorTokens } = useTheme();
+  const shade = appColorTokens[colorScheme];
+
+  const baseStyle: React.CSSProperties = {
+    backgroundColor: shade.bg,
+    borderBottom: `2px solid ${shade.bgShade}`,
+    cursor: "pointer",
+    borderRadius: "2px",
+    padding: "0 2px",
+    transition: "all 0.2s ease",
+  };
+
+  const hoverStyle: React.CSSProperties = {
+    backgroundColor: shade.bgShade,
+  };
+
+  const activeStyle: React.CSSProperties = activa
+    ? {
+        boxShadow: `0 0 0 2px ${shade.pure}`,
+        outlineOffset: "1px",
+      }
+    : {};
 
   return (
     <span
-      className={`${base} ${pulso} rounded-sm px-0.5 transition-all duration-200`}
+      className={className}
+      style={{ ...baseStyle, ...activeStyle }}
       onClick={onClick}
       role="button"
       tabIndex={0}
+      onMouseEnter={(e) => {
+        Object.assign(e.currentTarget.style, hoverStyle);
+      }}
+      onMouseLeave={(e) => {
+        Object.assign(e.currentTarget.style, baseStyle, activeStyle);
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") onClick?.();
       }}

@@ -1,18 +1,31 @@
 // 📍 components/mdj-viewer/NodoDispatcher.tsx
 // Server Component — despacha cada nodo a su componente visual según tipo
+// Soporta anotaciones, búsqueda y callbacks de notas/referencias/frases
 
-import type { NodoEstructural, NodoH1, NodoH2, NodoH3, NodoParrafo, NodoLista, NodoTabla, NodoCodigo, NodoLatex, Anotacion } from "@/lib/mdj/types";
+import type { NodoEstructural, NodoH1, NodoH2, NodoH3, NodoParrafo, NodoLista, NodoTabla, NodoCodigo, NodoLatex, Anotacion, CoincidenciaBusqueda } from "@/lib/mdj/types";
 import { SeccionColapsable } from "./SeccionColapsable";
 import { NodoParrafoView } from "./NodoParrafoView";
 import { NodoListaView } from "./NodoListaView";
 import { NodoTablaView } from "./NodoTablaView";
 import { NodoCodigoView } from "./NodoCodigoView";
+import { NodoLatexView } from "./NodoLatexView";
+
+interface BusquedaEnNodo {
+  coincidencias: CoincidenciaBusqueda[];
+  indiceActivo: number;
+}
 
 interface NodoDispatcherProps {
   nodo: NodoEstructural;
   anotaciones: Anotacion[];
   onAnotacionClick?: (anotacion: Anotacion) => void;
   anotacionActiva?: string | null;
+  busqueda?: BusquedaEnNodo;
+  onEditarNota?: (anotacion: Anotacion) => void;
+  onBorrarNota?: (anotacionId: string) => void;
+  onEditarReferencia?: (anotacion: Anotacion) => Promise<{ ok: boolean }>;
+  onBorrarReferencia?: (anotacionId: string) => Promise<{ ok: boolean }>;
+  onBorrarFraseNotable?: (anotacionId: string) => Promise<{ ok: boolean }>;
 }
 
 export function NodoDispatcher({
@@ -20,8 +33,20 @@ export function NodoDispatcher({
   anotaciones,
   onAnotacionClick,
   anotacionActiva,
+  busqueda,
+  onEditarNota,
+  onBorrarNota,
+  onEditarReferencia,
+  onBorrarReferencia,
+  onBorrarFraseNotable,
 }: NodoDispatcherProps) {
   const anotsDelNodo = anotaciones.filter((a) => a.nodo_id === nodo.id);
+
+  // Filtrar coincidencias de búsqueda para este nodo
+  const busqDelNodo = busqueda ? {
+    coincidencias: busqueda.coincidencias.filter((c) => c.nodo_id === nodo.id),
+    indiceActivo: busqueda.indiceActivo,
+  } : undefined;
 
   switch (nodo.tipo) {
     case "h1": {
@@ -40,6 +65,12 @@ export function NodoDispatcher({
               anotaciones={anotaciones}
               onAnotacionClick={onAnotacionClick}
               anotacionActiva={anotacionActiva}
+              busqueda={busqueda}
+              onEditarNota={onEditarNota}
+              onBorrarNota={onBorrarNota}
+              onEditarReferencia={onEditarReferencia}
+              onBorrarReferencia={onBorrarReferencia}
+              onBorrarFraseNotable={onBorrarFraseNotable}
             />
           ))}
         </SeccionColapsable>
@@ -62,6 +93,12 @@ export function NodoDispatcher({
               anotaciones={anotaciones}
               onAnotacionClick={onAnotacionClick}
               anotacionActiva={anotacionActiva}
+              busqueda={busqueda}
+              onEditarNota={onEditarNota}
+              onBorrarNota={onBorrarNota}
+              onEditarReferencia={onEditarReferencia}
+              onBorrarReferencia={onBorrarReferencia}
+              onBorrarFraseNotable={onBorrarFraseNotable}
             />
           ))}
         </SeccionColapsable>
@@ -84,6 +121,12 @@ export function NodoDispatcher({
               anotaciones={anotaciones}
               onAnotacionClick={onAnotacionClick}
               anotacionActiva={anotacionActiva}
+              busqueda={busqueda}
+              onEditarNota={onEditarNota}
+              onBorrarNota={onBorrarNota}
+              onEditarReferencia={onEditarReferencia}
+              onBorrarReferencia={onBorrarReferencia}
+              onBorrarFraseNotable={onBorrarFraseNotable}
             />
           ))}
         </SeccionColapsable>
@@ -97,6 +140,12 @@ export function NodoDispatcher({
           anotaciones={anotsDelNodo}
           onAnotacionClick={onAnotacionClick}
           anotacionActiva={anotacionActiva}
+          busqueda={busqDelNodo}
+          onEditarNota={onEditarNota}
+          onBorrarNota={onBorrarNota}
+          onEditarReferencia={onEditarReferencia}
+          onBorrarReferencia={onBorrarReferencia}
+          onBorrarFraseNotable={onBorrarFraseNotable}
         />
       );
 
@@ -108,6 +157,12 @@ export function NodoDispatcher({
           anotaciones={anotaciones}
           onAnotacionClick={onAnotacionClick}
           anotacionActiva={anotacionActiva}
+          busqueda={busqueda}
+          onEditarNota={onEditarNota}
+          onBorrarNota={onBorrarNota}
+          onEditarReferencia={onEditarReferencia}
+          onBorrarReferencia={onBorrarReferencia}
+          onBorrarFraseNotable={onBorrarFraseNotable}
         />
       );
 
@@ -118,11 +173,7 @@ export function NodoDispatcher({
       return <NodoCodigoView nodo={nodo as NodoCodigo} />;
 
     case "latex":
-      return (
-        <div className="my-4 p-4 bg-neutral-50 dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-x-auto">
-          <code className="text-sm font-mono">{(nodo as NodoLatex).contenido}</code>
-        </div>
-      );
+      return <NodoLatexView nodo={nodo as NodoLatex} />;
 
     default:
       return null;

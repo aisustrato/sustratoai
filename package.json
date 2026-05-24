@@ -82,6 +82,7 @@
     "rehype-autolink-headings": "^7.1.0",
     "rehype-slug": "^6.0.0",
     "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "replicate": "^1.4.0",
     "resend": "^4.8.0",
     "sonner": "latest",

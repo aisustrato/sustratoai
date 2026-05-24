@@ -103,7 +103,7 @@ function recolectarNotas(
 ): string {
   return anotaciones
     .filter((a) => a.tipo === "nota" && a.nota_texto)
-    .map((a) => `> 📝 ${a.nota_texto}`)
+    .map((a) => `%% ${a.nota_texto} %%`)
     .join("\n\n");
 }
 
@@ -114,7 +114,7 @@ function recolectarNotas(
  * Las anotaciones se degradan a sintaxis portable:
  *   - frases notables → ==highlight== (Obsidian)
  *   - referencias → [^id] footnotes CommonMark
- *   - notas → > 📝 blockquote
+ *   - notas → %% texto %% (Obsidian comments)
  */
 export function exportarMDPuro(doc: DocumentoMDJ): string {
   const partes: string[] = [];

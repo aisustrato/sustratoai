@@ -24,6 +24,7 @@ import type {
   NodoItem,
   NodoTabla,
   NodoCodigo,
+  NodoLatex,
   NodoInline,
   Anotacion,
   NodoBase,
@@ -98,6 +99,12 @@ function convertirInline(children: PhrasingContent[]): NodoInline[] {
         break;
       case "break":
         resultado.push({ tipo: "texto", contenido: "\n" });
+        break;
+      case "inlineMath":
+        resultado.push({
+          tipo: "latex_inline",
+          contenido: (child as { value: string }).value,
+        });
         break;
       default:
         // Text, inlineMath (con remark-math), etc.
@@ -228,6 +235,20 @@ function convertirCodigo(
   };
 }
 
+function convertirLatex(
+  mathNode: { type: "math"; value: string },
+  id: string,
+  indice: number,
+): NodoLatex {
+  return {
+    id,
+    tipo: "latex",
+    indice_global: indice,
+    contenido: mathNode.value,
+    modo: "bloque",
+  };
+}
+
 // ── Procesamiento principal ──────────────────────────────────────────────
 
 let contadorGlobal = 0;
@@ -268,6 +289,10 @@ function convertirNodoContenido(
     case "code": {
       const id = generador.siguiente("code");
       return convertirCodigo(node, id, idx);
+    }
+    case "math": {
+      const id = generador.siguiente("latex");
+      return convertirLatex(node as { type: "math"; value: string }, id, idx);
     }
     case "blockquote": {
       // Blockquote → aplanamos como párrafos dentro
@@ -426,7 +451,7 @@ export function transformarMDASTaMDJ(
   // Reiniciar contador global
   contadorGlobal = 0;
 
-  const raiz = crearGeneradorIds("root");
+  const raiz = crearGeneradorIds("");
   const nodos: NodoEstructural[] = [];
   const children = mdast.children as Content[];
   let i = 0;

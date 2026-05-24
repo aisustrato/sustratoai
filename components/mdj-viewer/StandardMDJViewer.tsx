@@ -1,20 +1,20 @@
-// 📍 components/mdj-viewer/MDJViewer.tsx
+// 📍 components/mdj-viewer/StandardMDJViewer.tsx
 // Server Component raíz — parsea MD en servidor, renderiza árbol MDJ
 //
 // Uso básico:
-//   <MDJViewer md={contenidoMarkdown} artefactoId={artefacto.id} />
+//   <StandardMDJViewer md={contenidoMarkdown} artefactoId={artefacto.id} />
 //
 // Con anotaciones:
-//   <MDJViewer md={md} artefactoId={id} anotaciones={anots} />
+//   <StandardMDJViewer md={md} artefactoId={id} anotaciones={anots} />
 //
-// Con selección (requiere MDJViewerClient wrapper):
-//   <MDJViewerClient md={md} artefactoId={id} onSeleccion={(sel) => {...}} />
+// Con selección (requiere StandardMDJViewerClient wrapper):
+//   <StandardMDJViewerClient md={md} artefactoId={id} onSeleccion={(sel) => {...}} />
 
 import { parsearMDJ } from "@/lib/mdj/parser";
 import type { DocumentoMDJ, Anotacion } from "@/lib/mdj/types";
 import { NodoDispatcher } from "./NodoDispatcher";
 
-export interface MDJViewerProps {
+export interface StandardMDJViewerProps {
   md: string;
   artefactoId: string;
   tipoArtefacto?: DocumentoMDJ["tipo_artefacto"];
@@ -24,15 +24,15 @@ export interface MDJViewerProps {
 
 /**
  * Componente de servidor — parsea MD y renderiza el árbol completo como HTML.
- * Para agregar interactividad de selección de texto, usar MDJViewerClient.
+ * Para agregar interactividad de selección de texto, usar StandardMDJViewerClient.
  */
-export function MDJViewer({
+export function StandardMDJViewer({
   md,
   artefactoId,
   tipoArtefacto = "otro",
   anotaciones = [],
   className = "",
-}: MDJViewerProps) {
+}: StandardMDJViewerProps) {
   const doc = parsearMDJ(md, artefactoId, tipoArtefacto, anotaciones);
 
   if (!doc || doc.nodos.length === 0) {

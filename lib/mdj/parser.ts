@@ -7,6 +7,7 @@
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import type { Root } from "mdast";
 import { transformarMDASTaMDJ } from "./transformer";
 import type { DocumentoMDJ, Anotacion } from "./types";
@@ -26,7 +27,11 @@ export function parsearMDJ(
   tipoArtefacto: DocumentoMDJ["tipo_artefacto"] = "otro",
   anotaciones: Anotacion[] = [],
 ): DocumentoMDJ {
-  const mdast = unified().use(remarkParse).use(remarkGfm).parse(md) as Root;
+  const mdast = unified()
+    .use(remarkParse)
+    .use(remarkGfm)
+    .use(remarkMath)
+    .parse(md) as Root;
 
   const mdHash = hashSimple(md);
 

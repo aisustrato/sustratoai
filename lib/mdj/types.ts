@@ -32,6 +32,8 @@ export type NodoInline =
 
 export type TipoAnotacion = "frase_notable" | "referencia" | "nota";
 
+export type SemaforoReferencia = "verde" | "amarillo" | "rojo";
+
 export type Anotacion = {
   id: string;
   tipo: TipoAnotacion;
@@ -41,6 +43,10 @@ export type Anotacion = {
   fragmento: string;
   entidad_id?: string;
   nota_texto?: string;
+  /** Semáforo de confiabilidad de la fuente (solo para tipo "referencia") */
+  semaforo?: SemaforoReferencia;
+  /** Indica si el link fue verificado que existe (solo para tipo "referencia") */
+  validado?: boolean;
   huerfana?: boolean;
 };
 
@@ -145,6 +151,15 @@ export type NodoEstructural =
   | NodoTabla
   | NodoCodigo
   | NodoLatex;
+
+// ── Búsqueda ─────────────────────────────────────────────────────────────
+
+export type CoincidenciaBusqueda = {
+  nodo_id: string;
+  offset_inicio: number;
+  offset_fin: number;
+  fragmento: string;
+};
 
 // ── Documento completo ───────────────────────────────────────────────────
 

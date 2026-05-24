@@ -1,7 +1,12 @@
 // 📍 components/mdj-viewer/InlineRenderer.tsx
-// Server Component — renderiza NodoInline[] a HTML plano
+// 'use client' — renderiza NodoInline[] a HTML con colores dinámicos del tema.
+// Negritas → accent, cursiva → em, code → estilo monospace.
+
+"use client";
 
 import type { NodoInline } from "@/lib/mdj/types";
+import { StandardText } from "@/components/ui/StandardText";
+import { renderLatexInline } from "@/components/ui/latex-renderer";
 
 interface InlineRendererProps {
   inline: NodoInline[];
@@ -16,9 +21,14 @@ export function InlineRenderer({ inline }: InlineRendererProps) {
             return <span key={i}>{n.contenido}</span>;
           case "negrita":
             return (
-              <strong key={i}>
+              <StandardText
+                key={i}
+                asElement="strong"
+                colorScheme="accent"
+                weight="bold"
+              >
                 <InlineRenderer inline={n.hijos} />
-              </strong>
+              </StandardText>
             );
           case "cursiva":
             return (
@@ -28,11 +38,16 @@ export function InlineRenderer({ inline }: InlineRendererProps) {
             );
           case "neg_cur":
             return (
-              <strong key={i}>
+              <StandardText
+                key={i}
+                asElement="strong"
+                colorScheme="accent"
+                weight="bold"
+              >
                 <em>
                   <InlineRenderer inline={n.hijos} />
                 </em>
-              </strong>
+              </StandardText>
             );
           case "tachado":
             return (
@@ -50,11 +65,7 @@ export function InlineRenderer({ inline }: InlineRendererProps) {
               </code>
             );
           case "latex_inline":
-            return (
-              <code key={i} className="font-mono text-primary">
-                ${n.contenido}$
-              </code>
-            );
+            return <span key={i}>{renderLatexInline(n.contenido)}</span>;
           case "link":
             return (
               <a

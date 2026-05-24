@@ -1,11 +1,12 @@
 // 📍 components/mdj-viewer/index.ts
 // Barrel export del viewer MDJ
 
-export { MDJViewer } from "./MDJViewer";
-export { MDJViewerClient } from "./MDJViewerClient";
+export { StandardMDJViewer } from "./StandardMDJViewer";
+export { StandardMDJViewerClient } from "./StandardMDJViewerClient";
+export { BuscadorMDJ } from "./BuscadorMDJ";
 export { useSeleccionMDJ } from "./useSeleccionMDJ";
 export type { SeleccionMDJ } from "./useSeleccionMDJ";
-export type { MDJViewerProps } from "./MDJViewer";
+export type { StandardMDJViewerProps } from "./StandardMDJViewer";
 export { NodoDispatcher } from "./NodoDispatcher";
 export { SeccionColapsable } from "./SeccionColapsable";
 export { NodoParrafoView } from "./NodoParrafoView";
