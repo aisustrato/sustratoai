@@ -849,7 +849,7 @@
 			"args": ["-y", "@supabase/mcp-server"],
 			"env": {
 				"SUPABASE_URL": "https://vgnteswwvallupuanfiz.supabase.co",
-				"SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnbnRlc3d3dmFsbHVwdWFuZml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNDI5ODksImV4cCI6MjA3OTgxODk4OX0.YxCEp7oYdEdbkmdDKo3PAiSEFDvnyRu2QbDnVbzH-Vc"
+				"SUPABASE_ANON_KEY": "${env:SUPABASE_ANON_KEY}"
 			}
 		}
 	},

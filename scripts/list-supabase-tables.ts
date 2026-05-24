@@ -1,11 +1,26 @@
 // 📍 scripts/list-supabase-tables.ts
-// Script para listar todas las tablas de la base de datos Supabase
+// Script para listar todas las tablas de la base de datos Supabase.
+//
+// La service_role key se lee del entorno (`.env.local` o shell). NUNCA
+// hardcodear acá — antes había un JWT literal que terminó leakado al
+// repo. Después de rotar la key en Supabase Dashboard, este script
+// pasó a leer del env.
+//
+// Uso local:
+//   export $(grep -v '^#' .env.local | xargs) && tsx scripts/list-supabase-tables.ts
+// O directo con `dotenv-cli`:
+//   dotenv -e .env.local tsx scripts/list-supabase-tables.ts
 
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = "https://vgnteswwvallupuanfiz.supabase.co";
-const supabaseServiceKey =
-	"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnbnRlc3d3dmFsbHVwdWFuZml6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDI0Mjk4OSwiZXhwIjoyMDc5ODE4OTg5fQ.ircXGN1PplrPwabA6ouygJ0vSJOOhLZg4Xxn8hKOZ_Q";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!supabaseServiceKey) {
+	throw new Error(
+		"[list-supabase-tables] Falta SUPABASE_SERVICE_ROLE_KEY en el entorno. " +
+			"Cargá `.env.local` antes de correr el script.",
+	);
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
