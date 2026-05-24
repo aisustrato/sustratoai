@@ -28,3 +28,18 @@ next-env.d.ts
 
 # Claude Code local context
 CLAUDE.local.md
+
+# Settings privados del agente (paths/permisos personales)
+.claude/settings.local.json
+
+# Basura macOS / editores
+.DS_Store
+*.swp
+*.swo
+*.bak
+*.backup
+
+# Supabase CLI local (binario y archivo descargado)
+/supabase-cli
+/supabase.tar.gz
+/supabase/.temp/
