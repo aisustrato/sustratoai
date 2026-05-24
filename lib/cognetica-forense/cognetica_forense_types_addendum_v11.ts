@@ -110,8 +110,17 @@ export type CgtEstadoFormato =
 
 //#region [def] - 📦 CLIENTE DEEPSEEK EXTENDIDO (pipeline §4) 📦
 
-/** Modelos habilitados por el pipeline v1. */
-export type DeepSeekModelo = "deepseek-chat" | "deepseek-reasoner";
+/** Modelos habilitados por el pipeline v1.
+ *
+ * - `deepseek-chat` y `deepseek-reasoner`: modelos clásicos. DeepSeek anunció
+ *   que se discontinúan el 2026-07-24 (redirigen a `deepseek-v4-flash`).
+ * - `deepseek-v4-pro`: modelo nuevo con 1M tokens de contexto, hasta 384k
+ *   de output, modo thinking por defecto (devuelve `reasoning_content`).
+ */
+export type DeepSeekModelo =
+	| "deepseek-chat"
+	| "deepseek-reasoner"
+	| "deepseek-v4-pro";
 
 /**
  * Configuración de una llamada individual al LLM.

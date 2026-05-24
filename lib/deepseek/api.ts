@@ -51,6 +51,14 @@ export const TARIFAS_DEEPSEEK: Record<
 		cachePorMillon: 0.14,
 		outputPorMillon: 2.19,
 	},
+	// DeepSeek V4 Pro — 1M tokens de contexto, hasta 384k de output.
+	// Tarifas con descuento del 75% vigente hasta 2026-05-31 15:59 UTC.
+	// REVISAR DESPUÉS DE ESA FECHA — precios oficiales podrían cambiar.
+	"deepseek-v4-pro": {
+		inputPorMillon: 0.435,
+		cachePorMillon: 0.003625,
+		outputPorMillon: 0.87,
+	},
 };
 
 /** Secuencia de backoff exponencial en ms (pipeline §9). */
