@@ -66,6 +66,7 @@ export function ExtractorReferenciasButton({
 					id: toastId,
 					description:
 						"Revisa la consola del servidor. Puedes reintentar — las referencias ya extraídas no se duplican.",
+					duration: Infinity,
 				});
 			} else {
 				const data = res.data;
@@ -75,6 +76,7 @@ export function ExtractorReferenciasButton({
 					toast.warning(`Extracción parcial (${data.intentos} intentos)`, {
 						id: toastId,
 						description: mensaje,
+						duration: Infinity,
 					});
 				} else {
 					toast.success(`Extracción completada (${data.intentos} intentos)`, {
@@ -92,6 +94,7 @@ export function ExtractorReferenciasButton({
 				id: toastId,
 				description:
 					err instanceof Error ? err.message : "Error desconocido del cliente",
+				duration: Infinity,
 			});
 		} finally {
 			setRunning(false);

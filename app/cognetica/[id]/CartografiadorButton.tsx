@@ -68,6 +68,7 @@ export function CartografiadorButton({
 					id: toastId,
 					description:
 						"Revisa la consola del servidor. Puedes reintentar — las menciones ya cartografiadas no se re-procesan.",
+					duration: Infinity,
 				});
 			} else {
 				const data = res.data;
@@ -95,6 +96,7 @@ export function CartografiadorButton({
 				id: toastId,
 				description:
 					err instanceof Error ? err.message : "Error desconocido del cliente",
+				duration: Infinity,
 			});
 		} finally {
 			setRunning(false);

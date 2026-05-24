@@ -14,6 +14,7 @@ import { useState, useCallback } from "react";
 import { useAuth } from "@/app/auth-provider";
 import { generarDescargaObsidian } from "@/lib/cognetica-forense/exportacion";
 import type { TipoSeccionDescarga } from "@/lib/cognetica-forense/exportacion";
+import { toast } from "sonner";
 
 interface UseDescargaObsidianaParams {
 	/** ID del artefacto (para validación cruzada contra proyecto). */
@@ -72,6 +73,7 @@ export function useDescargaObsidiana({
 
 			setDescargando(true);
 			setSha256Actual(null);
+			const toastId = toast.loading(`Generando descarga: ${tipoSeccion}…`);
 
 			try {
 				const { contenido, sha256, nombreArchivo } =
@@ -100,11 +102,17 @@ export function useDescargaObsidiana({
 				URL.revokeObjectURL(url);
 
 				setSha256Actual(sha256);
+				toast.success(`Descargado: ${nombreArchivo}`, { id: toastId });
 			} catch (err) {
 				console.error(
 					`[useDescargaObsidiana] Error al descargar ${tipoSeccion}:`,
 					err,
 				);
+				const msg = err instanceof Error ? err.message : "Error desconocido al generar descarga";
+				toast.error(`Error al descargar: ${msg}`, {
+					id: toastId,
+					duration: Infinity,
+				});
 			} finally {
 				setDescargando(false);
 			}

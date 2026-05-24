@@ -20,6 +20,8 @@ import type { ResultErrorCode } from "@/lib/cognetica-forense/types";
 import { ArtefactoView } from "./ArtefactoView";
 //#endregion ![head]
 
+export const dynamic = "force-dynamic";
+
 //#region [def] - 📦 TYPES 📦
 /**
  * Next.js 14: `params` es un objeto síncrono en Server Components.

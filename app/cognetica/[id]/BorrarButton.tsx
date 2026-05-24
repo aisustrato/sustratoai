@@ -26,7 +26,7 @@ import { StandardDialog } from "@/components/ui/StandardDialog";
 import { StandardAlert } from "@/components/ui/StandardAlert";
 import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardText } from "@/components/ui/StandardText";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 import { borrarArtefacto } from "@/lib/actions/cognetica-forense-borrar-artefacto-actions";
 //#endregion ![head]
@@ -46,39 +46,38 @@ export function BorrarButton({
 	artefactoTitulo,
 }: BorrarButtonProps) {
 	const router = useRouter();
-	const { toast } = useToast();
 	const [open, setOpen] = useState(false);
 	const [confirmText, setConfirmText] = useState("");
 	const [deleting, setDeleting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 
 	const puedeConfirmar = confirmText.trim().toUpperCase() === "BORRAR";
 
 	async function handleDelete() {
 		if (!puedeConfirmar) return;
 
-		setError(null);
 		setDeleting(true);
 
 		try {
 			const res = await borrarArtefacto(artefactoId);
 			if (!res.ok) {
-				setError(`Error (${res.error}): No se pudo eliminar el artefacto`);
+				toast.error("No se pudo eliminar el artefacto", {
+					description: `Código: ${res.error}. Revisa la consola del servidor.`,
+					duration: Infinity,
+				});
 			} else {
-				toast({
-					title: "Artefacto eliminado",
-					description: `"${artefactoTitulo}" ha sido eliminado permanentemente.`,
-					variant: "default",
+				toast.success("Artefacto eliminado", {
+					description: `"${artefactoTitulo}" se eliminó permanentemente.`,
 				});
 				setOpen(false);
-				// Redirigir a la lista de artefactos
 				router.push("/cognetica");
 			}
 		} catch (err) {
 			console.error("[BorrarButton] Excepción inesperada:", err);
-			setError(
-				err instanceof Error ? err.message : "Error desconocido del cliente",
-			);
+			const msg = err instanceof Error ? err.message : "Error desconocido del cliente";
+			toast.error("Error al eliminar artefacto", {
+				description: msg,
+				duration: Infinity,
+			});
 		} finally {
 			setDeleting(false);
 		}
@@ -87,9 +86,7 @@ export function BorrarButton({
 	function handleOpenChange(newOpen: boolean) {
 		setOpen(newOpen);
 		if (!newOpen) {
-			// Resetear estado al cerrar
 			setConfirmText("");
-			setError(null);
 		}
 	}
 
@@ -140,14 +137,6 @@ export function BorrarButton({
 						/>
 					</div>
 
-					{error && (
-						<StandardAlert
-							colorScheme="danger"
-							styleType="outline"
-							title="Error al eliminar"
-							message={error}
-						/>
-					)}
 				</StandardDialog.Body>
 
 				<StandardDialog.Footer className="flex justify-end gap-2">

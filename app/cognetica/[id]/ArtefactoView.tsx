@@ -25,19 +25,21 @@ import {
 	Target,
 } from "lucide-react";
 
-import {
-	StandardAccordion,
+import { StandardAccordion,
 	StandardAccordionContent,
 	StandardAccordionItem,
 	StandardAccordionTrigger,
 } from "@/components/ui/StandardAccordion";
 import { StandardAlert } from "@/components/ui/StandardAlert";
 import { StandardBadge } from "@/components/ui/StandardBadge";
+import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardCard } from "@/components/ui/StandardCard";
+import { StandardDropdownMenu } from "@/components/ui/StandardDropdownMenu";
 import { DocumentoMarkdownViewer } from "./DocumentoMarkdownViewer";
 import { StandardStepper } from "@/components/ui/StandardStepper";
 import { StandardText } from "@/components/ui/StandardText";
 
+import { pipelineParaTipo } from "@/lib/cognetica-forense/pipelines";
 import type { ArtefactoCompleto } from "@/lib/cognetica-forense/lecturas-shared";
 import type {
 	CgtCronica,
@@ -54,6 +56,8 @@ import { CartografiadorButton } from "./CartografiadorButton";
 import { ExtractorReferenciasButton } from "./ExtractorReferenciasButton";
 import { StandardAudioPlayer } from "@/components/ui/StandardAudioPlayer";
 import { SlidesViewer } from "./SlidesViewer";
+import { regenerarImagenesSlides } from "@/lib/actions/cognetica-forense-slides-actions";
+import { toast } from "sonner";
 import { MetabolizarButton } from "./MetabolizarButton";
 import { ReferenciasSection } from "./ReferenciasSection";
 import { MencionesSection } from "./MencionesSection";
@@ -121,10 +125,62 @@ interface InfoFormato {
  *   - Germinal recibe `omitido` si el artefacto está `metabolizado` pero no hay
  *     fila (umbral de 3 artefactos previos no alcanzado).
  */
-function derivarEstados(data: ArtefactoCompleto): InfoFormato[] {
+/**
+ * Estado en-vivo del job maestro alimentado por Realtime de `ai_job_history`.
+ * El stepper lo prefiere por sobre `data.jobActual` (que viene del server fetch
+ * y queda obsoleto durante los 3 min del proceso por el lock de server actions).
+ */
+interface JobMaestroLive {
+	step_name: string | null;
+	status: string;
+	progress: number | null;
+}
+
+/**
+ * Razones por las que `derivarEstados` no pudo determinar el paso activo
+ * cuando el artefacto está en estado "metabolizando" o "error". Cada una
+ * representa una inconsistencia REAL que debe llegar al usuario como toast
+ * con cierre manual (no como adivinanza silenciosa que disfrace el bug).
+ */
+type RazonInconsistencia =
+	| "sin_job_activo"        // estado=metabolizando pero no hay job maestro live ni en server fetch
+	| "step_desconocido";     // hay step_name pero no está mapeado a un paso del stepper (bug de versión)
+
+export interface ResultadoDerivacion {
+	formatos: InfoFormato[];
+	/**
+	 * Cuando hay inconsistencia, contiene la razón + step_name fantasma si
+	 * lo hubo. `null` cuando todo está coherente.
+	 */
+	inconsistencia: { razon: RazonInconsistencia; stepName: string | null } | null;
+}
+
+function derivarEstados(
+	data: ArtefactoCompleto,
+	jobLive: JobMaestroLive | null,
+): ResultadoDerivacion {
+	// === FUENTE DE VERDAD DEL ESTADO DEL PROCESO ===
+	// El **job manager** es la autoridad. Cuando el job live reporta running/
+	// completed/failed, ese estado manda sobre `cgt_artefactos.estado` del
+	// server fetch — que puede estar momentáneamente en "ingresado" o algún
+	// valor intermedio por side-effects de pre-procesos legacy
+	// (transcribirAudio, procesarPdfInforme, etc.) que aún no respetan el
+	// modo orquestado. Mientras esos backends se limpian, el cliente queda
+	// blindado contra fantasmas leyendo del job manager.
+	const jobReportaProceso = jobLive?.status === "running";
+	const jobReportaCompletado = jobLive?.status === "completed";
+	const jobReportaError = jobLive?.status === "failed";
+	const estadoEfectivo: CgtEstadoMetabolizacion = jobReportaCompletado
+		? "metabolizado"
+		: jobReportaError
+			? "error"
+			: jobReportaProceso
+				? "metabolizando"
+				: data.artefacto.estado;
 	const { artefacto, cronica, destilado, nucleo, germinal, contenidoMarkdown } =
 		data;
-	const estadoGlobal: CgtEstadoMetabolizacion = artefacto.estado;
+	// `estadoGlobal` = la fuente efectiva (job manager o data, en ese orden).
+	const estadoGlobal: CgtEstadoMetabolizacion = estadoEfectivo;
 	const enProceso = estadoGlobal === "metabolizando";
 	const enError = estadoGlobal === "error";
 	const terminado = estadoGlobal === "metabolizado";
@@ -153,21 +209,33 @@ function derivarEstados(data: ArtefactoCompleto): InfoFormato[] {
 		esAudio && !contenidoMarkdown && estadoGlobal === "metabolizando";
 	const audioError = esAudio && !contenidoMarkdown && estadoGlobal === "error";
 
-	const existe = [
-		Boolean(cronica),
-		Boolean(destilado),
-		Boolean(nucleo),
-		Boolean(germinal),
-	] as const;
-	const primerFaltante = existe.findIndex((v) => !v);
+	// Job activo: nos dice exactamente qué paso está corriendo.
+	// Preferimos el state live (Realtime) sobre data.jobActual (server fetch),
+	// porque el server fetch queda obsoleto mientras la action runner corre.
+	const stepNameActivo = jobLive?.step_name ?? data.jobActual?.step_name ?? null;
 
-	function estadoDe(index: number, clave: InfoFormato["clave"]): EstadoFormato {
-		if (existe[index]) return "generado";
-		if (enProceso) return index === primerFaltante ? "generando" : "pendiente";
-		if (enError) return index === primerFaltante ? "error" : "pendiente";
-		if (terminado && clave === "germinal") return "omitido";
-		return "pendiente";
+	// Inconsistencia: si está metabolizando y no hay step activo, NO adivinamos.
+	// Se reporta a ArtefactoView para que dispare un toast con cierre manual.
+	let inconsistencia: ResultadoDerivacion["inconsistencia"] = null;
+	if (enProceso && !stepNameActivo) {
+		console.error(
+			"[derivarEstados] ❌ Artefacto en 'metabolizando' sin job maestro live ni data.jobActual. " +
+			"Esto es un bug — el runner no logró registrar el step o el cliente perdió la suscripción Realtime.",
+		);
+		inconsistencia = { razon: "sin_job_activo", stepName: null };
 	}
+
+	// Mapa de step_name → clave de formato (pre-procesamiento + metabolización).
+	const stepNameToClave: Record<string, ClaveFormato> = {
+		pdf_marker: "pdf_marker",
+		pdf_slides_imagenes: "pdf_slides_imagenes",
+		pdf_slides_marker: "pdf_slides_marker",
+		audio_transcripcion: "audio_transcripcion",
+		cronica: "cronica",
+		destilado: "destilado",
+		nucleo: "nucleo",
+		germinal: "germinal",
+	};
 
 	const pasos: InfoFormato[] = [];
 
@@ -179,37 +247,37 @@ function derivarEstados(data: ArtefactoCompleto): InfoFormato[] {
 			descripcion: "Extracción de texto estructurado del PDF.",
 			icon: FileText,
 			estado:
-				pdfProcesado ? "generado"
+				pdfProcesado || jobReportaCompletado ? "generado"
 				: pdfProcesando ? "generando"
 				: pdfError ? "error"
 				: "pendiente",
 		});
 	}
 
-	// Paso 0a (solo para PDF Slides): Generación de imágenes
+		// Paso 0a (solo para PDF Slides): Generación de imágenes
 	if (esPdfSlides) {
 		pasos.push({
 			clave: "pdf_slides_imagenes",
-			titulo: "PDF Slides / Imágenes",
-			descripcion: "Conversión de cada página a PNG.",
+			titulo: "Extracción de imágenes",
+			descripcion: "Renderizado de cada lámina del PDF a imagen PNG (no usa IA).",
 			icon: FileImage,
 			estado:
-				tieneImagenes ? "generado"
+				tieneImagenes || jobReportaCompletado ? "generado"
 				: slidesProcesando ? "generando"
 				: slidesError ? "error"
 				: "pendiente",
 		});
 	}
 
-	// Paso 0b (solo para PDF Slides): Marker por página
+		// Paso 0b (solo para PDF Slides): Marker por página
 	if (esPdfSlides) {
 		pasos.push({
 			clave: "pdf_slides_marker",
-			titulo: "PDF Slides / Marker",
-			descripcion: "Extracción de texto con Marker.",
+			titulo: "Conversión a texto",
+			descripcion: "Reconocimiento de texto en cada lámina vía Marker (OCR con IA).",
 			icon: FileText,
 			estado:
-				slidesProcesado ? "generado"
+				slidesProcesado || jobReportaCompletado ? "generado"
 				: slidesProcesando ? "generando"
 				: slidesError ? "error"
 				: "pendiente",
@@ -224,7 +292,7 @@ function derivarEstados(data: ArtefactoCompleto): InfoFormato[] {
 			descripcion: "Transcripción con diarización de hablantes.",
 			icon: Mic,
 			estado:
-				audioProcesado ? "generado"
+				audioProcesado || jobReportaCompletado ? "generado"
 				: audioProcesando ? "generando"
 				: audioError ? "error"
 				: "pendiente",
@@ -238,32 +306,85 @@ function derivarEstados(data: ArtefactoCompleto): InfoFormato[] {
 			titulo: "Crónica",
 			descripcion: "Reconstrucción narrativa con voz literaria.",
 			icon: ScrollText,
-			estado: estadoDe(0, "cronica"),
+			estado: "pendiente", // se asigna abajo
 		},
 		{
 			clave: "destilado",
 			titulo: "Destilado",
 			descripcion: "Anatomía argumental (tesis · movimientos · tensiones).",
 			icon: FileText,
-			estado: estadoDe(1, "destilado"),
+			estado: "pendiente", // se asigna abajo
 		},
 		{
 			clave: "nucleo",
 			titulo: "Núcleo",
 			descripcion: "Tarjeta de presentación irreductible (≤600 tok).",
 			icon: Target,
-			estado: estadoDe(2, "nucleo"),
+			estado: "pendiente", // se asigna abajo
 		},
 		{
 			clave: "germinal",
 			titulo: "Germinal parcial",
 			descripcion: "Cartografía de posibilidades abiertas.",
 			icon: Sparkles,
-			estado: estadoDe(3, "germinal"),
+			estado: "pendiente", // se asigna abajo
 		},
 	);
 
-	return pasos;
+	// Asignar estados a los 4 pasos de metabolización.
+	const metabolizacionStartIndex = pasos.length - 4;
+	const existe = [
+		Boolean(cronica),
+		Boolean(destilado),
+		Boolean(nucleo),
+		Boolean(germinal),
+	] as const;
+
+	// Determinar índice del paso activo a partir del step_name reportado por
+	// el job maestro. NO hay fallback "adivinar por primer faltante" — si
+	// llegamos aquí sin un step_name válido, eso ya quedó marcado como
+	// inconsistencia arriba (sin_job_activo) y el stepper queda sin paso
+	// activo (todos los no-generados como "pendiente").
+	let indiceActivo = -1;
+	if (enProceso && stepNameActivo) {
+		const claveActiva = stepNameToClave[stepNameActivo];
+		if (claveActiva) {
+			indiceActivo = pasos.findIndex((p) => p.clave === claveActiva);
+		} else {
+			// step_name reportado pero no mapeado a ningún paso del stepper.
+			// Esto es un bug de versión: backend envía un step que el front
+			// no conoce. Reportamos como inconsistencia visible.
+			console.error(
+				`[derivarEstados] ❌ step_name="${stepNameActivo}" no está en stepNameToClave. ` +
+				"Probablemente el backend introdujo un step nuevo sin actualizar el front.",
+			);
+			inconsistencia = { razon: "step_desconocido", stepName: stepNameActivo };
+		}
+	}
+	// Para `enError`: NO inferimos cuál paso falló. El error_mensaje del
+	// artefacto cuenta la historia; el stepper sólo muestra lo que existe
+	// como ✓ y lo que no como "pendiente". No mentimos sobre quién falló.
+
+	for (let i = 0; i < 4; i++) {
+		const paso = pasos[metabolizacionStartIndex + i];
+		if (existe[i] || jobReportaCompletado) {
+			paso.estado = "generado";
+		} else if (enProceso && indiceActivo === metabolizacionStartIndex + i) {
+			paso.estado = "generando";
+		} else if (enProceso && indiceActivo > metabolizacionStartIndex + i) {
+			// Pasos anteriores al activo que no existen → deberían estar generados
+			// pero si no existen, es inconsistencia; marcar como pendiente.
+			paso.estado = "pendiente";
+		} else if (enError && indiceActivo === metabolizacionStartIndex + i) {
+			paso.estado = "error";
+		} else if (terminado && paso.clave === "germinal") {
+			paso.estado = "omitido";
+		} else {
+			paso.estado = "pendiente";
+		}
+	}
+
+	return { formatos: pasos, inconsistencia };
 }
 
 /**
@@ -411,7 +532,62 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 	const router = useRouter();
 	const { proyectoActual } = useAuth();
 	const { artefacto } = data;
-	const formatos = useMemo(() => derivarEstados(data), [data]);
+
+	// State live del job maestro — alimentado por Realtime de `ai_job_history`.
+	// Bypassea el lock de server actions: aunque `router.refresh()` esté en cola
+	// mientras corre `runMetabolizacionConTracking`, el Realtime entrega el
+	// progreso paso a paso vía este state local, y el stepper se actualiza al
+	// instante. Se inicializa con `data.jobActual` (server fetch) para el caso
+	// donde el usuario abre la página con metabolización ya en curso.
+	const [jobMaestroLive, setJobMaestroLive] = useState<JobMaestroLive | null>(
+		() => {
+			if (!data.jobActual) return null;
+			return {
+				step_name: data.jobActual.step_name,
+				status: data.jobActual.status,
+				progress: data.jobActual.progress,
+			};
+		},
+	);
+	// Trackea el último step_name visto para detectar transiciones. Cuando
+	// el step cambia (paso anterior terminó), disparamos router.refresh
+	// para traer el contenido recién persistido (cronica, destilado, etc.)
+	// sin esperar al final del proceso.
+	const stepNameAnteriorRef = useRef<string | null>(
+		data.jobActual?.step_name ?? null,
+	);
+
+	const { formatos, inconsistencia } = useMemo(
+		() => derivarEstados(data, jobMaestroLive),
+		[data, jobMaestroLive],
+	);
+
+	// Cuando `derivarEstados` detecta que no puede determinar el paso activo
+	// estando metabolizando, NO adivinamos: subimos el error como toast con
+	// cierre manual para que el humano lo vea. Anti-patrón "fallback que
+	// disfraza el bug" — el protocolo de errores visibles manda.
+	const inconsistenciaKey = inconsistencia
+		? `${inconsistencia.razon}::${inconsistencia.stepName ?? ""}`
+		: null;
+	useEffect(() => {
+		if (!inconsistencia) return;
+		if (inconsistencia.razon === "sin_job_activo") {
+			toast.error("No se puede determinar el progreso de la metabolización", {
+				description:
+					"El artefacto está en 'metabolizando' pero no hay job maestro activo en ai_job_history. " +
+					"Revisa la consola del servidor — probablemente el runner falló al registrar el step o el Realtime quedó cerrado.",
+				duration: Infinity,
+			});
+		} else if (inconsistencia.razon === "step_desconocido") {
+			toast.error("Step de metabolización desconocido", {
+				description:
+					`El backend está reportando step_name="${inconsistencia.stepName}" pero el frontend no lo conoce. ` +
+					"Hay un desfase de versión entre cliente y servidor — falta actualizar el mapa de pasos.",
+				duration: Infinity,
+			});
+		}
+		// El key del effect evita disparar el mismo toast en cada render.
+	}, [inconsistencia, inconsistenciaKey]);
 	// Modo edición: OFF por default (navegación), ON para editar menciones
 	const [modoEdicion, setModoEdicion] = useState(false);
 	// Trigger para refrescar secciones de referencias/fuentes sin recargar la página
@@ -463,23 +639,14 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 	});
 
 	// ─── TRÍADA (descarga completa) ───
-	const [triadaAbierto, setTriadaAbierto] = useState(false);
-	const triadaRef = useRef<HTMLDivElement>(null);
-
-	// Cerrar dropdown al hacer click fuera
-	useEffect(() => {
-		if (!triadaAbierto) return;
-		const handler = (e: MouseEvent) => {
-			if (triadaRef.current && !triadaRef.current.contains(e.target as Node)) {
-				setTriadaAbierto(false);
-			}
-		};
-		document.addEventListener("mousedown", handler);
-		return () => document.removeEventListener("mousedown", handler);
-	}, [triadaAbierto]);
+	// Nota: el dropdown se cierra solo al seleccionar un Item (Radix Portal +
+	// click-outside built-in vía StandardDropdownMenu). No necesitamos state
+	// ni ref propios.
 
 	const manejarDescargaTriada = async (formato: "md" | "json" | "yaml") => {
-		setTriadaAbierto(false);
+		const toastId = toast.loading(
+			`Generando tríada (${formato.toUpperCase()})… consolidando metabolización + referencias.`,
+		);
 		try {
 			// 1. Cargar menciones y referencias frescas
 			const [mencionesRes, referenciasRes] = await Promise.all([
@@ -575,8 +742,17 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 			a.click();
 			document.body.removeChild(a);
 			URL.revokeObjectURL(url);
+
+			toast.success(`Tríada descargada: ${archivo.nombreArchivo}`, {
+				id: toastId,
+			});
 		} catch (err) {
 			console.error("[ArtefactoView] Error al descargar tríada:", err);
+			const msg = err instanceof Error ? err.message : "Error desconocido al exportar";
+			toast.error(`Error al exportar: ${msg}`, {
+				id: toastId,
+				duration: Infinity,
+			});
 		}
 	};
 
@@ -612,15 +788,126 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 		return rem > 0 ? `${mins}m ${rem}s` : `${mins}m`;
 	}
 
-	// Polling en vivo: solo durante metabolización o error.
-	// NO se pollea en "ingresado" (espera que el usuario haga click en Metabolizar).
+	// ─── REALTIME (dos canales separados) ───
+	//
+	// 1) `cgt_artefactos`: cambios del estado global del artefacto (ingresado
+	//    → metabolizando → metabolizado/error). Filtro por id, funciona limpio.
+	//
+	// 2) `ai_job_history`: el JOB MAESTRO de metabolización. Filtro por
+	//    `project_id` (UUID, OK) — NO por `job_type` (enum, rompe el canal).
+	//    En el callback filtramos por `details.es_job_maestro` y
+	//    `details.artefacto_id` para quedarnos sólo con eventos relevantes.
+	//
+	// Este segundo canal es la pieza nueva del refactor a jobmanager: alimenta
+	// `jobMaestroLive` y permite que el stepper avance paso a paso sin pasar
+	// por `router.refresh()` (que estaría bloqueado por el lock de server
+	// actions durante los ~3 minutos del proceso).
+	const { supabase } = useAuth();
+
 	useEffect(() => {
-		if (artefacto.estado !== "metabolizando" && artefacto.estado !== "error") return;
-		const id = setInterval(() => {
-			router.refresh();
-		}, 4000);
-		return () => clearInterval(id);
-	}, [artefacto.estado, router]);
+		const channel = supabase.channel(`artefacto-estado-${artefacto.id}`);
+
+		channel.on(
+			"postgres_changes",
+			{
+				event: "UPDATE",
+				schema: "public",
+				table: "cgt_artefactos",
+				filter: `id=eq.${artefacto.id}`,
+			},
+			(payload) => {
+				const newEstado = (payload.new as Record<string, unknown>)?.estado;
+				console.log(`[Realtime:artefacto] UPDATE estado=${newEstado}`);
+				router.refresh();
+			},
+		);
+
+		channel.subscribe((status) => {
+			console.log(`[Realtime:artefacto] Subscribe status: ${status} for ${artefacto.id.slice(0, 8)}`);
+		});
+
+		return () => {
+			supabase.removeChannel(channel);
+		};
+	}, [artefacto.id, router, supabase]);
+
+	useEffect(() => {
+		const channel = supabase.channel(`job-maestro-${artefacto.id}`);
+
+		channel.on(
+			"postgres_changes",
+			{
+				event: "*",
+				schema: "public",
+				table: "ai_job_history",
+				// Filtro por project_id (columna UUID; no usar enum job_type que rompe el canal).
+				filter: `project_id=eq.${artefacto.project_id}`,
+			},
+			(payload) => {
+				const row = (payload.new ?? payload.old) as Record<string, unknown> | null;
+				if (!row) return;
+				const details = (row.details as Record<string, unknown> | null) ?? {};
+
+				// Filtros client-side: sólo job maestro de ESTE artefacto.
+				if (details.es_job_maestro !== true) return;
+				if (details.artefacto_id !== artefacto.id) return;
+
+				const stepName = (details.step_name as string | null) ?? null;
+				const status = (row.status as string) ?? "running";
+				const progress = (row.progress as number | null) ?? null;
+
+				console.log(
+					`[Realtime:jobMaestro] ${payload.eventType} step=${stepName} status=${status} progress=${progress}`,
+				);
+
+				if (status === "completed" || status === "failed") {
+					// Job cerrado: NO limpiamos `jobMaestroLive` aún. Si lo
+					// hiciéramos, el render intermedio (entre este evento y la
+					// llegada del data fresco por router.refresh, ~1s) usaría el
+					// `data.jobActual` viejo y mostraría sólo el primer paso
+					// activo + el resto pendiente — un glitch visual feo.
+					//
+					// En su lugar guardamos el último estado con `status` para
+					// que `derivarEstados` pueda tratarlo como autoridad: si el
+					// runner reportó completed, todos los pasos del pipeline
+					// están terminados de hecho. No es asunción — es leer la
+					// fuente de verdad. El refresh es para sincronizar el resto
+					// de la página (los componentes que muestran cronica/
+					// destilado/etc).
+					setJobMaestroLive({ step_name: stepName, status, progress });
+					router.refresh();
+				} else {
+					// Si el step cambió (transición entre pasos), el paso
+					// anterior ya persistió su fila en BD — refrescamos para
+					// traer ese contenido. Sin esto, los acordeones se quedan
+					// como "no generado" hasta el final del proceso aunque su
+					// data ya esté en la BD y el usuario quisiera abrirlos.
+					if (
+						stepName !== null &&
+						stepNameAnteriorRef.current !== null &&
+						stepName !== stepNameAnteriorRef.current
+					) {
+						console.log(
+							`[Realtime:jobMaestro] step cambió ${stepNameAnteriorRef.current} → ${stepName}, refrescando para traer contenido del paso anterior`,
+						);
+						router.refresh();
+					}
+					stepNameAnteriorRef.current = stepName;
+					setJobMaestroLive({ step_name: stepName, status, progress });
+				}
+			},
+		);
+
+		channel.subscribe((status) => {
+			console.log(
+				`[Realtime:jobMaestro] Subscribe status: ${status} for project ${artefacto.project_id.slice(0, 8)}`,
+			);
+		});
+
+		return () => {
+			supabase.removeChannel(channel);
+		};
+	}, [artefacto.id, artefacto.project_id, router, supabase]);
 
 	// Paso actual del Stepper (0-based).
 	// - Si hay formato "generando" → ese es el currentStepIndex.
@@ -684,6 +971,8 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 						</StandardBadge>
 						<MetabolizarButton
 							artefactoId={artefacto.id}
+							projectId={artefacto.project_id}
+							artefactoTitulo={artefacto.titulo ?? "Artefacto sin título"}
 							estado={artefacto.estado}
 							faltantes={[
 								...(data.cronica ? [] : (["cronica"] as const)),
@@ -691,6 +980,23 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 								...(data.nucleo ? [] : (["nucleo"] as const)),
 								...(data.germinal ? [] : (["germinal"] as const)),
 							]}
+							onMetabolizacionIniciada={() => {
+								// Optimismo: encender el stepper de inmediato sin
+								// esperar al primer Realtime INSERT del job maestro.
+								// Inicializamos `jobMaestroLive` con el primer step
+								// del pipeline del tipo del artefacto. Si el pipeline
+								// no existe (tipo no implementado), no hacemos nada
+								// — la starter ya habría retornado NOT_IMPLEMENTED.
+								const pipeline = pipelineParaTipo(
+									artefacto.tipo as Parameters<typeof pipelineParaTipo>[0],
+								);
+								if (!pipeline || pipeline.length === 0) return;
+								setJobMaestroLive({
+									step_name: pipeline[0].name,
+									status: "running",
+									progress: 0,
+								});
+							}}
 						/>
 						{/*
 						 * Cartografiador habilitado cuando los 4 formatos primarios
@@ -721,41 +1027,41 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 							onSuccess={() => setRefreshReferenciasTrigger((t) => t + 1)}
 						/>
 
-						{/* Tríada: exportar artefacto completo */}
-						<div className="relative" ref={triadaRef}>
-							<button
-								type="button"
-								onClick={() => setTriadaAbierto((v) => !v)}
-								className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-md hover:bg-neutral-50 transition-colors">
-								<Download className="w-4 h-4" />
-								<span>Exportar</span>
-							</button>
-							{triadaAbierto && (
-								<div className="absolute right-0 top-full mt-1 z-50 w-52 bg-white border border-neutral-200 rounded-lg shadow-lg py-1">
-									<button
-										type="button"
-										onClick={() => manejarDescargaTriada("md")}
-										className="flex items-center gap-2 w-full px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors text-left">
-										<FileDown className="w-4 h-4" />
-										Markdown (.md)
-									</button>
-									<button
-										type="button"
-										onClick={() => manejarDescargaTriada("json")}
-										className="flex items-center gap-2 w-full px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors text-left">
-										<Download className="w-4 h-4" />
-										JSON (.json)
-									</button>
-									<button
-										type="button"
-										onClick={() => manejarDescargaTriada("yaml")}
-										className="flex items-center gap-2 w-full px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors text-left">
-										<Download className="w-4 h-4" />
-										YAML (.yaml)
-									</button>
-								</div>
-							)}
-						</div>
+						{/*
+						 * Tríada: exportar artefacto completo.
+						 * StandardDropdownMenu (Radix bajo el capó) trae Portal +
+						 * auto-flip por colisión + click-outside. Por eso el menú
+						 * escapa del StandardCard contenedor y se reposiciona solo
+						 * cuando el botón queda cerca del borde de la ventana.
+						 */}
+						<StandardDropdownMenu>
+							<StandardDropdownMenu.Trigger asChild>
+								<StandardButton
+									colorScheme="primary"
+									styleType="outline"
+									leftIcon={Download}
+									rightIcon={ChevronDown}>
+									Exportar Tríada
+								</StandardButton>
+							</StandardDropdownMenu.Trigger>
+							<StandardDropdownMenu.Content align="end" sideOffset={4}>
+								<StandardDropdownMenu.Item
+									onSelect={() => manejarDescargaTriada("md")}>
+									<FileDown className="w-4 h-4 mr-2" />
+									Markdown (.md)
+								</StandardDropdownMenu.Item>
+								<StandardDropdownMenu.Item
+									onSelect={() => manejarDescargaTriada("json")}>
+									<Download className="w-4 h-4 mr-2" />
+									JSON (.json)
+								</StandardDropdownMenu.Item>
+								<StandardDropdownMenu.Item
+									onSelect={() => manejarDescargaTriada("yaml")}>
+									<Download className="w-4 h-4 mr-2" />
+									YAML (.yaml)
+								</StandardDropdownMenu.Item>
+							</StandardDropdownMenu.Content>
+						</StandardDropdownMenu>
 
 						{/* Separador visual antes del botón de peligro */}
 						<div className="w-px h-6 bg-neutral-200 mx-1" />
@@ -1034,6 +1340,27 @@ function SeccionOriginal({
 		document.body.removeChild(a);
 	};
 
+	// Regenerar imágenes de slides
+	const [regenerando, setRegenerando] = useState(false);
+	const handleRegenerarImagenes = async () => {
+		setRegenerando(true);
+		try {
+			const result = await regenerarImagenesSlides(artefacto.id);
+			if (result.success) {
+				toast.success(`Imágenes regeneradas: ${result.data.successCount}/${result.data.totalPages}`);
+				// Refrescar la página para actualizar metadata
+				window.location.reload();
+			} else {
+				toast.error(`Error regenerando imágenes: ${result.error}`);
+			}
+		} catch (err) {
+			console.error("[ArtefactoView:handleRegenerarImagenes]", err);
+			toast.error("Error inesperado regenerando imágenes");
+		} finally {
+			setRegenerando(false);
+		}
+	};
+
 	return (
 		<div className="space-y-4">
 			<div className="space-y-2">
@@ -1073,7 +1400,29 @@ function SeccionOriginal({
 
 			{esPdfSlides ? (
 				pdfSlidesInfo?.paginas?.length ?
-					<SlidesViewer artefactoId={artefacto.id} />
+					<div className="space-y-3">
+						{!(artefacto.metadata as Record<string, unknown>)?.has_images && (
+							<StandardAlert
+								colorScheme="warning"
+								styleType="subtle"
+								title="Imágenes no generadas"
+								message="Las imágenes de las láminas no se generaron correctamente. Puedes regenerarlas manualmente."
+							/>
+						)}
+						<SlidesViewer artefactoId={artefacto.id} />
+						{!(artefacto.metadata as Record<string, unknown>)?.has_images && (
+							<div className="flex justify-end">
+								<StandardButton
+									colorScheme="warning"
+									size="sm"
+									onClick={handleRegenerarImagenes}
+									disabled={regenerando}
+									leftIcon={regenerando ? Loader2 : undefined}>
+									{regenerando ? "Regenerando..." : "Regenerar imágenes"}
+								</StandardButton>
+							</div>
+						)}
+					</div>
 				: <StandardAlert
 						colorScheme="neutral"
 						styleType="subtle"

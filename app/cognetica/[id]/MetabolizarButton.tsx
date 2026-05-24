@@ -6,11 +6,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PlayCircle, RefreshCw, FastForward } from "lucide-react";
 
-import { StandardAlert } from "@/components/ui/StandardAlert";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardText } from "@/components/ui/StandardText";
 import { metabolizarArtefacto } from "@/lib/actions/cognetica-forense-metabolizacion-actions";
 import type { CgtEstadoMetabolizacion } from "@/lib/cognetica-forense/types";
+import { useJobManager } from "@/app/contexts/JobManagerContext";
+import { useAuth } from "@/app/auth-provider";
+import { toast } from "sonner";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -18,6 +20,10 @@ type FormatoFaltante = "cronica" | "destilado" | "nucleo" | "germinal";
 
 interface MetabolizarButtonProps {
 	artefactoId: string;
+	/** UUID del proyecto al que pertenece el artefacto — para registrar el job. */
+	projectId: string;
+	/** Título del artefacto — para el `title` visible en el panel del JobManager. */
+	artefactoTitulo: string;
 	estado: CgtEstadoMetabolizacion;
 	/**
 	 * Lista de formatos cuya fila aún NO existe en DB para este artefacto.
@@ -25,6 +31,16 @@ interface MetabolizarButtonProps {
 	 * (`data.cronica === null`, etc.).
 	 */
 	faltantes: FormatoFaltante[];
+	/**
+	 * Callback opcional disparado apenas la action retorna `{jobId}` con éxito.
+	 * Permite al padre (ArtefactoView) **encender el stepper optimísticamente**
+	 * sin esperar a que llegue el primer evento Realtime del INSERT del job
+	 * maestro (~ms a ~1s de latencia que se sentía como freeze al usuario).
+	 *
+	 * Si la suscripción Realtime falla más tarde, los toasts de error del
+	 * handler ya cubren la situación.
+	 */
+	onMetabolizacionIniciada?: (jobId: string) => void;
 }
 
 const ETIQUETA_FORMATO: Record<FormatoFaltante, string> = {
@@ -79,12 +95,16 @@ function calcularModo(
  */
 export function MetabolizarButton({
 	artefactoId,
+	projectId,
+	artefactoTitulo,
 	estado,
 	faltantes,
+	onMetabolizacionIniciada,
 }: MetabolizarButtonProps) {
 	const router = useRouter();
+	const { startJob } = useJobManager();
+	const { user } = useAuth();
 	const [running, setRunning] = useState(false);
-	const [errorCode, setErrorCode] = useState<string | null>(null);
 
 	const modo = calcularModo(estado, faltantes);
 	if (!modo) return null;
@@ -113,21 +133,69 @@ export function MetabolizarButton({
 	}[modo];
 
 	async function handleClick() {
-		setErrorCode(null);
 		setRunning(true);
+		const toastId = toast.loading("Iniciando metabolización…");
+
 		try {
+			// La action ahora es fire-and-forget: retorna `{jobId}` en ms.
+			// El proceso real (3+ min) corre en background. El stepper se
+			// actualiza vía Realtime al job maestro desde ArtefactoView.
 			const res = await metabolizarArtefacto(artefactoId);
 			if (!res.ok) {
-				setErrorCode(res.error);
+				toast.error(`No se pudo iniciar: ${res.error}`, {
+					id: toastId,
+					description:
+						"Revisa la consola del servidor. Puedes reintentar — los formatos ya generados no se vuelven a procesar.",
+					duration: Infinity,
+				});
+			} else {
+				const jobIdBackend = res.data.jobId;
+
+				// Avisar al padre con el jobId ANTES de toast/refresh para que
+				// el stepper se encienda de inmediato (no espere el primer
+				// evento Realtime).
+				onMetabolizacionIniciada?.(jobIdBackend);
+
+				// Registrar el job en el JobManager — el panel flotante se
+				// abre solo y `CogneticaJobHandler` se monta para trackear
+				// el progreso vía Realtime sobre el row de ai_job_history.
+				// `originPath`: para que el handler ofrezca "Ir al artefacto"
+				// cuando termine y el usuario esté en otra ruta.
+				const originPath =
+					typeof window !== "undefined"
+						? window.location.pathname
+						: undefined;
+				startJob({
+					type: "COGNETICA_METABOLIZE",
+					title: `Cognética: ${artefactoTitulo}`,
+					payload: {
+						artefactoId,
+						jobIdBackend,
+						userId: user?.id ?? "",
+						projectId,
+						originPath,
+					},
+				});
+
+				toast.success("Metabolización iniciada", {
+					id: toastId,
+					description:
+						"El stepper muestra el progreso paso a paso, y el panel del JobManager también. Podés cerrar esta pestaña — el proceso sigue en el servidor.",
+				});
+				// Refrescar para que el estado cambie a "metabolizando" y el
+				// botón se oculte (calcularModo). El Realtime de cgt_artefactos
+				// también dispara un refresh; este es preventivo.
+				router.refresh();
 			}
 		} catch (err) {
 			console.error("[MetabolizarButton] excepción inesperada:", err);
-			setErrorCode(
-				err instanceof Error ? err.message : "Error desconocido del cliente",
-			);
+			const msg = err instanceof Error ? err.message : "Error desconocido del cliente";
+			toast.error(`No se pudo iniciar: ${msg}`, {
+				id: toastId,
+				duration: Infinity,
+			});
 		} finally {
 			setRunning(false);
-			router.refresh();
 		}
 	}
 
@@ -150,21 +218,6 @@ export function MetabolizarButton({
 				</StandardText>
 			)}
 
-			{running && (
-				<StandardText size="xs" colorScheme="neutral">
-					No cierres esta pestaña. Puede tomar 1–5 minutos.
-				</StandardText>
-			)}
-
-			{errorCode && (
-				<StandardAlert
-					colorScheme="danger"
-					styleType="subtle"
-					title={`Falló: ${errorCode}`}
-					message="Revisa la consola del servidor para ver la traza completa del pipeline."
-					className="w-full"
-				/>
-			)}
 		</div>
 	);
 }

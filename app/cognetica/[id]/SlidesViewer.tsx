@@ -1,7 +1,7 @@
 // 📍 app/cognetica/[id]/SlidesViewer.tsx
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardMarkdownViewer } from "@/components/ui/StandardMarkdownViewer";
 import {
@@ -11,6 +11,7 @@ import {
 	Loader2,
 	Eye,
 	FileImage,
+	AlertTriangle,
 } from "lucide-react";
 import {
 	listArtifactPagesV2,
@@ -40,10 +41,14 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 	const [isExporting, setIsExporting] = useState(false);
 	const [isExportingImages, setIsExportingImages] = useState(false);
 	const [pageLoading, setPageLoading] = useState(false);
+	const [retrying, setRetrying] = useState(false);
 
 	// Cache de URLs firmadas de imágenes
 	const [imageUrls, setImageUrls] = useState<Record<number, string>>({});
-	const loadedImages = useRef<Set<number>>(new Set());
+	// Páginas que fallaron al cargar su imagen
+	const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+	// Páginas que ya se intentaron (éxito o fallo)
+	const attemptedImages = useRef<Set<number>>(new Set());
 
 	const handleExportPdf = async () => {
 		setIsExporting(true);
@@ -74,7 +79,7 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 
 			toast.success("PDF descargado exitosamente");
 		} catch (error) {
-			console.error("Error exportando PDF:", error);
+			console.error("[SlidesViewer:handleExportPdf]", error);
 			toast.error("Error al generar el PDF");
 		} finally {
 			setIsExporting(false);
@@ -110,7 +115,7 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 
 			toast.success("ZIP descargado exitosamente");
 		} catch (error) {
-			console.error("Error exportando imágenes:", error);
+			console.error("[SlidesViewer:handleExportImages]", error);
 			toast.error("Error al generar el ZIP");
 		} finally {
 			setIsExportingImages(false);
@@ -133,6 +138,40 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 	}, [artefactoId]);
 
 	// Generar URLs firmadas de imágenes (prioridad: actual + adyacentes)
+	const loadImageForPage = useCallback(async (pageNumber: number): Promise<string | null> => {
+		if (attemptedImages.current.has(pageNumber)) return null;
+		attemptedImages.current.add(pageNumber);
+
+		const result = await getPageImageUrlV2(artefactoId, pageNumber);
+		if (result.success) {
+			return result.data.signedUrl;
+		}
+		// Registrar error para esta página
+		setImageErrors((prev) => new Set(prev).add(pageNumber));
+		return null;
+	}, [artefactoId]);
+
+	// Reintentar cargar la imagen de una página específica
+	const retryPageImage = useCallback(async (pageNumber: number) => {
+		setRetrying(true);
+		// Limpiar estado de error e intento previo para esta página
+		attemptedImages.current.delete(pageNumber);
+		setImageErrors((prev) => {
+			const next = new Set(prev);
+			next.delete(pageNumber);
+			return next;
+		});
+
+		const url = await loadImageForPage(pageNumber);
+		if (url) {
+			setImageUrls((prev) => ({ ...prev, [pageNumber]: url }));
+			toast.success(`Imagen de página ${pageNumber} cargada`);
+		} else {
+			toast.error(`No se pudo cargar la imagen de la página ${pageNumber}`);
+		}
+		setRetrying(false);
+	}, [loadImageForPage]);
+
 	useEffect(() => {
 		async function loadImages() {
 			if (pages.length === 0) return;
@@ -148,13 +187,8 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 			for (const idx of indicesToLoad) {
 				const page = pages[idx];
 				if (!page) continue;
-				if (loadedImages.current.has(page.pageNumber)) continue;
-				loadedImages.current.add(page.pageNumber);
-
-				const result = await getPageImageUrlV2(artefactoId, page.pageNumber);
-				if (result.success) {
-					newUrls[page.pageNumber] = result.data.signedUrl;
-				}
+				const url = await loadImageForPage(page.pageNumber);
+				if (url) newUrls[page.pageNumber] = url;
 			}
 
 			if (Object.keys(newUrls).length > 0) {
@@ -174,13 +208,8 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 			const newUrls: Record<number, string> = {};
 
 			for (const page of pages) {
-				if (loadedImages.current.has(page.pageNumber)) continue;
-				loadedImages.current.add(page.pageNumber);
-
-				const result = await getPageImageUrlV2(artefactoId, page.pageNumber);
-				if (result.success) {
-					newUrls[page.pageNumber] = result.data.signedUrl;
-				}
+				const url = await loadImageForPage(page.pageNumber);
+				if (url) newUrls[page.pageNumber] = url;
 			}
 
 			if (Object.keys(newUrls).length > 0) {
@@ -231,6 +260,7 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 	const canGoPrev = currentPageIndex > 0;
 	const canGoNext = currentPageIndex < pages.length - 1;
 	const currentImageUrl = currentPage ? imageUrls[currentPage.pageNumber] : null;
+	const currentPageHasError = currentPage ? imageErrors.has(currentPage.pageNumber) : false;
 
 	return (
 		<div className="bg-card rounded-xl border shadow-sm overflow-hidden">
@@ -309,24 +339,44 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 			{/* Contenido */}
 			<div className="p-6 max-h-[700px] overflow-y-auto bg-muted/20">
 				{viewMode === "image" ?
-					// Vista de imagen PNG nativa
-					<div className="flex items-center justify-center min-h-[400px]">
-						{pageLoading || !currentImageUrl ?
-							<div className="flex flex-col items-center gap-3 py-12">
-								<Loader2 className="w-8 h-8 animate-spin text-primary" />
-								<p className="text-sm text-muted-foreground">
-									Cargando imagen...
-								</p>
+					currentPageHasError && !currentImageUrl ?
+						// Error cargando imagen específica
+						<div className="flex flex-col items-center justify-center gap-3 py-12">
+							<AlertTriangle className="w-8 h-8 text-warning" />
+							<p className="text-sm text-muted-foreground">
+								No se pudo cargar la imagen de la página {currentPage.pageNumber}
+							</p>
+							<div className="flex gap-2">
+								<StandardButton
+									colorScheme="primary"
+									size="sm"
+									onClick={() => retryPageImage(currentPage.pageNumber)}
+									disabled={retrying}
+									leftIcon={retrying ? Loader2 : undefined}>
+									{retrying ? "Reintentando..." : "Reintentar"}
+								</StandardButton>
+								<StandardButton
+									colorScheme="neutral"
+									size="sm"
+									onClick={() => setViewMode("text")}>
+									Ver texto
+								</StandardButton>
 							</div>
-						:	// eslint-disable-next-line @next/next/no-img-element
-							<img
-								src={currentImageUrl}
-								alt={`Página ${currentPage.pageNumber}`}
-								className="max-w-full h-auto rounded-lg shadow-lg border"
-								style={{ maxHeight: 600 }}
-							/>
-						}
-					</div>
+						</div>
+					: pageLoading || !currentImageUrl ?
+						<div className="flex flex-col items-center gap-3 py-12">
+							<Loader2 className="w-8 h-8 animate-spin text-primary" />
+							<p className="text-sm text-muted-foreground">
+								Cargando imagen...
+							</p>
+						</div>
+					:	// eslint-disable-next-line @next/next/no-img-element
+						<img
+							src={currentImageUrl}
+							alt={`Página ${currentPage.pageNumber}`}
+							className="max-w-full h-auto rounded-lg shadow-lg border"
+							style={{ maxHeight: 600 }}
+						/>
 					// Vista de texto markdown
 				:	<div className="bg-background rounded-lg shadow-sm">
 						{currentPage.markdown_original ?
@@ -349,6 +399,7 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 				<div className="flex gap-2 overflow-x-auto pb-2">
 					{pages.map((page, index) => {
 						const imgUrl = imageUrls[page.pageNumber];
+						const hasError = imageErrors.has(page.pageNumber);
 						return (
 							<button
 								key={page.pageId}
@@ -360,6 +411,8 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 									${
 										index === currentPageIndex ?
 											"ring-2 ring-primary ring-offset-2 border-primary"
+										: hasError ?
+											"border-warning/50 hover:border-warning"
 										:	"border-border hover:border-primary/50"
 									}
 								`}>
@@ -370,6 +423,10 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 										alt={`Miniatura ${page.pageNumber}`}
 										className="w-full h-full object-cover"
 									/>
+								: hasError ?
+									<div className="w-full h-full flex items-center justify-center bg-warning/10">
+										<AlertTriangle className="w-4 h-4 text-warning" />
+									</div>
 								:	<div className="w-full h-full flex items-center justify-center bg-muted">
 										<span className="text-xs text-muted-foreground font-medium">
 											{page.pageNumber}
