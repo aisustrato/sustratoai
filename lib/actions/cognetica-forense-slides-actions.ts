@@ -134,6 +134,7 @@ export async function splitPDFIntoPagesV2(
 
 		// 5. Generar imágenes PNG de cada página (para visor nativo)
 		console.error(`[SPLIT-V2-${opId}] Generando imágenes PNG...`);
+		let successCount = 0;
 		try {
 			const imageDataUrls = await pdfToImages(pdfBuffer, 150);
 			for (let i = 0; i < imageDataUrls.length; i++) {
@@ -157,6 +158,7 @@ export async function splitPDFIntoPagesV2(
 						imgUploadError,
 					);
 				} else {
+					successCount++;
 					console.error(
 						`[SPLIT-V2-${opId}] Imagen página ${pageNumber} subida: ${imagePath}`,
 					);
@@ -169,17 +171,24 @@ export async function splitPDFIntoPagesV2(
 			);
 		}
 
-		// 6. Marcar imágenes como generadas en metadata
+		// 6. Marcar imágenes como generadas en metadata SOLO si todas subieron OK
 		await supabase
 			.from("cgt_artefactos")
 			.update({
 				metadata: {
 					has_pages: true,
 					total_pages: totalPages,
-					has_images: true,
+					has_images: successCount === totalPages,
+					images_success_count: successCount,
 				} as unknown as Json,
 			})
 			.eq("id", artefactoId);
+
+		if (successCount !== totalPages) {
+			console.error(
+				`[SPLIT-V2-${opId}] Imágenes incompletas: ${successCount}/${totalPages} subidas correctamente`,
+			);
+		}
 
 		console.error(`[SPLIT-V2-${opId}] Split completado: ${totalPages} páginas`);
 		return { success: true, data: { totalPages, pageIds } };
@@ -258,7 +267,14 @@ export async function processPageWithMarkerV2(
 		});
 
 		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({}));
+			const errorData: { error?: string } = await response.json().catch((parseErr) => {
+				console.error(
+					"[cognetica-forense:slides] no se pudo parsear el JSON de error de Marker API — HTTP",
+					response.status,
+					parseErr,
+				);
+				return {};
+			});
 			await supabase
 				.from("cog_artifact_pages")
 				.update({
@@ -590,6 +606,131 @@ export async function procesarTodasLasPaginas(
 		return { success: true, data: { processed, failed } };
 	} catch (error) {
 		console.error(`[${opId}] Error en procesamiento batch:`, error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Error desconocido",
+		};
+	}
+}
+
+// ========================================================================
+// FUNCIÓN 8: Regenerar imágenes de slides existentes
+// ========================================================================
+
+export async function regenerarImagenesSlides(
+	artefactoId: string,
+): Promise<ResultadoOperacion<{ successCount: number; totalPages: number }>> {
+	const opId = `REGEN-IMAGES-${Math.floor(Math.random() * 10000)}`;
+	console.error(`[${opId}] Iniciando regeneración de imágenes para artefacto: ${artefactoId}`);
+
+	try {
+		const supabase = await createSupabaseServiceRoleClient();
+
+		// 1. Obtener metadata del artefacto para saber total_pages y storage_path
+		const { data: artefacto, error: fetchError } = await supabase
+			.from("cgt_artefactos")
+			.select("metadata, storage_path_original, tipo")
+			.eq("id", artefactoId)
+			.single();
+
+		if (fetchError || !artefacto) {
+			return { success: false, error: "Artefacto no encontrado" };
+		}
+
+		if (artefacto.tipo !== "pdf_slides") {
+			return { success: false, error: "El artefacto no es de tipo pdf_slides" };
+		}
+
+		const metadata = (artefacto.metadata as Record<string, unknown>) || {};
+		const totalPages = (metadata.total_pages as number) || 0;
+
+		if (totalPages === 0) {
+			return { success: false, error: "No se encontró total_pages en la metadata" };
+		}
+
+		// 2. Descargar PDF original desde storage
+		const storagePath = artefacto.storage_path_original;
+		if (!storagePath) {
+			return { success: false, error: "Artefacto sin storage_path_original" };
+		}
+
+		console.error(`[${opId}] Descargando PDF original desde: ${storagePath}`);
+		const { data: fileData, error: downloadError } = await supabase.storage
+			.from("cognetica-files")
+			.download(storagePath);
+
+		if (downloadError || !fileData) {
+			return {
+				success: false,
+				error: `Error descargando PDF original: ${downloadError?.message || "Archivo no encontrado"}`,
+			};
+		}
+
+		const pdfBuffer = await fileData.arrayBuffer();
+
+		// 3. Generar imágenes PNG
+		console.error(`[${opId}] Generando ${totalPages} imágenes PNG...`);
+		let successCount = 0;
+
+		try {
+			const imageDataUrls = await pdfToImages(pdfBuffer, 150);
+			for (let i = 0; i < imageDataUrls.length; i++) {
+				const pageNumber = i + 1;
+				const dataUrl = imageDataUrls[i];
+				const base64 = dataUrl.split(",")[1];
+				const imgBuffer = Buffer.from(base64, "base64");
+
+				const imagePath = `presentations/${artefactoId}/images/page_${pageNumber}.png`;
+				const { error: imgUploadError } = await supabase.storage
+					.from("cognetica-files")
+					.upload(imagePath, imgBuffer, {
+						contentType: "image/png",
+						upsert: true,
+					});
+
+				if (imgUploadError) {
+					console.error(
+						`[${opId}] Error subiendo imagen página ${pageNumber}:`,
+						imgUploadError,
+					);
+				} else {
+					successCount++;
+					console.error(`[${opId}] Imagen página ${pageNumber} subida: ${imagePath}`);
+				}
+			}
+		} catch (imgError) {
+			console.error(`[${opId}] Error generando imágenes:`, imgError);
+			return {
+				success: false,
+				error: `Error generando imágenes: ${imgError instanceof Error ? imgError.message : "Error desconocido"}`,
+			};
+		}
+
+		// 4. Actualizar metadata con resultado
+		await supabase
+			.from("cgt_artefactos")
+			.update({
+				metadata: {
+					...metadata,
+					has_images: successCount === totalPages,
+					images_success_count: successCount,
+					last_image_regeneration: new Date().toISOString(),
+				} as unknown as Json,
+			})
+			.eq("id", artefactoId);
+
+		console.error(`[${opId}] Regeneración completada: ${successCount}/${totalPages} imágenes`);
+
+		if (successCount !== totalPages) {
+			return {
+				success: true,
+				data: { successCount, totalPages },
+			};
+		}
+
+		return { success: true, data: { successCount, totalPages } };
+	} catch (error) {
+		console.error(`[${opId}] Error en regeneración:`, error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "Error desconocido",

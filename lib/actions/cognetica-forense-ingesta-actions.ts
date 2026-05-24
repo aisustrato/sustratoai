@@ -446,7 +446,13 @@ async function ingestaArtefactoPdfInforme(
 			await supabase.storage
 				.from(STORAGE_BUCKET)
 				.remove([pathOriginal])
-				.catch(() => {});
+				.catch((cleanupErr) => {
+					console.error(
+						"[cognetica-forense:ingesta] cleanup de storage falló — blob posiblemente huérfano:",
+						pathOriginal,
+						cleanupErr,
+					);
+				});
 			return fail<ResultErrorCode>("DUPLICATE");
 		}
 	}
@@ -565,7 +571,13 @@ async function ingestaArtefactoAudio(
 			await supabase.storage
 				.from(STORAGE_BUCKET)
 				.remove([pathOriginal])
-				.catch(() => {});
+				.catch((cleanupErr) => {
+					console.error(
+						"[cognetica-forense:ingesta] cleanup de storage falló — blob posiblemente huérfano:",
+						pathOriginal,
+						cleanupErr,
+					);
+				});
 			return fail<ResultErrorCode>("DUPLICATE");
 		}
 	}
@@ -678,7 +690,13 @@ async function ingestaArtefactoPdfSlides(
 			await supabase.storage
 				.from(STORAGE_BUCKET)
 				.remove([pathOriginal])
-				.catch(() => {});
+				.catch((cleanupErr) => {
+					console.error(
+						"[cognetica-forense:ingesta] cleanup de storage falló — blob posiblemente huérfano:",
+						pathOriginal,
+						cleanupErr,
+					);
+				});
 			return fail<ResultErrorCode>("DUPLICATE");
 		}
 	}

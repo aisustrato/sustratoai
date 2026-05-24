@@ -27,6 +27,10 @@ import type {
  * Cada formato es opcional (`null` cuando el pipeline aún no llegó a ese
  * paso, o falló antes de persistir). La UI usa estos `null` como señal
  * directa del estado del Stepper y del Accordion.
+ *
+ * `jobActual` contiene el job activo (running) más reciente del pipeline
+ * de metabolización para este artefacto. Permite al frontend saber qué
+ * paso está corriendo en tiempo real sin adivinar.
  */
 export interface ArtefactoCompleto {
 	artefacto: CgtArtefacto;
@@ -44,4 +48,13 @@ export interface ArtefactoCompleto {
 	audio?: CgtArtefactoAudio | null;
 	/** Segmentos de la transcripción con timestamps y hablantes */
 	audio_segmentos?: CgtAudioSegmento[] | null;
+	/** Job activo del pipeline de metabolización (si hay uno en curso). */
+	jobActual?: {
+		id: string;
+		step_name: string;
+		status: string;
+		progress: number | null;
+		started_at: string | null;
+		ai_model: string | null;
+	} | null;
 }

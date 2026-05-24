@@ -74,14 +74,31 @@ import type {
 	ResultErrorCode,
 } from "@/lib/cognetica-forense/types";
 import { fail, ok } from "@/lib/cognetica-forense/types";
+import { pipelineParaTipo, type StepName } from "@/lib/cognetica-forense/pipelines";
+import type { CgtTipoArtefacto } from "@/lib/cognetica-forense/cognetica_forense_types";
 import { createServerClient } from "@/lib/supabase";
+import { createSupabaseServiceRoleClient } from "@/lib/server";
+import {
+	iniciarJobCognetica,
+	completarJobCognetica,
+	fallarJobCognetica,
+} from "@/lib/actions/cognetica-forense-job-actions";
 //#endregion ![head]
 
 //#region [def] - 🎯 CONFIG POR FORMATO 🎯
+// Crónica: DeepSeek V4 Pro (1M tokens de contexto, hasta 384k de output).
+// Permite que el artefacto completo entre sin chunking en prácticamente
+// cualquier caso. El modo thinking viene activado por defecto y el cliente
+// extrae reasoning_content igual que con `deepseek-reasoner`.
+//
+// **maxTokens = 30000**: 5000 cortaba crónicas largas — caso real reportado.
+// 30k da margen amplio para una crónica literaria extensa (~22k palabras).
+// Costo a tarifas v4-pro: 30k output × $0.87/M ≈ $0.026 USD por crónica
+// (sólo si el modelo realmente usa todo, normalmente usa mucho menos).
 const CONFIG_CRONICA = {
-	model: "deepseek-reasoner" as const,
+	model: "deepseek-v4-pro" as const,
 	temperature: 0.7,
-	maxTokens: 5000,
+	maxTokens: 30000,
 };
 const CONFIG_DESTILADO = {
 	model: "deepseek-reasoner" as const,
@@ -206,6 +223,28 @@ export async function generarCronica(
 		temperatura: CONFIG_CRONICA.temperature,
 		result,
 	});
+
+	// (4b) Anti-silencioso: si el modelo cortó la respuesta por max_tokens,
+	// NO la persistimos como Crónica válida — quedaría truncada a mitad de
+	// frase y el usuario nunca lo notaría. Fallamos visible para que se
+	// pueda reintentar (o subir maxTokens si pasa seguido).
+	console.log(
+		"[generarCronica] LLM OK. finishReason=",
+		result.finishReason,
+		"tokensOutput=",
+		result.tokensOutput,
+		"/",
+		CONFIG_CRONICA.maxTokens,
+	);
+	if (result.finishReason === "length") {
+		console.error(
+			`[generarCronica] ❌ TRUNCADA: el modelo agotó max_tokens ` +
+			`(${result.tokensOutput}/${CONFIG_CRONICA.maxTokens}). ` +
+			`La crónica quedaría cortada — no se persiste. ` +
+			`Considerar subir CONFIG_CRONICA.maxTokens o reintentar.`,
+		);
+		return fail<ResultErrorCode>("LLM_ERROR");
+	}
 
 	// (5) Persistencia (idempotente: DELETE previa si existe).
 	await supabase.from("cgt_cronicas").delete().eq("artefacto_id", artefactoId);
@@ -839,13 +878,239 @@ export async function generarGerminalParcial(
 }
 //#endregion ![main]
 
-//#region [main] - 🔧 (5) metabolizarArtefacto (ORQUESTADOR) 🔧
+//#region [main] - 🔧 (5a) metabolizarArtefacto (STARTER — fire-and-forget) 🔧
 /**
- * Orquestador secuencial: ejecuta los 4 generadores en orden, gestionando
- * estados del artefacto y políticas de fallo diferenciadas por formato.
+ * **Starter** del job manager para metabolización.
+ *
+ * Esta es la action que el cliente invoca. **No espera** a que se complete
+ * la metabolización (que puede tomar minutos): valida, crea un job maestro
+ * en `ai_job_history`, lanza el runner en background sin `await`, y
+ * retorna `{jobId}` casi inmediatamente.
+ *
+ * El cliente se suscribe a Realtime de `ai_job_history` filtrado por el
+ * `jobId` retornado para ver el progreso paso a paso. Si el cliente cierra
+ * la pestaña, el backend sigue corriendo — el job es persistente.
+ *
+ * **Por qué este patrón** (mismo que usa `startInitialPreclassification`):
+ * Next.js serializa server actions del mismo cliente. Si la metabolización
+ * corriera dentro de la action, todos los `router.refresh` quedarían en
+ * cola durante 3 minutos y el stepper sólo se actualizaría al final. Con
+ * fire-and-forget la action se libera en ms y los refresh fluyen.
+ */
+export async function metabolizarArtefacto(
+	artefactoId: string,
+	options?: { forzar?: boolean },
+): Promise<Result<{ jobId: string }, ResultErrorCode>> {
+	const forzar = options?.forzar === true;
+	const supabase = await createServerClient();
+
+	// (1) Validar acceso y obtener projectId/userId.
+	const accesoRes = await asegurarAccesoArtefacto(supabase, artefactoId);
+	if (!accesoRes.ok) return accesoRes;
+	const { projectId, userId } = accesoRes.data;
+
+	// (2) Detectar tipo y validar que existe pipeline.
+	const { data: art, error: artErr } = await supabase
+		.from("cgt_artefactos")
+		.select("tipo")
+		.eq("id", artefactoId)
+		.single();
+	if (artErr || !art) {
+		console.error("[metabolizarArtefacto] No se pudo leer tipo del artefacto:", artErr);
+		return fail<ResultErrorCode>("NOT_FOUND");
+	}
+	const tipo = art.tipo as CgtTipoArtefacto;
+	const pipeline = pipelineParaTipo(tipo);
+	if (!pipeline) {
+		console.error(`[metabolizarArtefacto] tipo "${tipo}" no tiene pipeline definido`);
+		return fail<ResultErrorCode>("NOT_IMPLEMENTED");
+	}
+
+	// (3) Crear job maestro en ai_job_history.
+	//     Usa service role para bypass RLS (escritura por el sistema, no por
+	//     el usuario directamente — mismo patrón que job-actions.ts).
+	//
+	//     Importante: `step_name` arranca como el **primer step del pipeline**,
+	//     no null. Esto evita que `obtenerJobActivoCognetica` (en job-actions)
+	//     descarte el job durante la ventana de ~ms entre que el job nace y
+	//     el runner llama a `marcarStep()` por primera vez. El runner luego
+	//     re-confirma este step_name idempotentemente cuando arranca.
+	const primerStep = pipeline[0].name;
+	const admin = await createSupabaseServiceRoleClient();
+	const { data: job, error: jobErr } = await admin
+		.from("ai_job_history")
+		.insert({
+			project_id: projectId,
+			user_id: userId,
+			job_type: "cognetica_metabolizacion",
+			description: `Cognética: metabolización de artefacto ${artefactoId.slice(0, 8)}`,
+			status: "running",
+			progress: 0,
+			details: {
+				artefacto_id: artefactoId,
+				pipeline_tipo: tipo,
+				step_name: primerStep,
+				step_index: 0,
+				step_total: pipeline.length,
+				es_job_maestro: true,
+				forzar,
+			},
+		})
+		.select("id")
+		.single();
+
+	if (jobErr || !job) {
+		console.error("[metabolizarArtefacto] No se pudo crear job maestro:", jobErr);
+		return fail<ResultErrorCode>("INTERNAL");
+	}
+
+	const jobMaestroId = job.id;
+	console.log(`✅ [metabolizarArtefacto] Job maestro creado: ${jobMaestroId} para artefacto ${artefactoId.slice(0, 8)} (pipeline=${tipo}, ${pipeline.length} steps)`);
+
+	// (4) Cambiar estado del artefacto a "metabolizando".
+	await actualizarEstadoArtefacto(supabase, artefactoId, "metabolizando");
+	revalidatePath(`/cognetica/${artefactoId}`);
+
+	// (5) Lanzar runner en background. Sin `await` — fire-and-forget.
+	//     El runner cierra el job maestro (status=completed/failed) cuando
+	//     termina. Si crashea catastróficamente sin cerrarlo, queda como
+	//     "running" para siempre — los callers de obtenerJobActivo lo verán
+	//     y se puede limpiar manualmente. (Hardening: agregar timeout
+	//     watchdog si esto ocurre seguido).
+	void runMetabolizacionConTracking(jobMaestroId, artefactoId, tipo, forzar);
+
+	return ok({ jobId: jobMaestroId });
+}
+//#endregion ![main]
+
+//#region [helpers] - 🛠️ TRACKING DE STEP EN JOB MAESTRO 🛠️
+/**
+ * Actualiza el job maestro con el step actual y el progreso. El cliente
+ * suscrito a Realtime de `ai_job_history` recibe este UPDATE y avanza el
+ * stepper sin necesidad de `router.refresh()` (que está bloqueado por la
+ * serialización de server actions de Next.js mientras esta action corre).
+ */
+async function marcarStepEnJobMaestro(
+	jobMaestroId: string,
+	artefactoId: string,
+	tipo: CgtTipoArtefacto,
+	stepName: StepName,
+	stepIndex: number,
+	stepTotal: number,
+	forzar: boolean,
+): Promise<void> {
+	const admin = await createSupabaseServiceRoleClient();
+	const progress = Math.round((stepIndex / stepTotal) * 100);
+	const { error } = await admin
+		.from("ai_job_history")
+		.update({
+			progress,
+			details: {
+				artefacto_id: artefactoId,
+				pipeline_tipo: tipo,
+				step_name: stepName,
+				step_index: stepIndex,
+				step_total: stepTotal,
+				es_job_maestro: true,
+				forzar,
+			},
+		})
+		.eq("id", jobMaestroId);
+	if (error) {
+		console.error(`[marcarStepEnJobMaestro] ❌ Supabase error step="${stepName}":`, error);
+	}
+}
+//#endregion ![helpers]
+
+//#region [main] - 🔧 (5b) runMetabolizacionConTracking (RUNNER background) 🔧
+/**
+ * **Runner** que corre la metabolización completa en background. Lo invoca
+ * la starter `metabolizarArtefacto` sin `await`. Es responsable de:
+ *   - Ejecutar la secuencia completa de pasos (pre-procesamiento + 4 formatos).
+ *   - Actualizar el `ai_job_history.details.step_name` antes de cada paso.
+ *   - Cerrar el job maestro al final (completed o failed).
+ *   - Actualizar `cgt_artefactos.estado` al final (metabolizado o error).
+ *
+ * **No retorna** al cliente — el cliente ya recibió `{jobId}` y consume el
+ * progreso vía Realtime.
+ *
+ * **Resume-from-last** sigue vigente: si la fila de un formato ya existe
+ * y `forzar=false`, ese paso se saltea (no llama al LLM).
+ */
+async function runMetabolizacionConTracking(
+	jobMaestroId: string,
+	artefactoId: string,
+	tipo: CgtTipoArtefacto,
+	forzar: boolean,
+): Promise<void> {
+	const admin = await createSupabaseServiceRoleClient();
+	const cerrarJobMaestro = async (
+		status: "completed" | "failed",
+		errorMessage: string | null,
+	) => {
+		const { error } = await admin
+			.from("ai_job_history")
+			.update({
+				status,
+				progress: 100,
+				completed_at: new Date().toISOString(),
+				error_message: errorMessage,
+			})
+			.eq("id", jobMaestroId);
+		if (error) {
+			console.error(`[runMetabolizacionConTracking] ❌ no se pudo cerrar job maestro:`, error);
+		}
+	};
+
+	let resultado: Result<ResumenMetabolizacion, ResultErrorCode>;
+	try {
+		resultado = await _orquestarMetabolizacion(jobMaestroId, artefactoId, tipo, forzar);
+	} catch (err) {
+		console.error(`[runMetabolizacionConTracking] ❌ EXCEPCIÓN NO CAPTURADA:`, err);
+		const msg = err instanceof Error ? err.message : "Error desconocido en runner";
+		resultado = fail<ResultErrorCode>(msg as ResultErrorCode);
+	}
+
+	// Cerrar el estado global del artefacto en `cgt_artefactos.estado`.
+	// El job maestro es la fuente de verdad del PROCESO, pero
+	// `cgt_artefactos.estado` sigue siendo la fuente de verdad del ESTADO del
+	// artefacto (filtrable en queries, listados, etc).
+	try {
+		const supabase = await createServerClient();
+		if (resultado.ok) {
+			await actualizarEstadoArtefacto(supabase, artefactoId, "metabolizado", null);
+		} else {
+			await actualizarEstadoArtefacto(supabase, artefactoId, "error", resultado.error);
+		}
+	} catch (err) {
+		console.error(`[runMetabolizacionConTracking] ❌ Error actualizando cgt_artefactos.estado final:`, err);
+	}
+
+	// Revalidar UNA vez al final — el cliente que esperaba un router.refresh
+	// ahora lo recibe (Next ya no está bloqueado porque la action starter
+	// retornó hace rato).
+	revalidatePath(`/cognetica/${artefactoId}`);
+	revalidatePath("/cognetica");
+
+	if (resultado.ok) {
+		await cerrarJobMaestro("completed", null);
+		console.log(`✅ [runMetabolizacionConTracking] Job maestro ${jobMaestroId} cerrado: completed`);
+	} else {
+		await cerrarJobMaestro("failed", resultado.error);
+		console.log(`❌ [runMetabolizacionConTracking] Job maestro ${jobMaestroId} cerrado: failed (${resultado.error})`);
+	}
+}
+//#endregion ![main]
+
+//#region [main] - 🔧 (5c) _orquestarMetabolizacion (ORQUESTADOR INTERNO) 🔧
+/**
+ * Orquestador secuencial — corre cada paso del pipeline en orden y
+ * actualiza el job maestro vía `marcarStepEnJobMaestro` antes de cada uno.
+ * Esta función fue antes la `metabolizarArtefacto` exportada; ahora es
+ * privada y la consume `runMetabolizacionConTracking`.
  *
  * **Flujo** (spec v0.3 §5 — FASE 1 → FASE 2):
- *   0. `ingresado` → `metabolizando`.
+ *   0. (Ya hecho por la starter): `ingresado` → `metabolizando`.
  *   1. `generarCronica`. Fallo → `error`, detener.
  *   2. `generarDestilado`. Fallo → `error`, detener.
  *   3. `generarNucleo`. Fallo → `error`, detener.
@@ -854,35 +1119,30 @@ export async function generarGerminalParcial(
  *   5. `metabolizando` → `metabolizado`.
  *
  * **Resume-from-last**: al arrancar, mira qué formatos ya están persistidos
- * y saltea sus generadores (NO llama al LLM para ellos) — útil cuando el
- * artefacto falló a mitad de pipeline o quedó en `metabolizado` con algún
- * formato faltante (p. ej. Germinal antes de la decisión v1 atómica).
- *
- * Para **regenerar todo** desde cero, pasar `{ forzar: true }`: cada
- * generador hace DELETE+INSERT de su fila, así que sobreescribe.
+ * y saltea sus generadores (NO llama al LLM para ellos).
  */
-export async function metabolizarArtefacto(
+async function _orquestarMetabolizacion(
+	jobMaestroId: string,
 	artefactoId: string,
-	options?: { forzar?: boolean },
+	tipoConocido: CgtTipoArtefacto,
+	forzar: boolean,
 ): Promise<Result<ResumenMetabolizacion, ResultErrorCode>> {
-	console.log(`\n🔬 [metabolizarArtefacto] ===== INICIO ===== artefactoId=${artefactoId}`);
-	
-	try {
-		const forzar = options?.forzar === true;
-		console.log(`🔬 [metabolizarArtefacto] forzar=${forzar}`);
-		
-		const supabase = await createServerClient();
-		console.log(`🔬 [metabolizarArtefacto] Supabase client creado`);
+	console.log(`\n🔬 [_orquestarMetabolizacion] ===== INICIO ===== artefactoId=${artefactoId} jobMaestroId=${jobMaestroId} tipo=${tipoConocido} forzar=${forzar}`);
 
+	try {
+		const supabase = await createServerClient();
+
+		// Re-resolver acceso para tener projectId/userId (la starter ya validó,
+		// pero los necesitamos para invocar otras actions como transcribirAudio).
 		const accesoRes = await asegurarAccesoArtefacto(supabase, artefactoId);
-		console.log(`🔬 [metabolizarArtefacto] accesoRes.ok=${accesoRes.ok}`);
 		if (!accesoRes.ok) {
-			console.error(`🔬 [metabolizarArtefacto] ACCESO DENEGADO:`, accesoRes.error);
+			console.error(`🔬 [_orquestarMetabolizacion] ACCESO DENEGADO (re-validación):`, accesoRes.error);
 			return accesoRes;
 		}
+		const projectId = accesoRes.data.projectId;
+		const userId = accesoRes.data.userId;
 
-		// Scan inicial
-		console.log(`🔬 [metabolizarArtefacto] Escaneando formatos existentes...`);
+		// Resume-from-last: identificar qué formatos ya existen para no re-procesarlos.
 		const [hayCronica, hayDestilado, hayNucleo, hayGerminal] =
 			forzar ?
 				[false, false, false, false]
@@ -892,21 +1152,28 @@ export async function metabolizarArtefacto(
 					existeFormato(supabase, "cgt_nucleos", artefactoId),
 					existeFormato(supabase, "cgt_germinales", artefactoId),
 				]);
-		console.log(`🔬 [metabolizarArtefacto] Format: cronica=${hayCronica}, destilado=${hayDestilado}, nucleo=${hayNucleo}, germinal=${hayGerminal}`);
+		console.log(`🔬 [_orquestarMetabolizacion] Format: cronica=${hayCronica}, destilado=${hayDestilado}, nucleo=${hayNucleo}, germinal=${hayGerminal}`);
 
-		// Estado → metabolizando.
-		console.log(`🔬 [metabolizarArtefacto] Estado → metabolizando`);
-		await actualizarEstadoArtefacto(supabase, artefactoId, "metabolizando");
-
-		// ─── PRE-PROCESAMIENTO POR TIPO ───
-		console.log(`🔬 [metabolizarArtefacto] Detectando tipo de artefacto...`);
-		const tipoRes = await supabase
-			.from("cgt_artefactos")
-			.select("tipo")
-			.eq("id", artefactoId)
-			.single();
-		const tipo = tipoRes.data?.tipo;
-		console.log(`🔬 [metabolizarArtefacto] tipo="${tipo}" (error: ${tipoRes.error?.message ?? "ninguno"})`);
+		// `tipo` ya viene como parámetro `tipoConocido` (validado por la starter).
+		// Lo aliasaamos para no tener que reescribir todas las referencias internas.
+		const tipo = tipoConocido;
+		const pipeline = pipelineParaTipo(tipo);
+		if (!pipeline) {
+			// Defensivo: la starter ya valida esto antes de crear el job.
+			return fail<ResultErrorCode>("NOT_IMPLEMENTED");
+		}
+		const stepTotal = pipeline.length;
+		// Helper local: marca un step y calcula su stepIndex desde el pipeline declarativo.
+		const marcarStep = async (stepName: StepName) => {
+			const stepIndex = pipeline.findIndex((s) => s.name === stepName);
+			if (stepIndex < 0) {
+				console.warn(`🔬 [_orquestarMetabolizacion] step "${stepName}" no está en el pipeline de ${tipo}; se omite tracking`);
+				return;
+			}
+			await marcarStepEnJobMaestro(
+				jobMaestroId, artefactoId, tipo, stepName, stepIndex, stepTotal, forzar,
+			);
+		};
 
 		if (tipo === "audio") {
 			console.log(`🔬 [metabolizarArtefacto] === PRE-PROCESAMIENTO AUDIO ===`);
@@ -918,46 +1185,45 @@ export async function metabolizarArtefacto(
 			console.log(`🔬 [metabolizarArtefacto] audioRow existe: ${!!audioRow}`);
 			
 			if (!audioRow) {
-				console.log(`🔬 [metabolizarArtefacto] Audio sin transcripción. Descargando de Storage...`);
+				console.log(`🔬 [metabolizarArtefacto] Audio sin transcripción. Generando signed URL...`);
 				const { data: art } = await supabase
 					.from("cgt_artefactos")
-					.select("storage_path_original, titulo")
+					.select("storage_path_original")
 					.eq("id", artefactoId)
 					.single();
 				console.log(`🔬 [metabolizarArtefacto] storage_path_original: ${art?.storage_path_original ?? "NULL"}`);
 				
 				if (art?.storage_path_original) {
-					console.log(`🔬 [metabolizarArtefacto] Descargando audio de Storage...`);
-					const { data: blob, error: dlErr } = await supabase.storage
+					const { data: signedUrl, error: signErr } = await supabase.storage
 						.from("cognetica-files")
-						.download(art.storage_path_original);
-					
-					if (blob && !dlErr) {
-						console.log(`🔬 [metabolizarArtefacto] Audio descargado. Ejecutando transcribirAudio...`);
-						const arrayBuffer = await blob.arrayBuffer();
-						const { transcribirAudio } = await import("./cognetica_forense_actions");
-						const txRes = await transcribirAudio(
-							artefactoId,
-							Buffer.from(arrayBuffer),
-							art.titulo || "audio.mp3",
-						);
-						console.log(`🔬 [metabolizarArtefacto] transcribirAudio resultado: ok=${txRes.ok}, error=${"error" in txRes ? txRes.error : "ninguno"}`);
-						
-						if (!txRes.ok) {
-							console.error(`🔬 [metabolizarArtefacto] TRANSCRIPCIÓN FALLÓ:`, txRes.error);
-							return fail<ResultErrorCode>(txRes.error as ResultErrorCode);
-						}
-						console.log(`🔬 [metabolizarArtefacto] ✅ Transcripción completada`);
-					} else {
-						console.error(`🔬 [metabolizarArtefacto] ERROR DESCARGANDO AUDIO:`, dlErr);
+						.createSignedUrl(art.storage_path_original, 3600); // 1 hora
+
+					if (signErr || !signedUrl?.signedUrl) {
+						console.error(`🔬 [metabolizarArtefacto] ERROR generando signed URL:`, signErr);
 						await actualizarEstadoArtefacto(
 							supabase,
 							artefactoId,
 							"error",
-							"No se pudo descargar el audio de Storage para transcribirlo.",
+							"No se pudo generar URL firmada para el audio.",
 						);
 						return fail<ResultErrorCode>("MISSING_UPSTREAM");
 					}
+
+					console.log(`🔬 [metabolizarArtefacto] Signed URL generada. Ejecutando transcribirAudio...`);
+					const { transcribirAudio } = await import("./cognetica_forense_actions");
+					const txRes = await transcribirAudio(
+						artefactoId,
+						signedUrl.signedUrl,
+						projectId,
+						userId,
+					);
+					console.log(`🔬 [metabolizarArtefacto] transcribirAudio resultado: ok=${txRes.ok}, error=${"error" in txRes ? txRes.error : "ninguno"}`);
+						
+					if (!txRes.ok) {
+						console.error(`🔬 [metabolizarArtefacto] TRANSCRIPCIÓN FALLÓ:`, txRes.error);
+						return fail<ResultErrorCode>(txRes.error as ResultErrorCode);
+					}
+					console.log(`🔬 [metabolizarArtefacto] ✅ Transcripción completada`);
 				} else {
 					console.error(`🔬 [metabolizarArtefacto] NO HAY storage_path_original`);
 				}
@@ -996,6 +1262,8 @@ export async function metabolizarArtefacto(
 							artefactoId,
 							Buffer.from(arrayBuffer),
 							art.storage_path_original,
+							projectId,
+							userId,
 						);
 						console.log(`🔬 [metabolizarArtefacto] procesarPdfSlides resultado: ok=${slidesRes.ok}, error=${"error" in slidesRes ? slidesRes.error : "ninguno"}`);
 
@@ -1021,34 +1289,34 @@ export async function metabolizarArtefacto(
 		}
 
 		if (tipo === "pdf_informe") {
-			console.log(`🔬 [metabolizarArtefacto] === PRE-PROCESAMIENTO PDF ===`);
+			console.log(`🔬 [_orquestarMetabolizacion] === PRE-PROCESAMIENTO PDF ===`);
 			const { data: mdRow } = await supabase
 				.from("cgt_artefactos_markdown")
 				.select("id")
 				.eq("artefacto_id", artefactoId)
 				.maybeSingle();
-			console.log(`🔬 [metabolizarArtefacto] mdRow existe: ${!!mdRow}`);
-			
+
 			if (!mdRow) {
-				console.log(`🔬 [metabolizarArtefacto] PDF sin contenido Markdown. Descargando de Storage...`);
+				await marcarStep("pdf_marker");
 				const { data: art } = await supabase
 					.from("cgt_artefactos")
 					.select("storage_path_original, titulo")
 					.eq("id", artefactoId)
 					.single();
 				if (art?.storage_path_original) {
-					console.log(`🔬 [metabolizarArtefacto] Descargando PDF de Storage...`);
 					const { data: blob, error: dlErr } = await supabase.storage
 						.from("cognetica-files")
 						.download(art.storage_path_original);
 					if (blob && !dlErr) {
-						console.log(`🔬 [metabolizarArtefacto] PDF descargado. Ejecutando procesarPdfInforme...`);
 						const arrayBuffer = await blob.arrayBuffer();
 						const { procesarPdfInforme } = await import("./cognetica_forense_actions");
 						const pdfRes = await procesarPdfInforme(
 							artefactoId,
 							Buffer.from(arrayBuffer),
 							art.storage_path_original,
+							projectId,
+							userId,
+							{ orquestadoPor: { jobId: jobMaestroId } },
 						);
 						console.log(`🔬 [metabolizarArtefacto] procesarPdfInforme resultado: ok=${pdfRes.ok}, error=${"error" in pdfRes ? pdfRes.error : "ninguno"}`);
 						
@@ -1083,99 +1351,233 @@ export async function metabolizarArtefacto(
 
 		// (1) Crónica.
 		if (!hayCronica) {
-			console.log(`🔬 [metabolizarArtefacto] === PASO 1: CRÓNICA ===`);
-			const cronRes = await generarCronica(artefactoId);
-			console.log(`🔬 [metabolizarArtefacto] Crónica resultado: ok=${cronRes.ok}, error=${"error" in cronRes ? cronRes.error : "ninguno"}`);
-			if (!cronRes.ok) {
-				console.error(`🔬 [metabolizarArtefacto] CRÓNICA FALLÓ:`, cronRes.error);
-				await actualizarEstadoArtefacto(
-					supabase,
-					artefactoId,
-					"error",
-					`Crónica: ${cronRes.error}`,
-				);
-				return fail<ResultErrorCode>(cronRes.error);
+			console.log(`🔬 [_orquestarMetabolizacion] === PASO 1: CRÓNICA ===`);
+			await marcarStep("cronica");
+			const jobInit = await iniciarJobCognetica(
+				artefactoId, projectId, userId, "cronica", CONFIG_CRONICA.model,
+			);
+			if (!jobInit.success) {
+				console.error(`🔬 [metabolizarArtefacto:CRÓNICA] ❌ NO SE PUDO CREAR JOB: ${jobInit.error}`);
 			}
-			resumen.cronica = "generado";
-			console.log(`🔬 [metabolizarArtefacto] ✅ Crónica generada`);
+			const jobIdCronica = jobInit.success ? jobInit.data.jobId : null;
+			try {
+				const cronRes = await generarCronica(artefactoId);
+				console.log(`🔬 [metabolizarArtefacto] Crónica resultado: ok=${cronRes.ok}, error=${"error" in cronRes ? cronRes.error : "ninguno"}`);
+				if (!cronRes.ok) {
+					console.error(`🔬 [metabolizarArtefacto] CRÓNICA FALLÓ:`, cronRes.error);
+					if (jobIdCronica) {
+						const fallRes = await fallarJobCognetica(jobIdCronica, cronRes.error);
+						if (!fallRes.success) {
+							console.error(`🔬 [metabolizarArtefacto:CRÓNICA] ❌ NO SE PUDO FALLAR JOB: ${fallRes.error}`);
+						}
+					}
+					await actualizarEstadoArtefacto(
+						supabase,
+						artefactoId,
+						"error",
+						`Crónica: ${cronRes.error}`,
+					);
+					return fail<ResultErrorCode>(cronRes.error);
+				}
+				if (jobIdCronica) {
+					const compRes = await completarJobCognetica(
+						jobIdCronica,
+						cronRes.data.tokens_input ?? 0,
+						cronRes.data.tokens_output ?? 0,
+					);
+					if (!compRes.success) {
+						console.error(`🔬 [metabolizarArtefacto:CRÓNICA] ❌ NO SE PUDO COMPLETAR JOB: ${compRes.error}`);
+					}
+				}
+				resumen.cronica = "generado";
+				console.log(`🔬 [_orquestarMetabolizacion] ✅ Crónica generada`);
+			} catch (err) {
+				if (jobIdCronica) {
+					const fallRes = await fallarJobCognetica(jobIdCronica, String(err));
+					if (!fallRes.success) {
+						console.error(`🔬 [metabolizarArtefacto:CRÓNICA] ❌ NO SE PUDO FALLAR JOB: ${fallRes.error}`);
+					}
+				}
+				throw err;
+			}
 		} else {
 			console.log(`🔬 [metabolizarArtefacto] Crónica ya existe, skip`);
 		}
 
 		// (2) Destilado.
 		if (!hayDestilado) {
-			console.log(`🔬 [metabolizarArtefacto] === PASO 2: DESTILADO ===`);
-			const destRes = await generarDestilado(artefactoId);
-			console.log(`🔬 [metabolizarArtefacto] Destilado resultado: ok=${destRes.ok}, error=${"error" in destRes ? destRes.error : "ninguno"}`);
-			if (!destRes.ok) {
-				console.error(`🔬 [metabolizarArtefacto] DESTILADO FALLÓ:`, destRes.error);
-				await actualizarEstadoArtefacto(
-					supabase,
-					artefactoId,
-					"error",
-					`Destilado: ${destRes.error}`,
-				);
-				return fail<ResultErrorCode>(destRes.error);
+			console.log(`🔬 [_orquestarMetabolizacion] === PASO 2: DESTILADO ===`);
+			await marcarStep("destilado");
+			const jobInit = await iniciarJobCognetica(
+				artefactoId, projectId, userId, "destilado", CONFIG_DESTILADO.model,
+			);
+			if (!jobInit.success) {
+				console.error(`🔬 [metabolizarArtefacto:DESTILADO] ❌ NO SE PUDO CREAR JOB: ${jobInit.error}`);
 			}
-			resumen.destilado = "generado";
-			console.log(`🔬 [metabolizarArtefacto] ✅ Destilado generado`);
+			const jobIdDestilado = jobInit.success ? jobInit.data.jobId : null;
+			try {
+				const destRes = await generarDestilado(artefactoId);
+				console.log(`🔬 [metabolizarArtefacto] Destilado resultado: ok=${destRes.ok}, error=${"error" in destRes ? destRes.error : "ninguno"}`);
+				if (!destRes.ok) {
+					console.error(`🔬 [metabolizarArtefacto] DESTILADO FALLÓ:`, destRes.error);
+					if (jobIdDestilado) {
+						const fallRes = await fallarJobCognetica(jobIdDestilado, destRes.error);
+						if (!fallRes.success) {
+							console.error(`🔬 [metabolizarArtefacto:DESTILADO] ❌ NO SE PUDO FALLAR JOB: ${fallRes.error}`);
+						}
+					}
+					await actualizarEstadoArtefacto(
+						supabase,
+						artefactoId,
+						"error",
+						`Destilado: ${destRes.error}`,
+					);
+					return fail<ResultErrorCode>(destRes.error);
+				}
+				if (jobIdDestilado) {
+					const compRes = await completarJobCognetica(
+						jobIdDestilado,
+						destRes.data.tokens_input ?? 0,
+						destRes.data.tokens_output ?? 0,
+					);
+					if (!compRes.success) {
+						console.error(`🔬 [metabolizarArtefacto:DESTILADO] ❌ NO SE PUDO COMPLETAR JOB: ${compRes.error}`);
+					}
+				}
+				resumen.destilado = "generado";
+				console.log(`🔬 [_orquestarMetabolizacion] ✅ Destilado generado`);
+			} catch (err) {
+				if (jobIdDestilado) {
+					const fallRes = await fallarJobCognetica(jobIdDestilado, String(err));
+					if (!fallRes.success) {
+						console.error(`🔬 [metabolizarArtefacto:DESTILADO] ❌ NO SE PUDO FALLAR JOB: ${fallRes.error}`);
+					}
+				}
+				throw err;
+			}
 		} else {
 			console.log(`🔬 [metabolizarArtefacto] Destilado ya existe, skip`);
 		}
 
 		// (3) Núcleo.
 		if (!hayNucleo) {
-			console.log(`🔬 [metabolizarArtefacto] === PASO 3: NÚCLEO ===`);
-			const nucRes = await generarNucleo(artefactoId);
-			console.log(`🔬 [metabolizarArtefacto] Núcleo resultado: ok=${nucRes.ok}, error=${"error" in nucRes ? nucRes.error : "ninguno"}`);
-			if (!nucRes.ok) {
-				console.error(`🔬 [metabolizarArtefacto] NÚCLEO FALLÓ:`, nucRes.error);
-				await actualizarEstadoArtefacto(
-					supabase,
-					artefactoId,
-					"error",
-					`Núcleo: ${nucRes.error}`,
-				);
-				return fail<ResultErrorCode>(nucRes.error);
+			console.log(`🔬 [_orquestarMetabolizacion] === PASO 3: NÚCLEO ===`);
+			await marcarStep("nucleo");
+			const jobInit = await iniciarJobCognetica(
+				artefactoId, projectId, userId, "nucleo", CONFIG_NUCLEO.model,
+			);
+			if (!jobInit.success) {
+				console.error(`🔬 [metabolizarArtefacto:NÚCLEO] ❌ NO SE PUDO CREAR JOB: ${jobInit.error}`);
 			}
-			resumen.nucleo = "generado";
-			console.log(`🔬 [metabolizarArtefacto] ✅ Núcleo generado`);
+			const jobIdNucleo = jobInit.success ? jobInit.data.jobId : null;
+			try {
+				const nucRes = await generarNucleo(artefactoId);
+				console.log(`🔬 [metabolizarArtefacto] Núcleo resultado: ok=${nucRes.ok}, error=${"error" in nucRes ? nucRes.error : "ninguno"}`);
+				if (!nucRes.ok) {
+					console.error(`🔬 [metabolizarArtefacto] NÚCLEO FALLÓ:`, nucRes.error);
+					if (jobIdNucleo) {
+						const fallRes = await fallarJobCognetica(jobIdNucleo, nucRes.error);
+						if (!fallRes.success) {
+							console.error(`🔬 [metabolizarArtefacto:NÚCLEO] ❌ NO SE PUDO FALLAR JOB: ${fallRes.error}`);
+						}
+					}
+					await actualizarEstadoArtefacto(
+						supabase,
+						artefactoId,
+						"error",
+						`Núcleo: ${nucRes.error}`,
+					);
+					return fail<ResultErrorCode>(nucRes.error);
+				}
+				if (jobIdNucleo) {
+					const compRes = await completarJobCognetica(
+						jobIdNucleo,
+						nucRes.data.tokens_input ?? 0,
+						nucRes.data.tokens_output ?? 0,
+					);
+					if (!compRes.success) {
+						console.error(`🔬 [metabolizarArtefacto:NÚCLEO] ❌ NO SE PUDO COMPLETAR JOB: ${compRes.error}`);
+					}
+				}
+				resumen.nucleo = "generado";
+				console.log(`🔬 [_orquestarMetabolizacion] ✅ Núcleo generado`);
+			} catch (err) {
+				if (jobIdNucleo) {
+					const fallRes = await fallarJobCognetica(jobIdNucleo, String(err));
+					if (!fallRes.success) {
+						console.error(`🔬 [metabolizarArtefacto:NÚCLEO] ❌ NO SE PUDO FALLAR JOB: ${fallRes.error}`);
+					}
+				}
+				throw err;
+			}
 		} else {
 			console.log(`🔬 [metabolizarArtefacto] Núcleo ya existe, skip`);
 		}
 
 		// (4) Germinal — política laxa.
 		if (!hayGerminal) {
-			console.log(`🔬 [metabolizarArtefacto] === PASO 4: GERMINAL ===`);
-			const gerRes = await generarGerminalParcial(artefactoId);
-			console.log(`🔬 [metabolizarArtefacto] Germinal resultado: ok=${gerRes.ok}, error=${"error" in gerRes ? gerRes.error : "ninguno"}`);
-			if (gerRes.ok) {
-				resumen.germinal = "generado";
-				console.log(`🔬 [metabolizarArtefacto] ✅ Germinal generado`);
-			} else if (gerRes.error === "THRESHOLD_NOT_MET") {
-				resumen.germinal = "omitido";
-				console.log(`🔬 [metabolizarArtefacto] ⏭️ Germinal omitido (THRESHOLD_NOT_MET)`);
-			} else {
-				resumen.germinal = "error";
-				console.warn(`🔬 [metabolizarArtefacto] ⚠️ Germinal error (no bloqueante):`, gerRes.error);
-				await actualizarEstadoArtefacto(
-					supabase,
-					artefactoId,
-					"metabolizado",
-					`Germinal: ${gerRes.error}`,
-				);
-				revalidatePath(`/cognetica/${artefactoId}`);
-				revalidatePath("/cognetica");
-				return ok(resumen);
+			console.log(`🔬 [_orquestarMetabolizacion] === PASO 4: GERMINAL ===`);
+			await marcarStep("germinal");
+			const jobInit = await iniciarJobCognetica(
+				artefactoId, projectId, userId, "germinal", CONFIG_GERMINAL.model,
+			);
+			if (!jobInit.success) {
+				console.error(`🔬 [metabolizarArtefacto:GERMINAL] ❌ NO SE PUDO CREAR JOB: ${jobInit.error}`);
+			}
+			const jobIdGerminal = jobInit.success ? jobInit.data.jobId : null;
+			try {
+				const gerRes = await generarGerminalParcial(artefactoId);
+				console.log(`🔬 [metabolizarArtefacto] Germinal resultado: ok=${gerRes.ok}, error=${"error" in gerRes ? gerRes.error : "ninguno"}`);
+				if (gerRes.ok) {
+					if (jobIdGerminal) {
+						const compRes = await completarJobCognetica(
+							jobIdGerminal,
+							gerRes.data.tokens_input ?? 0,
+							gerRes.data.tokens_output ?? 0,
+						);
+						if (!compRes.success) {
+							console.error(`🔬 [metabolizarArtefacto:GERMINAL] ❌ NO SE PUDO COMPLETAR JOB: ${compRes.error}`);
+						}
+					}
+					resumen.germinal = "generado";
+					console.log(`🔬 [metabolizarArtefacto] ✅ Germinal generado`);
+				} else if (gerRes.error === "THRESHOLD_NOT_MET") {
+					// Umbral no alcanzado: no es error, es resultado válido.
+					if (jobIdGerminal) {
+						const compRes = await completarJobCognetica(jobIdGerminal, 0, 0);
+						if (!compRes.success) {
+							console.error(`🔬 [metabolizarArtefacto:GERMINAL] ❌ NO SE PUDO COMPLETAR JOB (omitido): ${compRes.error}`);
+						}
+					}
+					resumen.germinal = "omitido";
+					console.log(`🔬 [metabolizarArtefacto] ⏭️ Germinal omitido (THRESHOLD_NOT_MET)`);
+				} else {
+					resumen.germinal = "error";
+					if (jobIdGerminal) {
+						const fallRes = await fallarJobCognetica(jobIdGerminal, gerRes.error);
+						if (!fallRes.success) {
+							console.error(`🔬 [metabolizarArtefacto:GERMINAL] ❌ NO SE PUDO FALLAR JOB: ${fallRes.error}`);
+						}
+					}
+					console.warn(`🔬 [_orquestarMetabolizacion] ⚠️ Germinal error (no bloqueante):`, gerRes.error);
+					// Estado y revalidate los maneja el runner — retornamos ok porque
+					// Germinal es no-bloqueante (Crónica+Destilado+Núcleo quedaron).
+					return ok(resumen);
+				}
+			} catch (err) {
+				if (jobIdGerminal) {
+					const fallRes = await fallarJobCognetica(jobIdGerminal, String(err));
+					if (!fallRes.success) {
+						console.error(`🔬 [metabolizarArtefacto:GERMINAL] ❌ NO SE PUDO FALLAR JOB: ${fallRes.error}`);
+					}
+				}
+				throw err;
 			}
 		} else {
 			console.log(`🔬 [metabolizarArtefacto] Germinal ya existe, skip`);
 		}
 
-		console.log(`🔬 [metabolizarArtefacto] ===== FIN EXITOSO =====`);
-		await actualizarEstadoArtefacto(supabase, artefactoId, "metabolizado", null);
-		revalidatePath(`/cognetica/${artefactoId}`);
-		revalidatePath("/cognetica");
+		console.log(`🔬 [_orquestarMetabolizacion] ===== FIN EXITOSO ===== (estado y revalidate los cierra el runner)`);
 		return ok(resumen);
 		
 	} catch (error) {

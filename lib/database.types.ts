@@ -7696,6 +7696,7 @@ export type Database = {
         | "PRECLASSIFICATION"
         | "RECONCILIATION"
         | "TRANSLATION"
+        | "cognetica_metabolizacion"
       note_visibility: "private" | "project" | "public"
       paragraph_status:
         | "draft"
@@ -7934,6 +7935,7 @@ export const Constants = {
         "PRECLASSIFICATION",
         "RECONCILIATION",
         "TRANSLATION",
+        "cognetica_metabolizacion",
       ],
       note_visibility: ["private", "project", "public"],
       paragraph_status: [

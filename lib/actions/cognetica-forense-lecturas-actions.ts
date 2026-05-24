@@ -14,6 +14,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import type { PostgrestError } from "@supabase/supabase-js";
+import { unstable_noStore as noStore } from "next/cache";
 
 import { asegurarAccesoArtefacto } from "@/lib/cognetica-forense/metabolizacion-helpers";
 import type { ArtefactoCompleto } from "@/lib/cognetica-forense/lecturas-shared";
@@ -28,6 +29,7 @@ import type {
 } from "@/lib/cognetica-forense/types";
 import { fail, ok } from "@/lib/cognetica-forense/types";
 import { createServerClient } from "@/lib/supabase";
+import { obtenerJobActivoCognetica } from "@/lib/actions/cognetica-forense-job-actions";
 //#endregion ![head]
 
 //#region [main] - 🔧 obtenerArtefactoCompleto 🔧
@@ -45,14 +47,21 @@ import { createServerClient } from "@/lib/supabase";
 export async function obtenerArtefactoCompleto(
 	artefactoId: string,
 ): Promise<Result<ArtefactoCompleto, ResultErrorCode>> {
+	// Opt-out del Data Cache de Next: aunque el page sea force-dynamic, los
+	// fetches dentro de esta server action podían quedar cacheados entre
+	// invocaciones del mismo render del Server Component. Resultado:
+	// `router.refresh()` re-ejecutaba el page pero la función devolvía la
+	// misma data vieja (sin la fila recién persistida de `cgt_cronicas`,
+	// etc.). `noStore()` fuerza una lectura fresca a Supabase cada vez.
+	noStore();
 	const supabase = await createServerClient();
 
 	// (1) Control de acceso (también valida que el artefacto exista).
 	const acceso = await asegurarAccesoArtefacto(supabase, artefactoId);
 	if (!acceso.ok) return acceso;
 
-	// (2) Fetch paralelo de artefacto + 4 formatos + pdf_informe + pdf_slides + markdown + audio.
-	const [artRes, cronRes, destRes, nuclRes, gerRes, pdfRes, slidesRes, mdRes, audioRes, audioSegRes] =
+	// (2) Fetch paralelo de artefacto + 4 formatos + pdf_informe + pdf_slides + markdown + audio + job activo.
+	const [artRes, cronRes, destRes, nuclRes, gerRes, pdfRes, slidesRes, mdRes, audioRes, audioSegRes, jobActivoRes] =
 		await Promise.all([
 			supabase
 				.from("cgt_artefactos")
@@ -106,6 +115,7 @@ export async function obtenerArtefactoCompleto(
 				)
 				.eq("artefacto_id", artefactoId)
 				.order("timestamp_inicio", { ascending: true }),
+			obtenerJobActivoCognetica(artefactoId),
 		]);
 
 	const tipo = artRes.data?.tipo as string;
@@ -174,6 +184,11 @@ export async function obtenerArtefactoCompleto(
 	//     los tipos autogenerados de Supabase (`Database`) usan `Json` y
 	//     `string | null` en lugares donde los tipos de dominio son más
 	//     específicos (ej. `CgtMovimiento[]`).
+	if (!jobActivoRes.success) {
+		console.error(`[obtenerArtefactoCompleto] ❌ NO SE PUDO OBTENER JOB ACTIVO: ${jobActivoRes.error}`);
+	}
+	const jobActual = jobActivoRes.success ? jobActivoRes.data : null;
+
 	return ok<ArtefactoCompleto>({
 		artefacto: artRes.data as unknown as CgtArtefacto,
 		cronica: (cronRes.data as unknown as CgtCronica | null) ?? null,
@@ -197,6 +212,7 @@ export async function obtenerArtefactoCompleto(
 			(audioSegRes.data as unknown as
 				| import("@/lib/cognetica-forense/types").CgtAudioSegmento[]
 				| null) ?? null,
+		jobActual,
 	});
 }
 //#endregion ![main]

@@ -47,6 +47,11 @@ import { ok, fail } from "@/lib/cognetica-forense/types";
 import { createServerClient } from "@/lib/supabase";
 import Replicate from "replicate";
 import { revalidatePath } from "next/cache";
+import {
+	iniciarJobCognetica,
+	completarJobCognetica,
+	fallarJobCognetica,
+} from "@/lib/actions/cognetica-forense-job-actions";
 
 // =============================================================================
 // INGESTA
@@ -146,20 +151,22 @@ export async function eliminarArtefacto(
  */
 export async function transcribirAudio(
 	artefactoId: string,
-	fileBuffer: Buffer,
-	fileName: string,
+	audioUrl: string,
+	projectId: string,
+	userId: string,
 ): Promise<Result<void>> {
 	console.log(
 		`🎙️ [transcribirAudio] Iniciando para artefacto: ${artefactoId}`,
 	);
 
 	const supabase = await createServerClient();
+	let jobId: string | null = null;
 
 	try {
 		// (1) Obtener artefacto y validar tipo
 		const { data: artefacto, error: artefactoError } = await supabase
 			.from("cgt_artefactos")
-			.select("id, tipo, storage_path_original, titulo")
+			.select("id, tipo, storage_path_original, titulo, project_id")
 			.eq("id", artefactoId)
 			.single();
 
@@ -192,77 +199,92 @@ export async function transcribirAudio(
 			return fail("TRANSCRIPTION_ERROR");
 		}
 
+		// (2b) Crear job en ai_job_history para tracking de consumo
+		const jobInit = await iniciarJobCognetica(
+			artefactoId, projectId, userId, "audio_transcripcion", "whisperx-replicate",
+		);
+		if (!jobInit.success) {
+			console.error(`[transcribirAudio] ❌ NO SE PUDO CREAR JOB: ${jobInit.error}`);
+		}
+		jobId = jobInit.success ? jobInit.data.jobId : null;
+
 		const replicate = new Replicate({
 			auth: process.env.REPLICATE_API_TOKEN,
 		});
 
-		// Convertir buffer a data URI (Replicate acepta data URIs)
-		const base64Audio = fileBuffer.toString("base64");
-		// Detectar MIME type correcto desde el nombre de archivo
-		const ext = fileName.toLowerCase().split('.').pop() ?? "";
-		const mimeMap: Record<string, string> = {
-			mp3: "audio/mpeg",
-			m4a: "audio/mp4",
-			mpeg: "audio/mpeg",
-			mpga: "audio/mpeg",
-			wav: "audio/wav",
-			webm: "audio/webm",
-			flac: "audio/flac",
-			ogg: "audio/ogg",
-			oga: "audio/ogg",
-			opus: "audio/opus",
-		};
-		const mimeType = mimeMap[ext] ?? "audio/mpeg";
-		const dataUri = `data:${mimeType};base64,${base64Audio}`;
+		console.log(`🎙️ [transcribirAudio] Enviando audio a WhisperX vía Replicate (URL firmada)...`);
 
-		console.log(`🎙️ [transcribirAudio] Enviando audio a WhisperX vía Replicate (mimeType=${mimeType}, size=${fileBuffer.length} bytes)...`);
+		// Reintentos con backoff exponencial para errores transitorios (5xx)
+		const MAX_RETRIES = 3;
+		let output: unknown;
+		let lastError: unknown;
 
-		let output;
-		try {
-			output = await replicate.run(
-				"victor-upmeet/whisperx:84d2ad2d6194fe98a17d2b60bef1c7f910c46b2f6fd38996ca457afd9c8abfcb",
-				{
-					input: {
-						audio_file: dataUri,
-						debug: false,
-						batch_size: 64,
-						diarization: true,
-						align_output: true,
-						temperature: 0,
-						vad_onset: 0.5,
-						vad_offset: 0.363,
-						language_detection_min_prob: 0,
-						language_detection_max_tries: 5,
+		for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+			try {
+				output = await replicate.run(
+					"victor-upmeet/whisperx:84d2ad2d6194fe98a17d2b60bef1c7f910c46b2f6fd38996ca457afd9c8abfcb",
+					{
+						input: {
+							audio_file: audioUrl,
+							debug: false,
+							batch_size: 64,
+							diarization: true,
+							align_output: true,
+							temperature: 0,
+							vad_onset: 0.5,
+							vad_offset: 0.363,
+							language_detection_min_prob: 0,
+							language_detection_max_tries: 5,
+						},
 					},
-				},
-			);
-			console.log("✅ [transcribirAudio] Transcripción Replicate exitosa");
-		} catch (error: unknown) {
-			const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-			const errorStack = error instanceof Error ? error.stack : "";
-			const errorFull = error instanceof Error ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : String(error);
-			
-			console.error("❌ [transcribirAudio] Error Replicate completo:");
-			console.error("  Message:", errorMessage);
-			console.error("  Stack:", errorStack);
-			console.error("  Full:", errorFull);
-			console.error("  Token exists:", !!process.env.REPLICATE_API_TOKEN);
-			console.error("  Token length:", process.env.REPLICATE_API_TOKEN?.length ?? 0);
+				);
+				console.log("✅ [transcribirAudio] Transcripción Replicate exitosa");
+				break; // éxito
+			} catch (err) {
+				lastError = err;
+				const status = (err as { response?: { status?: number } })?.response?.status;
+				const isRetryable = status && status >= 500;
 
-			await supabase
-				.from("cgt_artefactos")
-				.update({
-					estado: "error",
-					error_mensaje: `Transcripción fallida: ${errorMessage}`,
-					updated_at: new Date().toISOString(),
-				})
-				.eq("id", artefactoId);
-
-			return fail("TRANSCRIPTION_ERROR");
+				if (isRetryable && attempt < MAX_RETRIES - 1) {
+					const delay = Math.pow(2, attempt) * 2000;
+					console.warn(
+						`[transcribirAudio] Replicate ${status} (intento ${attempt + 1}/${MAX_RETRIES}), reintentando en ${delay / 1000}s...`,
+					);
+					await new Promise((r) => setTimeout(r, delay));
+					continue;
+				}
+				throw err; // error no reintentable o último intento
+			}
 		}
+
+		if (!output) throw lastError;
 
 		// Extraer texto y segmentos de la respuesta de WhisperX
 		console.log("🎙️ [transcribirAudio] Output crudo de Replicate:", JSON.stringify(output, null, 2).slice(0, 2000));
+
+		// Si Replicate devolvió un error en el output (modelo falló durante inferencia)
+		if (output && typeof output === "object") {
+			const outputObj = output as Record<string, unknown>;
+			if (outputObj.error) {
+				const modelError = String(outputObj.error);
+				console.error(`[transcribirAudio] ❌ WhisperX devolvió error: ${modelError}`);
+				if (jobId) {
+					const fallRes = await fallarJobCognetica(jobId, `WhisperX error: ${modelError}`);
+					if (!fallRes.success) {
+						console.error(`[transcribirAudio] ❌ NO SE PUDO FALLAR JOB: ${fallRes.error}`);
+					}
+				}
+				await supabase
+					.from("cgt_artefactos")
+					.update({
+						estado: "error",
+						error_mensaje: `WhisperX falló: ${modelError}`,
+						updated_at: new Date().toISOString(),
+					})
+					.eq("id", artefactoId);
+				return fail("TRANSCRIPTION_ERROR");
+			}
+		}
 
 		let transcription = "";
 		let segments: Array<{
@@ -312,8 +334,7 @@ export async function transcribirAudio(
 			segments,
 			detectedLanguage,
 			metadata: {
-				fileName,
-				fileSize: fileBuffer.length,
+				source: "whisperx-replicate",
 				segmentCount: segments.length,
 			},
 		};
@@ -342,9 +363,10 @@ export async function transcribirAudio(
 					)
 				: null;
 
-		// (5) Detectar formato original del nombre de archivo
-		const formatoOriginal = fileName.includes(".")
-			? fileName.slice(fileName.lastIndexOf(".")).toLowerCase()
+		// (5) Detectar formato original desde la URL del audio
+		const urlPath = audioUrl.split("?")[0]; // quitar query params
+		const formatoOriginal = urlPath.includes(".")
+			? urlPath.slice(urlPath.lastIndexOf(".")).toLowerCase()
 			: null;
 
 		// (6) INSERT en cgt_artefactos_audio
@@ -481,6 +503,14 @@ export async function transcribirAudio(
 			`🎙️ [transcribirAudio] ✅ Audio transcrito, listo para metabolización: ${artefactoId}`,
 		);
 
+		// Completar job (Replicate no expone tokens, registrar 0)
+		if (jobId) {
+			const compRes = await completarJobCognetica(jobId, 0, 0);
+			if (!compRes.success) {
+				console.error(`[transcribirAudio] ❌ NO SE PUDO COMPLETAR JOB: ${compRes.error}`);
+			}
+		}
+
 		// Invalidar cache para que el frontend vea la transcripción
 		revalidatePath(`/cognetica/${artefactoId}`);
 		revalidatePath("/cognetica");
@@ -551,13 +581,25 @@ export async function procesarPdfSlides(
 	artefactoId: string,
 	fileBuffer: Buffer,
 	storagePath: string,
+	projectId: string,
+	userId: string,
 ): Promise<Result<void>> {
 	console.log(`📗 [procesarPdfSlides] Iniciando para artefacto: ${artefactoId}`);
 
 	const supabase = await createServerClient();
+	let jobIdImagenes: string | null = null;
+	let jobIdMarker: string | null = null;
 
 	try {
-		// (1) Split PDF en páginas individuales
+		// (1) Job: Extracción de imágenes (split + render PNG)
+		const jobImgInit = await iniciarJobCognetica(
+			artefactoId, projectId, userId, "pdf_slides_imagenes",
+		);
+		if (!jobImgInit.success) {
+			console.error(`[procesarPdfSlides] ❌ NO SE PUDO CREAR JOB imágenes: ${jobImgInit.error}`);
+		}
+		jobIdImagenes = jobImgInit.success ? jobImgInit.data.jobId : null;
+
 		console.log(`📗 [procesarPdfSlides] Dividiendo PDF en páginas...`);
 		const { splitPDFIntoPagesV2 } = await import(
 			"@/lib/actions/cognetica-forense-slides-actions"
@@ -568,7 +610,23 @@ export async function procesarPdfSlides(
 		}
 		console.log(`📗 [procesarPdfSlides] PDF dividido en ${splitResult.data.totalPages} páginas`);
 
-		// (2) Procesar todas las páginas con Marker
+		// Completar job de imágenes
+		if (jobIdImagenes) {
+			const compRes = await completarJobCognetica(jobIdImagenes, 0, 0);
+			if (!compRes.success) {
+				console.error(`[procesarPdfSlides] ❌ NO SE PUDO COMPLETAR JOB imágenes: ${compRes.error}`);
+			}
+		}
+
+		// (2) Job: Marker por página (OCR con IA)
+		const jobMarkerInit = await iniciarJobCognetica(
+			artefactoId, projectId, userId, "pdf_slides_marker", "marker-ia",
+		);
+		if (!jobMarkerInit.success) {
+			console.error(`[procesarPdfSlides] ❌ NO SE PUDO CREAR JOB marker: ${jobMarkerInit.error}`);
+		}
+		jobIdMarker = jobMarkerInit.success ? jobMarkerInit.data.jobId : null;
+
 		console.log(`📗 [procesarPdfSlides] Procesando páginas con Marker...`);
 		const { procesarTodasLasPaginas } = await import(
 			"@/lib/actions/cognetica-forense-slides-actions"
@@ -581,6 +639,14 @@ export async function procesarPdfSlides(
 			`📗 [procesarPdfSlides] Procesamiento completado: ${batchResult.data.processed} OK, ${batchResult.data.failed} FAIL`,
 		);
 
+		// Completar job de Marker
+		if (jobIdMarker) {
+			const compRes = await completarJobCognetica(jobIdMarker, 0, 0);
+			if (!compRes.success) {
+				console.error(`[procesarPdfSlides] ❌ NO SE PUDO COMPLETAR JOB marker: ${compRes.error}`);
+			}
+		}
+
 		// (3) Invalidar cache para que el frontend vea el contenido
 		const { revalidatePath } = await import("next/cache");
 		revalidatePath(`/cognetica/${artefactoId}`);
@@ -590,14 +656,28 @@ export async function procesarPdfSlides(
 		return ok(void 0);
 	} catch (error) {
 		console.error(`📗 [procesarPdfSlides] ❌ Error:`, error);
+		const errMsg = error instanceof Error ? error.message : "Error desconocido procesando slides";
+
+		// Fallar jobs activos
+		if (jobIdImagenes) {
+			const fallRes = await fallarJobCognetica(jobIdImagenes, errMsg);
+			if (!fallRes.success) {
+				console.error(`[procesarPdfSlides] ❌ NO SE PUDO FALLAR JOB imágenes: ${fallRes.error}`);
+			}
+		}
+		if (jobIdMarker) {
+			const fallRes = await fallarJobCognetica(jobIdMarker, errMsg);
+			if (!fallRes.success) {
+				console.error(`[procesarPdfSlides] ❌ NO SE PUDO FALLAR JOB marker: ${fallRes.error}`);
+			}
+		}
 
 		try {
 			await supabase
 				.from("cgt_artefactos")
 				.update({
 					estado: "error",
-					error_mensaje:
-						error instanceof Error ? error.message : "Error desconocido procesando slides",
+					error_mensaje: errMsg,
 					updated_at: new Date().toISOString(),
 				})
 				.eq("id", artefactoId);
@@ -631,14 +711,41 @@ export async function procesarPdfInforme(
 	artefactoId: string,
 	fileBuffer: Buffer,
 	storagePath: string,
+	projectId: string,
+	userId: string,
+	options?: {
+		/**
+		 * Cuando lo llama el runner del job manager (`runMetabolizacionJob`),
+		 * este flag debe ir en `true` para que **no** se cree un job paralelo
+		 * ni se toque `cgt_artefactos.estado`. El runner maneja todo eso a
+		 * través del job maestro. Sin el flag, el comportamiento queda en su
+		 * forma legacy (standalone: crea job propio + deja estado="ingresado").
+		 */
+		orquestadoPor?: { jobId: string };
+	},
 ): Promise<Result<void>> {
 	console.log(
-		`📕 [procesarPdfInforme] Iniciando para artefacto: ${artefactoId}`,
+		`📕 [procesarPdfInforme] Iniciando para artefacto: ${artefactoId}${
+			options?.orquestadoPor ? ` (orquestadoPor ${options.orquestadoPor.jobId.slice(0, 8)})` : ""
+		}`,
 	);
 
 	const supabase = await createServerClient();
+	const orquestadoPor = options?.orquestadoPor;
+	let jobId: string | null = null;
 
 	try {
+		// Job propio solo cuando NO viene orquestado por el job manager.
+		if (!orquestadoPor) {
+			const jobInit = await iniciarJobCognetica(
+				artefactoId, projectId, userId, "pdf_marker", "marker-ia",
+			);
+			if (!jobInit.success) {
+				console.error(`[procesarPdfInforme] ❌ NO SE PUDO CREAR JOB: ${jobInit.error}`);
+			}
+			jobId = jobInit.success ? jobInit.data.jobId : null;
+		}
+
 		// (1) Enviar PDF a API Route para procesamiento
 		const formData = new FormData();
 		formData.append(
@@ -730,48 +837,81 @@ export async function procesarPdfInforme(
 			// Continuamos - el PDF está procesado aunque no se pueda metabolizar
 		}
 
-		// (7) Actualizar estado a "ingresado" (listo para metabolización)
-		// El artefacto ahora tiene contenido markdown disponible
-		const { error: updateError } = await supabase
-			.from("cgt_artefactos")
-			.update({
-				estado: "ingresado",
-				descripcion: `PDF procesado por Marker: ${metadata.title || metadata.originalFileName}`,
-				updated_at: new Date().toISOString(),
-			})
-			.eq("id", artefactoId);
+		// (7) Cambio de estado del artefacto:
+		//   - Standalone: dejar "ingresado" (listo para que el usuario aprete metabolizar).
+		//   - Orquestado: NO tocar — el job maestro maneja el estado.
+		if (!orquestadoPor) {
+			const { error: updateError } = await supabase
+				.from("cgt_artefactos")
+				.update({
+					estado: "ingresado",
+					descripcion: `PDF procesado por Marker: ${metadata.title || metadata.originalFileName}`,
+					updated_at: new Date().toISOString(),
+				})
+				.eq("id", artefactoId);
 
-		if (updateError) {
-			console.error(
-				`📕 [procesarPdfInforme] ⚠️ Error actualizando estado: ${updateError.message}`,
-			);
+			if (updateError) {
+				console.error(
+					`📕 [procesarPdfInforme] ⚠️ Error actualizando estado: ${updateError.message}`,
+				);
+			}
+		} else {
+			// Orquestado: solo actualizamos descripcion (útil para listado).
+			await supabase
+				.from("cgt_artefactos")
+				.update({
+					descripcion: `PDF procesado por Marker: ${metadata.title || metadata.originalFileName}`,
+					updated_at: new Date().toISOString(),
+				})
+				.eq("id", artefactoId);
 		}
 
 		console.log(
-			`📕 [procesarPdfInforme] ✅ PDF procesado, listo para metabolización: ${artefactoId}`,
+			`📕 [procesarPdfInforme] ✅ PDF procesado: ${artefactoId}`,
 		);
 
-		// Invalidar cache para que el frontend vea el contenido
+		// Completar job propio solo si NO viene orquestado.
+		if (jobId && !orquestadoPor) {
+			const compRes = await completarJobCognetica(jobId, 0, 0);
+			if (!compRes.success) {
+				console.error(`[procesarPdfInforme] ❌ NO SE PUDO COMPLETAR JOB: ${compRes.error}`);
+			}
+		}
+
+		// Invalidar cache para que el frontend vea el contenido.
+		// (En modo orquestado el job manager dispara su propio refresh; este
+		//  revalidate es barato y útil para los dos casos.)
 		revalidatePath(`/cognetica/${artefactoId}`);
 		revalidatePath("/cognetica");
 
 		return ok(void 0);
 	} catch (error) {
 		console.error(`📕 [procesarPdfInforme] ❌ Error:`, error);
+		const errMsg = error instanceof Error ? error.message : "Error desconocido";
 
-		// Actualizar estado a error (ignorar error de update)
-		try {
-			await supabase
-				.from("cgt_artefactos")
-				.update({
-					estado: "error",
-					error_mensaje:
-						error instanceof Error ? error.message : "Error desconocido",
-					updated_at: new Date().toISOString(),
-				})
-				.eq("id", artefactoId);
-		} catch (e) {
-			console.error("📕 [procesarPdfInforme] ⚠️ Error marcando fallo:", e);
+		// Fallar el job propio solo si NO viene orquestado.
+		if (jobId && !orquestadoPor) {
+			const fallRes = await fallarJobCognetica(jobId, errMsg);
+			if (!fallRes.success) {
+				console.error(`[procesarPdfInforme] ❌ NO SE PUDO FALLAR JOB: ${fallRes.error}`);
+			}
+		}
+
+		// Cambiar estado a "error" solo en modo standalone. En modo orquestado,
+		// el runner del job maestro decide qué hacer con el estado global.
+		if (!orquestadoPor) {
+			try {
+				await supabase
+					.from("cgt_artefactos")
+					.update({
+						estado: "error",
+						error_mensaje: errMsg,
+						updated_at: new Date().toISOString(),
+					})
+					.eq("id", artefactoId);
+			} catch (e) {
+				console.error("📕 [procesarPdfInforme] ⚠️ Error marcando fallo:", e);
+			}
 		}
 
 		return fail(
