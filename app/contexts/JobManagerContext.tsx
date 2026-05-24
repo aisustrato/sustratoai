@@ -4,6 +4,7 @@ import React, {
 	createContext,
 	useContext,
 	useState,
+	useEffect,
 	ReactNode,
 	useCallback,
 } from "react";
@@ -12,30 +13,79 @@ import { v4 as uuidv4 } from "uuid";
 export type JobType =
 	| "TRANSLATE_BATCH"
 	| "PRECLASSIFY_BATCH"
-	| "RECONCILE_BATCH"; // Can be extended with other job types
+	| "RECONCILE_BATCH"
+	| "COGNETICA_METABOLIZE"; // Cognética Forense — metabolización de artefacto
 
 // 🎯 LÍMITE GLOBAL: Máximo de jobs concurrentes por usuario
 const MAX_CONCURRENT_JOBS = 2;
 
-export interface Job {
+/**
+ * Payload de los jobs legacy (translate, preclassify, reconcile). Trabajan
+ * sobre un `article_batch` con `batchId` como identificador.
+ */
+export interface JobPayloadLegacy {
+	batchId: string;
+	userId: string;
+	projectId: string;
+	articleItemId?: string;
+	discrepancies?: Array<{
+		article_batch_item_id: string;
+		dimension_id: string;
+	}>;
+}
+
+/**
+ * Payload de la metabolización de cognética. La action `metabolizarArtefacto`
+ * ya creó el row en `ai_job_history` (modelo fire-and-forget); el handler sólo
+ * se suscribe a su id para tracking. Diferencia clave con los legacy:
+ *   - No dispara la action — sólo escucha.
+ *   - El identificador del trabajo es `artefactoId` (no batchId).
+ *   - `jobIdBackend` es el UUID del row en `ai_job_history` para suscribirse.
+ */
+export interface JobPayloadCognetica {
+	artefactoId: string;
+	jobIdBackend: string;
+	userId: string;
+	projectId: string;
+	/**
+	 * Ruta donde el job se inició (capturada en el momento del click).
+	 * Permite al handler ofrecer un "Ir al artefacto" cuando el job
+	 * termina y el usuario está en otra ruta. Si está vacía o coincide
+	 * con la ruta actual al completar, el botón no se muestra.
+	 */
+	originPath?: string;
+}
+
+interface JobBase {
 	id: string;
-	type: JobType;
 	title: string;
 	status: "queued" | "running" | "completed" | "error";
 	progress: number;
-	payload: {
-		batchId: string;
-		userId: string;
-		projectId: string;
-		articleItemId?: string; // 🆕 Para reprocesamiento de artículo individual
-		discrepancies?: Array<{
-			article_batch_item_id: string;
-			dimension_id: string;
-		}>;
-	};
 	errorMessage?: string;
 	completedAt?: Date;
 	startedAt?: Date;
+}
+
+/**
+ * `Job` es un discriminated union por `type`. Esto permite que TypeScript
+ * haga narrowing automático en los handlers (`if (job.type === "X")` →
+ * `job.payload` queda tipado al shape correcto).
+ */
+export type Job =
+	| (JobBase & { type: "TRANSLATE_BATCH"; payload: JobPayloadLegacy })
+	| (JobBase & { type: "PRECLASSIFY_BATCH"; payload: JobPayloadLegacy })
+	| (JobBase & { type: "RECONCILE_BATCH"; payload: JobPayloadLegacy })
+	| (JobBase & {
+			type: "COGNETICA_METABOLIZE";
+			payload: JobPayloadCognetica;
+	  });
+
+/** Extrae el identificador del trabajo para dedup, sin importar el tipo. */
+function claveDedup(job: Pick<Job, "type" | "payload">): string {
+	if (job.type === "COGNETICA_METABOLIZE") {
+		return `cognetica:${(job.payload as JobPayloadCognetica).artefactoId}`;
+	}
+	return `legacy:${(job.payload as JobPayloadLegacy).batchId}`;
 }
 
 interface JobManagerContextType {
@@ -57,6 +107,18 @@ interface JobManagerContextType {
 			| "startedAt"
 		>,
 	) => void;
+	/**
+	 * Agrega un job al state sin pasar por las validaciones de límite ni
+	 * dedup. Pensado para **rehidratación tras refresh** (los jobs ya
+	 * existen en BD y siguen corriendo) — no debe usarse para iniciar
+	 * trabajos nuevos.
+	 */
+	rehidratarJob: (
+		jobData: Omit<
+			Job,
+			"id" | "errorMessage" | "completedAt"
+		>,
+	) => void;
 	updateJobProgress: (jobId: string, progress: number) => void;
 	completeJob: (jobId: string) => void;
 	failJob: (jobId: string, message?: string) => void;
@@ -74,10 +136,38 @@ const JobManagerContext = createContext<JobManagerContextType | undefined>(
 	undefined,
 );
 
+// Clave de localStorage para persistir la preferencia del usuario sobre
+// si el panel del JobManager está expandido o minimizado.
+const STORAGE_KEY_EXPANDED = "jobManager:isExpanded";
+
 export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
 	const [jobs, setJobs] = useState<Job[]>([]);
 	const [recentCompletedJobs, setRecentCompletedJobs] = useState<Job[]>([]);
+	// Preferencia del usuario persistida en localStorage. Default minimizado
+	// para no invadir si no hay jobs. Se hidrata en un useEffect (SSR-safe).
 	const [isJobManagerExpanded, setJobManagerExpanded] = useState(false);
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		try {
+			const stored = window.localStorage.getItem(STORAGE_KEY_EXPANDED);
+			if (stored === "true" || stored === "false") {
+				setJobManagerExpanded(stored === "true");
+			}
+		} catch (err) {
+			console.error("[JobManager] No se pudo leer preferencia de expand:", err);
+		}
+	}, []);
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		try {
+			window.localStorage.setItem(
+				STORAGE_KEY_EXPANDED,
+				String(isJobManagerExpanded),
+			);
+		} catch (err) {
+			console.error("[JobManager] No se pudo persistir preferencia de expand:", err);
+		}
+	}, [isJobManagerExpanded]);
 
 	// 💬 Estado para el diálogo de límite excedido
 	const [limitDialogOpen, setLimitDialogOpen] = useState(false);
@@ -134,11 +224,13 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
 				return; // No crear el trabajo
 			}
 
-			// 🛡️ VALIDACIÓN CRÍTICA: Prevenir trabajos duplicados del mismo tipo y lote
+			// 🛡️ VALIDACIÓN CRÍTICA: Prevenir trabajos duplicados del mismo tipo
+			// y mismo objetivo (batchId para legacy, artefactoId para cognética).
+			const claveNueva = claveDedup(jobData);
 			const existingJob = jobs.find(
 				(job) =>
 					job.type === jobData.type &&
-					job.payload.batchId === jobData.payload.batchId &&
+					claveDedup(job) === claveNueva &&
 					(job.status === "queued" || job.status === "running"),
 			);
 
@@ -147,7 +239,7 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
 					`🚨 [JobManager] Trabajo duplicado detectado y rechazado:`,
 					{
 						tipo: jobData.type,
-						lote: jobData.payload.batchId,
+						clave: claveNueva,
 						trabajoExistente: existingJob.id,
 						estado: existingJob.status,
 					},
@@ -155,18 +247,21 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
 				return; // No crear trabajo duplicado
 			}
 
-			const newJob: Job = {
-				id: uuidv4(),
+			// El spread sobre un discriminated union pierde la correlación
+			// type↔payload en TS; el `as Job` es seguro porque `jobData` ya
+			// viene tipado (no inventamos discriminator ni payload).
+			const newJob = {
 				...jobData,
-				status: "queued",
+				id: uuidv4(),
+				status: "queued" as const,
 				progress: 0,
 				startedAt: new Date(),
-			};
+			} as Job;
 
 			console.log(`✅ [JobManager] Iniciando nuevo trabajo:`, {
 				id: newJob.id,
 				tipo: newJob.type,
-				lote: newJob.payload.batchId,
+				clave: claveDedup(newJob),
 				titulo: newJob.title,
 			});
 
@@ -178,6 +273,40 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
 			// eslint-disable-next-line react-hooks/exhaustive-deps
 		},
 		[isJobManagerExpanded, jobs],
+	);
+
+	const rehidratarJob = useCallback(
+		(
+			jobData: Omit<Job, "id" | "errorMessage" | "completedAt">,
+		) => {
+			// Si ya existe en el state con la misma clave, no agregamos.
+			// Protección contra doble mount del provider en dev/StrictMode.
+			const claveNueva = claveDedup(jobData);
+			setJobs((prevJobs) => {
+				const yaExiste = prevJobs.some(
+					(j) => claveDedup(j) === claveNueva && j.type === jobData.type,
+				);
+				if (yaExiste) {
+					return prevJobs;
+				}
+				const newJob = {
+					...jobData,
+					id: uuidv4(),
+				} as Job;
+				console.log(
+					`♻️ [JobManager] Rehidratando job desde BD:`,
+					{
+						id: newJob.id,
+						tipo: newJob.type,
+						clave: claveNueva,
+						titulo: newJob.title,
+						progress: newJob.progress,
+					},
+				);
+				return [...prevJobs, newJob];
+			});
+		},
+		[],
 	);
 
 	const updateJobProgress = useCallback((jobId: string, progress: number) => {
@@ -290,6 +419,7 @@ export const JobManagerProvider = ({ children }: { children: ReactNode }) => {
 				expandJobManager,
 				minimizeJobManager,
 				startJob,
+				rehidratarJob,
 				updateJobProgress,
 				completeJob,
 				failJob,

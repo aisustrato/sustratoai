@@ -14,7 +14,9 @@ import { useRouter } from 'next/navigation';
 const runningBatches = new Map<string, boolean>();
 
 interface PreclassificationJobHandlerProps {
-  job: Job;
+  // Narrowed: este handler sólo recibe jobs de tipo PRECLASSIFY_BATCH.
+  // El switch en JobManager.tsx garantiza ese routing.
+  job: Extract<Job, { type: "PRECLASSIFY_BATCH" }>;
 }
 
 export function PreclassificationJobHandler({ job }: PreclassificationJobHandlerProps) {

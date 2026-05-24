@@ -14,7 +14,8 @@ import { useRouter } from 'next/navigation';
 const runningReconciliations = new Map<string, boolean>();
 
 interface ReconciliationJobHandlerProps {
-  job: Job;
+  // Narrowed: este handler sólo recibe jobs de tipo RECONCILE_BATCH.
+  job: Extract<Job, { type: "RECONCILE_BATCH" }>;
 }
 
 export function ReconciliationJobHandler({ job }: ReconciliationJobHandlerProps) {

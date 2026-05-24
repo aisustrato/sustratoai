@@ -14,7 +14,8 @@ import { useRouter } from 'next/navigation';
 const runningBatches = new Map<string, boolean>();
 
 interface TranslationJobHandlerProps {
-  job: Job;
+  // Narrowed: este handler sólo recibe jobs de tipo TRANSLATE_BATCH.
+  job: Extract<Job, { type: "TRANSLATE_BATCH" }>;
 }
 
 export function TranslationJobHandler({ job }: TranslationJobHandlerProps) {
