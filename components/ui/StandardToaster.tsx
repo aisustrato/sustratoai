@@ -36,45 +36,48 @@ export function StandardToaster() {
 
 	// Color sólido para las CSS vars de Sonner (fallback + valor para
 	// borders/text que sí lo consumen como background-color válido).
+	// El degradado real va por CSS injection abajo. Usamos `bg` y
+	// `bgShade` que sí existen en ColorShade del proyecto (subtle no).
 	const style = {
-		"--normal-bg": t.neutral.subtle,
+		"--normal-bg": t.neutral.bg,
 		"--normal-text": t.neutral.text,
-		"--normal-border": t.neutral.bg,
-		"--info-bg": t.neutral.subtle,
+		"--normal-border": t.neutral.bgShade,
+		"--info-bg": t.neutral.bg,
 		"--info-text": t.neutral.text,
-		"--info-border": t.neutral.bg,
-		"--success-bg": t.success.subtle,
+		"--info-border": t.neutral.bgShade,
+		"--success-bg": t.success.bg,
 		"--success-text": t.success.text,
-		"--success-border": t.success.bg,
-		"--warning-bg": t.warning.subtle,
+		"--success-border": t.success.bgShade,
+		"--warning-bg": t.warning.bg,
 		"--warning-text": t.warning.text,
-		"--warning-border": t.warning.bg,
-		"--error-bg": t.danger.subtle,
+		"--warning-border": t.warning.bgShade,
+		"--error-bg": t.danger.bg,
 		"--error-text": t.danger.text,
-		"--error-border": t.danger.bg,
+		"--error-border": t.danger.bgShade,
 	} as React.CSSProperties;
 
 	// CSS injection para sobrescribir el background con gradient.
 	// !important porque Sonner aplica su propio background-color via clases
 	// con alta especificidad cuando richColors está activo.
+	// Degradado de `bg` (más claro) → `bgShade` (más saturado/oscuro).
 	const css = `
 		[data-sonner-toaster] [data-sonner-toast] {
-			background-image: ${grad(t.neutral.subtle, t.neutral.bg)} !important;
+			background-image: ${grad(t.neutral.bg, t.neutral.bgShade)} !important;
 		}
 		[data-sonner-toaster] [data-sonner-toast][data-type="info"] {
-			background-image: ${grad(t.neutral.subtle, t.neutral.bg)} !important;
+			background-image: ${grad(t.neutral.bg, t.neutral.bgShade)} !important;
 		}
 		[data-sonner-toaster] [data-sonner-toast][data-type="success"] {
-			background-image: ${grad(t.success.subtle, t.success.bg)} !important;
+			background-image: ${grad(t.success.bg, t.success.bgShade)} !important;
 		}
 		[data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
-			background-image: ${grad(t.warning.subtle, t.warning.bg)} !important;
+			background-image: ${grad(t.warning.bg, t.warning.bgShade)} !important;
 		}
 		[data-sonner-toaster] [data-sonner-toast][data-type="error"] {
-			background-image: ${grad(t.danger.subtle, t.danger.bg)} !important;
+			background-image: ${grad(t.danger.bg, t.danger.bgShade)} !important;
 		}
 		[data-sonner-toaster] [data-sonner-toast][data-type="loading"] {
-			background-image: ${grad(t.neutral.subtle, t.neutral.bg)} !important;
+			background-image: ${grad(t.neutral.bg, t.neutral.bgShade)} !important;
 		}
 	`;
 

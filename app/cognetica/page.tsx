@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Archive, Upload, FileText, Loader2, RefreshCcw } from "lucide-react";
+import { Archive, Network, Upload, FileText, Loader2, RefreshCcw } from "lucide-react";
 
 import { useAuth } from "@/app/auth-provider";
 import { StandardAlert } from "@/components/ui/StandardAlert";
@@ -189,6 +189,14 @@ export default function CogneticaForenseHome() {
 								styleType="solid"
 								leftIcon={Upload}>
 								Subir artefacto
+							</StandardButton>
+						</Link>
+						<Link href="/cognetica/grafo">
+							<StandardButton
+								colorScheme="tertiary"
+								styleType="outline"
+								leftIcon={Network}>
+								Ver grafo
 							</StandardButton>
 						</Link>
 						<StandardButton
