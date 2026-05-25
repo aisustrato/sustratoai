@@ -8,13 +8,11 @@
 "use client";
 
 import { useMemo } from "react";
+import * as React from "react";
 import { useTheme } from "@/app/theme-provider";
-import type { NodoParrafo, Anotacion, CoincidenciaBusqueda } from "@/lib/mdj/types";
+import type { NodoParrafo, Anotacion, CoincidenciaBusqueda, NodoInline } from "@/lib/mdj/types";
 import { InlineRenderer } from "./InlineRenderer";
 import { AnotacionMarca } from "./AnotacionMarca";
-import { NotaTooltip } from "./NotaTooltip";
-import { FraseNotableTooltip } from "./FraseNotableTooltip";
-import { ReferenciaTooltip } from "./ReferenciaTooltip";
 
 /**
  * Marca visual para coincidencias de búsqueda — usa el color success del tema.
@@ -249,6 +247,328 @@ function construirSegmentos(
   return segmentos;
 }
 
+function renderizarSegmentosConInline(
+  segmentos: Segmento[],
+  inline: NodoInline[],
+  textoPlano: string,
+  callbacks: Record<string, unknown>,
+): React.ReactNode[] {
+  // Extraer rangos de anotación
+  const rangosAnotacion: Array<{ inicio: number; fin: number; seg: Segmento }> = [];
+  for (const seg of segmentos) {
+    if (seg.tipo === "anotacion" || seg.tipo === "anotacion_busqueda") {
+      const idx = textoPlano.indexOf(seg.contenido);
+      if (idx >= 0) {
+        rangosAnotacion.push({ inicio: idx, fin: idx + seg.contenido.length, seg });
+      }
+    }
+  }
+
+  if (rangosAnotacion.length === 0) {
+    return [<InlineRenderer key="full" inline={inline} />];
+  }
+
+  // Mapa de posición → segmento de anotación
+  const anotacionPorPos = new Map<number, Segmento>();
+  for (const r of rangosAnotacion) {
+    for (let p = r.inicio; p < r.fin; p++) {
+      anotacionPorPos.set(p, r.seg);
+    }
+  }
+
+  // Renderizar inline respetando anotaciones
+  return walkInlineWithAnnotations(inline, 0, anotacionPorPos, callbacks);
+}
+
+function leafLen(nodo: NodoInline): number {
+  if ("contenido" in nodo && typeof (nodo as { contenido: string }).contenido === "string") {
+    return (nodo as { contenido: string }).contenido.length;
+  }
+  if ("hijos" in nodo && Array.isArray(nodo.hijos)) {
+    return (nodo.hijos as NodoInline[]).reduce((s: number, h: NodoInline) => s + leafLen(h), 0);
+  }
+  return 0;
+}
+
+function walkInlineWithAnnotations(
+  inline: NodoInline[],
+  base: number,
+  am: Map<number, Segmento>,
+  cb: Record<string, unknown>,
+): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let k = 0, cur = base;
+  for (const n of inline) {
+    const len = leafLen(n), s = cur, e = s + len;
+    let annotated = false;
+    for (let p = s; p < e; p++) { if (am.has(p)) { annotated = true; break; } }
+    if (!annotated) {
+      out.push(<InlineRenderer key={k++} inline={[n]} />);
+    } else {
+      out.push(...walkNode(n, s, am, cb, k++));
+    }
+    cur = e;
+  }
+  return out;
+}
+
+function walkNode(
+  n: NodoInline,
+  base: number,
+  am: Map<number, Segmento>,
+  cb: Record<string, unknown>,
+  key: number,
+): React.ReactNode[] {
+  if ("contenido" in n && typeof (n as { contenido: string }).contenido === "string") {
+    return splitText((n as { contenido: string }).contenido, base, am, cb);
+  }
+  if ("hijos" in n && Array.isArray(n.hijos)) {
+    const kids = walkInlineWithAnnotations(n.hijos as NodoInline[], base, am, cb);
+    switch (n.tipo) {
+      case "negrita": return [<strong key={key}>{kids}</strong>];
+      case "cursiva": return [<em key={key}>{kids}</em>];
+      case "neg_cur": return [<strong key={key}><em>{kids}</em></strong>];
+      case "tachado": return [<del key={key}>{kids}</del>];
+      default: return kids;
+    }
+  }
+  return [<InlineRenderer key={key} inline={[n]} />];
+}
+
+function splitText(
+  txt: string,
+  base: number,
+  am: Map<number, Segmento>,
+  cb: Record<string, unknown>,
+): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let cur = 0, ik = 0;
+  while (cur < txt.length) {
+    const pos = base + cur;
+    const seg = am.get(pos);
+    if (!seg) {
+      let nxt = txt.length;
+      for (let p = pos; p < base + txt.length; p++) { if (am.has(p)) { nxt = p - base; break; } }
+      const t = txt.slice(cur, nxt);
+      if (t) out.push(<span key={`t${ik++}`}>{t}</span>);
+      cur = nxt;
+    } else {
+      let fin = txt.length;
+      for (let p = pos; p < base + txt.length; p++) { if (am.get(p) !== seg) { fin = p - base; break; } }
+      const at = txt.slice(cur, fin);
+      if (at) {
+        const a = (seg as { anotacion: Anotacion }).anotacion;
+        const activa = (cb as Record<string, unknown>).anotacionActiva === a.id;
+        const onClick = (cb as Record<string, unknown>).onAnotacionClick;
+        out.push(
+          <AnotacionMarca
+            key={`a${ik++}`}
+            colorScheme={a.tipo === "nota" ? "secondary" : a.tipo === "referencia" ? "tertiary" : "accent"}
+            activa={activa}
+            onClick={typeof onClick === "function" ? () => (onClick as (a: Anotacion) => void)(a) : undefined}
+          >
+            {at}
+          </AnotacionMarca>,
+        );
+      }
+      cur = fin;
+    }
+  }
+  return out;
+}
+
+// Función auxiliar que mide la longitud de texto de un NodoInline
+function longitudInline(nodo: NodoInline): number {
+  if ("contenido" in nodo && typeof (nodo as { contenido: string }).contenido === "string") {
+    return (nodo as { contenido: string }).contenido.length;
+  }
+  if ("hijos" in nodo && Array.isArray(nodo.hijos)) {
+    return nodo.hijos.reduce((sum: number, h: NodoInline) => sum + longitudInline(h), 0);
+  }
+  return 0;
+}
+
+/**
+ * Renderiza un array inline recorriendo posición por posición y envolviendo
+ * las partes anotadas con el tooltip correspondiente.
+ */
+function renderInlineConAnotaciones(
+  inline: NodoInline[],
+  offsetBase: number,
+  anotacionPorPos: Map<number, Segmento>,
+  textoPlano: string,
+  callbacks: {
+    anotacionActiva?: string | null;
+    onAnotacionClick?: (anotacion: Anotacion) => void;
+    onEditarNota?: (anotacion: Anotacion) => void;
+    onBorrarNota?: (anotacionId: string) => void;
+    onEditarReferencia?: (anotacion: Anotacion) => Promise<{ ok: boolean }>;
+    onBorrarReferencia?: (anotacionId: string) => Promise<{ ok: boolean }>;
+    onBorrarFraseNotable?: (anotacionId: string) => Promise<{ ok: boolean }>;
+  },
+): React.ReactNode[] {
+  const resultado: React.ReactNode[] = [];
+  let cursor = offsetBase;
+
+  for (let i = 0; i < inline.length; i++) {
+    const nodo = inline[i];
+    const len = longitudInline(nodo);
+    const start = cursor;
+    const end = cursor + len;
+
+    // Verificar si este nodo tiene alguna posición anotada
+    let tieneAnotacion = false;
+    for (let p = start; p < end; p++) {
+      if (anotacionPorPos.has(p)) {
+        tieneAnotacion = true;
+        break;
+      }
+    }
+
+    if (!tieneAnotacion) {
+      // Renderizar normal con InlineRenderer
+      resultado.push(<InlineRenderer key={i} inline={[nodo]} />);
+      cursor = end;
+      continue;
+    }
+
+    // Este nodo tiene anotación — necesitamos dividirlo
+    // Por simplicidad, procesamos los hijos si los tiene
+    if ("hijos" in nodo && Array.isArray(nodo.hijos)) {
+      resultado.push(
+        ...renderizarNodoAnotado(nodo, start, anotacionPorPos, textoPlano, callbacks, i),
+      );
+      cursor = end;
+      continue;
+    }
+
+    // Nodo hoja — dividir por segmentos de anotación
+    if ("contenido" in nodo && typeof nodo.contenido === "string") {
+      const partes = dividirTextoPorAnotaciones(
+        nodo.contenido, start, anotacionPorPos, textoPlano, callbacks,
+      );
+      resultado.push(...partes);
+      cursor = end;
+    } else {
+      resultado.push(<InlineRenderer key={i} inline={[nodo]} />);
+      cursor = end;
+    }
+  }
+
+  return resultado;
+}
+
+/**
+ * Renderiza un nodo inline que tiene anotaciones en su interior,
+ * recorriendo recursivamente sus hijos.
+ */
+function renderizarNodoAnotado(
+  nodo: NodoInline,
+  offsetBase: number,
+  anotacionPorPos: Map<number, Segmento>,
+  textoPlano: string,
+  callbacks: Parameters<typeof renderInlineConAnotaciones>[4],
+  key: number,
+): React.ReactNode[] {
+  // Caso hoja
+  if ("contenido" in nodo && typeof nodo.contenido === "string") {
+    return dividirTextoPorAnotaciones(
+      nodo.contenido, offsetBase, anotacionPorPos, textoPlano, callbacks,
+    );
+  }
+
+  // Nodo con hijos — renderizar hijos anotados y envolver
+  if ("hijos" in nodo && Array.isArray(nodo.hijos)) {
+    const hijosRender = renderInlineConAnotaciones(
+      nodo.hijos, offsetBase, anotacionPorPos, textoPlano, callbacks,
+    );
+
+    // Envolver según tipo
+    switch (nodo.tipo) {
+      case "negrita":
+        return [<strong key={key}>{hijosRender}</strong>];
+      case "cursiva":
+        return [<em key={key}>{hijosRender}</em>];
+      case "neg_cur":
+        return [<strong key={key}><em>{hijosRender}</em></strong>];
+      case "tachado":
+        return [<del key={key}>{hijosRender}</del>];
+      default:
+        return hijosRender;
+    }
+  }
+
+  return [<InlineRenderer key={key} inline={[nodo]} />];
+}
+
+/**
+ * Divide un texto plano en segmentos anotados/no anotados
+ * y los envuelve con tooltips según corresponda.
+ */
+function dividirTextoPorAnotaciones(
+  texto: string,
+  offsetBase: number,
+  anotacionPorPos: Map<number, Segmento>,
+  textoPlano: string,
+  callbacks: {
+    anotacionActiva?: string | null;
+    onAnotacionClick?: (anotacion: Anotacion) => void;
+    onEditarNota?: (anotacion: Anotacion) => void;
+    onBorrarNota?: (anotacionId: string) => void;
+    onEditarReferencia?: (anotacion: Anotacion) => Promise<{ ok: boolean }>;
+    onBorrarReferencia?: (anotacionId: string) => Promise<{ ok: boolean }>;
+    onBorrarFraseNotable?: (anotacionId: string) => Promise<{ ok: boolean }>;
+  },
+): React.ReactNode[] {
+  const partes: React.ReactNode[] = [];
+  let subCursor = 0;
+  let partIdx = 0;
+
+  while (subCursor < texto.length) {
+    const pos = offsetBase + subCursor;
+    const segAnot = anotacionPorPos.get(pos);
+
+    if (!segAnot) {
+      // Texto no anotado — avanzar hasta el próximo inicio de anotación
+      let nextAnot = texto.length;
+      for (let p = pos; p < offsetBase + texto.length; p++) {
+        if (anotacionPorPos.has(p)) {
+          nextAnot = p - offsetBase;
+          break;
+        }
+      }
+      const textoNormal = texto.slice(subCursor, nextAnot);
+      if (textoNormal) {
+        partes.push(<span key={`t-${partIdx++}`}>{textoNormal}</span>);
+      }
+      subCursor = nextAnot;
+    } else {
+      // Texto anotado — encontrar el final de esta anotación
+      // Calcular fin recorriendo hacia adelante hasta que cambie la anotación
+      let finRel = texto.length;
+      for (let p = pos; p < offsetBase + texto.length; p++) {
+        const seg = anotacionPorPos.get(p);
+        if (seg !== segAnot) {
+          finRel = p - offsetBase;
+          break;
+        }
+      }
+
+      const textoAnotado = texto.slice(subCursor, finRel);
+      if (textoAnotado) {
+        partes.push(
+          <span key={`a-${partIdx++}`} className="bg-yellow-200 dark:bg-yellow-700/30 rounded px-0.5">
+            {textoAnotado}
+          </span>,
+        );
+      }
+      subCursor = finRel;
+    }
+  }
+
+  return partes;
+}
+
 export function NodoParrafoView({
   nodo,
   anotaciones,
@@ -281,117 +601,14 @@ export function NodoParrafoView({
 
   return (
     <p className="leading-relaxed mb-4 text-base" data-nodo-id={nodo.id}>
-      {segmentos.map((seg, i) => {
-        switch (seg.tipo) {
-          case "texto":
-            return <span key={i}>{seg.contenido}</span>;
-
-          case "anotacion":
-            // Notas → tooltip interactivo con editar/borrar
-            if (seg.anotacion.tipo === "nota") {
-              return (
-                <NotaTooltip
-                  key={i}
-                  anotacion={seg.anotacion}
-                  activa={anotacionActiva === seg.anotacion.id}
-                  onEditar={onEditarNota}
-                  onBorrar={onBorrarNota}
-                />
-              );
-            }
-            // Referencias → tooltip con editar/borrar + callback externo
-            if (seg.anotacion.tipo === "referencia") {
-              return (
-                <ReferenciaTooltip
-                  key={i}
-                  anotacion={seg.anotacion}
-                  activa={anotacionActiva === seg.anotacion.id}
-                  onEditar={onEditarReferencia}
-                  onBorrar={onBorrarReferencia}
-                />
-              );
-            }
-            // Frases notables → tooltip con borrar + callback externo
-            if (seg.anotacion.tipo === "frase_notable") {
-              return (
-                <FraseNotableTooltip
-                  key={i}
-                  anotacion={seg.anotacion}
-                  activa={anotacionActiva === seg.anotacion.id}
-                  onBorrar={onBorrarFraseNotable}
-                />
-              );
-            }
-            // Fallback para otros tipos
-            return (
-              <AnotacionMarca
-                key={i}
-                colorScheme="neutral"
-                activa={anotacionActiva === seg.anotacion.id}
-                onClick={() => onAnotacionClick?.(seg.anotacion)}
-              >
-                {seg.contenido}
-              </AnotacionMarca>
-            );
-
-          case "busqueda":
-            return (
-              <BusquedaMarca
-                key={i}
-                activa={seg.activa}
-              >
-                {seg.contenido}
-              </BusquedaMarca>
-            );
-
-          case "anotacion_busqueda":
-            // Notas → tooltip interactivo
-            if (seg.anotacion.tipo === "nota") {
-              return (
-                <NotaTooltip
-                  key={i}
-                  anotacion={seg.anotacion}
-                  activa={anotacionActiva === seg.anotacion.id}
-                  onEditar={onEditarNota}
-                  onBorrar={onBorrarNota}
-                />
-              );
-            }
-            // Referencias → tooltip con editar/borrar
-            if (seg.anotacion.tipo === "referencia") {
-              return (
-                <ReferenciaTooltip
-                  key={i}
-                  anotacion={seg.anotacion}
-                  activa={anotacionActiva === seg.anotacion.id}
-                  onEditar={onEditarReferencia}
-                  onBorrar={onBorrarReferencia}
-                />
-              );
-            }
-            // Frases notables → tooltip con borrar
-            if (seg.anotacion.tipo === "frase_notable") {
-              return (
-                <FraseNotableTooltip
-                  key={i}
-                  anotacion={seg.anotacion}
-                  activa={anotacionActiva === seg.anotacion.id}
-                  onBorrar={onBorrarFraseNotable}
-                />
-              );
-            }
-            // Fallback
-            return (
-              <AnotacionMarca
-                key={i}
-                colorScheme="neutral"
-                activa={anotacionActiva === seg.anotacion.id}
-                onClick={() => onAnotacionClick?.(seg.anotacion)}
-              >
-                {seg.contenido}
-              </AnotacionMarca>
-            );
-        }
+      {renderizarSegmentosConInline(segmentos, nodo.inline, nodo.texto_plano, {
+        anotacionActiva,
+        onAnotacionClick,
+        onEditarNota,
+        onBorrarNota,
+        onEditarReferencia,
+        onBorrarReferencia,
+        onBorrarFraseNotable,
       })}
     </p>
   );

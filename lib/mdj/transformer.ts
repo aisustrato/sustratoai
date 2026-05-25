@@ -34,6 +34,15 @@ import { extraerTextoPlano } from "./texto-plano";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
+/** Extrae line_inicio/line_fin de la posición de un nodo MDAST */
+function extraerLineas(node: { position?: { start: { line: number }; end: { line: number } } }) {
+  if (!node.position) return {};
+  return {
+    line_inicio: node.position.start.line,
+    line_fin: node.position.end.line,
+  };
+}
+
 /** Convierte phrasing content MDAST a nuestros NodoInline[] */
 function convertirInline(children: PhrasingContent[]): NodoInline[] {
   const resultado: NodoInline[] = [];
@@ -138,7 +147,7 @@ function textoCelda(children: PhrasingContent[]): string {
 // ── Conversión de nodos hoja ─────────────────────────────────────────────
 
 function convertirParrafo(
-  paragraph: { type: "paragraph"; children: PhrasingContent[] },
+  paragraph: { type: "paragraph"; children: PhrasingContent[]; position?: { start: { line: number }; end: { line: number } } },
   id: string,
   indice: number,
 ): NodoParrafo {
@@ -149,11 +158,12 @@ function convertirParrafo(
     indice_global: indice,
     inline,
     texto_plano: extraerTextoPlano(inline),
+    ...extraerLineas(paragraph),
   };
 }
 
 function convertirLista(
-  listNode: { type: "list"; ordered: boolean; children: { type: "listItem"; children: Content[] }[] },
+  listNode: { type: "list"; ordered: boolean; children: { type: "listItem"; children: Content[] }[]; position?: { start: { line: number }; end: { line: number } } },
   id: string,
   indice: number,
   generador: GeneradorIds,
@@ -188,16 +198,17 @@ function convertirLista(
       inline,
       texto_plano: extraerTextoPlano(inline),
       hijos: subListas.length > 0 ? subListas : undefined,
+      ...extraerLineas(itemMdast as { position?: { start: { line: number }; end: { line: number } } }),
     });
 
     itemIdx++;
   }
 
-  return { id, tipo, indice_global: indice, items };
+  return { id, tipo, indice_global: indice, items, ...extraerLineas(listNode) };
 }
 
 function convertirTabla(
-  tableNode: { type: "table"; children: { type: "tableRow"; children: { type: "tableCell"; children: PhrasingContent[] }[] }[] },
+  tableNode: { type: "table"; children: { type: "tableRow"; children: { type: "tableCell"; children: PhrasingContent[] }[] }[]; position?: { start: { line: number }; end: { line: number } } },
   id: string,
   indice: number,
 ): NodoTabla {
@@ -218,11 +229,11 @@ function convertirTabla(
     }
   }
 
-  return { id, tipo: "tbl", indice_global: indice, headers, filas };
+  return { id, tipo: "tbl", indice_global: indice, headers, filas, ...extraerLineas(tableNode) };
 }
 
 function convertirCodigo(
-  codeNode: { type: "code"; lang?: string | null; value: string },
+  codeNode: { type: "code"; lang?: string | null; value: string; position?: { start: { line: number }; end: { line: number } } },
   id: string,
   indice: number,
 ): NodoCodigo {
@@ -232,11 +243,12 @@ function convertirCodigo(
     indice_global: indice,
     lenguaje: codeNode.lang ?? undefined,
     contenido: codeNode.value,
+    ...extraerLineas(codeNode),
   };
 }
 
 function convertirLatex(
-  mathNode: { type: "math"; value: string },
+  mathNode: { type: "math"; value: string; position?: { start: { line: number }; end: { line: number } } },
   id: string,
   indice: number,
 ): NodoLatex {
@@ -246,6 +258,7 @@ function convertirLatex(
     indice_global: indice,
     contenido: mathNode.value,
     modo: "bloque",
+    ...extraerLineas(mathNode),
   };
 }
 
@@ -317,6 +330,7 @@ function convertirNodoContenido(
           indice_global: idx,
           inline: [{ tipo: "texto", contenido: textoCompleto }],
           texto_plano: textoCompleto,
+          ...extraerLineas(node as { position?: { start: { line: number }; end: { line: number } } }),
         };
       }
       return null;
@@ -384,6 +398,7 @@ function procesarHijosSeccion(
           indice_global: siguienteIndice(),
           texto,
           hijos: procesarHijosSeccion(hijosH2, generadorH2, 2),
+          ...extraerLineas(node as { position?: { start: { line: number }; end: { line: number } } }),
         };
         resultado.push(h2);
         continue;
@@ -411,6 +426,7 @@ function procesarHijosSeccion(
           hijos: hijosH3
             .map((c) => convertirNodoContenido(c, generadorH3))
             .filter((n): n is NodoHoja => n !== null),
+          ...extraerLineas(node as { position?: { start: { line: number }; end: { line: number } } }),
         };
         resultado.push(h3);
         continue;
@@ -485,6 +501,7 @@ export function transformarMDASTaMDJ(
         indice_global: siguienteIndice(),
         texto,
         hijos: procesarHijosSeccion(hijosH1, generadorH1, 1),
+        ...extraerLineas(node as { position?: { start: { line: number }; end: { line: number } } }),
       };
       nodos.push(h1);
     } else {

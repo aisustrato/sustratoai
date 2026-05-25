@@ -71,6 +71,10 @@ export type NodoBase = {
   id: string;
   tipo: TipoNodo;
   indice_global: number;
+  /** Primera línea del MD fuente que ocupa este nodo (1-indexed) */
+  line_inicio?: number;
+  /** Última línea del MD fuente que ocupa este nodo (1-indexed) */
+  line_fin?: number;
   anotaciones?: Anotacion[];
 };
 
