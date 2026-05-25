@@ -10,12 +10,11 @@ import {
 	FileText,
 	Loader2,
 	Eye,
-	FileImage,
 	AlertTriangle,
 } from "lucide-react";
 import {
 	listArtifactPagesV2,
-	getPageImageUrlV2,
+	getPagePdfUrlV2,
 } from "@/lib/actions/cognetica-forense-slides-actions";
 import { toast } from "sonner";
 
@@ -31,24 +30,32 @@ interface PageData {
 	markdown_original?: string;
 }
 
-type ViewMode = "image" | "text";
+type ViewMode = "pdf" | "text";
+
+// PDF viewer params para ocultar el toolbar nativo y ajustar al ancho del
+// contenedor. Funcionan en PDFium (Chrome/Edge) y en el visor de Firefox
+// (pdf.js interno). Safari ignora algunos parámetros pero igual renderiza.
+const PDF_VIEW_PARAMS = "#toolbar=0&navpanes=0&view=FitH";
 
 export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 	const [pages, setPages] = useState<PageData[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [currentPageIndex, setCurrentPageIndex] = useState(0);
-	const [viewMode, setViewMode] = useState<ViewMode>("image");
+	const [viewMode, setViewMode] = useState<ViewMode>("pdf");
 	const [isExporting, setIsExporting] = useState(false);
 	const [isExportingImages, setIsExportingImages] = useState(false);
-	const [pageLoading, setPageLoading] = useState(false);
 	const [retrying, setRetrying] = useState(false);
 
-	// Cache de URLs firmadas de imágenes
-	const [imageUrls, setImageUrls] = useState<Record<number, string>>({});
-	// Páginas que fallaron al cargar su imagen
-	const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
-	// Páginas que ya se intentaron (éxito o fallo)
-	const attemptedImages = useRef<Set<number>>(new Set());
+	// Cache de URLs firmadas de PDFs por página (antes eran imágenes PNG,
+	// pero la rasterización server-side con pdfjs-dist fallaba silenciosa
+	// — TypeError "Image or Canvas expected" capturado como "no crítico".
+	// Reemplazado por embedding del PDF de cada página vía iframe nativo
+	// del browser: render vectorial perfecto, sin lib pesada en cliente).
+	const [pdfUrls, setPdfUrls] = useState<Record<number, string>>({});
+	// Páginas que fallaron al cargar su URL firmada del PDF.
+	const [pdfErrors, setPdfErrors] = useState<Set<number>>(new Set());
+	// Páginas que ya se intentaron (éxito o fallo).
+	const attemptedPdfs = useRef<Set<number>>(new Set());
 
 	const handleExportPdf = async () => {
 		setIsExporting(true);
@@ -137,102 +144,97 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 		loadPages();
 	}, [artefactoId]);
 
-	// Generar URLs firmadas de imágenes (prioridad: actual + adyacentes)
-	const loadImageForPage = useCallback(async (pageNumber: number): Promise<string | null> => {
-		if (attemptedImages.current.has(pageNumber)) return null;
-		attemptedImages.current.add(pageNumber);
+	// Obtener URL firmada del PDF de una página. `getPagePdfUrlV2` recibe
+	// el `pdf_storage_path` (no el pageNumber) — viene en el objeto
+	// `PageData` resuelto por `listArtifactPagesV2`.
+	const loadPdfForPage = useCallback(
+		async (page: PageData): Promise<string | null> => {
+			if (!page.pdf_storage_path) {
+				setPdfErrors((prev) => new Set(prev).add(page.pageNumber));
+				return null;
+			}
+			if (attemptedPdfs.current.has(page.pageNumber)) return null;
+			attemptedPdfs.current.add(page.pageNumber);
 
-		const result = await getPageImageUrlV2(artefactoId, pageNumber);
-		if (result.success) {
-			return result.data.signedUrl;
-		}
-		// Registrar error para esta página
-		setImageErrors((prev) => new Set(prev).add(pageNumber));
-		return null;
-	}, [artefactoId]);
+			const result = await getPagePdfUrlV2(page.pdf_storage_path);
+			if (result.success) {
+				return result.data.signedUrl;
+			}
+			setPdfErrors((prev) => new Set(prev).add(page.pageNumber));
+			return null;
+		},
+		[],
+	);
 
-	// Reintentar cargar la imagen de una página específica
-	const retryPageImage = useCallback(async (pageNumber: number) => {
-		setRetrying(true);
-		// Limpiar estado de error e intento previo para esta página
-		attemptedImages.current.delete(pageNumber);
-		setImageErrors((prev) => {
-			const next = new Set(prev);
-			next.delete(pageNumber);
-			return next;
-		});
+	// Reintentar cargar el PDF de una página específica.
+	const retryPagePdf = useCallback(
+		async (page: PageData) => {
+			setRetrying(true);
+			attemptedPdfs.current.delete(page.pageNumber);
+			setPdfErrors((prev) => {
+				const next = new Set(prev);
+				next.delete(page.pageNumber);
+				return next;
+			});
 
-		const url = await loadImageForPage(pageNumber);
-		if (url) {
-			setImageUrls((prev) => ({ ...prev, [pageNumber]: url }));
-			toast.success(`Imagen de página ${pageNumber} cargada`);
-		} else {
-			toast.error(`No se pudo cargar la imagen de la página ${pageNumber}`);
-		}
-		setRetrying(false);
-	}, [loadImageForPage]);
+			const url = await loadPdfForPage(page);
+			if (url) {
+				setPdfUrls((prev) => ({ ...prev, [page.pageNumber]: url }));
+				toast.success(`PDF de página ${page.pageNumber} cargado`);
+			} else {
+				toast.error(`No se pudo cargar el PDF de la página ${page.pageNumber}`, {
+					duration: Infinity,
+				});
+			}
+			setRetrying(false);
+		},
+		[loadPdfForPage],
+	);
 
+	// Precargar URL firmada del actual + adyacentes (prev/next) para
+	// transición sin lag al cambiar de página.
 	useEffect(() => {
-		async function loadImages() {
+		async function loadAdjacent() {
 			if (pages.length === 0) return;
-
-			// Prioridad: actual, anterior, siguiente
 			const indicesToLoad = [currentPageIndex];
 			if (currentPageIndex > 0) indicesToLoad.push(currentPageIndex - 1);
 			if (currentPageIndex < pages.length - 1)
 				indicesToLoad.push(currentPageIndex + 1);
 
 			const newUrls: Record<number, string> = {};
-
 			for (const idx of indicesToLoad) {
 				const page = pages[idx];
 				if (!page) continue;
-				const url = await loadImageForPage(page.pageNumber);
+				const url = await loadPdfForPage(page);
 				if (url) newUrls[page.pageNumber] = url;
 			}
 
 			if (Object.keys(newUrls).length > 0) {
-				setImageUrls((prev) => ({ ...prev, ...newUrls }));
+				setPdfUrls((prev) => ({ ...prev, ...newUrls }));
 			}
 		}
 
-		loadImages();
+		loadAdjacent();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [currentPageIndex, pages]);
 
-	// Cargar resto de imágenes en background
+	// Precarga del resto en background (sin bloquear la UI).
 	useEffect(() => {
-		async function loadRemainingImages() {
+		async function loadRemaining() {
 			if (pages.length === 0) return;
-
 			const newUrls: Record<number, string> = {};
-
 			for (const page of pages) {
-				const url = await loadImageForPage(page.pageNumber);
+				const url = await loadPdfForPage(page);
 				if (url) newUrls[page.pageNumber] = url;
 			}
-
 			if (Object.keys(newUrls).length > 0) {
-				setImageUrls((prev) => ({ ...prev, ...newUrls }));
+				setPdfUrls((prev) => ({ ...prev, ...newUrls }));
 			}
 		}
-
-		const timeout = setTimeout(loadRemainingImages, 500);
+		const timeout = setTimeout(loadRemaining, 500);
 		return () => clearTimeout(timeout);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [pages]);
-
-	// Reset loading cuando cambia página
-	useEffect(() => {
-		setPageLoading(true);
-		const page = pages[currentPageIndex];
-		if (page && imageUrls[page.pageNumber]) {
-			const timeout = setTimeout(() => setPageLoading(false), 100);
-			return () => clearTimeout(timeout);
-		} else {
-			setPageLoading(false);
-		}
-	}, [currentPageIndex, pages, imageUrls]);
 
 	if (loading) {
 		return (
@@ -259,8 +261,10 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 	const currentPage = pages[currentPageIndex];
 	const canGoPrev = currentPageIndex > 0;
 	const canGoNext = currentPageIndex < pages.length - 1;
-	const currentImageUrl = currentPage ? imageUrls[currentPage.pageNumber] : null;
-	const currentPageHasError = currentPage ? imageErrors.has(currentPage.pageNumber) : false;
+	const currentPdfUrl = currentPage ? pdfUrls[currentPage.pageNumber] : null;
+	const currentPageHasError = currentPage
+		? pdfErrors.has(currentPage.pageNumber)
+		: false;
 
 	return (
 		<div className="bg-card rounded-xl border shadow-sm overflow-hidden">
@@ -303,10 +307,10 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 							colorScheme="primary"
 							size="sm"
 							onClick={() =>
-								setViewMode(viewMode === "image" ? "text" : "image")
+								setViewMode(viewMode === "pdf" ? "text" : "pdf")
 							}
-							leftIcon={viewMode === "image" ? Eye : FileImage}>
-							{viewMode === "image" ? "Ver Texto" : "Ver Imagen"}
+							leftIcon={viewMode === "pdf" ? Eye : FileText}>
+							{viewMode === "pdf" ? "Ver Texto" : "Ver PDF"}
 						</StandardButton>
 					</div>
 				</div>
@@ -337,20 +341,19 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 			</div>
 
 			{/* Contenido */}
-			<div className="p-6 max-h-[700px] overflow-y-auto bg-muted/20">
-				{viewMode === "image" ?
-					currentPageHasError && !currentImageUrl ?
-						// Error cargando imagen específica
+			<div className="p-6 bg-muted/20">
+				{viewMode === "pdf" ? (
+					currentPageHasError && !currentPdfUrl ? (
 						<div className="flex flex-col items-center justify-center gap-3 py-12">
 							<AlertTriangle className="w-8 h-8 text-warning" />
 							<p className="text-sm text-muted-foreground">
-								No se pudo cargar la imagen de la página {currentPage.pageNumber}
+								No se pudo cargar el PDF de la página {currentPage.pageNumber}
 							</p>
 							<div className="flex gap-2">
 								<StandardButton
 									colorScheme="primary"
 									size="sm"
-									onClick={() => retryPageImage(currentPage.pageNumber)}
+									onClick={() => retryPagePdf(currentPage)}
 									disabled={retrying}
 									leftIcon={retrying ? Loader2 : undefined}>
 									{retrying ? "Reintentando..." : "Reintentar"}
@@ -363,76 +366,80 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 								</StandardButton>
 							</div>
 						</div>
-					: pageLoading || !currentImageUrl ?
+					) : !currentPdfUrl ? (
 						<div className="flex flex-col items-center gap-3 py-12">
 							<Loader2 className="w-8 h-8 animate-spin text-primary" />
 							<p className="text-sm text-muted-foreground">
-								Cargando imagen...
+								Cargando PDF...
 							</p>
 						</div>
-					:	// eslint-disable-next-line @next/next/no-img-element
-						<img
-							src={currentImageUrl}
-							alt={`Página ${currentPage.pageNumber}`}
-							className="max-w-full h-auto rounded-lg shadow-lg border"
-							style={{ maxHeight: 600 }}
+					) : (
+						// Visor nativo del browser. PDFium (Chrome/Edge) y pdf.js
+						// (Firefox) renderean vectorial + permiten zoom y scroll
+						// gestual. El #toolbar=0&navpanes=0&view=FitH oculta los
+						// controles internos y ajusta al ancho del contenedor.
+						// `key` con la URL fuerza remount al cambiar de página —
+						// algunos browsers no recargan el iframe con solo cambiar
+						// `src` en runtime.
+						<iframe
+							key={currentPdfUrl}
+							src={`${currentPdfUrl}${PDF_VIEW_PARAMS}`}
+							title={`Página ${currentPage.pageNumber}`}
+							className="w-full rounded-lg border bg-white"
+							style={{ height: "70vh", minHeight: 480 }}
 						/>
+					)
+				) : (
 					// Vista de texto markdown
-				:	<div className="bg-background rounded-lg shadow-sm">
-						{currentPage.markdown_original ?
+					<div className="bg-background rounded-lg shadow-sm">
+						{currentPage.markdown_original ? (
 							<StandardMarkdownViewer
 								content={currentPage.markdown_original}
 								expandAll={false}
 							/>
-						:	<div className="p-12 text-center">
+						) : (
+							<div className="p-12 text-center">
 								<p className="text-muted-foreground italic">
 									Esta lámina no tiene contenido de texto extraído
 								</p>
 							</div>
-						}
+						)}
 					</div>
-				}
+				)}
 			</div>
 
-			{/* Footer con miniaturas */}
+			{/* Footer con miniaturas — sin preview visual del PDF (cada PDF
+			    embedido en un thumbnail sería pesado para 13+ páginas).
+			    Mostramos solo el número, marcamos error y resaltamos actual. */}
 			<div className="bg-muted/30 px-4 py-3 border-t">
 				<div className="flex gap-2 overflow-x-auto pb-2">
 					{pages.map((page, index) => {
-						const imgUrl = imageUrls[page.pageNumber];
-						const hasError = imageErrors.has(page.pageNumber);
+						const hasError = pdfErrors.has(page.pageNumber);
+						const isCurrent = index === currentPageIndex;
 						return (
 							<button
 								key={page.pageId}
 								onClick={() => setCurrentPageIndex(index)}
+								type="button"
 								className={`
-									flex-shrink-0 relative group transition-all
+									flex-shrink-0 relative transition-all
 									rounded-lg overflow-hidden border-2
-									w-24 h-16
+									w-16 h-16 flex items-center justify-center
 									${
-										index === currentPageIndex ?
-											"ring-2 ring-primary ring-offset-2 border-primary"
-										: hasError ?
-											"border-warning/50 hover:border-warning"
-										:	"border-border hover:border-primary/50"
+										isCurrent
+											? "ring-2 ring-primary ring-offset-2 border-primary bg-primary/10"
+											: hasError
+												? "border-warning/50 hover:border-warning bg-warning/5"
+												: "border-border hover:border-primary/50 bg-muted"
 									}
 								`}>
-								{imgUrl ?
-									// eslint-disable-next-line @next/next/no-img-element
-									<img
-										src={imgUrl}
-										alt={`Miniatura ${page.pageNumber}`}
-										className="w-full h-full object-cover"
-									/>
-								: hasError ?
-									<div className="w-full h-full flex items-center justify-center bg-warning/10">
-										<AlertTriangle className="w-4 h-4 text-warning" />
-									</div>
-								:	<div className="w-full h-full flex items-center justify-center bg-muted">
-										<span className="text-xs text-muted-foreground font-medium">
-											{page.pageNumber}
-										</span>
-									</div>
-								}
+								{hasError ? (
+									<AlertTriangle className="w-4 h-4 text-warning" />
+								) : (
+									<span className="text-sm text-muted-foreground font-medium">
+										{page.pageNumber}
+									</span>
+								)}
 							</button>
 						);
 					})}
