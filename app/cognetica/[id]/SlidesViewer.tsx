@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardMarkdownViewer } from "@/components/ui/StandardMarkdownViewer";
 import {
@@ -45,6 +46,11 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 	const [isExporting, setIsExporting] = useState(false);
 	const [isExportingImages, setIsExportingImages] = useState(false);
 	const [retrying, setRetrying] = useState(false);
+	// Aspect ratio del PDF (width/height). Default 16/9 — el más común en
+	// slides modernas. Se detecta del primer PDF disponible con pdfjs-dist
+	// y se aplica al viewer principal + thumbnails para que coincidan con
+	// la geometría real de las láminas sin dejar bandas vacías.
+	const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
 
 	// Cache de URLs firmadas de PDFs por página (antes eran imágenes PNG,
 	// pero la rasterización server-side con pdfjs-dist fallaba silenciosa
@@ -218,6 +224,42 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [currentPageIndex, pages]);
 
+	// Detectar aspect ratio real del PDF (width / height) usando pdf-lib.
+	// Se hace una sola vez por artefacto, sobre la primera URL firmada que
+	// llegue. pdf-lib es liviana y no necesita worker, así que para sólo
+	// leer dimensiones es más simple que pdfjs-dist en cliente.
+	const aspectDetectedRef = useRef(false);
+	useEffect(() => {
+		if (aspectDetectedRef.current) return;
+		const firstUrl = Object.values(pdfUrls)[0];
+		if (!firstUrl) return;
+		aspectDetectedRef.current = true;
+
+		void (async () => {
+			try {
+				const { PDFDocument } = await import("pdf-lib");
+				const res = await fetch(firstUrl);
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				const buffer = await res.arrayBuffer();
+				const pdf = await PDFDocument.load(buffer, {
+					ignoreEncryption: true,
+				});
+				const page = pdf.getPage(0);
+				const { width, height } = page.getSize();
+				if (width > 0 && height > 0) {
+					setAspectRatio(width / height);
+				}
+			} catch (err) {
+				// No bloqueante: si falla, queda el default 16/9. Logueamos
+				// con prefijo para no fallar silenciosamente.
+				console.error(
+					"[SlidesViewer:detectAspectRatio] No se pudo leer dimensiones del PDF, usando 16/9:",
+					err,
+				);
+			}
+		})();
+	}, [pdfUrls]);
+
 	// Precarga del resto en background (sin bloquear la UI).
 	useEffect(() => {
 		async function loadRemaining() {
@@ -381,13 +423,25 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 						// `key` con la URL fuerza remount al cambiar de página —
 						// algunos browsers no recargan el iframe con solo cambiar
 						// `src` en runtime.
-						<iframe
-							key={currentPdfUrl}
-							src={`${currentPdfUrl}${PDF_VIEW_PARAMS}`}
-							title={`Página ${currentPage.pageNumber}`}
-							className="w-full rounded-lg border bg-white"
-							style={{ height: "70vh", minHeight: 480 }}
-						/>
+						//
+						// El contenedor usa el aspect ratio real del PDF (detectado
+						// con pdf-lib) — sin esto, slides 16:9 mostraban en cuadrado
+						// con franja vacía abajo. `maxHeight: 80vh` evita overflow
+						// vertical en PDFs muy verticales.
+						<div
+							className="mx-auto w-full bg-white rounded-lg border shadow-sm overflow-hidden"
+							style={{
+								aspectRatio: aspectRatio,
+								maxHeight: "80vh",
+							}}>
+							<iframe
+								key={currentPdfUrl}
+								src={`${currentPdfUrl}${PDF_VIEW_PARAMS}`}
+								title={`Página ${currentPage.pageNumber}`}
+								className="w-full h-full block"
+								style={{ border: "none" }}
+							/>
+						</div>
 					)
 				) : (
 					// Vista de texto markdown
@@ -408,9 +462,11 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 				)}
 			</div>
 
-			{/* Footer con miniaturas — sin preview visual del PDF (cada PDF
-			    embedido en un thumbnail sería pesado para 13+ páginas).
-			    Mostramos solo el número, marcamos error y resaltamos actual. */}
+			{/* Footer con miniaturas — sin preview visual del PDF (embeber 13+
+			    iframes sería pesado). Usan el mismo aspect ratio que el viewer
+			    principal para previsualizar geometría real de la lámina, y un
+			    StandardBadge en la parte inferior con el número de página
+			    (legible sobre cualquier fondo del tema). */}
 			<div className="bg-muted/30 px-4 py-3 border-t">
 				<div className="flex gap-2 overflow-x-auto pb-2">
 					{pages.map((page, index) => {
@@ -424,7 +480,7 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 								className={`
 									flex-shrink-0 relative transition-all
 									rounded-lg overflow-hidden border-2
-									w-16 h-16 flex items-center justify-center
+									flex items-end justify-center pb-1
 									${
 										isCurrent
 											? "ring-2 ring-primary ring-offset-2 border-primary bg-primary/10"
@@ -432,13 +488,20 @@ export function SlidesViewer({ artefactoId }: SlidesViewerProps) {
 												? "border-warning/50 hover:border-warning bg-warning/5"
 												: "border-border hover:border-primary/50 bg-muted"
 									}
-								`}>
+								`}
+								style={{
+									aspectRatio: aspectRatio,
+									height: 72,
+								}}>
 								{hasError ? (
-									<AlertTriangle className="w-4 h-4 text-warning" />
+									<AlertTriangle className="w-4 h-4 text-warning mb-1" />
 								) : (
-									<span className="text-sm text-muted-foreground font-medium">
+									<StandardBadge
+										colorScheme={isCurrent ? "primary" : "neutral"}
+										styleType="solid"
+										size="2xs">
 										{page.pageNumber}
-									</span>
+									</StandardBadge>
 								)}
 							</button>
 						);

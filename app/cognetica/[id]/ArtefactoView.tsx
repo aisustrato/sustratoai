@@ -73,6 +73,9 @@ import {
 import { listarMencionesPorArtefacto } from "@/lib/actions/cognetica-forense-menciones-actions";
 import { listarReferenciasPorArtefacto } from "@/lib/actions/cognetica-forense-referencias-actions";
 import { DIMENSIONES } from "@/lib/cognetica-forense/ui/menciones-ui-helpers";
+import { mensajeAmigableDeError } from "@/lib/cognetica-forense/error-amigable";
+import { StandardDialog } from "@/components/ui/StandardDialog";
+import { Info } from "lucide-react";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -529,6 +532,10 @@ function construirMDNucleoView(n: CgtNucleo): string {
  * estado global pasa a `metabolizado` o `error`.
  */
 export function ArtefactoView({ data }: ArtefactoViewProps) {
+	// Dialog "Ver detalle técnico" para el alert de error cuando el
+	// artefacto está en estado=error. Permite acceder al código crudo
+	// (TRANSCRIPTION_ERROR, LLM_ERROR, etc.) si el usuario quiere debug.
+	const [verDetalleErrorAbierto, setVerDetalleErrorAbierto] = useState(false);
 	const router = useRouter();
 	const { proyectoActual } = useAuth();
 	const { artefacto } = data;
@@ -1074,16 +1081,69 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 					</div>
 				</StandardCard.Header>
 
-				{artefacto.estado === "error" && artefacto.error_mensaje && (
-					<StandardCard.Content>
-						<StandardAlert
-							colorScheme="danger"
-							styleType="subtle"
-							title="Error en metabolización"
-							message={artefacto.error_mensaje}
-						/>
-					</StandardCard.Content>
-				)}
+				{artefacto.estado === "error" && artefacto.error_mensaje && (() => {
+					const amigable = mensajeAmigableDeError(artefacto.error_mensaje);
+					return (
+						<StandardCard.Content>
+							<StandardAlert
+								colorScheme="danger"
+								styleType="subtle"
+								title={amigable.titulo}
+								message={amigable.descripcion}
+							/>
+							<div className="mt-3 flex flex-wrap gap-2">
+								<StandardButton
+									size="sm"
+									styleType="ghost"
+									colorScheme="danger"
+									leftIcon={Info}
+									onClick={() => setVerDetalleErrorAbierto(true)}>
+									Ver detalle técnico
+								</StandardButton>
+							</div>
+							<StandardDialog
+								open={verDetalleErrorAbierto}
+								onOpenChange={setVerDetalleErrorAbierto}>
+								<StandardDialog.Content colorScheme="danger" size="md">
+									<StandardDialog.Header>
+										<StandardDialog.Title>{amigable.titulo}</StandardDialog.Title>
+									</StandardDialog.Header>
+									<StandardDialog.Body className="space-y-4">
+										<StandardText size="sm">{amigable.descripcion}</StandardText>
+										<div>
+											<StandardText
+												size="xs"
+												colorScheme="neutral"
+												weight="medium"
+												className="mb-1">
+												Detalle técnico
+											</StandardText>
+											<div className="p-3 rounded-md bg-neutral-bg/50 border border-neutral-border font-mono text-xs break-words">
+												{artefacto.error_mensaje}
+											</div>
+											<StandardText
+												size="xs"
+												colorScheme="neutral"
+												className="mt-1 opacity-70">
+												Artefacto: {artefacto.id}
+											</StandardText>
+										</div>
+									</StandardDialog.Body>
+									<StandardDialog.Footer>
+										<StandardDialog.Close asChild>
+											<StandardButton
+												size="sm"
+												colorScheme="neutral"
+												styleType="ghost">
+												Cerrar
+											</StandardButton>
+										</StandardDialog.Close>
+									</StandardDialog.Footer>
+								</StandardDialog.Content>
+							</StandardDialog>
+						</StandardCard.Content>
+					);
+				})()}
 
 				{/* SHA ahora en el título de página */}
 			</StandardCard>
