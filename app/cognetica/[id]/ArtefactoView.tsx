@@ -1216,8 +1216,13 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 			 * Layout: en pantallas ≥lg se muestra como sidebar vertical
 			 * a la derecha del acordeón principal.
 			 */}
-			<div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
-				{/* Columna principal: Acordeón de 5 secciones + Referencias */}
+			<div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+				{/* Columna principal: Acordeón de 5 secciones + Referencias.
+				    `minmax(0,1fr)` (en lugar de `1fr`) evita que la columna
+				    se expanda al min-content de sus hijos cuando éstos tienen
+				    overflow horizontal interno (p.ej. la fila de miniaturas
+				    del SlidesViewer con `flex-shrink-0`). Sin esto, el card
+				    del SlidesViewer reventaba el viewport por ~119px. */}
 				<StandardAccordion type="multiple" styleType="subtle" defaultValue={["original"]}>
 				<StandardAccordionItem value="original" colorScheme="neutral">
 					<StandardAccordionTrigger>
@@ -1460,29 +1465,11 @@ function SeccionOriginal({
 
 			{esPdfSlides ? (
 				pdfSlidesInfo?.paginas?.length ?
-					<div className="space-y-3">
-						{!(artefacto.metadata as Record<string, unknown>)?.has_images && (
-							<StandardAlert
-								colorScheme="warning"
-								styleType="subtle"
-								title="Imágenes no generadas"
-								message="Las imágenes de las láminas no se generaron correctamente. Puedes regenerarlas manualmente."
-							/>
-						)}
-						<SlidesViewer artefactoId={artefacto.id} />
-						{!(artefacto.metadata as Record<string, unknown>)?.has_images && (
-							<div className="flex justify-end">
-								<StandardButton
-									colorScheme="warning"
-									size="sm"
-									onClick={handleRegenerarImagenes}
-									disabled={regenerando}
-									leftIcon={regenerando ? Loader2 : undefined}>
-									{regenerando ? "Regenerando..." : "Regenerar imágenes"}
-								</StandardButton>
-							</div>
-						)}
-					</div>
+					// El visor muestra cada lámina como PDF embedido directamente
+					// (sin pasar por rasterización a PNG). Por eso la rama vieja
+					// de `has_images` + "Regenerar imágenes" quedó obsoleta y se
+					// removió — ver `docs/ciclo19/` para historia.
+					<SlidesViewer artefactoId={artefacto.id} />
 				: <StandardAlert
 						colorScheme="neutral"
 						styleType="subtle"
