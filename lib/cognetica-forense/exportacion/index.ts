@@ -20,3 +20,5 @@ export type {
 	TriadaParams,
 	TriadaResult,
 } from "./descarga-obsidian";
+
+export { transcripcionDiarizadaMD } from "./transcripcion-diarizada";

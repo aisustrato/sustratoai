@@ -2,7 +2,7 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import {
@@ -54,7 +54,7 @@ import type {
 import { BorrarButton } from "./BorrarButton";
 import { CartografiadorButton } from "./CartografiadorButton";
 import { ExtractorReferenciasButton } from "./ExtractorReferenciasButton";
-import { StandardAudioPlayer } from "@/components/ui/StandardAudioPlayer";
+import { StandardAudioPlayer, type SegmentoCitaEstado } from "@/components/ui/StandardAudioPlayer";
 import { SlidesViewer } from "./SlidesViewer";
 import { regenerarImagenesSlides } from "@/lib/actions/cognetica-forense-slides-actions";
 import { toast } from "sonner";
@@ -65,12 +65,22 @@ import { useDescargaObsidiana } from "./hooks/useDescargaObsidiana";
 import {
 	extraerSemillas,
 	generarTriadaObsidian,
+	transcripcionDiarizadaMD,
 	type MencionesExport,
 	type MencionExport,
 	type ReferenciaExport,
 	type TriadaParams,
 } from "@/lib/cognetica-forense/exportacion";
 import { listarMencionesPorArtefacto } from "@/lib/actions/cognetica-forense-menciones-actions";
+import {
+	crearCitaDesdeSegmento,
+	eliminarCitaMencion,
+} from "@/lib/actions/cognetica-forense-aportes-humanos-actions";
+import {
+	mapearCitasASegmentos,
+	type CitaParaMapear,
+	type OrigenCita,
+} from "@/lib/cognetica-forense/citas/mapear-citas-a-segmentos";
 import { listarReferenciasPorArtefacto } from "@/lib/actions/cognetica-forense-referencias-actions";
 import { DIMENSIONES } from "@/lib/cognetica-forense/ui/menciones-ui-helpers";
 import { mensajeAmigableDeError } from "@/lib/cognetica-forense/error-amigable";
@@ -707,6 +717,16 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 
 			// 2. Construir params de la tríada
 			const proyectoNombre = proyectoActual?.name ?? artefacto.project_id;
+			// Para audio: reconstruir la transcripción CON diarización desde los
+			// segmentos (el visor la muestra, pero `contenidoMarkdown` es texto
+			// plano sin hablantes). Fallback explícito al texto plano si no hay
+			// segmentos diarizados.
+			const transcripcionParaExportar =
+				artefacto.tipo === "audio"
+					? (transcripcionDiarizadaMD(data.audio_segmentos) ??
+						data.contenidoMarkdown ??
+						null)
+					: (data.contenidoMarkdown ?? null);
 			const triadaParams: TriadaParams = {
 				artefactoId: artefacto.id,
 				titulo: artefacto.titulo ?? "Artefacto sin título",
@@ -715,7 +735,7 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 				tipoArtefacto: artefacto.tipo,
 				sha256Artefacto: artefacto.sha256_json,
 				tags: semillas,
-				transcripcionMD: data.contenidoMarkdown ?? null,
+				transcripcionMD: transcripcionParaExportar,
 				cronicaMD: data.cronica?.contenido ?? null,
 				destiladoMD: data.destilado
 					? construirMDDestiladoView(data.destilado)
@@ -1378,7 +1398,12 @@ function SeccionOriginal({
 	const pdfInfo = data.pdf_informe;
 	const pdfSlidesInfo = data.pdf_slides;
 	const audioInfo = data.audio;
-	const audioSegmentos = data.audio_segmentos ?? [];
+	// Memoizado: `?? []` crearía un array nuevo por render y dispararía en loop
+	// el efecto de carga de citas (que depende de esta referencia).
+	const audioSegmentos = useMemo(
+		() => data.audio_segmentos ?? [],
+		[data.audio_segmentos],
+	);
 
 	const esContenidoValido = contenidoMarkdown && !contenidoMarkdown.startsWith("%PDF");
 
@@ -1387,11 +1412,17 @@ function SeccionOriginal({
 		: null;
 
 	const segments = audioSegmentos.map((s) => ({
+		id: s.id,
 		text: s.texto ?? "",
 		start: s.timestamp_inicio ?? 0,
 		end: s.timestamp_fin ?? 0,
 		speaker: s.hablante_id ? parseInt(String(s.hablante_id).replace("SPEAKER_", ""), 10) || 0 : undefined,
 	}));
+
+	// Transcripción para descarga: con diarización si hay segmentos; si no,
+	// fallback explícito al texto plano del artefacto.
+	const transcripcionDescargaMD =
+		transcripcionDiarizadaMD(audioSegmentos) ?? contenidoMarkdown;
 
 	const handleDownloadOriginal = () => {
 		if (!artefacto.storage_path_original) return;
@@ -1404,6 +1435,97 @@ function SeccionOriginal({
 		a.click();
 		document.body.removeChild(a);
 	};
+
+	// 📌 Citas marcadas en los segmentos (solo audio).
+	//
+	// IMPORTANTE: el FETCH (server action) y el MAPEO están desacoplados a
+	// propósito. Durante la metabolización el monitoreo dispara `router.refresh()`
+	// repetido → `data` (y `audioSegmentos`) cambian de referencia seguido. Si el
+	// fetch dependiera de esa referencia, re-dispararía un server action en cada
+	// refresh, saturando la cola única de server actions de Next (que también
+	// bloquea `router.refresh()`) y matando el feedback del stepper. Por eso:
+	//   - `citasRaw` se trae solo en mount / cuando aparecen segmentos / cambia el
+	//     estado del artefacto / tras agregar-quitar (deps estables entre refresh).
+	//   - `citaPorSegmentoId` se recalcula en memoria (puro y barato) cuando
+	//     cambian las citas o los segmentos, sin tocar el servidor.
+	const [citasRaw, setCitasRaw] = useState<CitaParaMapear[]>([]);
+
+	const recargarCitas = useCallback(async () => {
+		if (!esAudio) return;
+		const res = await listarMencionesPorArtefacto(artefacto.id, "cita");
+		if (!res.ok) {
+			console.error("[ArtefactoView:recargarCitas]", res.error);
+			return;
+		}
+		setCitasRaw(
+			res.data.map((item) => {
+				const m = item.mencion as {
+					id: string;
+					origen: OrigenCita;
+					ubicacion_en_artefacto: string | null;
+					texto_extractor_crudo: string | null;
+				};
+				return {
+					id: m.id,
+					origen: m.origen,
+					ubicacion_en_artefacto: m.ubicacion_en_artefacto,
+					texto_extractor_crudo: m.texto_extractor_crudo,
+				};
+			}),
+		);
+	}, [esAudio, artefacto.id]);
+
+	// Fetch acotado: solo cuando cambian valores estables (no la referencia de
+	// `data`). `audioSegmentos.length` cubre "aparecieron segmentos tras
+	// transcribir"; `artefacto.estado` cubre "terminó de metabolizar" (backfill).
+	useEffect(() => {
+		void recargarCitas();
+	}, [recargarCitas, audioSegmentos.length, artefacto.estado]);
+
+	const citaPorSegmentoId = useMemo<Record<string, SegmentoCitaEstado>>(() => {
+		if (!esAudio || audioSegmentos.length === 0) return {};
+		const mapa = mapearCitasASegmentos(citasRaw, audioSegmentos);
+		const record: Record<string, SegmentoCitaEstado> = {};
+		for (const [segId, info] of mapa.entries()) {
+			record[segId] = {
+				esCita: true,
+				tieneHumana: info.tieneHumana,
+				mencionHumanaId: info.mencionHumanaId,
+			};
+		}
+		return record;
+	}, [citasRaw, audioSegmentos, esAudio]);
+
+	const handleAgregarCita = useCallback(
+		async (segmentoId: string) => {
+			const res = await crearCitaDesdeSegmento({
+				artefactoId: artefacto.id,
+				segmentoId,
+			});
+			if (!res.ok) {
+				console.error("[ArtefactoView:handleAgregarCita]", res.error);
+				toast.error("No se pudo guardar la cita", { duration: Infinity });
+				return;
+			}
+			toast.success("Cita marcada");
+			await recargarCitas();
+		},
+		[artefacto.id, recargarCitas],
+	);
+
+	const handleQuitarCita = useCallback(
+		async (mencionId: string) => {
+			const res = await eliminarCitaMencion(mencionId);
+			if (!res.ok) {
+				console.error("[ArtefactoView:handleQuitarCita]", res.error);
+				toast.error("No se pudo quitar la cita", { duration: Infinity });
+				return;
+			}
+			toast.success("Cita quitada");
+			await recargarCitas();
+		},
+		[recargarCitas],
+	);
 
 	// Regenerar imágenes de slides
 	const [regenerando, setRegenerando] = useState(false);
@@ -1480,10 +1602,13 @@ function SeccionOriginal({
 				<StandardAudioPlayer
 					storagePath={artefacto.storage_path_original}
 					segments={segments}
-					transcripcionMD={contenidoMarkdown}
-					onDescargarObsidiana={contenidoMarkdown && descargarObsidiana ? () => descargarObsidiana("transcripcion", contenidoMarkdown) : undefined}
+					transcripcionMD={transcripcionDescargaMD}
+					onDescargarObsidiana={transcripcionDescargaMD && descargarObsidiana ? () => descargarObsidiana("transcripcion", transcripcionDescargaMD) : undefined}
 					sha256Descarga={sha256Descarga}
 					onDescargarOriginal={artefacto.storage_path_original ? handleDownloadOriginal : undefined}
+					citaPorSegmentoId={citaPorSegmentoId}
+					onAgregarCita={handleAgregarCita}
+					onQuitarCita={handleQuitarCita}
 				/>
 			) : esContenidoValido ? (
 				<DocumentoMarkdownViewer

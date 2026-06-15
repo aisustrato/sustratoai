@@ -20,14 +20,11 @@ export type ColorScheme =
 	| "blue"
 	| "green"
 	| "orange"
-	| "artisticGreen"
 	| "graphite"
-	| "roseGold"
 	| "midnight"
-	| "burgundy"
 	| "zenith"
-	| "coral"
-	| "ocean";
+	| "ocean"
+	| "crimson";
 
 // 🎨 Modos de visualización
 export type Mode = "light" | "dark";

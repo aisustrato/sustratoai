@@ -1223,6 +1223,7 @@ export type Database = {
           hash_extractor_crudo: string
           id: string
           justificacion_cartografiador: string | null
+          origen: Database["public"]["Enums"]["cgt_origen"]
           project_id: string
           referencia_cartografiador: string | null
           referencia_extractor_cruda: string | null
@@ -1248,6 +1249,7 @@ export type Database = {
           hash_extractor_crudo: string
           id?: string
           justificacion_cartografiador?: string | null
+          origen?: Database["public"]["Enums"]["cgt_origen"]
           project_id: string
           referencia_cartografiador?: string | null
           referencia_extractor_cruda?: string | null
@@ -1273,6 +1275,7 @@ export type Database = {
           hash_extractor_crudo?: string
           id?: string
           justificacion_cartografiador?: string | null
+          origen?: Database["public"]["Enums"]["cgt_origen"]
           project_id?: string
           referencia_cartografiador?: string | null
           referencia_extractor_cruda?: string | null
@@ -2879,22 +2882,7 @@ export type Database = {
           translated_at?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "cog_artifact_pages_artifact_id_fkey"
-            columns: ["artifact_id"]
-            isOneToOne: false
-            referencedRelation: "cog_artifacts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cog_artifact_pages_artifact_id_fkey"
-            columns: ["artifact_id"]
-            isOneToOne: false
-            referencedRelation: "cog_artifacts_full"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       cog_artifact_references: {
         Row: {

@@ -20,14 +20,11 @@ type ColorSchemeId =
 	| "blue"
 	| "green"
 	| "orange"
-	| "artisticGreen"
 	| "graphite"
-	| "roseGold"
 	| "midnight"
-	| "burgundy"
 	| "zenith"
-	| "coral"
-	| "ocean";
+	| "ocean"
+	| "crimson";
 
 export function ColorSchemeSwitcher() {
 	const { colorScheme, mode, setColorScheme, appColorTokens } = useTheme();
@@ -181,18 +178,11 @@ export function ColorSchemeSwitcher() {
 		{ id: "blue", name: "Azul", bgColorClass: "bg-blue-600" },
 		{ id: "green", name: "Verde", bgColorClass: "bg-green-600" },
 		{ id: "orange", name: "Naranja", bgColorClass: "bg-orange-500" },
-		{
-			id: "artisticGreen",
-			name: "Verde Artístico",
-			bgColorClass: "bg-emerald-600",
-		},
 		{ id: "graphite", name: "Grafito", bgColorClass: "bg-gray-500" },
-		{ id: "roseGold", name: "Oro Rosado", bgColorClass: "bg-rose-300" },
 		{ id: "midnight", name: "Medianoche", bgColorClass: "bg-[#0A0F2C]" },
-		{ id: "burgundy", name: "Burdeos", bgColorClass: "bg-[#8D0027]" },
 		{ id: "zenith", name: "Zenith", bgColorClass: "bg-[#A0D2DB]" },
-		{ id: "coral", name: "Coral", bgColorClass: "bg-[#FF6B6B]" },
 		{ id: "ocean", name: "Ocean", bgColorClass: "bg-[#0EA5E9]" },
+		{ id: "crimson", name: "Crimson", bgColorClass: "bg-[#8D0027]" },
 	];
 
 	const getCurrentColorSchemeName = () => {

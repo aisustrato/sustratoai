@@ -40,6 +40,8 @@ import type { StepItem, StepStatus } from "@/components/ui/StandardStepper"
 | `orientation` | `"horizontal" \| "vertical"` | `"horizontal"` | Orientación del stepper |
 | `className` | `string` | — | Clases adicionales |
 | `onStepClick` | `(index: number) => void` | — | Callback al hacer clic en un paso completado |
+| `celebrateOnComplete` | `boolean` | `true` | Animación visual (glow verde + bounce escalonado) al completar todos los pasos |
+| `enableSoundAlerts` | `boolean` | `true` | Alerta sonora vía Web Audio API: tono ascendente al completar, descendente al error |
 
 ### StepItem shape
 
@@ -134,6 +136,19 @@ const stepsConStatusDinamico: StepItem[] = pasos.map((step, i) => ({
   steps={stepsConStatusDinamico}
   currentStepIndex={currentStepIndex}
   variant="primary"
+/>
+
+// ✅ Celebración automática al completar todos los pasos (activa por defecto)
+// Cuando todos los pasos tienen status="completed":
+//   1. Glow verde envuelve el stepper (2s)
+//   2. Cada burbuja hace bounce escalonado (80ms de stagger)
+//   3. Sonido ascendente 200→600 Hz (Web Audio API)
+// Para desactivar: celebrateOnComplete={false} o enableSoundAlerts={false}
+<StandardStepper
+  steps={pasosCompletos}
+  currentStepIndex={pasosCompletos.length}
+  celebrateOnComplete={true}
+  enableSoundAlerts={true}
 />
 ```
 

@@ -188,16 +188,25 @@ const StandardProgressBar = React.forwardRef<
           aria-label={label || "Barra de progreso"}
         >
           {/* La Barra Interna */}
-          <motion.div
-            className={cn("h-full rounded-full relative", {
-              "progress-indeterminate": indeterminate && animated,
-            })}
-            style={barStyle}
-            animate={{
-              scale: showMilestoneAnimation ? [1, 1.05, 1] : 1,
-            }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
-          >
+          {/* NOTA: Modo indeterminate usa <div> plano para evitar que
+              framer-motion pise el transform:translateX de la CSS animation.
+              Modo determinate usa motion.div para la animación de hitos. */}
+          {indeterminate ? (
+            <div
+              className={cn("h-full rounded-full relative", {
+                "progress-indeterminate": indeterminate && animated,
+              })}
+              style={barStyle}
+            />
+          ) : (
+            <motion.div
+              className={cn("h-full rounded-full relative")}
+              style={barStyle}
+              animate={{
+                scale: showMilestoneAnimation ? [1, 1.05, 1] : 1,
+              }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+            >
             {/* Texto difuminado cada 25% */}
             <AnimatePresence>
               {showMilestoneAnimation && (
@@ -221,6 +230,7 @@ const StandardProgressBar = React.forwardRef<
               )}
             </AnimatePresence>
           </motion.div>
+          )}
         </div>
 
         {/* Efecto PAFFF al 100% */}

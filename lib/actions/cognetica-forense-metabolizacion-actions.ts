@@ -37,6 +37,7 @@ import { obtenerContenidoMetabolizable } from "@/lib/cognetica-forense/contenido
 import { logLlamadaDeepseek } from "@/lib/cognetica-forense/deepseek-logger";
 import { parsearJsonLLM } from "@/lib/cognetica-forense/parsear-json-llm";
 import { persistirMencionesExtractor } from "@/lib/cognetica-forense/lib/persistir-menciones-extractor";
+import { backfillTimestampsCitasAudio } from "@/lib/cognetica-forense/citas/backfill-timestamps-audio";
 import type { ResumenMetabolizacion } from "@/lib/cognetica-forense/metabolizacion-shared";
 import {
 	NODO_GENERADOR_CASCADE,
@@ -558,6 +559,19 @@ export async function generarDestilado(
 		"[generarDestilado] menciones persistidas:",
 		JSON.stringify(persistRes.stats),
 	);
+
+	// (7b) Backfill de timestamps en citas — SOLO audio. Las citas vienen del
+	// Destilado (sin timestamp); las emparejamos por texto con los segmentos
+	// para ligarlas al momento del audio (`ubicacion_en_artefacto = "ts:..."`).
+	// Best-effort: si no hay match, la cita queda sin `ts:` y se ubica por
+	// texto al renderizar (retrocompat). No bloquea el Destilado si falla.
+	if (artefacto.tipo === "audio") {
+		const bf = await backfillTimestampsCitasAudio(supabase, artefactoId);
+		console.info(
+			"[generarDestilado] backfill ts citas audio:",
+			`actualizadas=${bf.actualizadas}`,
+		);
+	}
 
 	// (8) NOTA: Las referencias bibliográficas ahora se extraen en pipeline
 	// separado post-destilado (Opción B del Hito 6).

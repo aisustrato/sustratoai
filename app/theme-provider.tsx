@@ -55,12 +55,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 					"blue",
 					"green",
 					"orange",
-					"artisticGreen",
 					"graphite",
-					"roseGold",
 					"midnight",
-					"burgundy",
 					"zenith",
+					"ocean",
+					"crimson",
 				].includes(storedScheme)
 			) {
 				return storedScheme;
@@ -82,9 +81,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 	// 🔧 DECISIÓN: Calcular el nombre del tema CSS basado en colorScheme + mode
 	const theme =
 		mode === "dark" ?
-			colorScheme === "burgundy" ?
-				"theme-burgundyDark"
-			:	"dark"
+			"dark"
 		: colorScheme === "blue" ? "light"
 		: `theme-${colorScheme}`;
 	//#endregion
@@ -140,15 +137,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 		light: { colorScheme: "blue", mode: "light" },
 		"theme-green": { colorScheme: "green", mode: "light" },
 		"theme-orange": { colorScheme: "orange", mode: "light" },
-		"theme-artisticGreen": { colorScheme: "artisticGreen", mode: "light" },
 		"theme-graphite": { colorScheme: "graphite", mode: "light" },
-		"theme-roseGold": { colorScheme: "roseGold", mode: "light" },
 		"theme-midnight": { colorScheme: "midnight", mode: "dark" },
-		"theme-burgundy": { colorScheme: "burgundy", mode: "light" },
-		"theme-burgundyDark": { colorScheme: "burgundy", mode: "dark" },
 		"theme-zenith": { colorScheme: "zenith", mode: "light" },
-		"theme-coral": { colorScheme: "coral", mode: "light" },
 		"theme-ocean": { colorScheme: "ocean", mode: "light" },
+		"theme-crimson": { colorScheme: "crimson", mode: "light" },
 	};
 
 	const setTheme = (newTheme: string) => {
@@ -193,11 +186,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 			let newColorScheme: ColorScheme = "blue";
 			if (themeNormalized === "green") newColorScheme = "green";
 			if (themeNormalized === "orange") newColorScheme = "orange";
-			if (themeNormalized === "artisticGreen") newColorScheme = "artisticGreen";
 			if (themeNormalized === "graphite") newColorScheme = "graphite";
-			if (themeNormalized === "roseGold") newColorScheme = "roseGold";
 			if (themeNormalized === "midnight") newColorScheme = "midnight";
-			if (themeNormalized === "burgundy") newColorScheme = "burgundy";
+			if (themeNormalized === "zenith") newColorScheme = "zenith";
+			if (themeNormalized === "ocean") newColorScheme = "ocean";
+			if (themeNormalized === "crimson") newColorScheme = "crimson";
 
 			// Establecer el modo según el valor de isDarkMode
 			const newMode: Mode = isDarkMode ? "dark" : "light";
@@ -247,12 +240,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 					"blue",
 					"green",
 					"orange",
-					"artisticGreen",
 					"graphite",
-					"roseGold",
 					"midnight",
-					"burgundy",
 					"zenith",
+					"ocean",
+					"crimson",
 				].includes(storedColorScheme)
 			) {
 				initialColorScheme = storedColorScheme;
@@ -281,14 +273,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 				"theme-blue",
 				"theme-green",
 				"theme-orange",
-				"theme-artisticGreen",
 				"theme-graphite",
-				"theme-roseGold",
 				"theme-midnight",
-				"theme-burgundy",
-				"theme-burgundyDark",
 				"theme-zenith",
 				"theme-zenithDark",
+				"theme-ocean",
+				"theme-crimson",
+				"theme-crimsonDark",
 			);
 
 			if (mode === "dark") {
@@ -296,12 +287,12 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 			}
 
 			// Aplicar clase de tema específico si no es el azul por defecto en modo claro
-			// o si es un tema que tiene su propia variante oscura (como midnight o burgundyDark)
+			// o si es un tema que tiene su propia variante oscura (como midnight o crimsonDark)
 			if (mode === "dark") {
 				if (colorScheme === "midnight") {
 					root.classList.add("theme-midnight");
-				} else if (colorScheme === "burgundy") {
-					root.classList.add("theme-burgundyDark");
+				} else if (colorScheme === "crimson") {
+					root.classList.add("theme-crimsonDark");
 				} else if (colorScheme === "zenith") {
 					root.classList.add("theme-zenithDark");
 				} else {

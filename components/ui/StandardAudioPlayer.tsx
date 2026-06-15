@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef, useState, useEffect, useCallback } from "react";
-import { Play, Pause, Rewind, FastForward, Download, FileDown, FileAudio } from "lucide-react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { Play, Pause, Rewind, FastForward, Download, FileDown, FileAudio, Quote, MoreVertical, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
@@ -11,10 +11,22 @@ import { StandardDropdownMenu } from "@/components/ui/StandardDropdownMenu";
 import { obtenerUrlFirmadaStorage } from "@/lib/actions/cognetica_forense_actions";
 
 interface Segment {
+    /** Id del segmento (cgt_audio_segmentos.id) — necesario para citas. */
+    id?: string;
     text: string;
     start: number;
     end: number;
     speaker?: number;
+}
+
+/** Estado de cita de un segmento, para marcarlo en el visor. */
+export interface SegmentoCitaEstado {
+    /** Hay al menos una cita ligada a este segmento. */
+    esCita: boolean;
+    /** Alguna de las citas fue creada por un humano. */
+    tieneHumana: boolean;
+    /** Id de la cita humana (para "Quitar cita"), si existe. */
+    mencionHumanaId: string | null;
 }
 
 interface StandardAudioPlayerProps {
@@ -29,6 +41,12 @@ interface StandardAudioPlayerProps {
     sha256Descarga?: string | null;
     /** Callback para descargar el archivo original (mp3, etc.). */
     onDescargarOriginal?: () => void;
+    /** Estado de cita por id de segmento (marca persistente, independiente del play). */
+    citaPorSegmentoId?: Record<string, SegmentoCitaEstado>;
+    /** Crear una cita humana desde un segmento (lo marca el operador). */
+    onAgregarCita?: (segmentoId: string) => void;
+    /** Quitar una cita humana (toggle), por id de mención. */
+    onQuitarCita?: (mencionId: string) => void;
 }
 
 // 🎨 Mapeo de hablantes a colorScheme del tema (cíclico)
@@ -48,6 +66,9 @@ export function StandardAudioPlayer({
     onDescargarObsidiana,
     sha256Descarga,
     onDescargarOriginal,
+    citaPorSegmentoId,
+    onAgregarCita,
+    onQuitarCita,
 }: StandardAudioPlayerProps) {
     const audioRef = useRef<HTMLAudioElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -132,6 +153,34 @@ export function StandardAudioPlayer({
     };
 
     const hasSegments = segments.length > 0;
+
+    // 🧩 Agrupar segmentos consecutivos del mismo hablante en un solo turno.
+    // Conservamos el índice plano de cada subsegmento (`idx`) para no romper el
+    // karaoke: el segmento activo, el seek por click y el auto-scroll siguen
+    // operando a nivel de subsegmento; sólo se fusiona la tarjeta del hablante.
+    const grupos = useMemo(() => {
+        const out: Array<{
+            speaker?: number;
+            start: number;
+            end: number;
+            items: Array<{ seg: Segment; idx: number }>;
+        }> = [];
+        segments.forEach((seg, idx) => {
+            const ultimo = out[out.length - 1];
+            if (ultimo && ultimo.speaker === seg.speaker) {
+                ultimo.end = seg.end;
+                ultimo.items.push({ seg, idx });
+            } else {
+                out.push({
+                    speaker: seg.speaker,
+                    start: seg.start,
+                    end: seg.end,
+                    items: [{ seg, idx }],
+                });
+            }
+        });
+        return out;
+    }, [segments]);
 
     return (
         <div className={cn("flex flex-col gap-4", className)}>
@@ -286,54 +335,140 @@ export function StandardAudioPlayer({
                         </StandardCard.Content>
                     </StandardCard>
                 ) : (
-                    segments.map((seg, idx) => {
-                        const isActive = activeSegmentIndex === idx;
-                        const scheme = getSpeakerScheme(seg.speaker);
+                    grupos.map((grupo, gIdx) => {
+                        const scheme = getSpeakerScheme(grupo.speaker);
+                        // La CAJA se marca según el rango completo del turno, de
+                        // forma continua: así no parpadea en los micro-silencios
+                        // entre frases del mismo hablante.
+                        const grupoActivo =
+                            currentTime >= grupo.start && currentTime <= grupo.end;
+
+                        // Frase resaltada DENTRO de la caja activa: la que está
+                        // sonando, o —en el micro-silencio entre frases— la última
+                        // ya iniciada, para sostener el resalte sin huecos.
+                        let innerActiveIdx: number | null = null;
+                        if (grupoActivo) {
+                            const sonando = grupo.items.find(
+                                ({ seg }) => currentTime >= seg.start && currentTime <= seg.end,
+                            );
+                            if (sonando) {
+                                innerActiveIdx = sonando.idx;
+                            } else {
+                                const iniciada = [...grupo.items]
+                                    .reverse()
+                                    .find(({ seg }) => seg.start <= currentTime);
+                                innerActiveIdx = (iniciada ?? grupo.items[0]).idx;
+                            }
+                        }
 
                         return (
                             <div
-                                key={idx}
-                                ref={isActive ? activeSegmentRef : null}
-                                onClick={() => handleSegmentClick(seg.start)}
+                                key={gIdx}
+                                ref={grupoActivo ? activeSegmentRef : null}
                             >
                                 <StandardCard
                                     colorScheme={scheme}
-                                    styleType={isActive ? "filled" : "subtle"}
-                                    selected={isActive}
-                                    pulseBorder={isActive}
+                                    styleType={grupoActivo ? "filled" : "subtle"}
+                                    selected={grupoActivo}
+                                    pulseBorder={grupoActivo}
                                     accentPlacement="left"
                                     accentColorScheme={scheme}
                                     className={cn(
-                                        "cursor-pointer transition-all duration-200",
-                                        isActive ? "scale-[1.02] shadow-xl ring-2 ring-primary-400/30" : "hover:shadow-md"
+                                        "transition-all duration-200",
+                                        grupoActivo ? "scale-[1.02] shadow-xl ring-2 ring-primary-400/30" : "hover:shadow-md"
                                     )}
                                 >
                                     <StandardCard.Content>
                                         <div className="flex items-center gap-2 mb-2">
                                             <StandardBadge
                                                 colorScheme={scheme}
-                                                styleType={isActive ? "solid" : "subtle"}
+                                                styleType={grupoActivo ? "solid" : "subtle"}
                                                 size="sm">
-                                                {seg.speaker !== undefined ? `Hablante ${seg.speaker + 1}` : "Desconocido"}
+                                                {grupo.speaker !== undefined ? `Hablante ${grupo.speaker + 1}` : "Desconocido"}
                                             </StandardBadge>
                                             <StandardText size="xs" colorScheme="neutral" colorShade="subtle" className="font-mono">
-                                                {formatTime(seg.start)} – {formatTime(seg.end)}
+                                                {formatTime(grupo.start)} – {formatTime(grupo.end)}
                                             </StandardText>
-                                            {isActive && (
+                                            {grupoActivo && (
                                                 <span className="ml-auto text-[10px] font-bold animate-pulse">
                                                     ▶ Reproduciendo
                                                 </span>
                                             )}
                                         </div>
-                                        <StandardText
-                                            size="base"
-                                            className={cn(
-                                                "leading-relaxed",
-                                                isActive ? "font-semibold text-lg" : "font-normal"
-                                            )}
-                                        >
-                                            {seg.text}
-                                        </StandardText>
+                                        {/* Cada subsegmento sigue siendo clickeable (seek) y se
+                                            resalta individualmente mientras se reproduce. */}
+                                        <div className="space-y-1">
+                                            {grupo.items.map(({ seg, idx }) => {
+                                                const segActivo = innerActiveIdx === idx;
+                                                const citaEstado = seg.id ? citaPorSegmentoId?.[seg.id] : undefined;
+                                                const esCita = citaEstado?.esCita ?? false;
+                                                const esCitaHumana = citaEstado?.tieneHumana ?? false;
+                                                const mostrarMenu = Boolean(seg.id && (onAgregarCita || onQuitarCita));
+                                                return (
+                                                    <div key={idx} className="group/seg flex items-start gap-1.5">
+                                                        {esCita && (
+                                                            <StandardBadge
+                                                                colorScheme="accent"
+                                                                styleType={esCitaHumana ? "solid" : "subtle"}
+                                                                size="sm"
+                                                                className="mt-0.5 shrink-0">
+                                                                <Quote className="w-3 h-3" />
+                                                                {!esCitaHumana && <span className="ml-1">IA</span>}
+                                                            </StandardBadge>
+                                                        )}
+                                                        <StandardText
+                                                            size="base"
+                                                            onClick={() => handleSegmentClick(seg.start)}
+                                                            className={cn(
+                                                                "flex-1 leading-relaxed cursor-pointer transition-all duration-200 rounded",
+                                                                segActivo ? "font-semibold text-lg" : "font-normal hover:opacity-80",
+                                                                // 🟨 Cita: resaltado persistente (independiente del play),
+                                                                // tipo "marcador". Humano más fuerte que IA.
+                                                                esCita && "px-1.5 py-0.5 font-semibold",
+                                                                esCita && (esCitaHumana
+                                                                    ? "bg-amber-200/80 dark:bg-amber-600/40"
+                                                                    : "bg-amber-100/80 dark:bg-amber-700/25")
+                                                            )}
+                                                        >
+                                                            {seg.text}
+                                                        </StandardText>
+                                                        {mostrarMenu && (
+                                                            <StandardDropdownMenu>
+                                                                <StandardDropdownMenu.Trigger asChild>
+                                                                    <StandardButton
+                                                                        styleType="ghost"
+                                                                        size="sm"
+                                                                        iconOnly
+                                                                        colorScheme="neutral"
+                                                                        leftIcon={MoreVertical}
+                                                                        tooltip="Acciones de cita"
+                                                                        className={cn(
+                                                                            "shrink-0 transition-opacity",
+                                                                            esCita ? "opacity-100" : "opacity-0 group-hover/seg:opacity-100"
+                                                                        )}
+                                                                    />
+                                                                </StandardDropdownMenu.Trigger>
+                                                                <StandardDropdownMenu.Content align="end">
+                                                                    {esCitaHumana && citaEstado?.mencionHumanaId ? (
+                                                                        <StandardDropdownMenu.Item
+                                                                            onClick={() => onQuitarCita?.(citaEstado.mencionHumanaId as string)}>
+                                                                            <Trash2 className="w-4 h-4 mr-2" />
+                                                                            Quitar cita
+                                                                        </StandardDropdownMenu.Item>
+                                                                    ) : (
+                                                                        <StandardDropdownMenu.Item
+                                                                            onClick={() => seg.id && onAgregarCita?.(seg.id)}>
+                                                                            <Quote className="w-4 h-4 mr-2" />
+                                                                            Agregar como cita
+                                                                        </StandardDropdownMenu.Item>
+                                                                    )}
+                                                                </StandardDropdownMenu.Content>
+                                                            </StandardDropdownMenu>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </StandardCard.Content>
                                 </StandardCard>
                             </div>

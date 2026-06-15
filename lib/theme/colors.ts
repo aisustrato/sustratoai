@@ -217,64 +217,6 @@ export const themes = {
 			bgShade: "#33140D",
 		},
 	} as ThemeColors,
-	artisticGreen: {
-		primary: {
-			pure: "#006A4E", // Verde Esmeralda
-			pureShade: "#00523D",
-			text: "#003D2D", // Oscuro para fondo claro
-			contrastText: "#E0F2EC", // Claro para pure
-			textShade: "#002A1F",
-			bg: "#D9F0E9",
-			bgShade: "#C5E8DC",
-		},
-		secondary: {
-			pure: "#B58A3F", // Ocre / Dorado Terroso
-			pureShade: "#916E32",
-			text: "#443418", // Oscuro para fondo claro
-			contrastText: "#FDFBF6", // Claro para pure
-			textShade: "#2E220F",
-			bg: "#F7F2E8",
-			bgShade: "#EFEADF",
-		},
-		tertiary: {
-			pure: "#8FB8A8", // Salvia más saturado - más presencia visual
-			pureShade: "#72A090",
-			text: "#3E5A4E",
-			contrastText: "#F8FCFB",
-			textShade: "#2A3D35",
-			bg: "#EDF5F2",
-			bgShade: "#E0EBE7",
-		},
-	} as ThemeColors,
-	artisticGreenDark: {
-		primary: {
-			pure: "#008D6E", // Verde Esmeralda (Dark)
-			pureShade: "#006A4E",
-			text: "#A6D9CB", // Claro para fondo oscuro
-			contrastText: "#002F1F", // Oscuro para pure
-			textShade: "#8BCBB9",
-			bg: "#002A1E",
-			bgShade: "#001F15",
-		},
-		secondary: {
-			pure: "#D4A25A", // Bronce (Dark)
-			pureShade: "#B58A3F",
-			text: "#F5E9D6", // Claro para fondo oscuro
-			contrastText: "#5A4526", // Oscuro para pure
-			textShade: "#F8F0E3",
-			bg: "#362A17",
-			bgShade: "#292011",
-		},
-		tertiary: {
-			pure: "#7da297", // Teal Desaturado (Dark)
-			pureShade: "#567068",
-			text: "#E0E8E5", // Claro para fondo oscuro
-			contrastText: "#212A27", // Oscuro para pure
-			textShade: "#FFFFFF", // Ajustado para mayor claridad
-			bg: "#212A27",
-			bgShade: "#19201D",
-		},
-	} as ThemeColors,
 	graphite: {
 		primary: {
 			pure: "#4B5563", // Gris Neutro
@@ -331,64 +273,6 @@ export const themes = {
 			textShade: "#F1F5F3",
 			bg: "#1E2925",
 			bgShade: "#141A17",
-		},
-	} as ThemeColors,
-	roseGold: {
-		primary: {
-			pure: "#E0B4A3", // Oro rosado más saturado - mejor diferenciación
-			pureShade: "#C89B88",
-			text: "#6B4B42",
-			contrastText: "#FFFBF9",
-			textShade: "#4F3630",
-			bg: "#F9F3F1",
-			bgShade: "#F2EAE7",
-		},
-		secondary: {
-			pure: "#B89080", // Caramelo más diferenciado - coherencia mejorada
-			pureShade: "#9A7568",
-			text: "#5A4238",
-			contrastText: "#FAF5F2",
-			textShade: "#3E2E26",
-			bg: "#F0E8E3",
-			bgShade: "#E4D9D3",
-		},
-		tertiary: {
-			pure: "#a89477", // Gris Pardo (Taupe)
-			pureShade: "#8A736A",
-			text: "#4E342E", // Oscuro para fondo claro
-			contrastText: "#FFFFFF", // Claro para pure
-			textShade: "#3E2723",
-			bg: "#F2ECE9",
-			bgShade: "#E9E0DC",
-		},
-	} as ThemeColors,
-	roseGoldDark: {
-		primary: {
-			pure: "#F0CEC0", // Oro rosado claro (Dark) - coherente con light
-			pureShade: "#E0B4A3",
-			text: "#FFFBF9",
-			contrastText: "#4F3630",
-			textShade: "#F9F3F1",
-			bg: "#4F3630",
-			bgShade: "#3A2621",
-		},
-		secondary: {
-			pure: "#D4AFA0", // Caramelo claro (Dark) - coherente con light
-			pureShade: "#B89080",
-			text: "#FAF5F2",
-			contrastText: "#3E2E26",
-			textShade: "#F0E8E3",
-			bg: "#3E2E26",
-			bgShade: "#2D1F1A",
-		},
-		tertiary: {
-			pure: "#BCAAA4", // Gris Pardo (Taupe, Dark)
-			pureShade: "#A1887F",
-			text: "#F2ECE9", // Claro para fondo oscuro
-			contrastText: "#4E342E", // Oscuro para pure
-			textShade: "#FFFFFF", // Ajustado
-			bg: "#4E342E",
-			bgShade: "#3E2723",
 		},
 	} as ThemeColors,
 	midnight: {
@@ -450,69 +334,6 @@ export const themes = {
 			bgShade: "#1A237E",
 		},
 	} as ThemeColors,
-	burgundy: {
-		primary: {
-			// Burdeos Profundo
-			pure: "#8D0027",
-			pureShade: "#6A001D",
-			text: "#4F0016", // Oscuro para fondo claro
-			contrastText: "#FFE5EB", // Claro para pure
-			textShade: "#3B0010",
-			bg: "#FDEFF2", // Fondo rosado muy pálido
-			bgShade: "#FADCE3",
-		},
-		secondary: {
-			pure: "#8A7278", // Taupe más saturado - más presencia visual
-			pureShade: "#6B5A5F",
-			text: "#4A3A3E",
-			contrastText: "#FAF8F9",
-			textShade: "#322A2D",
-			bg: "#F5F3F4",
-			bgShade: "#EBE7E9",
-		},
-		tertiary: {
-			// Bronce Apagado
-			pure: "#B08D57",
-			pureShade: "#8C7045",
-			text: "#665133", // Oscuro para fondo claro
-			contrastText: "#FFFBF5", // Claro para pure
-			textShade: "#4D3D26",
-			bg: "#FAF6EF", // Fondo beige muy pálido
-			bgShade: "#F5EDDE",
-		},
-	} as ThemeColors,
-	burgundyDark: {
-		primary: {
-			// Burdeos Profundo (Dark)
-			pure: "#C43C5F", // Burdeos más claro y vibrante para modo oscuro
-			pureShade: "#A71E42",
-			text: "#FDD8E0", // Claro para fondo oscuro
-			contrastText: "#4F0016", // Oscuro para pure
-			textShade: "#FFB0C1",
-			bg: "#2A000C", // Fondo burdeos muy oscuro
-			bgShade: "#1F0009",
-		},
-		secondary: {
-			// Gris Taupe Cálido (Dark, Contraste Mejorado)
-			pure: "#B5ADB1",
-			pureShade: "#6B5F64",
-			text: "#EAE5E7", // Claro para fondo oscuro
-			contrastText: "#423B3F", // Oscuro para pure
-			textShade: "#D5CFD2",
-			bg: "#423B3F", // Fondo gris oscuro
-			bgShade: "#2E292C",
-		},
-		tertiary: {
-			// Bronce Apagado (Dark)
-			pure: "#D1B380",
-			pureShade: "#B08D57",
-			text: "#FAEED9", // Claro para fondo oscuro
-			contrastText: "#4D3D26", // Oscuro para pure
-			textShade: "#F0DFC3",
-			bg: "#3D321F", // Fondo bronce oscuro
-			bgShade: "#2E2517",
-		},
-	} as ThemeColors,
 	zenith: {
 		primary: {
 			pure: "#51abbb",
@@ -571,64 +392,6 @@ export const themes = {
 			bgShade: "#1F1F2A",
 		},
 	} as ThemeColors,
-	coral: {
-		primary: {
-			pure: "#FF6B6B", // Coral vibrante
-			pureShade: "#E85555",
-			text: "#8B2E2E",
-			contrastText: "#FFF5F5",
-			textShade: "#6B1F1F",
-			bg: "#FFE8E8",
-			bgShade: "#FFD4D4",
-		},
-		secondary: {
-			pure: "#FFA07A", // Salmón suave
-			pureShade: "#E88A64",
-			text: "#8B4513",
-			contrastText: "#FFF9F5",
-			textShade: "#6B3410",
-			bg: "#FFF0E8",
-			bgShade: "#FFE0CC",
-		},
-		tertiary: {
-			pure: "#FFD93D", // Amarillo cálido
-			pureShade: "#E6C235",
-			text: "#8B7500",
-			contrastText: "#FFFDF0",
-			textShade: "#6B5A00",
-			bg: "#FFFAEB",
-			bgShade: "#FFF4D4",
-		},
-	} as ThemeColors,
-	coralDark: {
-		primary: {
-			pure: "#FF8787", // Coral brillante (Dark)
-			pureShade: "#FF6B6B",
-			text: "#FFD4D4",
-			contrastText: "#6B1F1F",
-			textShade: "#FFC2C2",
-			bg: "#6B1F1F",
-			bgShade: "#4A1515",
-		},
-		secondary: {
-			pure: "#FFB89A", // Salmón claro (Dark)
-			pureShade: "#FFA07A",
-			text: "#FFE0CC",
-			contrastText: "#6B3410",
-			textShade: "#FFD4BA",
-			bg: "#6B3410",
-			bgShade: "#4A240B",
-		},
-		tertiary: {
-			pure: "#FFE566", // Amarillo cálido brillante (Dark)
-			pureShade: "#FFD93D",
-			text: "#FFF4D4",
-			contrastText: "#6B5A00",
-			textShade: "#FFEFBA",
-			bg: "#6B5A00",
-			bgShade: "#4A3E00",
-		},
-	} as ThemeColors,
 	ocean: {
 		primary: {
 			pure: "#0EA5E9", // Cyan tech
@@ -685,6 +448,70 @@ export const themes = {
 			textShade: "#C4B5FD",
 			bg: "#4C1D95",
 			bgShade: "#3B1575",
+		},
+	} as ThemeColors,
+	crimson: {
+		primary: {
+			// Burdeos — distinción, poder, elegancia
+			pure: "#8D0027",
+			pureShade: "#6A001D",
+			text: "#4F0016",
+			contrastText: "#FFE5EB",
+			textShade: "#3B0010",
+			bg: "#FDEFF2",
+			bgShade: "#FADCE3",
+		},
+		secondary: {
+			// Oro rosado — calidez, refinamiento
+			pure: "#C89B88",
+			pureShade: "#B07D6A",
+			text: "#5A3D30",
+			contrastText: "#FFFBF9",
+			textShade: "#3E2A20",
+			bg: "#F9F3F1",
+			bgShade: "#F2EAE7",
+		},
+		tertiary: {
+			// Bronce — complemento metálico
+			pure: "#B08D57",
+			pureShade: "#8C7045",
+			text: "#665133",
+			contrastText: "#FFFBF5",
+			textShade: "#4D3D26",
+			bg: "#FAF6EF",
+			bgShade: "#F5EDDE",
+		},
+	} as ThemeColors,
+	crimsonDark: {
+		primary: {
+			// Burdeos brillante (Dark)
+			pure: "#C43C5F",
+			pureShade: "#A71E42",
+			text: "#FDD8E0",
+			contrastText: "#4F0016",
+			textShade: "#FFB0C1",
+			bg: "#2A000C",
+			bgShade: "#1F0009",
+		},
+		secondary: {
+			// Oro rosado claro (Dark)
+			pure: "#D4AFA0",
+			pureShade: "#B89080",
+			text: "#FAF5F2",
+			contrastText: "#3E2E26",
+			textShade: "#F0E8E3",
+			bg: "#3E2E26",
+			bgShade: "#2D1F1A",
+		},
+		tertiary: {
+			// Bronce claro (Dark)
+			pure: "#D1B380",
+			pureShade: "#B08D57",
+			text: "#FAEED9",
+			contrastText: "#4D3D26",
+			textShade: "#F0DFC3",
+			bg: "#3D321F",
+			bgShade: "#2E2517",
 		},
 	} as ThemeColors,
 };
