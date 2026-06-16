@@ -228,7 +228,29 @@ No quedan preguntas abiertas. Resumen de lo acordado:
 
 ---
 
-## 10. Fuera de alcance (por ahora)
+## 10. Persistencia y normalización (Fase 3+)
+
+Notas del operador para una fase posterior (no se implementa ahora):
+
+- **Detección de formato:** el sistema debe distinguir si un artefacto está
+  guardado en el **formato viejo** o ya en **MDJ**.
+- **Normalizar a MDJ en la base:** para los viejos, una fase de normalización que
+  **persista el árbol MDJ** (o su representación) en la base de datos, en vez de
+  re-parsear el markdown en cada lectura. Esto hace el sistema **más eficiente**.
+- **Tabla de direcciones entidad↔dirección:** una tabla nueva que guarde, por
+  documento, las **direcciones** donde aparece cada entidad. Una misma entidad
+  (ej. un autor) puede estar en **varias direcciones** dentro de un documento
+  (original: `x, y, z`) y en otras del mismo artefacto (crónica: `x`).
+- **Estabilidad de las direcciones:** los textos son **solo lectura** — el
+  contenido no cambia. A lo sumo se corrige el **nombre** de una entidad (ej. un
+  autor mal escrito), pero la **arquitectura de direcciones permanece**.
+
+> Pendiente de diseño detallado cuando lleguemos a la fase; aquí solo se deja
+> registrada la intención.
+
+---
+
+## 11. Fuera de alcance (por ahora)
 
 - Tocar la transcripción de audio cruda (formato card).
 - Aplicar MDJ a `pdf_slides`.

@@ -62,7 +62,7 @@ export function NodoListaView({
   }
 
   return (
-    <Tag className={`${listStyle} ${indent} mb-4 space-y-1 text-base`}>
+    <Tag className={`${listStyle} ${indent} pl-6 mb-4 space-y-1 text-base`}>
       {nodo.items.map((item) => {
         const itemAnots = anotsPorItem.get(item.id) || [];
         const itemBusq = busqPorItem.get(item.id);

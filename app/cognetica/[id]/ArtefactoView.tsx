@@ -36,6 +36,7 @@ import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardDropdownMenu } from "@/components/ui/StandardDropdownMenu";
 import { DocumentoMarkdownViewer } from "./DocumentoMarkdownViewer";
+import { DocumentoMdjViewer } from "./DocumentoMdjViewer";
 import { StandardStepper } from "@/components/ui/StandardStepper";
 import { StandardText } from "@/components/ui/StandardText";
 
@@ -607,6 +608,9 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 	}, [inconsistencia, inconsistenciaKey]);
 	// Modo edición: OFF por default (navegación), ON para editar menciones
 	const [modoEdicion, setModoEdicion] = useState(false);
+	// Flag Fase 1: visor MDJ para documentos de texto. OFF por default → el
+	// visor actual (StandardMarkdownViewer) sigue siendo el comportamiento de hoy.
+	const [usarVisorMdj, setUsarVisorMdj] = useState(false);
 	// Trigger para refrescar secciones de referencias/fuentes sin recargar la página
 	const [refreshReferenciasTrigger, setRefreshReferenciasTrigger] = useState(0);
 	// Trigger para refrescar sección de menciones cartografiadas
@@ -1227,6 +1231,23 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 				)}
 			</StandardCard>
 
+			{/* Flag Fase 1: alterna el visor MDJ (solo lectura) para documentos
+			    de texto. OFF por default → comportamiento actual intacto. */}
+			<div className="flex justify-end mb-3">
+				<StandardButton
+					styleType={usarVisorMdj ? "solid" : "outline"}
+					size="sm"
+					colorScheme={usarVisorMdj ? "primary" : "neutral"}
+					onClick={() => setUsarVisorMdj((v) => !v)}
+					title={
+						usarVisorMdj
+							? "Visor MDJ activado (beta) — clic para volver al visor clásico"
+							: "Probar el visor MDJ (beta) en los documentos de texto"
+					}>
+					{usarVisorMdj ? "Visor MDJ: ON" : "Visor MDJ: OFF"}
+				</StandardButton>
+			</div>
+
 			{/*
 			 * Menciones cartografiadas (Hito 4 · Oleada 2).
 			 * El componente se autogestiona: si aún no hay Destilado,
@@ -1260,6 +1281,7 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 							data={data}
 							descargarObsidiana={descargarSeccion}
 							sha256Descarga={sha256Descarga}
+							usarVisorMdj={usarVisorMdj}
 						/>
 					</StandardAccordionContent>
 				</StandardAccordionItem>
@@ -1292,6 +1314,7 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 									estado={f.estado}
 									onDescargarObsidiana={descargarSeccion}
 									sha256Descarga={sha256Descarga}
+									usarVisorMdj={usarVisorMdj}
 								/>
 							</StandardAccordionContent>
 						</StandardAccordionItem>
@@ -1384,10 +1407,12 @@ function SeccionOriginal({
 	data,
 	descargarObsidiana,
 	sha256Descarga,
+	usarVisorMdj = false,
 }: {
 	data: ArtefactoCompleto;
 	descargarObsidiana?: (tipo: "transcripcion", md: string) => Promise<void>;
 	sha256Descarga?: string | null;
+	usarVisorMdj?: boolean;
 }) {
 	const { artefacto } = data;
 
@@ -1611,12 +1636,20 @@ function SeccionOriginal({
 					onQuitarCita={handleQuitarCita}
 				/>
 			) : esContenidoValido ? (
-				<DocumentoMarkdownViewer
-					content={contenidoMarkdown}
-					titulo={artefacto.titulo}
-					mostrarBusqueda={true}
-					mostrarDescarga={false}
-				/>
+				usarVisorMdj ? (
+					<DocumentoMdjViewer
+						content={contenidoMarkdown}
+						titulo={artefacto.titulo}
+						artefactoId={artefacto.id}
+					/>
+				) : (
+					<DocumentoMarkdownViewer
+						content={contenidoMarkdown}
+						titulo={artefacto.titulo}
+						mostrarBusqueda={true}
+						mostrarDescarga={false}
+					/>
+				)
 			) : esPdf && artefacto.estado === "error" ? (
 				<StandardAlert
 					colorScheme="danger"
@@ -1675,6 +1708,7 @@ function SeccionFormato({
 	estado,
 	onDescargarObsidiana,
 	sha256Descarga,
+	usarVisorMdj = false,
 }: {
 	clave: InfoFormato["clave"];
 	data: ArtefactoCompleto;
@@ -1684,6 +1718,7 @@ function SeccionFormato({
 		contenidoMD: string,
 	) => void;
 	sha256Descarga?: string | null;
+	usarVisorMdj?: boolean;
 }) {
 	// Placeholders informativos por estado.
 	if (estado === "pendiente") {
@@ -1738,6 +1773,8 @@ function SeccionFormato({
 					c={data.cronica}
 					onDescargarObsidiana={onDescargarObsidiana && contenido ? () => onDescargarObsidiana("cronica", contenido) : undefined}
 					sha256Descarga={sha256Descarga}
+					usarVisorMdj={usarVisorMdj}
+					artefactoId={data.artefacto.id}
 				/>
 			) : null;
 		}
@@ -1747,6 +1784,8 @@ function SeccionFormato({
 					d={data.destilado}
 					onDescargarObsidiana={onDescargarObsidiana ? (md: string) => onDescargarObsidiana("destilado", md) : undefined}
 					sha256Descarga={sha256Descarga}
+					usarVisorMdj={usarVisorMdj}
+					artefactoId={data.artefacto.id}
 				/>
 			) : null;
 		case "nucleo":
@@ -1755,6 +1794,8 @@ function SeccionFormato({
 					n={data.nucleo}
 					onDescargarObsidiana={onDescargarObsidiana ? (md: string) => onDescargarObsidiana("nucleo", md) : undefined}
 					sha256Descarga={sha256Descarga}
+					usarVisorMdj={usarVisorMdj}
+					artefactoId={data.artefacto.id}
 				/>
 			) : null;
 		case "germinal": {
@@ -1764,6 +1805,8 @@ function SeccionFormato({
 					g={data.germinal}
 					onDescargarObsidiana={onDescargarObsidiana && contenido ? () => onDescargarObsidiana("germinal", contenido) : undefined}
 					sha256Descarga={sha256Descarga}
+					usarVisorMdj={usarVisorMdj}
+					artefactoId={data.artefacto.id}
 				/>
 			) : null;
 		}
@@ -1776,10 +1819,14 @@ function CronicaView({
 	c,
 	onDescargarObsidiana,
 	sha256Descarga,
+	usarVisorMdj = false,
+	artefactoId,
 }: {
 	c: CgtCronica;
 	onDescargarObsidiana?: () => void;
 	sha256Descarga?: string | null;
+	usarVisorMdj?: boolean;
+	artefactoId: string;
 }) {
 	return (
 		<div className="space-y-3">
@@ -1789,14 +1836,20 @@ function CronicaView({
 				costo={c.costo_usd}
 			/>
 			{c.contenido ?
-				<DocumentoMarkdownViewer
-					content={c.contenido}
-					titulo="Crónica"
-					mostrarBusqueda={true}
-					mostrarDescarga={true}
-					onDescargarObsidiana={onDescargarObsidiana}
-					sha256Descarga={sha256Descarga}
-				/>
+				usarVisorMdj ?
+					<DocumentoMdjViewer
+						content={c.contenido}
+						titulo="Crónica"
+						artefactoId={artefactoId}
+					/>
+				:	<DocumentoMarkdownViewer
+						content={c.contenido}
+						titulo="Crónica"
+						mostrarBusqueda={true}
+						mostrarDescarga={true}
+						onDescargarObsidiana={onDescargarObsidiana}
+						sha256Descarga={sha256Descarga}
+					/>
 			:	<StandardAlert
 					colorScheme="neutral"
 					styleType="subtle"
@@ -1811,10 +1864,14 @@ function DestiladoView({
 	d,
 	onDescargarObsidiana,
 	sha256Descarga,
+	usarVisorMdj = false,
+	artefactoId,
 }: {
 	d: CgtDestilado;
 	onDescargarObsidiana?: (md: string) => void;
 	sha256Descarga?: string | null;
+	usarVisorMdj?: boolean;
+	artefactoId: string;
 }) {
 	// Construir markdown completo del destilado para copiar todo
 	const markdownCompleto = useMemo(() => {
@@ -1861,15 +1918,21 @@ function DestiladoView({
 			/>
 
 			{markdownCompleto ?
-				<DocumentoMarkdownViewer
-					content={markdownCompleto}
-					titulo="Contenido del destilado"
-					mostrarBusqueda={false}
-					mostrarDescarga={false}
-					compact={true}
-					onDescargarObsidiana={onDescargarObsidiana ? () => onDescargarObsidiana(markdownCompleto) : undefined}
-					sha256Descarga={sha256Descarga}
-				/>
+				usarVisorMdj ?
+					<DocumentoMdjViewer
+						content={markdownCompleto}
+						titulo="Contenido del destilado"
+						artefactoId={artefactoId}
+					/>
+				:	<DocumentoMarkdownViewer
+						content={markdownCompleto}
+						titulo="Contenido del destilado"
+						mostrarBusqueda={false}
+						mostrarDescarga={false}
+						compact={true}
+						onDescargarObsidiana={onDescargarObsidiana ? () => onDescargarObsidiana(markdownCompleto) : undefined}
+						sha256Descarga={sha256Descarga}
+					/>
 			:	<StandardAlert
 					colorScheme="neutral"
 					styleType="subtle"
@@ -1884,10 +1947,14 @@ function NucleoView({
 	n,
 	onDescargarObsidiana,
 	sha256Descarga,
+	usarVisorMdj = false,
+	artefactoId,
 }: {
 	n: CgtNucleo;
 	onDescargarObsidiana?: (md: string) => void;
 	sha256Descarga?: string | null;
+	usarVisorMdj?: boolean;
+	artefactoId: string;
 }) {
 	// Construir markdown completo del núcleo para copiar todo
 	const markdownCompleto = useMemo(() => {
@@ -1928,15 +1995,21 @@ function NucleoView({
 			/>
 
 			{markdownCompleto ?
-				<DocumentoMarkdownViewer
-					content={markdownCompleto}
-					titulo="Contenido del núcleo"
-					mostrarBusqueda={false}
-					mostrarDescarga={false}
-					compact={true}
-					onDescargarObsidiana={onDescargarObsidiana ? () => onDescargarObsidiana(markdownCompleto) : undefined}
-					sha256Descarga={sha256Descarga}
-				/>
+				usarVisorMdj ?
+					<DocumentoMdjViewer
+						content={markdownCompleto}
+						titulo="Contenido del núcleo"
+						artefactoId={artefactoId}
+					/>
+				:	<DocumentoMarkdownViewer
+						content={markdownCompleto}
+						titulo="Contenido del núcleo"
+						mostrarBusqueda={false}
+						mostrarDescarga={false}
+						compact={true}
+						onDescargarObsidiana={onDescargarObsidiana ? () => onDescargarObsidiana(markdownCompleto) : undefined}
+						sha256Descarga={sha256Descarga}
+					/>
 			:	<StandardAlert
 					colorScheme="neutral"
 					styleType="subtle"
@@ -1951,10 +2024,14 @@ function GerminalView({
 	g,
 	onDescargarObsidiana,
 	sha256Descarga,
+	usarVisorMdj = false,
+	artefactoId,
 }: {
 	g: CgtGerminal;
 	onDescargarObsidiana?: () => void;
 	sha256Descarga?: string | null;
+	usarVisorMdj?: boolean;
+	artefactoId: string;
 }) {
 	return (
 		<div className="space-y-3">
@@ -1964,14 +2041,20 @@ function GerminalView({
 				costo={g.costo_usd}
 			/>
 			{g.resumen ?
-				<DocumentoMarkdownViewer
-					content={g.resumen}
-					titulo="Germinal parcial"
-					mostrarBusqueda={true}
-					mostrarDescarga={true}
-					onDescargarObsidiana={onDescargarObsidiana}
-					sha256Descarga={sha256Descarga}
-				/>
+				usarVisorMdj ?
+					<DocumentoMdjViewer
+						content={g.resumen}
+						titulo="Germinal parcial"
+						artefactoId={artefactoId}
+					/>
+				:	<DocumentoMarkdownViewer
+						content={g.resumen}
+						titulo="Germinal parcial"
+						mostrarBusqueda={true}
+						mostrarDescarga={true}
+						onDescargarObsidiana={onDescargarObsidiana}
+						sha256Descarga={sha256Descarga}
+					/>
 			:	<StandardAlert
 					colorScheme="neutral"
 					styleType="subtle"
