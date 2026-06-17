@@ -14,7 +14,14 @@ function normalizar(texto: string): string {
   return texto
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
+    // Comillas y guiones tipogr\u00e1ficos \u2192 ASCII. Cada reemplazo es 1 car\u00e1cter \u2192
+    // 1 car\u00e1cter, as\u00ed que NO cambia la longitud y los offsets siguen alineados.
+    // Tolera que la cita can\u00f3nica use comillas curvas y el texto rectas (o al rev\u00e9s).
+    .replace(/[\u201c\u201d\u00ab\u00bb]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/\u00a0/g, " ");
 }
 
 /**

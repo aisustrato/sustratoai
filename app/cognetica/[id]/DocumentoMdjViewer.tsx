@@ -5,18 +5,20 @@
 // 🔧 Imita la forma de props de DocumentoMarkdownViewer (content/titulo) para que
 //    el reemplazo en ArtefactoView sea un ternario mínimo detrás de un flag.
 //
-// Paso 2 (requerimiento docs/cognetica/2026-06-16_...): resalta los autores
-// (pensadores) del artefacto dentro del texto. La dirección se calcula al vuelo
-// buscando el nombre canónico (§5), sin persistir en la base. El documento se
-// muestra enseguida; los resaltados aparecen cuando llegan las menciones.
+// Resalta las entidades (autores/pensadores, conceptos, teorías, disciplinas)
+// del artefacto dentro del texto. Las menciones se cargan desde un cache
+// compartido por artefacto (precargable en segundo plano). El documento se
+// muestra enseguida; un indicador en la esquina avisa mientras se buscan las
+// marcas, que aparecen cuando las menciones están listas.
 
 import { useEffect, useState } from "react";
 import { StandardMDJViewerClient } from "@/components/mdj-viewer";
 import { StandardText } from "@/components/ui/StandardText";
+import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { parsearMDJ } from "@/lib/mdj/parser";
 import type { Anotacion } from "@/lib/mdj/types";
-import { listarMencionesPorArtefacto } from "@/lib/actions/cognetica-forense-menciones-actions";
-import { pensadoresAAnotaciones } from "./menciones-a-anotaciones";
+import { cargarMencionesEntidades } from "./menciones-cache";
+import { mencionesAAnotaciones } from "./menciones-a-anotaciones";
 
 interface DocumentoMdjViewerProps {
 	/** Contenido markdown a visualizar */
@@ -36,32 +38,29 @@ export function DocumentoMdjViewer({
 	className = "",
 }: DocumentoMdjViewerProps) {
 	const [anotaciones, setAnotaciones] = useState<Anotacion[]>([]);
+	const [cargando, setCargando] = useState(true);
 
 	useEffect(() => {
 		let cancelado = false;
-		const cargar = async () => {
-			try {
-				const res = await listarMencionesPorArtefacto(artefactoId, "pensador");
+		setCargando(true);
+		cargarMencionesEntidades(artefactoId)
+			.then((menciones) => {
 				if (cancelado) return;
-				if (!res.ok) {
-					console.error("[cognetica:visor-mdj] listar pensadores:", res);
-					return; // degradación: documento sin resaltados
-				}
 				const doc = parsearMDJ(content, artefactoId);
-				const anots = pensadoresAAnotaciones(doc, res.data);
-				if (!cancelado) setAnotaciones(anots);
-			} catch (err) {
-				console.error("[cognetica:visor-mdj] resaltado de autores:", err);
-			}
-		};
-		cargar();
+				setAnotaciones(mencionesAAnotaciones(doc, menciones));
+				setCargando(false);
+			})
+			.catch((err) => {
+				console.error("[cognetica:visor-mdj] resaltado de entidades:", err);
+				if (!cancelado) setCargando(false);
+			});
 		return () => {
 			cancelado = true;
 		};
 	}, [content, artefactoId]);
 
 	return (
-		<div className={className}>
+		<div className={`relative ${className}`}>
 			{titulo ? (
 				<StandardText
 					asElement="h3"
@@ -73,6 +72,16 @@ export function DocumentoMdjViewer({
 					{titulo}
 				</StandardText>
 			) : null}
+
+			{cargando ? (
+				<div className="absolute top-2 right-2 z-10 flex items-center gap-2 rounded-md border border-neutral-200 bg-white/90 px-2 py-1 shadow-sm dark:border-neutral-700 dark:bg-neutral-900/90">
+					<SustratoLoadingLogo size={18} text="" />
+					<StandardText size="xs" colorScheme="neutral" colorShade="subtle">
+						Buscando menciones…
+					</StandardText>
+				</div>
+			) : null}
+
 			<StandardMDJViewerClient
 				md={content}
 				artefactoId={artefactoId}

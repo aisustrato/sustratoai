@@ -48,6 +48,8 @@ export type Anotacion = {
   /** Indica si el link fue verificado que existe (solo para tipo "referencia") */
   validado?: boolean;
   huerfana?: boolean;
+  /** Tipo de entidad de Cognética (solo para tipo "entidad"): color + ruta. */
+  entidad_tipo?: "pensador" | "concepto" | "teoria" | "disciplina" | "cita";
 };
 
 // ── TipoNodo (string union — no derivado para evitar circularidad) ───────

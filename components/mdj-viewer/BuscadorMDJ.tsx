@@ -133,6 +133,7 @@ export function BuscadorMDJ({ doc, onNavegar, busquedaInicial, busquedaExterna, 
   }
 
   return (
+    <>
     <div className="flex items-center gap-2">
       <div className="relative flex-1 max-w-sm">
         <Search
@@ -192,5 +193,31 @@ export function BuscadorMDJ({ doc, onNavegar, busquedaInicial, busquedaExterna, 
         <X size={16} />
       </button>
     </div>
+
+    {/* Mini-barra flotante: sigue el scroll para saltar entre ocurrencias sin
+        volver arriba. Solo si hay más de una coincidencia. */}
+    {coincidencias.length > 1 && (
+      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-1 rounded-full border border-neutral-200 bg-white/95 px-2 py-1.5 shadow-lg backdrop-blur-sm dark:border-neutral-700 dark:bg-neutral-900/95">
+        <Search size={14} className="ml-1 text-neutral-400" />
+        <button
+          onClick={irAnterior}
+          className="p-1 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          aria-label="Ocurrencia anterior"
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <span className="min-w-[3.5rem] text-center text-sm tabular-nums text-neutral-600 dark:text-neutral-300">
+          {indiceActivo + 1} de {coincidencias.length}
+        </span>
+        <button
+          onClick={irSiguiente}
+          className="p-1 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          aria-label="Ocurrencia siguiente"
+        >
+          <ChevronRight size={18} />
+        </button>
+      </div>
+    )}
+    </>
   );
 }

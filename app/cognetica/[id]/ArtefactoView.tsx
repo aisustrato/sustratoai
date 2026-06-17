@@ -37,6 +37,7 @@ import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardDropdownMenu } from "@/components/ui/StandardDropdownMenu";
 import { DocumentoMarkdownViewer } from "./DocumentoMarkdownViewer";
 import { DocumentoMdjViewer } from "./DocumentoMdjViewer";
+import { prefetchMencionesEntidades } from "./menciones-cache";
 import { StandardStepper } from "@/components/ui/StandardStepper";
 import { StandardText } from "@/components/ui/StandardText";
 
@@ -611,6 +612,13 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 	// Flag Fase 1: visor MDJ para documentos de texto. OFF por default → el
 	// visor actual (StandardMarkdownViewer) sigue siendo el comportamiento de hoy.
 	const [usarVisorMdj, setUsarVisorMdj] = useState(false);
+
+	// Al prender el visor MDJ, precargar las menciones en segundo plano (aunque
+	// los acordeones estén cerrados) para que las marcas aparezcan al instante
+	// cuando se abre una sección.
+	useEffect(() => {
+		if (usarVisorMdj) prefetchMencionesEntidades(artefacto.id);
+	}, [usarVisorMdj, artefacto.id]);
 	// Trigger para refrescar secciones de referencias/fuentes sin recargar la página
 	const [refreshReferenciasTrigger, setRefreshReferenciasTrigger] = useState(0);
 	// Trigger para refrescar sección de menciones cartografiadas

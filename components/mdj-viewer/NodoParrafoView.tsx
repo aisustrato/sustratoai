@@ -11,6 +11,7 @@ import { useMemo } from "react";
 import * as React from "react";
 import { useTheme } from "@/app/theme-provider";
 import type { NodoParrafo, Anotacion, CoincidenciaBusqueda, NodoInline } from "@/lib/mdj/types";
+import { extraerTextoPlano } from "@/lib/mdj/texto-plano";
 import { InlineRenderer } from "./InlineRenderer";
 import { AnotacionMarca } from "./AnotacionMarca";
 import { NotaTooltip } from "./NotaTooltip";
@@ -235,6 +236,11 @@ function construirSegmentos(
         contenido,
         activa: busquedaActivaIdx === busqueda!.indiceActivo,
       });
+    } else if (contenido) {
+      // Texto entre regiones, sin anotación ni búsqueda activa. DEBE pushearse:
+      // si se omite, los segmentos dejan de ser contiguos y el render (que
+      // acumula posiciones por largo) corre todos los resaltados siguientes.
+      segmentos.push({ tipo: "texto", contenido });
     }
 
     cursor = nextPos;
@@ -277,13 +283,12 @@ function renderizarSegmentosConInline(
 }
 
 function leafLen(nodo: NodoInline): number {
-  if ("contenido" in nodo && typeof (nodo as { contenido: string }).contenido === "string") {
-    return (nodo as { contenido: string }).contenido.length;
-  }
-  if ("hijos" in nodo && Array.isArray(nodo.hijos)) {
-    return (nodo.hijos as NodoInline[]).reduce((s: number, h: NodoInline) => s + leafLen(h), 0);
-  }
-  return 0;
+  // DEBE coincidir EXACTO con extraerTextoPlano (que produce texto_plano, sobre
+  // el que se calculan los offsets de las anotaciones). Si difiere, los
+  // resaltados se desfasan — p.ej. un link aporta su texto a texto_plano pero
+  // no tiene contenido/hijos, así que la versión vieja devolvía 0 y corría la
+  // marca por el largo del link.
+  return extraerTextoPlano([nodo]).length;
 }
 
 function walkInlineWithAnnotations(
@@ -338,7 +343,7 @@ function splitText(
   cb: Record<string, unknown>,
 ): React.ReactNode[] {
   const out: React.ReactNode[] = [];
-  let cur = 0, ik = 0;
+  let cur = 0;
   while (cur < txt.length) {
     const pos = base + cur;
     const seg = am.get(pos);
@@ -346,7 +351,10 @@ function splitText(
       let nxt = txt.length;
       for (let p = pos; p < base + txt.length; p++) { if (am.has(p)) { nxt = p - base; break; } }
       const t = txt.slice(cur, nxt);
-      if (t) out.push(<span key={`t${ik++}`}>{t}</span>);
+      // key por posición absoluta (única en todo el párrafo: cada segmento
+      // arranca en un offset distinto). Antes un contador local se reiniciaba
+      // por hoja y chocaba entre hojas (warning "two children with same key").
+      if (t) out.push(<span key={`t-${pos}`}>{t}</span>);
       cur = nxt;
     } else {
       let fin = txt.length;
@@ -355,14 +363,14 @@ function splitText(
       if (at && seg.tipo === "busqueda") {
         // Coincidencia de búsqueda sin anotación → resaltado de búsqueda.
         out.push(
-          <BusquedaMarca key={`s${ik++}`} activa={seg.activa}>
+          <BusquedaMarca key={`m-${pos}`} activa={seg.activa}>
             {at}
           </BusquedaMarca>,
         );
       } else if (at) {
         const a = (seg as { anotacion: Anotacion }).anotacion;
         const activa = (cb as Record<string, unknown>).anotacionActiva === a.id;
-        const key = `a${ik++}`;
+        const key = `m-${pos}`;
         // Cada tipo de anotación se envuelve en su tooltip interactivo,
         // pasando el texto formateado (at) como children para preservar
         // negrita/cursiva dentro del resaltado.

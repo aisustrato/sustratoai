@@ -254,9 +254,18 @@ Notas del operador para una fase posterior (no se implementa ahora):
 > Pendiente de diseño detallado cuando lleguemos a la fase; aquí solo se deja
 > registrada la intención.
 
----
+### Limitación conocida al cierre de esta fase: citas no resueltas
 
-## 11. Fuera de alcance (por ahora)
+El resaltado de **citas** quedó **parcial**: solo aparecen las que coinciden
+(casi) verbatim con el texto del documento. Las citas largas suelen diferir
+(una palabra, un recorte, puntuación, o cruzan un bloque), así que el match al
+vuelo por texto no las encuentra de forma confiable. Hoy se mitiga con
+coincidencia completa + anclaje por fragmento inicial, pero **no es robusto**.
+
+**Solución prevista (Fase 3):** hacer el pareo **robusto con la dirección MDJ**
+(`nodo_id`) persistida + la **tabla nueva de direcciones entidad↔dirección**
+(arriba). Es decir: en vez de re-buscar el texto cada vez, guardar dónde vive
+cada cita/entidad y leer esa dirección. Eso resuelve las citas no encontradas.
 
 - Tocar la transcripción de audio cruda (formato card).
 - Aplicar MDJ a `pdf_slides`.
