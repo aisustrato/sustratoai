@@ -16,6 +16,7 @@ import { AnotacionMarca } from "./AnotacionMarca";
 import { NotaTooltip } from "./NotaTooltip";
 import { ReferenciaTooltip } from "./ReferenciaTooltip";
 import { FraseNotableTooltip } from "./FraseNotableTooltip";
+import { EntidadTooltip } from "./EntidadTooltip";
 
 /**
  * Marca visual para coincidencias de búsqueda — usa el color success del tema.
@@ -365,7 +366,13 @@ function splitText(
         // Cada tipo de anotación se envuelve en su tooltip interactivo,
         // pasando el texto formateado (at) como children para preservar
         // negrita/cursiva dentro del resaltado.
-        if (a.tipo === "nota") {
+        if (a.tipo === "entidad") {
+          out.push(
+            <EntidadTooltip key={key} anotacion={a} activa={activa}>
+              {at}
+            </EntidadTooltip>,
+          );
+        } else if (a.tipo === "nota") {
           out.push(
             <NotaTooltip
               key={key}

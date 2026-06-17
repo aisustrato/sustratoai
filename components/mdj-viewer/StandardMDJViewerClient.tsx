@@ -83,6 +83,13 @@ export function StandardMDJViewerClient({
   // Estado local de anotaciones — permite editar/borrar sin reparsear
   const [anotacionesLocales, setAnotacionesLocales] = useState<Anotacion[]>(anotaciones);
 
+  // Sincronizar cuando el padre carga/actualiza las anotaciones de forma async
+  // (ej. Cognética resuelve las menciones después del mount). El useState de
+  // arriba solo aplica en el montaje, por eso hace falta este efecto.
+  useEffect(() => {
+    setAnotacionesLocales(anotaciones);
+  }, [anotaciones]);
+
   // Estado para diálogo de reintento
   const [reintento, setReintento] = useState<{
     tipo: "frase" | "referencia" | "nota";

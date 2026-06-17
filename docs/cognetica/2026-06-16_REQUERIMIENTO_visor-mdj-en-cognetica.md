@@ -244,6 +244,12 @@ Notas del operador para una fase posterior (no se implementa ahora):
 - **Estabilidad de las direcciones:** los textos son **solo lectura** — el
   contenido no cambia. A lo sumo se corrige el **nombre** de una entidad (ej. un
   autor mal escrito), pero la **arquitectura de direcciones permanece**.
+- **Nombre canónico vs. texto (alias):** el canónico se guarda "lindo" (nombre +
+  apellido) pero en las citas suele aparecer **solo el apellido** (o solo el
+  nombre). En legacy esto se resuelve **buscando por palabra** (nombre/apellido)
+  al vuelo. Para entidades nuevas (fase 3/4) conviene **persistir las formas en
+  que aparece** (alias) y/o sus direcciones, para no depender solo de la
+  coincidencia textual.
 
 > Pendiente de diseño detallado cuando lleguemos a la fase; aquí solo se deja
 > registrada la intención.

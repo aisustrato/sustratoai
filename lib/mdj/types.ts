@@ -30,7 +30,7 @@ export type NodoInline =
 
 // ── Anotaciones ──────────────────────────────────────────────────────────
 
-export type TipoAnotacion = "frase_notable" | "referencia" | "nota";
+export type TipoAnotacion = "frase_notable" | "referencia" | "nota" | "entidad";
 
 export type SemaforoReferencia = "verde" | "amarillo" | "rojo";
 

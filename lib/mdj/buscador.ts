@@ -54,23 +54,31 @@ function recolectarHojas(nodos: NodoEstructural[]): Array<{ id: string; texto_pl
   return hojas;
 }
 
+/** Caracter de palabra (letra unicode o dígito) — para límites de palabra. */
+const CARACTER_PALABRA = /[\p{L}\p{N}]/u;
+
 /**
  * Busca un término en todo el documento MDJ.
  * Case-insensitive, ignora acentos.
  *
  * @param doc - DocumentoMDJ parseado
  * @param termino - Texto a buscar
+ * @param opciones.palabraCompleta - Si es true, exige que la coincidencia sea
+ *   una palabra completa (límites no alfanuméricos). Evita que "May" matchee
+ *   dentro de "mayor". Default false (subcadena, como la caja de búsqueda).
  * @returns Array de coincidencias ordenadas por aparición en el documento
  */
 export function buscarEnDocumento(
   doc: DocumentoMDJ,
   termino: string,
+  opciones?: { palabraCompleta?: boolean },
 ): CoincidenciaBusqueda[] {
   if (!termino || termino.trim().length < 2) return [];
 
   const terminoNorm = normalizar(termino.trim());
   const hojas = recolectarHojas(doc.nodos);
   const resultados: CoincidenciaBusqueda[] = [];
+  const palabraCompleta = opciones?.palabraCompleta ?? false;
 
   for (const hoja of hojas) {
     const textoNorm = normalizar(hoja.texto_plano);
@@ -79,6 +87,18 @@ export function buscarEnDocumento(
     while (true) {
       const idx = textoNorm.indexOf(terminoNorm, pos);
       if (idx === -1) break;
+
+      pos = idx + 1;
+
+      // Límites de palabra: el char anterior y el siguiente no deben ser
+      // alfanuméricos (chequeado sobre el texto normalizado, consistente con idx).
+      if (palabraCompleta) {
+        const antes = idx > 0 ? textoNorm[idx - 1] : "";
+        const despues = textoNorm[idx + terminoNorm.length] ?? "";
+        if (CARACTER_PALABRA.test(antes) || CARACTER_PALABRA.test(despues)) {
+          continue;
+        }
+      }
 
       // Extraer fragmento del texto ORIGINAL (no normalizado)
       const fragmento = hoja.texto_plano.slice(idx, idx + terminoNorm.length);
@@ -89,8 +109,6 @@ export function buscarEnDocumento(
         offset_fin: idx + terminoNorm.length,
         fragmento,
       });
-
-      pos = idx + 1;
     }
   }
 
