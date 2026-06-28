@@ -47,6 +47,7 @@ import {
 	type RespuestaCartografiador,
 	type StatsAplicacion,
 } from "@/lib/cognetica-forense/lib/cartografiador/aplicar-decisiones";
+import { construirMdjArtefacto } from "@/lib/cognetica-forense/direcciones/resolver";
 //#endregion ![head]
 
 //#region [def] - 📦 TIPOS 📦
@@ -313,6 +314,16 @@ export async function ejecutarCartografiador(
 		"[ejecutarCartografiador] corrida completada:",
 		JSON.stringify(resultado),
 	);
+
+	// (9) MDJ frío: construir y persistir el DocumentoMDJ de cada documento con
+	// sus anotaciones horneadas (entidades + referencias). Best-effort: no rompe
+	// el cartografiador si falla (el visor cae al match on-the-fly).
+	try {
+		const mdj = await construirMdjArtefacto(artefactoId);
+		console.info("[ejecutarCartografiador] MDJ frío:", JSON.stringify(mdj));
+	} catch (err) {
+		console.error("[ejecutarCartografiador] construir MDJ frío:", err);
+	}
 
 	return ok(resultado);
 }

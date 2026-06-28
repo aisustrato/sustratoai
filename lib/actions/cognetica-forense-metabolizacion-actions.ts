@@ -34,6 +34,7 @@ import { callDeepSeek } from "@/lib/deepseek/api";
 import { revalidatePath } from "next/cache";
 import { prepararContenidoLargo } from "@/lib/cognetica-forense/chunking";
 import { obtenerContenidoMetabolizable } from "@/lib/cognetica-forense/contenido-metabolizable";
+import { mdDesdeContenido } from "@/lib/cognetica-forense/mdj-contenido";
 import { logLlamadaDeepseek } from "@/lib/cognetica-forense/deepseek-logger";
 import { parsearJsonLLM } from "@/lib/cognetica-forense/parsear-json-llm";
 import { persistirMencionesExtractor } from "@/lib/cognetica-forense/lib/persistir-menciones-extractor";
@@ -344,7 +345,7 @@ export async function generarDestilado(
 	// (3) Construir prompts v2 (incluye metadata del artefacto).
 	const userPrompt = construirPromptDestilado({
 		contenidoArtefacto: contRes.data.contenido,
-		cronicaRenderizada: cronica.contenido,
+		cronicaRenderizada: mdDesdeContenido(cronica.contenido),
 		tipoArtefacto: artefacto.tipo,
 		fechaCreacion: artefacto.created_at,
 		origen:
@@ -798,7 +799,7 @@ export async function generarGerminalParcial(
 		destRes.data as unknown as CgtDestilado,
 	);
 	const userPrompt = construirPromptGerminal({
-		cronicaActual: (cronRes.data as unknown as CgtCronica).contenido,
+		cronicaActual: mdDesdeContenido((cronRes.data as unknown as CgtCronica).contenido),
 		destiladoActual: destiladoRenderizado,
 		// v1 atómica: lista vacía. Se poblará en v2 cuando el prompt consulte corpus.
 		nucleosPreviosDelProyecto: [],

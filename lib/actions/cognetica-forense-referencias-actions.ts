@@ -18,6 +18,8 @@ export interface ReferenciaArtefacto {
 	url: string | null;
 	tipo_referencia: string;
 	confianza_extraccion: number;
+	/** Cita inline tal como aparece en el texto — ancla para resaltar en el MDJ. */
+	formato_cita_inline: string | null;
 }
 
 export async function listarReferenciasPorArtefacto(
@@ -31,6 +33,7 @@ export async function listarReferenciasPorArtefacto(
 			`
 			numero_en_artefacto,
 			confianza_extraccion,
+			formato_cita_inline,
 			cgt_referencias (
 				id,
 				titulo,
@@ -55,6 +58,7 @@ export async function listarReferenciasPorArtefacto(
 			const r = row as {
 				numero_en_artefacto: number | null;
 				confianza_extraccion: number;
+				formato_cita_inline: string | null;
 				cgt_referencias: {
 					id: string;
 					titulo: string | null;
@@ -79,6 +83,7 @@ export async function listarReferenciasPorArtefacto(
 				url: r.cgt_referencias.url,
 				tipo_referencia: r.cgt_referencias.tipo_referencia,
 				confianza_extraccion: r.confianza_extraccion,
+				formato_cita_inline: r.formato_cita_inline,
 			};
 		})
 		.filter(

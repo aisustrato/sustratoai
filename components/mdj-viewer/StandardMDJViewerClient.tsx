@@ -43,6 +43,12 @@ interface StandardMDJViewerClientProps {
   md: string;
   artefactoId: string;
   tipoArtefacto?: DocumentoMDJ["tipo_artefacto"];
+  /**
+   * MDJ ya parseado. Si se provee, se usa TAL CUAL (no se re-parsea `md`), lo que
+   * garantiza que los nodo_id/offsets de las anotaciones horneadas alineen exacto.
+   * Si se omite, se parsea `md` (comportamiento clásico, ej. showroom).
+   */
+  documento?: DocumentoMDJ;
   anotaciones?: Anotacion[];
   className?: string;
   /** Callback cuando el usuario selecciona texto */
@@ -59,6 +65,7 @@ export function StandardMDJViewerClient({
   md,
   artefactoId,
   tipoArtefacto = "otro",
+  documento,
   anotaciones = [],
   className = "",
   onSeleccion,
@@ -126,9 +133,11 @@ export function StandardMDJViewerClient({
 
   // Parsear en cliente — memoizado para no reparsear en cada render
   // Las anotaciones se pasan separadas para poder modificarlas localmente
+  // Si llega un DocumentoMDJ ya parseado, se usa tal cual (alineación exacta de
+  // anotaciones). Si no, se parsea `md` (comportamiento clásico).
   const doc = useMemo(
-    () => parsearMDJ(md, artefactoId, tipoArtefacto, []),
-    [md, artefactoId, tipoArtefacto],
+    () => documento ?? parsearMDJ(md, artefactoId, tipoArtefacto, []),
+    [documento, md, artefactoId, tipoArtefacto],
   );
 
   // Resolver anotaciones locales sobre el árbol (mismo proceso que parsearMDJ)

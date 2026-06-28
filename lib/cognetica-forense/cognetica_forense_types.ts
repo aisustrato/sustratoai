@@ -73,6 +73,10 @@ export interface CgtArtefacto {
   created_by: string | null;
   created_at: string; // ISO timestamp
   updated_at: string;
+
+  // Fase 3 (visor MDJ): timestamp en que se resolvieron y persistieron las
+  // direcciones MDJ de las menciones. null = aún no normalizado.
+  direcciones_resueltas_at: string | null;
 }
 
 // =============================================================================

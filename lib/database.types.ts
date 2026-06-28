@@ -655,6 +655,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           descripcion: string | null
+          direcciones_resueltas_at: string | null
           error_mensaje: string | null
           estado: Database["public"]["Enums"]["cgt_estado_metabolizacion"]
           grupo_id: string | null
@@ -675,6 +676,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descripcion?: string | null
+          direcciones_resueltas_at?: string | null
           error_mensaje?: string | null
           estado?: Database["public"]["Enums"]["cgt_estado_metabolizacion"]
           grupo_id?: string | null
@@ -695,6 +697,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descripcion?: string | null
+          direcciones_resueltas_at?: string | null
           error_mensaje?: string | null
           estado?: Database["public"]["Enums"]["cgt_estado_metabolizacion"]
           grupo_id?: string | null
@@ -2202,6 +2205,63 @@ export type Database = {
           },
           {
             foreignKeyName: "cgt_logs_deepseek_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cgt_menciones_direcciones: {
+        Row: {
+          artefacto_id: string
+          created_at: string
+          documento: string
+          id: string
+          mencion_id: string
+          nodo_id: string
+          offset_fin: number
+          offset_inicio: number
+          origen: string
+          project_id: string
+          tipo_mencion: string
+        }
+        Insert: {
+          artefacto_id: string
+          created_at?: string
+          documento: string
+          id?: string
+          mencion_id: string
+          nodo_id: string
+          offset_fin: number
+          offset_inicio: number
+          origen?: string
+          project_id: string
+          tipo_mencion: string
+        }
+        Update: {
+          artefacto_id?: string
+          created_at?: string
+          documento?: string
+          id?: string
+          mencion_id?: string
+          nodo_id?: string
+          offset_fin?: number
+          offset_inicio?: number
+          origen?: string
+          project_id?: string
+          tipo_mencion?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cgt_menciones_direcciones_artefacto_id_fkey"
+            columns: ["artefacto_id"]
+            isOneToOne: false
+            referencedRelation: "cgt_artefactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cgt_menciones_direcciones_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"

@@ -37,7 +37,8 @@ import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardDropdownMenu } from "@/components/ui/StandardDropdownMenu";
 import { DocumentoMarkdownViewer } from "./DocumentoMarkdownViewer";
 import { DocumentoMdjViewer } from "./DocumentoMdjViewer";
-import { prefetchMencionesEntidades } from "./menciones-cache";
+import { construirMdDestilado, construirMdNucleo } from "@/lib/cognetica-forense/documentos-markdown";
+import { mdDesdeContenido } from "@/lib/cognetica-forense/mdj-contenido";
 import { StandardStepper } from "@/components/ui/StandardStepper";
 import { StandardText } from "@/components/ui/StandardText";
 
@@ -48,9 +49,7 @@ import type {
 	CgtDestilado,
 	CgtEstadoMetabolizacion,
 	CgtGerminal,
-	CgtMovimiento,
 	CgtNucleo,
-	CgtTension,
 } from "@/lib/cognetica-forense/types";
 
 import { BorrarButton } from "./BorrarButton";
@@ -484,55 +483,9 @@ function colorSchemeGlobal(
 }
 //#endregion ![helpers]
 
-//#region [helpers] - 🛠️ MARKDOWN HELPERS PARA TRÍADA 🛠️
-/**
- * Construye markdown del Destilado (mismo formato que DestiladoView).
- */
-function construirMDDestiladoView(d: CgtDestilado): string {
-	const movs: CgtMovimiento[] = Array.isArray(d.movimientos) ? d.movimientos : [];
-	const tens: CgtTension[] = Array.isArray(d.tensiones) ? d.tensiones : [];
-	const partes: string[] = [];
-	if (d.tesis) partes.push(`# Tesis\n\n${d.tesis}`);
-	if (movs.length > 0) {
-		const movimientosMd = movs
-			.map((m) => `${m.orden}. **${m.desde} → ${m.hacia}**: ${m.texto}`)
-			.join("\n");
-		partes.push(`# Movimientos (${movs.length})\n\n${movimientosMd}`);
-	}
-	if (tens.length > 0) {
-		const tensionesMd = tens
-			.map((t) => `- *[${t.tipo}]* ${t.texto}`)
-			.join("\n");
-		partes.push(`# Tensiones (${tens.length})\n\n${tensionesMd}`);
-	}
-	if (d.cita_nucleo) {
-		const citaMd = [
-			`> "${d.cita_nucleo.texto}"`,
-			`> — ${d.cita_nucleo.ubicacion}${d.cita_nucleo.autor ? ` · ${d.cita_nucleo.autor}` : ""}`,
-		].join("\n");
-		partes.push(`# Cita núcleo\n\n${citaMd}`);
-	}
-	return partes.join("\n\n---\n\n");
-}
-
-/**
- * Construye markdown del Núcleo (mismo formato que NucleoView).
- */
-function construirMDNucleoView(n: CgtNucleo): string {
-	const movs = Array.isArray(n.movimientos_esenciales) ? n.movimientos_esenciales : [];
-	const partes: string[] = [];
-	if (n.tesis) partes.push(`# Tesis\n\n${n.tesis}`);
-	if (movs.length > 0) {
-		const movimientosMd = movs
-			.map((m) => `${m.orden}. ${m.texto}`)
-			.join("\n");
-		partes.push(`# Movimientos esenciales (${movs.length})\n\n${movimientosMd}`);
-	}
-	if (n.tension_irreductible) partes.push(`# Tensión irreductible\n\n${n.tension_irreductible}`);
-	if (n.cita_nucleo) partes.push(`# Cita núcleo\n\n> "${n.cita_nucleo.texto}"`);
-	return partes.join("\n\n---\n\n");
-}
-//#endregion ![helpers]
+// Los builders de markdown del Destilado/Núcleo viven en
+// lib/cognetica-forense/documentos-markdown.ts (fuente única que comparten el
+// visor y el resolver de direcciones).
 
 //#region [main] - 🔧 COMPONENT 🔧
 /**
@@ -609,16 +562,14 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 	}, [inconsistencia, inconsistenciaKey]);
 	// Modo edición: OFF por default (navegación), ON para editar menciones
 	const [modoEdicion, setModoEdicion] = useState(false);
-	// Flag Fase 1: visor MDJ para documentos de texto. OFF por default → el
-	// visor actual (StandardMarkdownViewer) sigue siendo el comportamiento de hoy.
-	const [usarVisorMdj, setUsarVisorMdj] = useState(false);
+	// Flag Fase 1: visor MDJ para documentos de texto. Arranca en ON si el
+	// artefacto ya tiene sus direcciones MDJ resueltas (normalizado) → sirve de
+	// indicador rápido: visor encendido = ya estaba normalizado; apagado = legacy
+	// aún sin resolver (al prenderlo, el lazy las computa la primera vez).
+	const [usarVisorMdj, setUsarVisorMdj] = useState(
+		Boolean(artefacto.direcciones_resueltas_at),
+	);
 
-	// Al prender el visor MDJ, precargar las menciones en segundo plano (aunque
-	// los acordeones estén cerrados) para que las marcas aparezcan al instante
-	// cuando se abre una sección.
-	useEffect(() => {
-		if (usarVisorMdj) prefetchMencionesEntidades(artefacto.id);
-	}, [usarVisorMdj, artefacto.id]);
 	// Trigger para refrescar secciones de referencias/fuentes sin recargar la página
 	const [refreshReferenciasTrigger, setRefreshReferenciasTrigger] = useState(0);
 	// Trigger para refrescar sección de menciones cartografiadas
@@ -733,12 +684,13 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 			// segmentos (el visor la muestra, pero `contenidoMarkdown` es texto
 			// plano sin hablantes). Fallback explícito al texto plano si no hay
 			// segmentos diarizados.
+			// El contenido guardado puede ser MDJ → exportar a MD vía accesor.
 			const transcripcionParaExportar =
 				artefacto.tipo === "audio"
 					? (transcripcionDiarizadaMD(data.audio_segmentos) ??
-						data.contenidoMarkdown ??
+						mdDesdeContenido(data.contenidoMarkdown) ??
 						null)
-					: (data.contenidoMarkdown ?? null);
+					: (data.contenidoMarkdown ? mdDesdeContenido(data.contenidoMarkdown) : null);
 			const triadaParams: TriadaParams = {
 				artefactoId: artefacto.id,
 				titulo: artefacto.titulo ?? "Artefacto sin título",
@@ -748,14 +700,14 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 				sha256Artefacto: artefacto.sha256_json,
 				tags: semillas,
 				transcripcionMD: transcripcionParaExportar,
-				cronicaMD: data.cronica?.contenido ?? null,
+				cronicaMD: data.cronica?.contenido ? mdDesdeContenido(data.cronica.contenido) : null,
 				destiladoMD: data.destilado
-					? construirMDDestiladoView(data.destilado)
+					? construirMdDestilado(data.destilado)
 					: null,
 				nucleoMD: data.nucleo
-					? construirMDNucleoView(data.nucleo)
+					? construirMdNucleo(data.nucleo)
 					: null,
-				germinalMD: data.germinal?.resumen ?? null,
+				germinalMD: data.germinal?.resumen ? mdDesdeContenido(data.germinal.resumen) : null,
 				referencias: referenciasData,
 				menciones,
 			};
@@ -1649,10 +1601,11 @@ function SeccionOriginal({
 						content={contenidoMarkdown}
 						titulo={artefacto.titulo}
 						artefactoId={artefacto.id}
+						documento="original"
 					/>
 				) : (
 					<DocumentoMarkdownViewer
-						content={contenidoMarkdown}
+						content={mdDesdeContenido(contenidoMarkdown)}
 						titulo={artefacto.titulo}
 						mostrarBusqueda={true}
 						mostrarDescarga={false}
@@ -1775,7 +1728,8 @@ function SeccionFormato({
 	// estado === "generado"
 	switch (clave) {
 		case "cronica": {
-			const contenido = data.cronica?.contenido ?? "";
+			// Descarga = MD (el contenido guardado puede ser MDJ).
+			const contenido = data.cronica?.contenido ? mdDesdeContenido(data.cronica.contenido) : "";
 			return data.cronica ? (
 				<CronicaView
 					c={data.cronica}
@@ -1807,7 +1761,8 @@ function SeccionFormato({
 				/>
 			) : null;
 		case "germinal": {
-			const contenido = data.germinal?.resumen ?? "";
+			// Descarga = MD (el contenido guardado puede ser MDJ).
+			const contenido = data.germinal?.resumen ? mdDesdeContenido(data.germinal.resumen) : "";
 			return data.germinal ? (
 				<GerminalView
 					g={data.germinal}
@@ -1849,9 +1804,12 @@ function CronicaView({
 						content={c.contenido}
 						titulo="Crónica"
 						artefactoId={artefactoId}
+						documento="cronica"
+						onDescargarObsidiana={onDescargarObsidiana}
+						sha256Descarga={sha256Descarga}
 					/>
 				:	<DocumentoMarkdownViewer
-						content={c.contenido}
+						content={mdDesdeContenido(c.contenido)}
 						titulo="Crónica"
 						mostrarBusqueda={true}
 						mostrarDescarga={true}
@@ -1882,40 +1840,7 @@ function DestiladoView({
 	artefactoId: string;
 }) {
 	// Construir markdown completo del destilado para copiar todo
-	const markdownCompleto = useMemo(() => {
-		const movs: CgtMovimiento[] =
-			Array.isArray(d.movimientos) ? d.movimientos : [];
-		const tens: CgtTension[] = Array.isArray(d.tensiones) ? d.tensiones : [];
-		const partes: string[] = [];
-
-		if (d.tesis) {
-			partes.push(`# Tesis\n\n${d.tesis}`);
-		}
-
-		if (movs.length > 0) {
-			const movimientosMd = movs
-				.map((m) => `${m.orden}. **${m.desde} → ${m.hacia}**: ${m.texto}`)
-				.join("\n");
-			partes.push(`# Movimientos (${movs.length})\n\n${movimientosMd}`);
-		}
-
-		if (tens.length > 0) {
-			const tensionesMd = tens
-				.map((t) => `- *[${t.tipo}]* ${t.texto}`)
-				.join("\n");
-			partes.push(`# Tensiones (${tens.length})\n\n${tensionesMd}`);
-		}
-
-		if (d.cita_nucleo) {
-			const citaMd = [
-				`> "${d.cita_nucleo.texto}"`,
-				`> — ${d.cita_nucleo.ubicacion}${d.cita_nucleo.autor ? ` · ${d.cita_nucleo.autor}` : ""}`,
-			].join("\n");
-			partes.push(`# Cita núcleo\n\n${citaMd}`);
-		}
-
-		return partes.join("\n\n---\n\n");
-	}, [d]);
+	const markdownCompleto = useMemo(() => construirMdDestilado(d), [d]);
 
 	return (
 		<div className="space-y-4">
@@ -1931,6 +1856,9 @@ function DestiladoView({
 						content={markdownCompleto}
 						titulo="Contenido del destilado"
 						artefactoId={artefactoId}
+						documento="destilado"
+						onDescargarObsidiana={onDescargarObsidiana ? () => onDescargarObsidiana(markdownCompleto) : undefined}
+						sha256Descarga={sha256Descarga}
 					/>
 				:	<DocumentoMarkdownViewer
 						content={markdownCompleto}
@@ -1965,34 +1893,7 @@ function NucleoView({
 	artefactoId: string;
 }) {
 	// Construir markdown completo del núcleo para copiar todo
-	const markdownCompleto = useMemo(() => {
-		const movs =
-			Array.isArray(n.movimientos_esenciales) ? n.movimientos_esenciales : [];
-		const partes: string[] = [];
-
-		if (n.tesis) {
-			partes.push(`# Tesis\n\n${n.tesis}`);
-		}
-
-		if (movs.length > 0) {
-			const movimientosMd = movs
-				.map((m) => `${m.orden}. ${m.texto}`)
-				.join("\n");
-			partes.push(
-				`# Movimientos esenciales (${movs.length})\n\n${movimientosMd}`,
-			);
-		}
-
-		if (n.tension_irreductible) {
-			partes.push(`# Tensión irreductible\n\n${n.tension_irreductible}`);
-		}
-
-		if (n.cita_nucleo) {
-			partes.push(`# Cita núcleo\n\n> "${n.cita_nucleo.texto}"`);
-		}
-
-		return partes.join("\n\n---\n\n");
-	}, [n]);
+	const markdownCompleto = useMemo(() => construirMdNucleo(n), [n]);
 
 	return (
 		<div className="space-y-4">
@@ -2008,6 +1909,9 @@ function NucleoView({
 						content={markdownCompleto}
 						titulo="Contenido del núcleo"
 						artefactoId={artefactoId}
+						documento="nucleo"
+						onDescargarObsidiana={onDescargarObsidiana ? () => onDescargarObsidiana(markdownCompleto) : undefined}
+						sha256Descarga={sha256Descarga}
 					/>
 				:	<DocumentoMarkdownViewer
 						content={markdownCompleto}
@@ -2054,9 +1958,12 @@ function GerminalView({
 						content={g.resumen}
 						titulo="Germinal parcial"
 						artefactoId={artefactoId}
+						documento="germinal"
+						onDescargarObsidiana={onDescargarObsidiana}
+						sha256Descarga={sha256Descarga}
 					/>
 				:	<DocumentoMarkdownViewer
-						content={g.resumen}
+						content={mdDesdeContenido(g.resumen)}
 						titulo="Germinal parcial"
 						mostrarBusqueda={true}
 						mostrarDescarga={true}
