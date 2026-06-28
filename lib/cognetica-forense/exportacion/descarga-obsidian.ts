@@ -12,6 +12,7 @@
  * Triada de artefacto completo (plan NH 2026-05-06).
  */
 
+import yaml from "js-yaml";
 import { sha256Hex } from "@/lib/cognetica-forense/hash";
 
 //#region [def] - 📦 TYPES 📦
@@ -715,49 +716,15 @@ export async function generarTriadaObsidian(
 
 	const yamlMeta = { ...metaJSON, sha256_descarga: "" };
 
-	function yamlString(s: string, indent: number): string {
-		const pad = "  ".repeat(indent);
-		if (s.includes("\n")) {
-			return "|\n" + s.split("\n").map((l) => `${pad}  ${l}`).join("\n");
-		}
-		return `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
-	}
-
-	function yamlValue(val: unknown, depth: number): string {
-		const pad = "  ".repeat(depth);
-		if (val === null || val === undefined) return "null";
-		if (typeof val === "string") {
-			if (val.includes("\n")) {
-				return "|\n" + val.split("\n").map((l) => `${pad}  ${l}`).join("\n");
-			}
-			return yamlString(val, depth);
-		}
-		if (typeof val === "number" || typeof val === "boolean") return String(val);
-		if (Array.isArray(val)) {
-			if (val.length === 0) return "[]";
-			return "\n" + val.map((v) => `${pad}  - ${yamlValue(v, depth + 2).trimStart()}`).join("\n");
-		}
-		if (val && typeof val === "object") {
-			const entries = Object.entries(val as Record<string, unknown>);
-			if (entries.length === 0) return "{}";
-			return "\n" + entries.map(([k, v]) => {
-				const vs = yamlValue(v, depth + 1);
-				const sep = vs.startsWith("|") || vs.startsWith("\n") ? "" : " ";
-				return `${pad}  ${k}:${sep}${vs}`;
-			}).join("\n");
-		}
-		return String(val);
-	}
-
-	function yamlSerialize(obj: Record<string, unknown>): string {
-		return Object.entries(obj)
-			.map(([k, v]) => {
-				const vs = yamlValue(v, 0);
-				const sep = vs.startsWith("|") || vs.startsWith("\n") ? "" : " ";
-				return `${k}:${sep}${vs}`;
-			})
-			.join("\n") + "\n";
-	}
+	// Serialización vía js-yaml (dependencia directa): robusta para LaTeX, strings
+	// multilínea (block scalars), arrays de objetos y caracteres especiales. El
+	// serializador casero previo rompía la indentación de arrays de objetos y el
+	// `clave:|` de las secciones, generando YAML inválido.
+	//   - lineWidth: -1 → nunca corta líneas largas (ecuaciones LaTeX, URLs).
+	//   - sortKeys: false → preserva el orden de inserción (determinista para el SHA).
+	//   - noRefs: true → sin anclas/aliases YAML.
+	const yamlSerialize = (obj: Record<string, unknown>): string =>
+		yaml.dump(obj, { lineWidth: -1, sortKeys: false, noRefs: true });
 
 	const yamlObjPreliminar: Record<string, unknown> = {
 		meta: { ...yamlMeta, sha256_descarga: placeholder },
