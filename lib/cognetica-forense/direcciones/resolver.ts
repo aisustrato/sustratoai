@@ -29,7 +29,7 @@ import {
 	listarReferenciasPorArtefacto,
 	type ReferenciaArtefacto,
 } from "@/lib/actions/cognetica-forense-referencias-actions";
-import { ubicarMenciones } from "./matcher";
+import { ubicarMenciones, type UbicacionMencion } from "./matcher";
 
 const TIPOS = ["pensador", "concepto", "teoria", "disciplina", "cita"] as const;
 const DOCUMENTOS = ["cronica", "germinal", "original"] as const;
@@ -38,18 +38,28 @@ export type DocumentoTexto = (typeof DOCUMENTOS)[number];
 /** Mapa documento → MDJ frío horneado. */
 export type MdjPorDocumento = Partial<Record<DocumentoTexto, DocumentoMDJ>>;
 
+/** Fila a insertar en `cgt_menciones_direcciones` (Brick #1). */
+interface FilaDireccion {
+	project_id: string;
+	artefacto_id: string;
+	tipo_mencion: UbicacionMencion["tipo"];
+	mencion_id: string;
+	documento: DocumentoTexto;
+	nodo_id: string;
+	offset_inicio: number;
+	offset_fin: number;
+	origen: "llm" | "humano";
+}
+
 const BUCKET = "cognetica-files";
 
 function tipoArtefactoDe(documento: DocumentoTexto): DocumentoMDJ["tipo_artefacto"] {
 	return documento === "cronica" ? "cronica" : "otro";
 }
 
-/** Anotaciones de entidades (5 tipos) horneadas para un documento parseado. */
-function anotacionesEntidades(
-	doc: DocumentoMDJ,
-	menciones: MencionConValorCanonico[],
-): Anotacion[] {
-	return ubicarMenciones(doc, menciones).map((u) => ({
+/** Mapea una ubicación (dirección MDJ) a su anotación de entidad horneada. */
+function anotacionDeUbicacion(u: UbicacionMencion): Anotacion {
+	return {
 		id: `ent-${u.tipo}-${u.mencionId}-${u.nodoId}-${u.offsetInicio}`,
 		tipo: "entidad" as const,
 		entidad_tipo: u.tipo,
@@ -59,7 +69,7 @@ function anotacionesEntidades(
 		fragmento: u.nombre,
 		entidad_id: u.entidadId,
 		nota_texto: u.descripcion,
-	}));
+	};
 }
 
 /** Anotaciones de referencias: ancla la cita inline en el texto (completa). */
@@ -124,16 +134,35 @@ export async function construirMdjArtefacto(
 
 	const docs: MdjPorDocumento = {};
 
+	// Brick #1: direcciones a persistir en cgt_menciones_direcciones (una fila por
+	// ocurrencia de entidad/cita). Se calculan de paso, al hornear cada documento.
+	const filasDirecciones: FilaDireccion[] = [];
+
 	for (const documento of DOCUMENTOS) {
 		const contenido = contenidoPorDocumento[documento];
 		if (!contenido || !contenido.trim()) continue;
 
 		// Parsear (desde MD legacy o MDJ previo) y re-hornear las anotaciones.
 		const doc = mdjDesdeContenido(contenido, artefactoId, tipoArtefactoDe(documento));
+		const ubicaciones = ubicarMenciones(doc, menciones);
 		doc.anotaciones = [
-			...anotacionesEntidades(doc, menciones),
+			...ubicaciones.map(anotacionDeUbicacion),
 			...anotacionesReferencias(doc, referencias),
 		];
+		for (const u of ubicaciones) {
+			filasDirecciones.push({
+				project_id: projectId,
+				artefacto_id: artefactoId,
+				tipo_mencion: u.tipo,
+				mencion_id: u.mencionId,
+				documento,
+				nodo_id: u.nodoId,
+				offset_inicio: u.offsetInicio,
+				offset_fin: u.offsetFin,
+				// TODO(brick-2/3): propagar el origen real de la mención (humano/llm).
+				origen: "llm",
+			});
+		}
 		const serializado = serializarMdj(doc);
 
 		// PISAR en su mismo lugar.
@@ -190,6 +219,32 @@ export async function construirMdjArtefacto(
 		}
 
 		docs[documento] = doc;
+	}
+
+	// Brick #1: persistir direcciones (delete+insert por artefacto). Best-effort:
+	// si falla, el monolito ya quedó horneado (pinta en frío igual); se loguea.
+	const delDir = await supabase
+		.from("cgt_menciones_direcciones")
+		.delete()
+		.eq("artefacto_id", artefactoId);
+	if (delDir.error) {
+		console.error("[cognetica:mdj-frio] borrar direcciones:", delDir.error);
+	} else if (filasDirecciones.length > 0) {
+		// Dedupe defensivo contra el unique index (artefacto, documento, tipo,
+		// mencion, nodo, offset_inicio).
+		const vistos = new Set<string>();
+		const unicas = filasDirecciones.filter((f) => {
+			const k = `${f.documento}|${f.tipo_mencion}|${f.mencion_id}|${f.nodo_id}|${f.offset_inicio}`;
+			if (vistos.has(k)) return false;
+			vistos.add(k);
+			return true;
+		});
+		const insDir = await supabase
+			.from("cgt_menciones_direcciones")
+			.insert(unicas);
+		if (insDir.error) {
+			console.error("[cognetica:mdj-frio] insertar direcciones:", insDir.error);
+		}
 	}
 
 	// Marcar normalizado (para iniciar el visor en ON).
