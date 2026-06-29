@@ -167,10 +167,19 @@ export function MencionesSection({
 				});
 				return;
 			}
-			toast.success("Mención eliminada");
 			setItemEliminando(null);
 			await cargar(); // refresca el sidebar
 			router.refresh(); // re-trae el contenido horneado para el visor
+			// El borrado en DB sí ocurrió. Pero si el re-horneado falló, el
+			// resaltado sigue en el texto: se avisa con el error real (no silencio).
+			if (!res.data.rehorneadoOk) {
+				toast.error("Mención borrada, pero el resaltado del texto no se actualizó", {
+					description: res.data.rehorneadoError,
+					duration: Infinity,
+				});
+			} else {
+				toast.success("Mención eliminada");
+			}
 		} finally {
 			setEliminando(false);
 		}

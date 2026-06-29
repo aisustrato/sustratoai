@@ -245,7 +245,12 @@ export async function eliminarMencion(
 	mencionId: string,
 	tipo: string,
 	artefactoId: string,
-): Promise<Result<{ id: string }, ResultErrorCode>> {
+): Promise<
+	Result<
+		{ id: string; rehorneadoOk: boolean; rehorneadoError?: string },
+		ResultErrorCode
+	>
+> {
 	const parseId = UUID_SCHEMA.safeParse(mencionId);
 	const parseArt = UUID_SCHEMA.safeParse(artefactoId);
 	const parseTipo = TIPO_MENCION_SCHEMA.safeParse(tipo);
@@ -285,11 +290,15 @@ export async function eliminarMencion(
 	}
 
 	// Re-hornear in-place: que el resaltado de la mención borrada desaparezca.
+	// El borrado YA ocurrió; si el re-horneado falla, NO se traga el error: se
+	// devuelve para que la UI lo muestre (p.ej. RLS de Storage al sobrescribir).
 	const rebake = await construirMdjArtefacto(artefactoId);
 	if (!rebake.ok) {
-		console.error("[eliminarMencion] re-hornear MDJ:", rebake.error);
+		const rehorneadoError = rebake.error ?? "Error desconocido al re-hornear";
+		console.error("[eliminarMencion] re-hornear MDJ:", rehorneadoError);
+		return ok({ id: mencionId, rehorneadoOk: false, rehorneadoError });
 	}
 
-	return ok({ id: mencionId });
+	return ok({ id: mencionId, rehorneadoOk: true });
 }
 //#endregion ![api]
