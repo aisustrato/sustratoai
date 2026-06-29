@@ -21,12 +21,15 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, FileDown, Loader2, Map } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, ChevronRight, FileDown, Loader2, Map, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { StandardAlert } from "@/components/ui/StandardAlert";
 import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardCard } from "@/components/ui/StandardCard";
+import { StandardDialog } from "@/components/ui/StandardDialog";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { StandardText } from "@/components/ui/StandardText";
 
@@ -34,6 +37,7 @@ import {
 	listarMencionesPorArtefacto,
 	type MencionConValorCanonico,
 } from "@/lib/actions/cognetica-forense-menciones-actions";
+import { eliminarMencion } from "@/lib/actions/cognetica-forense-aportes-humanos-actions";
 import {
 	DIMENSIONES,
 	etiquetaDecision,
@@ -49,10 +53,6 @@ interface MencionesSectionProps {
 	artefactoId: string;
 	/** Indica si existe un Destilado generado. Si false, las menciones no pueden existir aún. */
 	tieneDestilado?: boolean;
-	/** Modo edición: true = editar menciones, false = navegar a entidades (default) */
-	modoEdicion?: boolean;
-	/** Callback para alternar entre modo edición y navegación */
-	onToggleModoEdicion?: () => void;
 	/** Trigger para forzar recarga de datos. Cada cambio de valor dispara un nuevo fetch. */
 	refreshTrigger?: number;
 	/** Callback para descarga Obsidian-friendly. */
@@ -79,12 +79,11 @@ function estadoInicial(): MencionesPorDimension {
 export function MencionesSection({
 	artefactoId,
 	tieneDestilado = true,
-	modoEdicion = false,
-	onToggleModoEdicion,
 	refreshTrigger,
 	onDescargarObsidiana,
 	sha256Descarga,
 }: MencionesSectionProps) {
+	const router = useRouter();
 	const [menciones, setMenciones] =
 		useState<MencionesPorDimension>(estadoInicial());
 	const [loading, setLoading] = useState(true);
@@ -95,6 +94,10 @@ export function MencionesSection({
 	);
 	const [itemEditando, setItemEditando] =
 		useState<MencionConValorCanonico | null>(null);
+	// Borrado (menú por badge): mención pendiente de confirmar + flag de progreso.
+	const [itemEliminando, setItemEliminando] =
+		useState<MencionConValorCanonico | null>(null);
+	const [eliminando, setEliminando] = useState(false);
 
 	const cargar = useCallback(async () => {
 		setLoading(true);
@@ -143,6 +146,33 @@ export function MencionesSection({
 			setExpandidas(new Set(DIMENSIONES.map((d) => d.key)));
 		} else {
 			setExpandidas(new Set());
+		}
+	};
+
+	/** Confirma y borra la mención pendiente; refresca lista + contenido del visor. */
+	const confirmarEliminar = async () => {
+		if (!itemEliminando) return;
+		setEliminando(true);
+		try {
+			const res = await eliminarMencion(
+				itemEliminando.mencion.id,
+				itemEliminando.tipo,
+				artefactoId,
+			);
+			if (!res.ok) {
+				console.error("[MencionesSection] eliminarMencion:", res.error);
+				toast.error("No se pudo eliminar la mención", {
+					description: `Código: ${res.error}`,
+					duration: Infinity,
+				});
+				return;
+			}
+			toast.success("Mención eliminada");
+			setItemEliminando(null);
+			await cargar(); // refresca el sidebar
+			router.refresh(); // re-trae el contenido horneado para el visor
+		} finally {
+			setEliminando(false);
 		}
 	};
 
@@ -224,16 +254,6 @@ export function MencionesSection({
 						className="w-full justify-start">
 						{todasExpandidas ? "Contraer todo" : "Expandir todo"}
 					</StandardButton>
-					{onToggleModoEdicion && (
-						<StandardButton
-							styleType="ghost"
-							size="sm"
-							colorScheme="primary"
-							onClick={onToggleModoEdicion}
-							className="w-full justify-start">
-							{modoEdicion ? "Modo navegación" : "Modo edición"}
-						</StandardButton>
-					)}
 				</div>
 			</StandardCard.Header>
 
@@ -314,11 +334,11 @@ export function MencionesSection({
 											<MencionBadge
 												key={m.mencion.id}
 												item={m}
-												onClick={modoEdicion ? setItemEditando : undefined}
+												onEditar={setItemEditando}
+												onEliminar={setItemEliminando}
 												mostrarConfianza
 												colorScheme={d.colorScheme}
 												artefactoId={artefactoId}
-												modoEdicion={modoEdicion}
 											/>
 										))}
 									</div>
@@ -338,6 +358,50 @@ export function MencionesSection({
 					void cargar();
 				}}
 			/>
+
+			{/* Confirmación de borrado (menú por badge → Eliminar). */}
+			<StandardDialog
+				open={itemEliminando !== null}
+				onOpenChange={(abierto) => {
+					if (!abierto && !eliminando) setItemEliminando(null);
+				}}>
+				<StandardDialog.Content colorScheme="danger" size="sm">
+					<StandardDialog.Header>
+						<StandardDialog.Title className="flex items-center gap-2 text-danger">
+							<Trash2 className="w-5 h-5" />
+							¿Eliminar mención?
+						</StandardDialog.Title>
+					</StandardDialog.Header>
+
+					<StandardDialog.Body>
+						<StandardAlert
+							colorScheme="danger"
+							styleType="subtle"
+							title="Se quitará del grafo y de los textos"
+							message="La mención dejará de resaltarse en este artefacto. Útil para descartar un falso positivo del cartografiador."
+						/>
+					</StandardDialog.Body>
+
+					<StandardDialog.Footer className="flex justify-end gap-2">
+						<StandardButton
+							colorScheme="neutral"
+							styleType="ghost"
+							onClick={() => setItemEliminando(null)}
+							disabled={eliminando}>
+							Cancelar
+						</StandardButton>
+						<StandardButton
+							colorScheme="danger"
+							styleType="solid"
+							leftIcon={Trash2}
+							loading={eliminando}
+							loadingText="Eliminando…"
+							onClick={confirmarEliminar}>
+							Eliminar
+						</StandardButton>
+					</StandardDialog.Footer>
+				</StandardDialog.Content>
+			</StandardDialog>
 		</StandardCard>
 	);
 }

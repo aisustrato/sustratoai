@@ -1,24 +1,32 @@
 //. 📍 app/cognetica/[id]/MencionBadge.tsx
 /**
- * Badge clickeable de una mención cartografiada.
+ * Badge de una mención cartografiada, con **menú por badge** (Fase 4).
  *
  * Responsabilidades:
  *   - Mostrar el **valor canónico actual** (ya calculado por la vista
  *     `cgt_vw_<tipo>_valor_canonico`: humano → cartografiador → extractor).
  *   - Colorear según `decision_cartografiador` para leer el estado del
  *     grafo de un vistazo (verde = match, azul = nueva, naranja = ambigua).
- *   - Modo navegación (default): Click navega a la vista raíz de la entidad.
- *   - Modo edición: Click abre el modal de edición humana (Capa 3).
+ *   - Click en el badge abre un menú con 4 acciones:
+ *       · Editar              → modal de edición (Capa 3), vía `onEditar`.
+ *       · Navegar entre artefactos → vista raíz de la entidad (citas no tienen).
+ *       · Buscar en texto     → abre el artefacto en el visor con `?buscar=`.
+ *       · Eliminar            → confirma y borra (curación), vía `onEliminar`.
  *
- * Mantengo el badge deliberadamente pequeño — es un átomo. Los listados
- * (`MencionesSection`) y la tarjeta raíz (`ArtefactoCard`) lo componen.
+ * Reemplaza al antiguo switch global "Modo edición/navegación": ahora cada badge
+ * ofrece todas sus acciones en su propio menú.
+ *
+ * Mantengo el badge deliberadamente pequeño — es un átomo. El listado
+ * (`MencionesSection`) lo compone y le pasa los callbacks.
  */
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
+import { Pencil, ExternalLink, Search, Trash2 } from "lucide-react";
 
 import { StandardBadge } from "@/components/ui/StandardBadge";
+import { StandardDropdownMenu } from "@/components/ui/StandardDropdownMenu";
 import {
 	colorDesdeDecision,
 	etiquetaDecision,
@@ -29,18 +37,18 @@ import type { MencionConValorCanonico } from "@/lib/actions/cognetica-forense-me
 //#region [def] - 📦 PROPS 📦
 interface MencionBadgeProps {
 	item: MencionConValorCanonico;
-	/** Callback para modo edición (abre modal). Ignorado en modo navegación. */
-	onClick?: (item: MencionConValorCanonico) => void;
+	/** Abre el modal de edición (Capa 3). Si falta, "Editar" no se muestra. */
+	onEditar?: (item: MencionConValorCanonico) => void;
+	/** Pide confirmar y borrar la mención. Si falta, "Eliminar" no se muestra. */
+	onEliminar?: (item: MencionConValorCanonico) => void;
 	/**
 	 * Si `true`, muestra la confianza del cartografiador como sufijo
-	 * discreto. Solo se usa en `MencionesSection` (detalle) — la tarjeta
-	 * raíz lo mantiene apagado para no saturar.
+	 * discreto. Solo se usa en `MencionesSection` (detalle).
 	 */
 	mostrarConfianza?: boolean;
 	/**
 	 * ColorScheme opcional para sobrescribir el color basado en decisión.
-	 * Si se pasa, se usa este; si no, se usa el color de la decisión del
-	 * cartografiador. Permite agrupar visualmente por dimensión.
+	 * Si se pasa, se usa este; si no, el color de la decisión del cartografiador.
 	 */
 	colorScheme?:
 		| "primary"
@@ -51,10 +59,8 @@ interface MencionBadgeProps {
 		| "success"
 		| "danger"
 		| "neutral";
-	/** ID del artefacto actual (para breadcrumb de vuelta en modo navegación) */
+	/** ID del artefacto actual (para breadcrumb de vuelta y `?buscar=`). */
 	artefactoId?: string;
-	/** Modo edición: true = editar, false = navegar (default) */
-	modoEdicion?: boolean;
 }
 //#endregion ![def]
 
@@ -128,20 +134,23 @@ function rutaEntidad(
 //#region [main] - 🔧 COMPONENT 🔧
 export function MencionBadge({
 	item,
-	onClick,
+	onEditar,
+	onEliminar,
 	mostrarConfianza = false,
 	colorScheme: colorSchemeProp,
 	artefactoId,
-	modoEdicion = false,
 }: MencionBadgeProps) {
+	const router = useRouter();
+	const pathname = usePathname();
+
 	const decision = item.valor_canonico.decision_cartografiador;
 	const colorScheme = colorSchemeProp ?? colorDesdeDecision(decision);
 	const texto = textoVisible(item);
 	const confianza = item.valor_canonico.confianza_cartografiador;
 	const contador = item.menciones_count;
 
-	// Tooltip `title` nativo: complementa al modal con peek rápido sin
-	// forzar click. Incluye la decisión legible, confianza si la hay, y conteo.
+	// Tooltip `title` nativo: peek rápido sin abrir el menú. Decisión legible,
+	// confianza si la hay, y conteo de apariciones.
 	const tooltip =
 		`${etiquetaDecision(decision)}` +
 		(typeof confianza === "number" ?
@@ -149,32 +158,14 @@ export function MencionBadge({
 		:	"") +
 		(contador >= 2 ? ` · aparece en ${contador} artefactos` : "");
 
-	// Callback para modo edición (click en nombre)
-	const handleEditClick = onClick ? () => onClick(item) : undefined;
-
-	// Link a entidad para el contador (solo si contador >= 2 y tiene entidad)
+	// Ruta a la vista raíz de la entidad (para "Navegar entre artefactos").
 	const entidadId = extraerEntidadId(item.tipo, item.valor_canonico);
 	const ruta = rutaEntidad(item.tipo, entidadId);
-	const hrefContador =
-		ruta && artefactoId ? `${ruta}?origen=${artefactoId}` : (ruta ?? null);
+	const hrefEntidad =
+		ruta && artefactoId ? `${ruta}?origen=${artefactoId}` : ruta;
 
-	// Determinar si mostramos contador separado (navegable)
-	const mostrarContador =
-		contador >= 2 && hrefContador !== null && item.tipo !== "cita";
-
-	// Tooltip especial para entidades sin otras concordancias
-	const tooltipSinConcordancias =
-		item.tipo !== "cita" && contador < 2 ?
-			"Esta entidad no tiene otras concordancias en el proyecto"
-		:	null;
-
-	// Base del badge (usado en ambos casos)
-	const nombreClase =
-		modoEdicion && onClick ? "cursor-pointer hover:opacity-80" : "";
-	const contadorClase = "cursor-pointer hover:opacity-80";
-
-	// Contenido del badge: nombre + confianza (opcional)
-	const nombreContent = (
+	// Contenido visible del badge: nombre + confianza + contador (info).
+	const contenido = (
 		<>
 			<span className="break-words max-w-[14rem] leading-snug">{texto}</span>
 			{mostrarConfianza && typeof confianza === "number" && (
@@ -182,62 +173,57 @@ export function MencionBadge({
 					{(confianza * 100).toFixed(0)}%
 				</span>
 			)}
+			{contador >= 2 && (
+				<span className="ml-1 font-semibold opacity-80">· {contador}</span>
+			)}
 		</>
 	);
 
-	// Si hay contador >= 2, renderizamos un badge split: nombre + contador separados
-	if (mostrarContador) {
-		return (
-			<StandardBadge
-				colorScheme={colorScheme}
-				styleType="outline"
-				size="sm"
-				title={tooltip}
-				multiline
-				className="inline-flex items-center gap-1 px-1 py-0.5">
-				{/* Nombre: clickable en modo edición para abrir modal */}
-				<span
-					className={nombreClase}
-					onClick={modoEdicion ? handleEditClick : undefined}
-					role={modoEdicion ? "button" : undefined}
-					tabIndex={modoEdicion ? 0 : undefined}>
-					{nombreContent}
-				</span>
-				{/* Separador visual */}
-				<span className="opacity-40">·</span>
-				{/* Contador: siempre navega a la entidad */}
-				<Link
-					href={hrefContador}
-					className={`${contadorClase} font-semibold`}
-					aria-label={`Ver ${contador} apariciones`}>
-					{contador}
-				</Link>
-			</StandardBadge>
-		);
-	}
+	return (
+		<StandardDropdownMenu>
+			<StandardDropdownMenu.Trigger asChild>
+				<StandardBadge
+					colorScheme={colorScheme}
+					styleType="outline"
+					size="sm"
+					title={tooltip}
+					multiline
+					className="cursor-pointer hover:opacity-80 inline-flex items-center gap-1 px-1.5 py-0.5">
+					{contenido}
+				</StandardBadge>
+			</StandardDropdownMenu.Trigger>
 
-	// Sin contador (< 2): NO es navegable, solo muestra info
-	const badgeNoNavegable = (
-		<StandardBadge
-			colorScheme={colorScheme}
-			styleType="outline"
-			size="sm"
-			title={tooltipSinConcordancias ?? tooltip}
-			multiline
-			onClick={modoEdicion ? handleEditClick : undefined}
-			className={
-				modoEdicion && onClick ? "cursor-pointer hover:opacity-80" : ""
-			}>
-			{nombreContent}
-		</StandardBadge>
+			<StandardDropdownMenu.Content align="start">
+				{onEditar && (
+					<StandardDropdownMenu.Item onClick={() => onEditar(item)}>
+						<Pencil className="w-4 h-4 mr-2" />
+						Editar
+					</StandardDropdownMenu.Item>
+				)}
+
+				{hrefEntidad && (
+					<StandardDropdownMenu.Item onClick={() => router.push(hrefEntidad)}>
+						<ExternalLink className="w-4 h-4 mr-2" />
+						Navegar entre artefactos
+					</StandardDropdownMenu.Item>
+				)}
+
+				<StandardDropdownMenu.Item
+					onClick={() =>
+						router.push(`${pathname}?buscar=${encodeURIComponent(texto)}`)
+					}>
+					<Search className="w-4 h-4 mr-2" />
+					Buscar en texto
+				</StandardDropdownMenu.Item>
+
+				{onEliminar && (
+					<StandardDropdownMenu.Item onClick={() => onEliminar(item)}>
+						<Trash2 className="w-4 h-4 mr-2" />
+						Eliminar
+					</StandardDropdownMenu.Item>
+				)}
+			</StandardDropdownMenu.Content>
+		</StandardDropdownMenu>
 	);
-
-	// En modo navegación SIN contador: no hay link (no es navegable)
-	// Solo en modo edición con callback es clickable (para abrir modal)
-	if (modoEdicion && onClick) {
-		return badgeNoNavegable;
-	}
-
-	return badgeNoNavegable;
 }
 //#endregion ![main]

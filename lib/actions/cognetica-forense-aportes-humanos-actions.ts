@@ -32,10 +32,20 @@ import { ok, fail } from "@/lib/cognetica-forense/result";
 import type { Result, ResultErrorCode } from "@/lib/cognetica-forense/types";
 import type { CitaMencion } from "@/lib/cognetica-forense/types/oleada2";
 import { timestampAUbicacion } from "@/lib/cognetica-forense/citas/emparejar-cita-segmento";
+import { construirMdjArtefacto } from "@/lib/cognetica-forense/direcciones/resolver";
 //#endregion ![head]
 
 //#region [def] - 📦 SCHEMAS 📦
 const UUID_SCHEMA = z.string().uuid();
+
+/** Tipos de mención borrables desde el menú por badge (Fase 4). */
+const TIPO_MENCION_SCHEMA = z.enum([
+	"pensador",
+	"disciplina",
+	"concepto",
+	"teoria",
+	"cita",
+]);
 
 const CREAR_CITA_SCHEMA = z.object({
 	artefactoId: UUID_SCHEMA,
@@ -213,6 +223,71 @@ export async function eliminarCitaMencion(
 		console.error("[eliminarCitaMencion] delete:", delRes.error);
 		if (pgErr.code === "42501") return fail<ResultErrorCode>("FORBIDDEN");
 		return fail<ResultErrorCode>("INTERNAL");
+	}
+
+	return ok({ id: mencionId });
+}
+//#endregion ![api]
+
+//#region [api] - 🔧 ELIMINAR MENCIÓN (cualquier tipo) 🔧
+/**
+ * Elimina una mención cartografiada de un artefacto, de cualquier tipo
+ * (pensador/disciplina/concepto/teoría/cita). Es la acción "Eliminar" del menú
+ * por badge (Fase 4): curación del grafo — quitar un falso positivo del pipeline
+ * o una mención humana errónea.
+ *
+ * Tras borrar, **re-hornea el MDJ in-place** del artefacto para que el resaltado
+ * de la mención desaparezca de los textos. El re-horneado es best-effort: si
+ * falla, el borrado YA ocurrió y el próximo open del visor lo recompone; se
+ * loguea con contexto (nunca silencioso).
+ */
+export async function eliminarMencion(
+	mencionId: string,
+	tipo: string,
+	artefactoId: string,
+): Promise<Result<{ id: string }, ResultErrorCode>> {
+	const parseId = UUID_SCHEMA.safeParse(mencionId);
+	const parseArt = UUID_SCHEMA.safeParse(artefactoId);
+	const parseTipo = TIPO_MENCION_SCHEMA.safeParse(tipo);
+	if (!parseId.success || !parseArt.success || !parseTipo.success) {
+		return fail<ResultErrorCode>("INVALID_INPUT");
+	}
+
+	const supabase = await createServerClient();
+	const {
+		data: { user },
+		error: userError,
+	} = await supabase.auth.getUser();
+	if (userError || !user) return fail<ResultErrorCode>("UNAUTHORIZED");
+
+	// Switch con tablas literales: el cliente tipado de Supabase infiere mejor
+	// con literales que con un string dinámico (evita "never").
+	const delRes = await (async () => {
+		switch (parseTipo.data) {
+			case "pensador":
+				return supabase.from("cgt_pensadores_menciones").delete().eq("id", mencionId);
+			case "disciplina":
+				return supabase.from("cgt_disciplinas_menciones").delete().eq("id", mencionId);
+			case "concepto":
+				return supabase.from("cgt_conceptos_menciones").delete().eq("id", mencionId);
+			case "teoria":
+				return supabase.from("cgt_teorias_menciones").delete().eq("id", mencionId);
+			case "cita":
+				return supabase.from("cgt_citas_menciones").delete().eq("id", mencionId);
+		}
+	})();
+
+	if (delRes.error) {
+		const pgErr = delRes.error as { code?: string };
+		console.error("[eliminarMencion] delete:", delRes.error);
+		if (pgErr.code === "42501") return fail<ResultErrorCode>("FORBIDDEN");
+		return fail<ResultErrorCode>("INTERNAL");
+	}
+
+	// Re-hornear in-place: que el resaltado de la mención borrada desaparezca.
+	const rebake = await construirMdjArtefacto(artefactoId);
+	if (!rebake.ok) {
+		console.error("[eliminarMencion] re-hornear MDJ:", rebake.error);
 	}
 
 	return ok({ id: mencionId });

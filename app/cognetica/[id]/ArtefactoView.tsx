@@ -560,8 +560,6 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 		}
 		// El key del effect evita disparar el mismo toast en cada render.
 	}, [inconsistencia, inconsistenciaKey]);
-	// Modo edición: OFF por default (navegación), ON para editar menciones
-	const [modoEdicion, setModoEdicion] = useState(false);
 	// Flag Fase 1: visor MDJ para documentos de texto. Arranca en ON si el
 	// artefacto ya tiene sus direcciones MDJ resueltas (normalizado) → sirve de
 	// indicador rápido: visor encendido = ya estaba normalizado; apagado = legacy
@@ -1307,8 +1305,6 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 					<MencionesSection
 						artefactoId={artefacto.id}
 						tieneDestilado={Boolean(data.destilado)}
-						modoEdicion={modoEdicion}
-						onToggleModoEdicion={() => setModoEdicion((v) => !v)}
 						refreshTrigger={refreshMencionesTrigger}
 						onDescargarObsidiana={descargarSeccion}
 						sha256Descarga={sha256Descarga}
