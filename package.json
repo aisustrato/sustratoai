@@ -78,6 +78,8 @@
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.7",
     "react-window": "^2.2.7",
+    "rehype-autolink-headings": "^7.1.0",
+    "rehype-slug": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "replicate": "^1.4.0",
     "resend": "^4.8.0",

@@ -1,5 +1,5 @@
 // app/auth-layout-wrapper.tsx
-// Versión: 2.1 (Lógica de renderizado defensiva más explícita)
+// Versión: 2.2 (Soporte DMZ /papers/*)
 "use client";
 
 import React from "react";
@@ -9,7 +9,7 @@ import { StandardNavbar } from "@/components/ui/StandardNavbar";
 import { StandardSolidNavbarWrapper } from "@/components/ui/StandardSolidNavbarWrapper";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 
-// Constantes para las rutas donde NO se debe mostrar la Navbar principal de la app
+// Constantes base para rutas de autenticación
 const NO_NAVBAR_PAGES = [
 	"/login",
 	"/signup",
@@ -17,27 +17,47 @@ const NO_NAVBAR_PAGES = [
 	"/update-password",
 ];
 
-// Función helper para determinar si una ruta es pública (AuthProvider también la tiene)
-const PUBLIC_PATHS = ["/login", "/signup", "/reset-password", "/contact"]; // Asegurar que coincida con AuthProvider
-const isPublicPage = (pathname: string | null): boolean => {
+const PUBLIC_PATHS = ["/login", "/signup", "/reset-password", "/contact"];
+
+// Función helper para determinar si una ruta es pública
+// Incluye rutas de autenticación Y la DMZ (/papers/*)
+const isPublicPath = (pathname: string | null): boolean => {
 	if (!pathname) return false;
-	return PUBLIC_PATHS.some(
-		(path) => pathname === path || pathname.startsWith(`${path}/`),
-	);
+
+	// Verificar rutas públicas estándar
+	if (PUBLIC_PATHS.includes(pathname)) return true;
+	if (PUBLIC_PATHS.some((path) => pathname.startsWith(`${path}/`))) return true;
+
+	// DMZ: cualquier ruta que empiece con /papers es pública
+	if (pathname.startsWith("/papers")) return true;
+
+	return false;
+};
+
+// Función helper para determinar si una ruta NO debe mostrar StandardNavbar
+// Incluye páginas de autenticación Y la DMZ (que tiene su propio navbar)
+const isNoNavbarPage = (pathname: string | null): boolean => {
+	if (!pathname) return false;
+
+	// Verificar páginas sin navbar estándar
+	if (NO_NAVBAR_PAGES.includes(pathname)) return true;
+	if (NO_NAVBAR_PAGES.some((path) => pathname.startsWith(`${path}/`)))
+		return true;
+
+	// DMZ: /papers/* usa DMZNavbar, no StandardNavbar
+	if (pathname.startsWith("/papers")) return true;
+
+	return false;
 };
 
 export function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
-	// MODIFICACIÓN V2.1: Obtenemos más estados para la lógica defensiva
+	// MODIFICACIÓN V2.2: Obtenemos más estados para la lógica defensiva
 	const { user, authLoading, authInitialized } = useAuth();
 	const pathname = usePathname();
 
-	const isNoNavbarPage =
-		pathname ?
-			NO_NAVBAR_PAGES.some(
-				(path) => pathname === path || pathname.startsWith(`${path}/`),
-			)
-		:	false;
-	const currentPathIsPublic = isPublicPage(pathname); // Para la lógica defensiva
+	// Usar las funciones helper para determinar el tipo de página
+	const currentPathIsNoNavbar = isNoNavbarPage(pathname);
+	const currentPathIsPublic = isPublicPath(pathname);
 
 	// CASO 1: Carga Global del AuthProvider Activa (o carga inicial antes de que authInitialized sea true)
 	// `authLoading` cubre el inicio de sesión, cierre de sesión, cambio de proyecto.
@@ -87,9 +107,9 @@ export function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
 	}
 
 	// CASO 3: Usuario Autenticado, Datos del Proyecto Cargados (o no estrictamente necesarios para la ruta), en Ruta Protegida/Principal.
-	// La Navbar se muestra si hay un usuario Y no estamos en una página que explícitamente no la lleva (como login/signup).
+	// La Navbar se muestra si hay un usuario Y no estamos en una página que explícitamente no la lleva (como login/signup/papers).
 	// La existencia de `proyectoActual` podría ser una condición adicional si todas las rutas autenticadas lo requieren.
-	if (user && !isNoNavbarPage) {
+	if (user && !currentPathIsNoNavbar) {
 		// console.log(LOG_PREFIX_WRAPPER, `CASO 3: Usuario autenticado. Mostrando Navbar. Path: ${pathname}`);
 		// Podríamos añadir una verificación aquí: if (!proyectoActual) return <Loader text="Cargando proyecto..."/>;
 		// pero si AuthProvider ya maneja el authLoading hasta que proyectoActual esté listo para las rutas principales,
@@ -106,7 +126,7 @@ export function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
 
 	// CASO 4: Páginas Públicas, o páginas de autenticación (donde no se muestra Navbar), o cualquier otro caso.
 	// AuthProvider ya se ha encargado de las redirecciones si son necesarias.
-	// Ej: Usuario en /login (isNoNavbarPage es true), o no hay usuario y está en /contact (currentPathIsPublic es true).
-	// console.log(LOG_PREFIX_WRAPPER, `CASO 4: Renderizando children directamente. User: ${!!user}, IsNoNavbarPage: ${isNoNavbarPage}, IsPublic: ${currentPathIsPublic} Path: ${pathname}`);
+	// Ej: Usuario en /login (currentPathIsNoNavbar es true), o no hay usuario y está en /contact o /papers (currentPathIsPublic es true).
+	// console.log(LOG_PREFIX_WRAPPER, `CASO 4: Renderizando children directamente. User: ${!!user}, IsNoNavbarPage: ${currentPathIsNoNavbar}, IsPublic: ${currentPathIsPublic} Path: ${pathname}`);
 	return <>{children}</>;
 }
