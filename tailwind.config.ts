@@ -50,9 +50,10 @@ const config = {
       },
     },
   },
-  // ✅ El único cambio está aquí, en el arreglo de plugins
+  // ✅ tailwindcss-animate + typography (prose para DMZ /papers/*)
   plugins: [
     require("tailwindcss-animate"),
+    require("@tailwindcss/typography"),
   ],
 } satisfies Config;
 
