@@ -25,8 +25,8 @@ const CONFIG: Record<
 > = {
 	pensador: { color: "primary", tipoLabel: "Autor", ruta: "pensadores", label: "Ver artefactos del autor" },
 	concepto: { color: "tertiary", tipoLabel: "Concepto", ruta: "conceptos", label: "Ver artefactos del concepto" },
-	teoria: { color: "secondary", tipoLabel: "Teoría", ruta: "teorias", label: "Ver artefactos de la teoría" },
-	disciplina: { color: "accent", tipoLabel: "Disciplina", ruta: "disciplinas", label: "Ver artefactos de la disciplina" },
+	teoria: { color: "accent", tipoLabel: "Teoría", ruta: "teorias", label: "Ver artefactos de la teoría" },
+	disciplina: { color: "secondary", tipoLabel: "Disciplina", ruta: "disciplinas", label: "Ver artefactos de la disciplina" },
 	cita: { color: "warning", tipoLabel: "Cita textual", ruta: "", label: "" },
 };
 
