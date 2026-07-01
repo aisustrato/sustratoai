@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       ai_job_history: {
@@ -5816,6 +5841,56 @@ export type Database = {
           },
         ]
       }
+      paper_annexes: {
+        Row: {
+          created_at: string
+          description: string
+          file_size: number
+          filename: string
+          id: string
+          language: string
+          mime_type: string
+          paper_id: string
+          position: number
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          file_size?: number
+          filename: string
+          id?: string
+          language?: string
+          mime_type?: string
+          paper_id: string
+          position?: number
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          language?: string
+          mime_type?: string
+          paper_id?: string
+          position?: number
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_annexes_paper_id_fkey"
+            columns: ["paper_id"]
+            isOneToOne: false
+            referencedRelation: "papers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       paper_images: {
         Row: {
           alt_text: string
@@ -7889,6 +7964,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       archetype_tone: ["bufon", "auditor", "editor", "colega"],

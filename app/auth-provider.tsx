@@ -85,6 +85,14 @@ const isPublicPage = (pathname: string | null): boolean => {
 	);
 };
 
+// DMZ: zona pública accesible para TODOS (con o sin sesión). A diferencia de
+// /login o /signup, un usuario autenticado SÍ debe poder ver /papers, así que
+// no se le redirige al home.
+const isDMZPage = (pathname: string | null): boolean => {
+	if (!pathname) return false;
+	return pathname === "/papers" || pathname.startsWith("/papers/");
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const router = useRouter();
 	const pathname = usePathname();
@@ -458,7 +466,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		}
 		const currentPageIsPublic = isPublicPage(pathname);
 		if (currentUser) {
-			if (currentPageIsPublic) {
+			// Usuario logueado en página pública → al home, EXCEPTO la DMZ /papers
+			// (debe ser visible para todos, autenticados o no).
+			if (currentPageIsPublic && !isDMZPage(pathname)) {
 				router.replace(proyectoActualRef.current ? "/" : "/");
 			}
 		} else {
