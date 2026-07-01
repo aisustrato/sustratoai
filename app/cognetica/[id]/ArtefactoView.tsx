@@ -1534,7 +1534,7 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 				</UbicarContext.Provider>
 
 				{/* Sidebar: Menciones cartografiadas */}
-				<aside className="lg:sticky lg:top-4">
+				<aside className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-1">
 					<MencionesSection
 						artefactoId={artefacto.id}
 						tieneDestilado={Boolean(data.destilado)}
