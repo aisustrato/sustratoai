@@ -5841,6 +5841,56 @@ export type Database = {
           },
         ]
       }
+      paper_annexes: {
+        Row: {
+          created_at: string
+          description: string
+          file_size: number
+          filename: string
+          id: string
+          language: string
+          mime_type: string
+          paper_id: string
+          position: number
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          file_size?: number
+          filename: string
+          id?: string
+          language?: string
+          mime_type?: string
+          paper_id: string
+          position?: number
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          language?: string
+          mime_type?: string
+          paper_id?: string
+          position?: number
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paper_annexes_paper_id_fkey"
+            columns: ["paper_id"]
+            isOneToOne: false
+            referencedRelation: "papers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       paper_images: {
         Row: {
           alt_text: string
