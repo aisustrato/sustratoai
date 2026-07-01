@@ -83,6 +83,7 @@ import {
 	crearCitaDesdeSegmento,
 	eliminarCitaMencion,
 	eliminarMencion,
+	crearEntidadHumana,
 } from "@/lib/actions/cognetica-forense-aportes-humanos-actions";
 import {
 	mapearCitasASegmentos,
@@ -102,6 +103,7 @@ import {
 	EntidadServiciosContext,
 	type EntidadServicios,
 	type EntidadInfoViva,
+	type TipoEntidadCreable,
 } from "@/components/mdj-viewer/entidad-servicios-context";
 //#endregion ![head]
 
@@ -786,14 +788,48 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 		}
 	}, [entidadEliminar, mencionPorEntidad, artefacto.id, router]);
 
+	// Crear entidad desde una selección del MDJ → action + re-hornea + refresca.
+	const handleCrearEntidad = useCallback(
+		async (tipo: TipoEntidadCreable, texto: string) => {
+			const toastId = toast.loading(`Creando ${tipo}: «${texto.slice(0, 40)}»…`);
+			try {
+				const res = await crearEntidadHumana(artefacto.id, tipo, texto);
+				if (!res.ok) {
+					toast.error("No se pudo crear la entidad", {
+						id: toastId,
+						description: `Código: ${res.error}`,
+						duration: Infinity,
+					});
+					return;
+				}
+				setRefreshMencionesTrigger((x) => x + 1);
+				router.refresh();
+				if (!res.data.rehorneadoOk) {
+					toast.error("Entidad creada, pero el resaltado no se actualizó", {
+						id: toastId,
+						description: res.data.rehorneadoError,
+						duration: Infinity,
+					});
+				} else {
+					toast.success("Entidad creada", { id: toastId });
+				}
+			} catch (e) {
+				console.error("[ArtefactoView] crearEntidadHumana:", e);
+				toast.error("Error al crear la entidad", { id: toastId, duration: Infinity });
+			}
+		},
+		[artefacto.id, router],
+	);
+
 	// Servicios de entidad que el visor MDJ consume (Capa 2 viva).
 	const entidadServicios = useMemo<EntidadServicios>(
 		() => ({
 			infoEntidad: (id) => entidadInfo.get(id),
 			onEliminar: (id) =>
 				setEntidadEliminar({ entidadId: id, nombre: entidadInfo.get(id)?.nombre ?? "esta entidad" }),
+			onCrearEntidad: handleCrearEntidad,
 		}),
-		[entidadInfo],
+		[entidadInfo, handleCrearEntidad],
 	);
 
 	// ─── DESCARGA OBSIDIAN-FRIENDLY ───

@@ -13,11 +13,12 @@
 
 "use client";
 
-import { useRef, useState, useMemo, useEffect, useCallback } from "react";
+import { useRef, useState, useMemo, useEffect, useCallback, useContext } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSeleccionMDJ, type SeleccionMDJ } from "./useSeleccionMDJ";
 import { BuscadorMDJ } from "./BuscadorMDJ";
-import { SeleccionPopover } from "./SeleccionPopover";
+import { SeleccionPopover, type AccionSeleccion } from "./SeleccionPopover";
+import { EntidadServiciosContext, type TipoEntidadCreable } from "./entidad-servicios-context";
 import { DialogoReintento } from "./DialogoReintento";
 import { DialogoAgregarReferencia } from "./DialogoAgregarReferencia";
 import { parsearMDJ } from "@/lib/mdj/parser";
@@ -306,9 +307,10 @@ export function StandardMDJViewerClient({
   }, []);
 
   // Manejar acciones del popover de selección
+  const servicios = useContext(EntidadServiciosContext);
+
   const handleAccionSeleccion = useCallback(
-    async (accion: "frase" | "nota" | "referencia" | "copiar" | "buscar") => {
-      console.log("[StandardMDJViewerClient:handleAccionSeleccion] 🎯 action:", accion);
+    async (accion: AccionSeleccion) => {
       // Leer del ref para evitar closures stale — seleccionLocal puede cambiar
       // mientras la función está activa, pero el ref siempre tiene el último valor.
       const seleccion = seleccionRef.current;
@@ -334,9 +336,17 @@ export function StandardMDJViewerClient({
           });
           break;
         case "buscar":
-          console.log("[StandardMDJViewerClient:handleAccionSeleccion] 🔍 setting busquedaExterna:", seleccion.fragmento.slice(0, 40));
           setBusquedaExterna(seleccion.fragmento);
           break;
+        case "crear-pensador":
+        case "crear-disciplina":
+        case "crear-concepto":
+        case "crear-teoria": {
+          // El host (cognética) crea la entidad con el texto seleccionado.
+          const tipoEntidad = accion.slice("crear-".length) as TipoEntidadCreable;
+          servicios?.onCrearEntidad?.(tipoEntidad, seleccion.fragmento);
+          break;
+        }
         case "frase": {
           // Optimistic UI: agregar anotación local inmediatamente
           const nuevaAnot: Anotacion = {
@@ -400,7 +410,7 @@ export function StandardMDJViewerClient({
     // El hook lee del ref (seleccionRef.current), no del estado React,
     // para evitar que el callback se recreé en cada selección y cause
     // race conditions con el cierre del popover de Radix.
-    [onAgregarFraseNotable],
+    [onAgregarFraseNotable, servicios],
   );
 
   // Reintentar operación fallida
