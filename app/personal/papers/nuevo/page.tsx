@@ -1,5 +1,5 @@
 // 📍 app/personal/papers/nuevo/page.tsx
-// Pipeline de publicación de papers (4 pasos)
+// Pipeline de publicación de papers (5 pasos)
 
 "use client";
 
@@ -18,12 +18,14 @@ import { PaperStepIndicator } from "../components/PaperStepIndicator";
 import { PaperUploadStep } from "../components/PaperUploadStep";
 import { PaperMarkdownStep } from "../components/PaperMarkdownStep";
 import { PaperImagesStep } from "../components/PaperImagesStep";
+import { PaperAnnexStep } from "../components/PaperAnnexStep";
 import { PaperMetadataStep } from "../components/PaperMetadataStep";
 import type {
 	PipelineStep,
 	ProcessPdfResponse,
 	ImagePlaceholder,
 	PaperImage,
+	PaperAnnex,
 	PaperDraftInput,
 } from "@/lib/papers/types";
 import {
@@ -52,6 +54,7 @@ export default function NuevoPaperPage() {
 	);
 	const [paperId, setPaperId] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const [annexes, setAnnexes] = useState<PaperAnnex[]>([]);
 
 	// Validación de marcadores de fin de imagen (paso 2 → 3)
 	const [missingMarkers, setMissingMarkers] = useState<number[]>([]);
@@ -138,6 +141,11 @@ export default function NuevoPaperPage() {
 		setMarkdownContent(updatedMarkdown);
 	};
 
+	// Handler: Cambio de anexos en paso 4
+	const handleAnnexesChange = (newAnnexes: PaperAnnex[]) => {
+		setAnnexes(newAnnexes);
+	};
+
 	// Handler: Guardar borrador
 	const handleSaveDraft = async (data: PaperDraftInput) => {
 		try {
@@ -200,7 +208,7 @@ export default function NuevoPaperPage() {
 						Publicar Nuevo Paper
 					</StandardText>
 					<StandardText size="base" colorScheme="neutral" colorShade="subtle">
-						Pipeline de 4 pasos para publicar tu paper académico
+						Pipeline de 5 pasos para publicar tu paper académico
 					</StandardText>
 				</div>
 
@@ -286,8 +294,37 @@ export default function NuevoPaperPage() {
 					</>
 				)}
 
-				{/* Paso 4: Metadatos + Publicación */}
+				{/* Paso 4: Anexos / Material Suplementario */}
 				{currentStep === 4 && (
+					<>
+						<PaperAnnexStep
+							paperId={paperId}
+							existingAnnexes={annexes}
+							onAnnexesChange={handleAnnexesChange}
+						/>
+						<div className="flex justify-between">
+							<StandardButton
+								styleType="outline"
+								colorScheme="neutral"
+								size="md"
+								onClick={() => setCurrentStep(3)}
+								leftIcon={ArrowLeft}>
+								Anterior
+							</StandardButton>
+							<StandardButton
+								styleType="solid"
+								colorScheme="primary"
+								size="md"
+								onClick={() => setCurrentStep(5)}
+								rightIcon={ArrowRight}>
+								Siguiente
+							</StandardButton>
+						</div>
+					</>
+				)}
+
+				{/* Paso 5: Metadatos + Publicación */}
+				{currentStep === 5 && (
 					<>
 						<PaperMetadataStep
 							initialData={{
@@ -302,7 +339,7 @@ export default function NuevoPaperPage() {
 								styleType="outline"
 								colorScheme="neutral"
 								size="md"
-								onClick={() => setCurrentStep(3)}
+								onClick={() => setCurrentStep(4)}
 								leftIcon={ArrowLeft}>
 								Anterior
 							</StandardButton>

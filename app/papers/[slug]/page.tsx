@@ -8,6 +8,8 @@ import { PaperHeader } from "../components/PaperHeader";
 import { PaperMetadata } from "../components/PaperMetadata";
 import { PaperActions } from "../components/PaperActions";
 import { PaperContent } from "../components/PaperContent";
+import { getPaperAnnexes } from "@/lib/papers/queries";
+import type { PaperAnnex } from "@/lib/papers/types";
 
 interface PaperPageProps {
   params: Promise<{ slug: string }>;
@@ -88,6 +90,8 @@ export default async function PaperPage({ params }: PaperPageProps) {
     notFound();
   }
 
+  const annexes = await getPaperAnnexes(paper.id);
+
   return (
     <>
       {/* Metadatos estructurados (JSON-LD) */}
@@ -128,6 +132,46 @@ export default async function PaperPage({ params }: PaperPageProps) {
           <section className="space-y-4">
             <PaperContent content={paper.content_md} />
           </section>
+
+          {/* Anexos / Material Suplementario */}
+          {annexes.length > 0 && (
+            <section className="space-y-4 border-t pt-8">
+              <h2 className="font-heading text-2xl font-bold">
+                Anexos / Material Suplementario
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {annexes.map((annex: PaperAnnex) => (
+                  <a
+                    key={annex.id}
+                    href={`https://vgnteswwvallupuanfiz.supabase.co/storage/v1/object/public/paper-annexes/${annex.storage_path}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-3 p-4 rounded-lg border border-border-neutral bg-background-paper hover:border-primary-pure transition-colors"
+                  >
+                    <div className="p-2 rounded bg-primary-bg flex-shrink-0 text-primary-pure text-lg font-bold">
+                      {"{}"}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm truncate">
+                        {annex.filename}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {annex.language} •{" "}
+                        {annex.file_size > 1024 * 1024
+                          ? `${(annex.file_size / (1024 * 1024)).toFixed(1)} MB`
+                          : `${(annex.file_size / 1024).toFixed(0)} KB`}
+                      </p>
+                      {annex.description && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {annex.description}
+                        </p>
+                      )}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Footer del paper: licencia, cómo citar */}
           <footer className="space-y-4 border-t pt-8 text-sm text-muted-foreground">

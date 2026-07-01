@@ -19,6 +19,8 @@ import type {
 	PaperWithImages,
 	PaperImage,
 	PaperImageInput,
+	PaperAnnex,
+	PaperAnnexInput,
 } from "./types";
 
 /**
@@ -415,4 +417,87 @@ export async function getPaperImages(paperId: string): Promise<PaperImage[]> {
 	}
 
 	return (data || []) as PaperImage[];
+}
+
+// ============================================================================
+// QUERIES PARA ANEXOS / MATERIAL SUPLEMENTARIO
+// ============================================================================
+
+/**
+ * Crea un registro de anexo asociado a un paper
+ */
+export async function createPaperAnnex(
+	data: PaperAnnexInput,
+): Promise<PaperAnnex> {
+	const supabase = await createServerSupabaseClient();
+
+	const { data: annex, error } = await supabase
+		.from("paper_annexes")
+		.insert({
+			...data,
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString(),
+		} as any)
+		.select()
+		.single();
+
+	if (error) {
+		console.error("[createPaperAnnex] Error:", error);
+		throw new Error(`Error creando anexo: ${error.message}`);
+	}
+
+	return annex as PaperAnnex;
+}
+
+/**
+ * Obtiene todos los anexos de un paper ordenados por posición
+ */
+export async function getPaperAnnexes(
+	paperId: string,
+): Promise<PaperAnnex[]> {
+	const supabase = await createServerSupabaseClient();
+
+	const { data, error } = await supabase
+		.from("paper_annexes")
+		.select("*")
+		.eq("paper_id", paperId)
+		.order("position", { ascending: true });
+
+	if (error) {
+		console.error("[getPaperAnnexes] Error:", error);
+		return [];
+	}
+
+	return (data || []) as PaperAnnex[];
+}
+
+/**
+ * Elimina un anexo (y su archivo en Storage debe eliminarse aparte)
+ */
+export async function deletePaperAnnex(annexId: string): Promise<void> {
+	const supabase = await createServerSupabaseClient();
+
+	const { error } = await supabase
+		.from("paper_annexes")
+		.delete()
+		.eq("id", annexId);
+
+	if (error) {
+		console.error("[deletePaperAnnex] Error:", error);
+		throw new Error(`Error eliminando anexo: ${error.message}`);
+	}
+}
+
+/** Tipo MIME → lenguaje del anexo */
+export function inferAnnexLanguage(
+	filename: string,
+	mimeType: string,
+): "python" | "jupyter" | "csv" | "json" | "zip" | "text" {
+	const ext = filename.toLowerCase().slice(filename.lastIndexOf("."));
+	if (ext === ".py") return "python";
+	if (ext === ".ipynb") return "jupyter";
+	if (ext === ".csv") return "csv";
+	if (ext === ".json") return "json";
+	if (ext === ".zip") return "zip";
+	return "text";
 }

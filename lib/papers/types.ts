@@ -187,7 +187,67 @@ export interface ProcessPdfResponse {
 /**
  * Estado del pipeline de publicación
  */
-export type PipelineStep = 1 | 2 | 3 | 4;
+export type PipelineStep = 1 | 2 | 3 | 4 | 5;
+
+// ============================================================================
+// TIPOS PARA ANEXOS / MATERIAL SUPLEMENTARIO (paso 4 del pipeline)
+// ============================================================================
+
+/** Tipos MIME permitidos para anexos */
+export const ALLOWED_ANNEX_MIMES = [
+	"text/x-python",
+	"text/x-python-script",
+	"application/x-ipynb+json",
+	"text/csv",
+	"application/json",
+	"application/zip",
+	"text/plain",
+] as const;
+
+/** Extensiones de archivo permitidas para anexos */
+export const ALLOWED_ANNEX_EXTENSIONS = [
+	".py",
+	".ipynb",
+	".csv",
+	".json",
+	".zip",
+	".txt",
+] as const;
+
+/** Lenguaje/clasificación del anexo (derivado de la extensión) */
+export type AnnexLanguage = "python" | "jupyter" | "csv" | "json" | "zip" | "text";
+
+/** Anexo / material suplementario asociado a un paper */
+export interface PaperAnnex {
+	id: string;
+	paper_id: string;
+	filename: string;
+	storage_path: string;
+	file_size: number;
+	mime_type: string;
+	language: AnnexLanguage;
+	description: string;
+	position: number;
+	created_at: string;
+	updated_at: string;
+}
+
+/** Input para crear/actualizar un anexo */
+export interface PaperAnnexInput {
+	paper_id: string;
+	filename: string;
+	storage_path: string;
+	file_size: number;
+	mime_type: string;
+	language: AnnexLanguage;
+	description: string;
+	position: number;
+}
+
+/** Paper extendido con imágenes y anexos */
+export interface PaperWithAnnexes extends PaperWithImages {
+	annexes: PaperAnnex[];
+}
 
 export interface PipelineState {
 	currentStep: PipelineStep;

@@ -4,7 +4,7 @@
 "use client";
 
 import { StandardStepper, type StepItem } from "@/components/ui/StandardStepper";
-import { Upload, FileText, Image, Send } from "lucide-react";
+import { Upload, FileText, Image, File, Send } from "lucide-react";
 import type { PipelineStep } from "@/lib/papers/types";
 
 interface PaperStepIndicatorProps {
@@ -34,6 +34,12 @@ const PIPELINE_STEPS: StepItem[] = [
 	},
 	{
 		id: 4,
+		label: "Anexos",
+		description: "Material suplementario",
+		icon: File,
+	},
+	{
+		id: 5,
 		label: "Publicar",
 		description: "Metadatos y publicación",
 		icon: Send,

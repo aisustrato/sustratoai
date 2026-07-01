@@ -13,11 +13,13 @@ import { StandardText } from "@/components/ui/StandardText";
 import { PaperStepIndicator } from "../components/PaperStepIndicator";
 import { PaperMarkdownStep } from "../components/PaperMarkdownStep";
 import { PaperImagesStep } from "../components/PaperImagesStep";
+import { PaperAnnexStep } from "../components/PaperAnnexStep";
 import { PaperMetadataStep } from "../components/PaperMetadataStep";
 import type {
 	PipelineStep,
 	PaperDraftInput,
 	PaperWithImages,
+	PaperAnnex,
 } from "@/lib/papers/types";
 import { updatePaperDraft } from "@/lib/papers/queries";
 import {
@@ -42,6 +44,9 @@ export function PaperEditClient({ paper }: PaperEditClientProps) {
 	const [currentStep, setCurrentStep] = useState<PipelineStep>(2);
 	const [markdownContent, setMarkdownContent] = useState(paper.content_md);
 	const [error, setError] = useState<string | null>(null);
+	const [annexes, setAnnexes] = useState<PaperAnnex[]>(
+		(paper as any).annexes || [],
+	);
 
 	// Validación de marcadores de fin de imagen (paso 2 → 3)
 	const [missingMarkers, setMissingMarkers] = useState<number[]>([]);
@@ -185,8 +190,35 @@ export function PaperEditClient({ paper }: PaperEditClientProps) {
 					</>
 				)}
 
-				{/* Paso 4: Metadatos y Publicar */}
+				{/* Paso 4: Anexos */}
 				{currentStep === 4 && (
+					<>
+						<PaperAnnexStep
+							paperId={paper.id}
+							existingAnnexes={annexes}
+							onAnnexesChange={setAnnexes}
+						/>
+						<div className="flex justify-between">
+							<StandardButton
+								styleType="outline"
+								colorScheme="neutral"
+								size="md"
+								onClick={() => setCurrentStep(3)}>
+								Anterior
+							</StandardButton>
+							<StandardButton
+								styleType="solid"
+								colorScheme="primary"
+								size="md"
+								onClick={() => setCurrentStep(5)}>
+								Siguiente
+							</StandardButton>
+						</div>
+					</>
+				)}
+
+				{/* Paso 5: Metadatos y Publicar */}
+				{currentStep === 5 && (
 					<>
 						<PaperMetadataStep
 							initialData={{
@@ -212,9 +244,9 @@ export function PaperEditClient({ paper }: PaperEditClientProps) {
 								size="md"
 								onClick={() => {
 									console.log(
-										`[${new Date().toISOString()}] ⬅️ Click ANTERIOR (4→3)`,
+										`[${new Date().toISOString()}] ⬅️ Click ANTERIOR (5→4)`,
 									);
-									setCurrentStep(3);
+									setCurrentStep(4);
 								}}>
 								Anterior
 							</StandardButton>
