@@ -8,7 +8,6 @@ import { supabase } from "@/app/auth/client";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
-import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
 import { File, Plus, Info } from "lucide-react";
 import { PaperAnnexCard } from "./PaperAnnexCard";
 import type { PaperAnnex } from "@/lib/papers/types";
