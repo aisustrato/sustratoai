@@ -302,3 +302,148 @@ export async function eliminarMencion(
 	return ok({ id: mencionId, rehorneadoOk: true });
 }
 //#endregion ![api]
+
+//#region [api] - 🔧 CREAR ENTIDAD DESDE EL TEXTO (selección MDJ) 🔧
+/** Tipos de entidad creables desde el texto (cita tiene otra estructura). */
+const TIPO_ENTIDAD_CREABLE = z.enum(["pensador", "disciplina", "concepto", "teoria"]);
+type TipoEntidadCreable = z.infer<typeof TIPO_ENTIDAD_CREABLE>;
+
+/** Hash determinista para la mención humana (idempotencia por artefacto+tipo+texto). */
+function hashEntidadHumana(artefactoId: string, tipo: string, texto: string): string {
+	return crypto
+		.createHash("sha256")
+		.update(JSON.stringify({ origen: "humano", artefacto_id: artefactoId, tipo, texto }))
+		.digest("hex");
+}
+
+// Cliente tipado de Supabase (para pasar a helpers sin `any`).
+type DbClient = Awaited<ReturnType<typeof createServerClient>>;
+
+/** Lee la canónica por nombre exacto (case-insensitive) en el proyecto. */
+async function leerCanonicaPorNombre(
+	supabase: DbClient,
+	tipo: TipoEntidadCreable,
+	projectId: string,
+	nombre: string,
+): Promise<string | null> {
+	const sel = (t: "cgt_pensadores" | "cgt_disciplinas" | "cgt_conceptos" | "cgt_teorias") =>
+		supabase.from(t).select("id").eq("project_id", projectId).ilike("nombre_canonico", nombre).limit(1);
+	const res =
+		tipo === "pensador" ? await sel("cgt_pensadores")
+		: tipo === "disciplina" ? await sel("cgt_disciplinas")
+		: tipo === "concepto" ? await sel("cgt_conceptos")
+		: await sel("cgt_teorias");
+	if (res.error) throw new Error(res.error.message);
+	return res.data?.[0]?.id ?? null;
+}
+
+/** Crea o reusa la entidad canónica; devuelve su id y si fue reusada. */
+async function crearOReusarCanonica(
+	supabase: DbClient,
+	tipo: TipoEntidadCreable,
+	projectId: string,
+	nombre: string,
+): Promise<{ id: string; reusada: boolean }> {
+	const existente = await leerCanonicaPorNombre(supabase, tipo, projectId, nombre);
+	if (existente) return { id: existente, reusada: true };
+
+	const payload = { project_id: projectId, nombre_canonico: nombre, descripcion_canonica: null };
+	const ins =
+		tipo === "pensador" ? await supabase.from("cgt_pensadores").insert(payload).select("id").maybeSingle()
+		: tipo === "disciplina" ? await supabase.from("cgt_disciplinas").insert(payload).select("id").maybeSingle()
+		: tipo === "concepto" ? await supabase.from("cgt_conceptos").insert(payload).select("id").maybeSingle()
+		: await supabase.from("cgt_teorias").insert(payload).select("id").maybeSingle();
+	if (ins.error) {
+		// Carrera con UNIQUE (project_id, nombre_canonico): re-leer.
+		if ((ins.error as { code?: string }).code === "23505") {
+			const retry = await leerCanonicaPorNombre(supabase, tipo, projectId, nombre);
+			if (retry) return { id: retry, reusada: true };
+		}
+		throw new Error(ins.error.message);
+	}
+	if (!ins.data) throw new Error("insert canónica sin data");
+	return { id: ins.data.id, reusada: false };
+}
+
+/**
+ * Crea una entidad (pensador/disciplina/concepto/teoría) a partir de un texto
+ * seleccionado en el MDJ, y re-hornea. El re-horneado corre el matcher, que ya
+ * tiene la inteligencia: para AUTORES parte el nombre en palabras (marca "Rodolfo"
+ * y "Leiva" sueltos); para el resto, coincidencia completa. No hay que computar
+ * direcciones a mano — el bake las genera y persiste.
+ */
+export async function crearEntidadHumana(
+	artefactoId: string,
+	tipo: string,
+	texto: string,
+): Promise<
+	Result<{ mencionId: string; rehorneadoOk: boolean; rehorneadoError?: string }, ResultErrorCode>
+> {
+	const t = texto.trim();
+	const parseTipo = TIPO_ENTIDAD_CREABLE.safeParse(tipo);
+	if (!UUID_SCHEMA.safeParse(artefactoId).success || !parseTipo.success || t.length < 2) {
+		return fail<ResultErrorCode>("INVALID_INPUT");
+	}
+
+	const supabase = await createServerClient();
+	const {
+		data: { user },
+		error: userError,
+	} = await supabase.auth.getUser();
+	if (userError || !user) return fail<ResultErrorCode>("UNAUTHORIZED");
+
+	const art = await supabase
+		.from("cgt_artefactos")
+		.select("project_id")
+		.eq("id", artefactoId)
+		.maybeSingle();
+	if (art.error || !art.data) return fail<ResultErrorCode>("NOT_FOUND");
+	const projectId = art.data.project_id;
+
+	let canon: { id: string; reusada: boolean };
+	try {
+		canon = await crearOReusarCanonica(supabase, parseTipo.data, projectId, t);
+	} catch (e) {
+		console.error("[crearEntidadHumana] canónica:", e);
+		return fail<ResultErrorCode>("INTERNAL");
+	}
+
+	const decision: "match_existente" | "nueva_entidad" =
+		canon.reusada ? "match_existente" : "nueva_entidad";
+	const base = {
+		artefacto_id: artefactoId,
+		project_id: projectId,
+		nombre_extractor_crudo: t,
+		descripcion_extractor_cruda: null,
+		hash_extractor_crudo: hashEntidadHumana(artefactoId, parseTipo.data, t),
+		nombre_cartografiador: t,
+		descripcion_cartografiador: null,
+		decision_cartografiador: decision,
+		confianza_cartografiador: 1,
+		justificacion_cartografiador: "Creada manualmente desde el texto",
+		cartografiado_at: new Date().toISOString(),
+	};
+	const insRes =
+		parseTipo.data === "pensador"
+			? await supabase.from("cgt_pensadores_menciones").insert({ ...base, pensador_id: canon.id }).select("id").maybeSingle()
+		: parseTipo.data === "disciplina"
+			? await supabase.from("cgt_disciplinas_menciones").insert({ ...base, disciplina_id: canon.id }).select("id").maybeSingle()
+		: parseTipo.data === "concepto"
+			? await supabase.from("cgt_conceptos_menciones").insert({ ...base, concepto_id: canon.id }).select("id").maybeSingle()
+			: await supabase.from("cgt_teorias_menciones").insert({ ...base, teoria_id: canon.id }).select("id").maybeSingle();
+	if (insRes.error) {
+		console.error("[crearEntidadHumana] insert mención:", insRes.error);
+		return fail<ResultErrorCode>("INTERNAL");
+	}
+	const mencionId = insRes.data?.id ?? "";
+
+	// Re-hornear: el matcher genera direcciones + resaltado (autores por palabra).
+	const rebake = await construirMdjArtefacto(artefactoId);
+	if (!rebake.ok) {
+		const rehorneadoError = rebake.error ?? "Error desconocido al re-hornear";
+		console.error("[crearEntidadHumana] re-hornear MDJ:", rehorneadoError);
+		return ok({ mencionId, rehorneadoOk: false, rehorneadoError });
+	}
+	return ok({ mencionId, rehorneadoOk: true });
+}
+//#endregion ![api]
