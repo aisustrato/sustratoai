@@ -6,14 +6,15 @@
 
 "use client";
 
-import type { ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
 import Link from "next/link";
 import { AnotacionMarca } from "./AnotacionMarca";
 import { StandardTooltip } from "@/components/ui/StandardTooltip";
 import { StandardText } from "@/components/ui/StandardText";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Trash2 } from "lucide-react";
 import type { Anotacion } from "@/lib/mdj/types";
 import type { ColorSchemeVariant } from "@/lib/theme/ColorToken";
+import { EntidadServiciosContext } from "./entidad-servicios-context";
 
 type EntidadTipo = NonNullable<Anotacion["entidad_tipo"]>;
 
@@ -43,25 +44,45 @@ export function EntidadTooltip({ anotacion, activa, children }: EntidadTooltipPr
 		? `/cognetica/entidades/${cfg.ruta}/${anotacion.entidad_id}`
 		: null;
 
+	// Capa 2 viva: si el host provee info, se muestra el nombre/descripción ACTUALES
+	// de la entidad (reflejan ediciones al instante). Si no, cae al dato del MDJ.
+	const servicios = useContext(EntidadServiciosContext);
+	const info = anotacion.entidad_id
+		? servicios?.infoEntidad?.(anotacion.entidad_id)
+		: undefined;
+	const nombre = info?.nombre || anotacion.fragmento;
+	const descripcion = info?.descripcion ?? anotacion.nota_texto ?? null;
+
 	const tooltipContent = (
 		<div className="space-y-2 min-w-[200px] max-w-xs">
 			<StandardText size="2xs" weight="medium" colorScheme={cfg.color} colorShade="subtle" className="uppercase tracking-wide">
 				{cfg.tipoLabel}
 			</StandardText>
 			<StandardText size="sm" weight="semibold" colorScheme={cfg.color}>
-				{anotacion.fragmento}
+				{nombre}
 			</StandardText>
-			{anotacion.nota_texto ? (
+			{descripcion ? (
 				<StandardText size="xs" colorScheme="neutral" colorShade="subtle" className="leading-relaxed">
-					{anotacion.nota_texto}
+					{descripcion}
 				</StandardText>
 			) : null}
-			{href ? (
-				<div className="pt-1 border-t border-neutral-200 dark:border-neutral-700">
-					<Link href={href} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-						<ExternalLink size={12} />
-						{cfg.label}
-					</Link>
+			{href || (servicios?.onEliminar && anotacion.entidad_id) ? (
+				<div className="pt-1 border-t border-neutral-200 dark:border-neutral-700 flex flex-col gap-1 items-start">
+					{href ? (
+						<Link href={href} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+							<ExternalLink size={12} />
+							{cfg.label}
+						</Link>
+					) : null}
+					{servicios?.onEliminar && anotacion.entidad_id ? (
+						<button
+							type="button"
+							onClick={() => servicios.onEliminar?.(anotacion.entidad_id as string)}
+							className="inline-flex items-center gap-1 text-xs text-danger hover:underline">
+							<Trash2 size={12} />
+							Eliminar mención
+						</button>
+					) : null}
 				</div>
 			) : null}
 		</div>

@@ -57,6 +57,8 @@ interface MencionesSectionProps {
 	refreshTrigger?: number;
 	/** Ubica una mención en el texto (por dirección). Lo maneja ArtefactoView. */
 	onUbicar?: (item: MencionConValorCanonico) => void;
+	/** Avisa al host que las menciones cambiaron (editar/borrar) → refresca info viva. */
+	onCambio?: () => void;
 	/** Callback para descarga Obsidian-friendly. */
 	onDescargarObsidiana?: (tipo: "menciones", md: string) => Promise<void>;
 	/** SHA-256 de la última descarga (8 chars para tooltip). */
@@ -85,6 +87,7 @@ export function MencionesSection({
 	onDescargarObsidiana,
 	sha256Descarga,
 	onUbicar,
+	onCambio,
 }: MencionesSectionProps) {
 	const router = useRouter();
 	const [menciones, setMenciones] =
@@ -172,6 +175,7 @@ export function MencionesSection({
 			}
 			setItemEliminando(null);
 			await cargar(); // refresca el sidebar
+			onCambio?.(); // refresca la info viva del host (tooltip)
 			router.refresh(); // re-trae el contenido horneado para el visor
 			// El borrado en DB sí ocurrió. Pero si el re-horneado falló, el
 			// resaltado sigue en el texto: se avisa con el error real (no silencio).
@@ -369,6 +373,7 @@ export function MencionesSection({
 					// viene de Capa 3). Como las 5 dimensiones comparten la
 					// misma carga, se recarga todo — es barato.
 					void cargar();
+					onCambio?.(); // refresca la info viva del host (tooltip en el MDJ)
 				}}
 			/>
 

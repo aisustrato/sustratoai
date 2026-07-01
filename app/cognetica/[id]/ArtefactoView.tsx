@@ -28,6 +28,7 @@ import {
 	ChevronRight,
 	X,
 	MapPin,
+	Trash2,
 } from "lucide-react";
 
 import { StandardAccordion,
@@ -81,6 +82,7 @@ import { listarMencionesPorArtefacto, type MencionConValorCanonico } from "@/lib
 import {
 	crearCitaDesdeSegmento,
 	eliminarCitaMencion,
+	eliminarMencion,
 } from "@/lib/actions/cognetica-forense-aportes-humanos-actions";
 import {
 	mapearCitasASegmentos,
@@ -96,6 +98,11 @@ import {
 	type OcurrenciaDireccion,
 } from "@/lib/actions/cognetica-forense-direcciones-actions";
 import { UbicarContext, type UbicarActivo } from "./ubicar-context";
+import {
+	EntidadServiciosContext,
+	type EntidadServicios,
+	type EntidadInfoViva,
+} from "@/components/mdj-viewer/entidad-servicios-context";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -691,8 +698,13 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 
 	// ─── SEMILLAS (para frontmatter Obsidian) ───
 	const [semillas, setSemillas] = useState<string[]>([]);
+	// Capa 2 viva: info ACTUAL de entidades por id (para el tooltip del MDJ).
+	const [entidadInfo, setEntidadInfo] = useState<Map<string, EntidadInfoViva>>(new Map());
+	// entidad_id → {mencionId, tipo} para resolver el borrado desde el tooltip.
+	const [mencionPorEntidad, setMencionPorEntidad] =
+		useState<Map<string, { mencionId: string; tipo: string }>>(new Map());
 
-	// Cargar menciones para extraer tags semilla (una vez)
+	// Cargar menciones para extraer tags semilla + el mapa de info viva.
 	useEffect(() => {
 		let cancel = false;
 		const cargar = async () => {
@@ -706,15 +718,83 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 					const r = results[idx];
 					if (r.ok) menciones[d.key] = r.data;
 				});
-				const tags = extraerSemillas(menciones);
-				setSemillas(tags);
+				setSemillas(extraerSemillas(menciones));
+
+				// Mapas entidad_id → info viva, y entidad_id → {mencionId, tipo}.
+				const info = new Map<string, EntidadInfoViva>();
+				const porEntidad = new Map<string, { mencionId: string; tipo: string }>();
+				DIMENSIONES.forEach((d) => {
+					for (const m of menciones[d.key] ?? []) {
+						const vc = (m.valor_canonico ?? {}) as Record<string, unknown>;
+						const eid = vc[`${d.tipo}_id`] as string | undefined;
+						if (!eid) continue;
+						info.set(eid, {
+							nombre:
+								(vc.nombre_canonico_actual as string | null) ??
+								(vc.texto_canonico_actual as string | null) ??
+								"",
+							descripcion: (vc.descripcion_canonica_actual as string | null) ?? null,
+						});
+						porEntidad.set(eid, { mencionId: m.mencion.id, tipo: d.tipo });
+					}
+				});
+				setEntidadInfo(info);
+				setMencionPorEntidad(porEntidad);
 			} catch (err) {
-				console.warn("[ArtefactoView] No se pudieron cargar semillas:", err);
+				console.warn("[ArtefactoView] No se pudieron cargar menciones:", err);
 			}
 		};
 		void cargar();
 		return () => { cancel = true; };
 	}, [artefacto.id, refreshMencionesTrigger]);
+
+	// Borrado desde el tooltip del MDJ: confirma y elimina la mención de la entidad.
+	const [entidadEliminar, setEntidadEliminar] =
+		useState<{ entidadId: string; nombre: string } | null>(null);
+	const [eliminandoEntidad, setEliminandoEntidad] = useState(false);
+
+	const confirmarEliminarEntidad = useCallback(async () => {
+		if (!entidadEliminar) return;
+		const m = mencionPorEntidad.get(entidadEliminar.entidadId);
+		if (!m) {
+			toast.error("No se encontró la mención a eliminar");
+			return;
+		}
+		setEliminandoEntidad(true);
+		try {
+			const res = await eliminarMencion(m.mencionId, m.tipo, artefacto.id);
+			if (!res.ok) {
+				toast.error("No se pudo eliminar la mención", {
+					description: `Código: ${res.error}`,
+					duration: Infinity,
+				});
+				return;
+			}
+			setEntidadEliminar(null);
+			setRefreshMencionesTrigger((x) => x + 1); // refresca sidebar + info viva
+			router.refresh(); // re-trae el contenido horneado para el visor
+			if (!res.data.rehorneadoOk) {
+				toast.error("Mención borrada, pero el resaltado del texto no se actualizó", {
+					description: res.data.rehorneadoError,
+					duration: Infinity,
+				});
+			} else {
+				toast.success("Mención eliminada");
+			}
+		} finally {
+			setEliminandoEntidad(false);
+		}
+	}, [entidadEliminar, mencionPorEntidad, artefacto.id, router]);
+
+	// Servicios de entidad que el visor MDJ consume (Capa 2 viva).
+	const entidadServicios = useMemo<EntidadServicios>(
+		() => ({
+			infoEntidad: (id) => entidadInfo.get(id),
+			onEliminar: (id) =>
+				setEntidadEliminar({ entidadId: id, nombre: entidadInfo.get(id)?.nombre ?? "esta entidad" }),
+		}),
+		[entidadInfo],
+	);
 
 	// ─── DESCARGA OBSIDIAN-FRIENDLY ───
 	const {
@@ -1336,6 +1416,7 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 				    del SlidesViewer con `flex-shrink-0`). Sin esto, el card
 				    del SlidesViewer reventaba el viewport por ~119px. */}
 				<UbicarContext.Provider value={ubicarActivo}>
+				<EntidadServiciosContext.Provider value={entidadServicios}>
 				<StandardAccordion type="multiple" styleType="subtle" value={seccionesAbiertas} onValueChange={setSeccionesAbiertas}>
 				<StandardAccordionItem value="original" colorScheme="neutral">
 					<StandardAccordionTrigger>
@@ -1413,6 +1494,7 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 					</StandardAccordionItem>
 				)}
 			</StandardAccordion>
+				</EntidadServiciosContext.Provider>
 				</UbicarContext.Provider>
 
 				{/* Sidebar: Menciones cartografiadas */}
@@ -1424,6 +1506,7 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 						onDescargarObsidiana={descargarSeccion}
 						sha256Descarga={sha256Descarga}
 						onUbicar={handleUbicar}
+						onCambio={() => setRefreshMencionesTrigger((x) => x + 1)}
 					/>
 				</aside>
 			</div>
@@ -1477,6 +1560,48 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 							))}
 						</div>
 					</StandardDialog.Body>
+				</StandardDialog.Content>
+			</StandardDialog>
+
+			{/* Confirmación de borrado desde el tooltip del MDJ. */}
+			<StandardDialog
+				open={entidadEliminar !== null}
+				onOpenChange={(abierto) => {
+					if (!abierto && !eliminandoEntidad) setEntidadEliminar(null);
+				}}>
+				<StandardDialog.Content colorScheme="danger" size="sm">
+					<StandardDialog.Header>
+						<StandardDialog.Title className="flex items-center gap-2 text-danger">
+							<Trash2 className="w-5 h-5" />
+							¿Eliminar «{entidadEliminar?.nombre}»?
+						</StandardDialog.Title>
+					</StandardDialog.Header>
+					<StandardDialog.Body>
+						<StandardAlert
+							colorScheme="danger"
+							styleType="subtle"
+							title="Se quitará del grafo y de los textos"
+							message="La mención dejará de resaltarse en este artefacto. Útil para descartar un falso positivo del cartografiador."
+						/>
+					</StandardDialog.Body>
+					<StandardDialog.Footer className="flex justify-end gap-2">
+						<StandardButton
+							colorScheme="neutral"
+							styleType="ghost"
+							onClick={() => setEntidadEliminar(null)}
+							disabled={eliminandoEntidad}>
+							Cancelar
+						</StandardButton>
+						<StandardButton
+							colorScheme="danger"
+							styleType="solid"
+							leftIcon={Trash2}
+							loading={eliminandoEntidad}
+							loadingText="Eliminando…"
+							onClick={confirmarEliminarEntidad}>
+							Eliminar
+						</StandardButton>
+					</StandardDialog.Footer>
 				</StandardDialog.Content>
 			</StandardDialog>
 
