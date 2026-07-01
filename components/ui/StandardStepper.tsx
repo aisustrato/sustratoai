@@ -13,6 +13,9 @@ import {
 	type StandardStepperTokens,
 } from "@/lib/theme/components/standard-stepper-tokens";
 
+// Re-export para consumidores (ej. el showroom) que importan el tipo desde acá.
+export type { StandardStepperVariant };
+
 export type StepStatus = "pending" | "active" | "completed" | "error";
 
 export interface StepItem {
