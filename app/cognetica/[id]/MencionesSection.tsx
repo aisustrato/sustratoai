@@ -55,6 +55,8 @@ interface MencionesSectionProps {
 	tieneDestilado?: boolean;
 	/** Trigger para forzar recarga de datos. Cada cambio de valor dispara un nuevo fetch. */
 	refreshTrigger?: number;
+	/** Ubica una mención en el texto (por dirección). Lo maneja ArtefactoView. */
+	onUbicar?: (item: MencionConValorCanonico) => void;
 	/** Callback para descarga Obsidian-friendly. */
 	onDescargarObsidiana?: (tipo: "menciones", md: string) => Promise<void>;
 	/** SHA-256 de la última descarga (8 chars para tooltip). */
@@ -82,6 +84,7 @@ export function MencionesSection({
 	refreshTrigger,
 	onDescargarObsidiana,
 	sha256Descarga,
+	onUbicar,
 }: MencionesSectionProps) {
 	const router = useRouter();
 	const [menciones, setMenciones] =
@@ -345,6 +348,7 @@ export function MencionesSection({
 												item={m}
 												onEditar={setItemEditando}
 												onEliminar={setItemEliminando}
+												onUbicar={onUbicar}
 												mostrarConfianza
 												colorScheme={d.colorScheme}
 												artefactoId={artefactoId}

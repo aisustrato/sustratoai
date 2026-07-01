@@ -22,8 +22,8 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import { useRouter, usePathname } from "next/navigation";
-import { Pencil, ExternalLink, Search, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Pencil, ExternalLink, MapPin, Trash2 } from "lucide-react";
 
 import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardDropdownMenu } from "@/components/ui/StandardDropdownMenu";
@@ -41,6 +41,8 @@ interface MencionBadgeProps {
 	onEditar?: (item: MencionConValorCanonico) => void;
 	/** Pide confirmar y borrar la mención. Si falta, "Eliminar" no se muestra. */
 	onEliminar?: (item: MencionConValorCanonico) => void;
+	/** Ubica la mención en el texto por dirección. Si falta, no se muestra. */
+	onUbicar?: (item: MencionConValorCanonico) => void;
 	/**
 	 * Si `true`, muestra la confianza del cartografiador como sufijo
 	 * discreto. Solo se usa en `MencionesSection` (detalle).
@@ -136,12 +138,12 @@ export function MencionBadge({
 	item,
 	onEditar,
 	onEliminar,
+	onUbicar,
 	mostrarConfianza = false,
 	colorScheme: colorSchemeProp,
 	artefactoId,
 }: MencionBadgeProps) {
 	const router = useRouter();
-	const pathname = usePathname();
 
 	const decision = item.valor_canonico.decision_cartografiador;
 	const colorScheme = colorSchemeProp ?? colorDesdeDecision(decision);
@@ -208,13 +210,12 @@ export function MencionBadge({
 					</StandardDropdownMenu.Item>
 				)}
 
-				<StandardDropdownMenu.Item
-					onClick={() =>
-						router.push(`${pathname}?buscar=${encodeURIComponent(texto)}`)
-					}>
-					<Search className="w-4 h-4 mr-2" />
-					Buscar en texto
-				</StandardDropdownMenu.Item>
+				{onUbicar && (
+					<StandardDropdownMenu.Item onClick={() => onUbicar(item)}>
+						<MapPin className="w-4 h-4 mr-2" />
+						Ubicar en texto
+					</StandardDropdownMenu.Item>
+				)}
 
 				{onEliminar && (
 					<StandardDropdownMenu.Item onClick={() => onEliminar(item)}>

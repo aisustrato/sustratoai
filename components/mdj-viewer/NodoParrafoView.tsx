@@ -336,6 +336,72 @@ function walkNode(
   return [<InlineRenderer key={key} inline={[n]} />];
 }
 
+/** Renderiza una anotación (entidad/nota/referencia/frase) con su tooltip. */
+function renderAnotacionInline(
+  a: Anotacion,
+  at: string,
+  activa: boolean,
+  key: string,
+  cb: Record<string, unknown>,
+): React.ReactNode {
+  if (a.tipo === "entidad") {
+    return (
+      <EntidadTooltip key={key} anotacion={a} activa={activa}>
+        {at}
+      </EntidadTooltip>
+    );
+  }
+  if (a.tipo === "nota") {
+    return (
+      <NotaTooltip
+        key={key}
+        anotacion={a}
+        activa={activa}
+        onEditar={cb.onEditarNota as ((anotacion: Anotacion) => void) | undefined}
+        onBorrar={cb.onBorrarNota as ((anotacionId: string) => void) | undefined}
+      >
+        {at}
+      </NotaTooltip>
+    );
+  }
+  if (a.tipo === "referencia") {
+    return (
+      <ReferenciaTooltip
+        key={key}
+        anotacion={a}
+        activa={activa}
+        onEditar={cb.onEditarReferencia as ((anotacion: Anotacion) => Promise<{ ok: boolean }>) | undefined}
+        onBorrar={cb.onBorrarReferencia as ((anotacionId: string) => Promise<{ ok: boolean }>) | undefined}
+      >
+        {at}
+      </ReferenciaTooltip>
+    );
+  }
+  if (a.tipo === "frase_notable") {
+    return (
+      <FraseNotableTooltip
+        key={key}
+        anotacion={a}
+        activa={activa}
+        onBorrar={cb.onBorrarFraseNotable as ((anotacionId: string) => Promise<{ ok: boolean }>) | undefined}
+      >
+        {at}
+      </FraseNotableTooltip>
+    );
+  }
+  const onClick = (cb as Record<string, unknown>).onAnotacionClick;
+  return (
+    <AnotacionMarca
+      key={key}
+      colorScheme="neutral"
+      activa={activa}
+      onClick={typeof onClick === "function" ? () => (onClick as (a: Anotacion) => void)(a) : undefined}
+    >
+      {at}
+    </AnotacionMarca>
+  );
+}
+
 function splitText(
   txt: string,
   base: number,
@@ -371,62 +437,19 @@ function splitText(
         const a = (seg as { anotacion: Anotacion }).anotacion;
         const activa = (cb as Record<string, unknown>).anotacionActiva === a.id;
         const key = `m-${pos}`;
-        // Cada tipo de anotación se envuelve en su tooltip interactivo,
-        // pasando el texto formateado (at) como children para preservar
-        // negrita/cursiva dentro del resaltado.
-        if (a.tipo === "entidad") {
+        const anotEl = renderAnotacionInline(a, at, activa, key, cb);
+        // Si el segmento ADEMÁS es coincidencia de búsqueda (p.ej. "Ubicar" sobre
+        // una entidad, que siempre es anotación), se envuelve en la marca verde
+        // para que se vea y el scroll encuentre `data-busqueda-activa`. Antes este
+        // caso se renderizaba como solo-anotación → búsqueda invisible (el bug).
+        if (seg.tipo === "anotacion_busqueda") {
           out.push(
-            <EntidadTooltip key={key} anotacion={a} activa={activa}>
-              {at}
-            </EntidadTooltip>,
-          );
-        } else if (a.tipo === "nota") {
-          out.push(
-            <NotaTooltip
-              key={key}
-              anotacion={a}
-              activa={activa}
-              onEditar={cb.onEditarNota as ((anotacion: Anotacion) => void) | undefined}
-              onBorrar={cb.onBorrarNota as ((anotacionId: string) => void) | undefined}
-            >
-              {at}
-            </NotaTooltip>,
-          );
-        } else if (a.tipo === "referencia") {
-          out.push(
-            <ReferenciaTooltip
-              key={key}
-              anotacion={a}
-              activa={activa}
-              onEditar={cb.onEditarReferencia as ((anotacion: Anotacion) => Promise<{ ok: boolean }>) | undefined}
-              onBorrar={cb.onBorrarReferencia as ((anotacionId: string) => Promise<{ ok: boolean }>) | undefined}
-            >
-              {at}
-            </ReferenciaTooltip>,
-          );
-        } else if (a.tipo === "frase_notable") {
-          out.push(
-            <FraseNotableTooltip
-              key={key}
-              anotacion={a}
-              activa={activa}
-              onBorrar={cb.onBorrarFraseNotable as ((anotacionId: string) => Promise<{ ok: boolean }>) | undefined}
-            >
-              {at}
-            </FraseNotableTooltip>,
+            <BusquedaMarca key={`mb-${pos}`} activa={(seg as { activa: boolean }).activa}>
+              {anotEl}
+            </BusquedaMarca>,
           );
         } else {
-          const onClick = (cb as Record<string, unknown>).onAnotacionClick;
-          out.push(
-            <AnotacionMarca
-              key={key}
-              colorScheme="neutral"
-              activa={activa}
-              onClick={typeof onClick === "function" ? () => (onClick as (a: Anotacion) => void)(a) : undefined}
-            >
-              {at}
-            </AnotacionMarca>,
-          );
+          out.push(anotEl);
         }
       }
       cur = fin;

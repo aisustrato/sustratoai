@@ -23,6 +23,11 @@ import {
 	ScrollText,
 	Sparkles,
 	Target,
+	Info,
+	ChevronLeft,
+	ChevronRight,
+	X,
+	MapPin,
 } from "lucide-react";
 
 import { StandardAccordion,
@@ -72,7 +77,7 @@ import {
 	type ReferenciaExport,
 	type TriadaParams,
 } from "@/lib/cognetica-forense/exportacion";
-import { listarMencionesPorArtefacto } from "@/lib/actions/cognetica-forense-menciones-actions";
+import { listarMencionesPorArtefacto, type MencionConValorCanonico } from "@/lib/actions/cognetica-forense-menciones-actions";
 import {
 	crearCitaDesdeSegmento,
 	eliminarCitaMencion,
@@ -86,7 +91,11 @@ import { listarReferenciasPorArtefacto } from "@/lib/actions/cognetica-forense-r
 import { DIMENSIONES } from "@/lib/cognetica-forense/ui/menciones-ui-helpers";
 import { mensajeAmigableDeError } from "@/lib/cognetica-forense/error-amigable";
 import { StandardDialog } from "@/components/ui/StandardDialog";
-import { Info } from "lucide-react";
+import {
+	listarDireccionesMencion,
+	type OcurrenciaDireccion,
+} from "@/lib/actions/cognetica-forense-direcciones-actions";
+import { UbicarContext, type UbicarActivo } from "./ubicar-context";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -567,6 +576,110 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 	const [usarVisorMdj, setUsarVisorMdj] = useState(
 		Boolean(artefacto.direcciones_resueltas_at),
 	);
+
+	// ─── UBICAR EN TEXTO (navegación por dirección) ───
+	// Acordeón CONTROLADO: poder abrir la sección donde cae la ocurrencia activa.
+	const [seccionesAbiertas, setSeccionesAbiertas] = useState<string[]>(["original"]);
+	// Ubicación activa: ocurrencias (direcciones) ordenadas + índice + etiqueta.
+	const [ubicacion, setUbicacion] = useState<{
+		etiqueta: string;
+		ocurrencias: OcurrenciaDireccion[];
+		indice: number;
+	} | null>(null);
+	// Elección cuando la mención aparece en >1 documento.
+	const [eleccion, setEleccion] = useState<{
+		etiqueta: string;
+		ocurrencias: OcurrenciaDireccion[];
+		porDocumento: { documento: string; cantidad: number }[];
+	} | null>(null);
+
+	const abrirSeccion = useCallback((documento: string) => {
+		setSeccionesAbiertas((prev) =>
+			prev.includes(documento) ? prev : [...prev, documento],
+		);
+	}, []);
+
+	const activarUbicacion = useCallback(
+		(etiqueta: string, ocurrencias: OcurrenciaDireccion[]) => {
+			if (ocurrencias.length === 0) return;
+			abrirSeccion(ocurrencias[0].documento);
+			setUbicacion({ etiqueta, ocurrencias, indice: 0 });
+		},
+		[abrirSeccion],
+	);
+
+	const handleUbicar = useCallback(
+		async (item: MencionConValorCanonico) => {
+			const etiqueta =
+				item.tipo === "cita" ?
+					(item.valor_canonico.texto_canonico_actual ?? "(cita)").slice(0, 40)
+				:	(item.valor_canonico.nombre_canonico_actual ?? "(sin nombre)");
+			const res = await listarDireccionesMencion(
+				artefacto.id,
+				item.tipo,
+				item.mencion.id,
+			);
+			if (!res.ok) {
+				toast.error("No se pudo ubicar la mención", {
+					description: res.error,
+					duration: Infinity,
+				});
+				return;
+			}
+			const ocurrencias = res.data;
+			if (ocurrencias.length === 0) {
+				toast.error("Sin ubicación todavía", {
+					description:
+						"Esta mención no tiene direcciones horneadas. Re-horneá el artefacto (correr el cartografiador, o borrar/editar una mención).",
+					duration: Infinity,
+				});
+				return;
+			}
+			const docs = Array.from(new Set(ocurrencias.map((o) => o.documento)));
+			if (docs.length === 1) {
+				activarUbicacion(etiqueta, ocurrencias);
+				return;
+			}
+			setEleccion({
+				etiqueta,
+				ocurrencias,
+				porDocumento: docs.map((d) => ({
+					documento: d,
+					cantidad: ocurrencias.filter((o) => o.documento === d).length,
+				})),
+			});
+		},
+		[artefacto.id, activarUbicacion],
+	);
+
+	const irOcurrencia = useCallback((delta: number) => {
+		setUbicacion((prev) => {
+			if (!prev) return prev;
+			const n = prev.ocurrencias.length;
+			return { ...prev, indice: (prev.indice + delta + n) % n };
+		});
+	}, []);
+
+	// Coincidencia activa para el contexto (solo el documento activo la recibe).
+	const ubicarActivo: UbicarActivo | null = useMemo(() => {
+		if (!ubicacion) return null;
+		const o = ubicacion.ocurrencias[ubicacion.indice];
+		if (!o) return null;
+		return {
+			documento: o.documento,
+			coincidencia: {
+				nodo_id: o.nodo_id,
+				offset_inicio: o.offset_inicio,
+				offset_fin: o.offset_fin,
+				fragmento: ubicacion.etiqueta,
+			},
+		};
+	}, [ubicacion]);
+
+	// Abrir la sección de la ocurrencia activa al navegar.
+	useEffect(() => {
+		if (ubicarActivo) abrirSeccion(ubicarActivo.documento);
+	}, [ubicarActivo, abrirSeccion]);
 
 	// Trigger para refrescar secciones de referencias/fuentes sin recargar la página
 	const [refreshReferenciasTrigger, setRefreshReferenciasTrigger] = useState(0);
@@ -1222,7 +1335,8 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 				    overflow horizontal interno (p.ej. la fila de miniaturas
 				    del SlidesViewer con `flex-shrink-0`). Sin esto, el card
 				    del SlidesViewer reventaba el viewport por ~119px. */}
-				<StandardAccordion type="multiple" styleType="subtle" defaultValue={["original"]}>
+				<UbicarContext.Provider value={ubicarActivo}>
+				<StandardAccordion type="multiple" styleType="subtle" value={seccionesAbiertas} onValueChange={setSeccionesAbiertas}>
 				<StandardAccordionItem value="original" colorScheme="neutral">
 					<StandardAccordionTrigger>
 						<SeccionHeader
@@ -1299,6 +1413,7 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 					</StandardAccordionItem>
 				)}
 			</StandardAccordion>
+				</UbicarContext.Provider>
 
 				{/* Sidebar: Menciones cartografiadas */}
 				<aside className="lg:sticky lg:top-4">
@@ -1308,13 +1423,118 @@ export function ArtefactoView({ data }: ArtefactoViewProps) {
 						refreshTrigger={refreshMencionesTrigger}
 						onDescargarObsidiana={descargarSeccion}
 						sha256Descarga={sha256Descarga}
+						onUbicar={handleUbicar}
 					/>
 				</aside>
 			</div>
 
+			{/* Elección cuando la mención aparece en >1 documento. */}
+			<StandardDialog
+				open={eleccion !== null}
+				onOpenChange={(abierto) => {
+					if (!abierto) setEleccion(null);
+				}}>
+				<StandardDialog.Content colorScheme="primary" size="sm">
+					<StandardDialog.Header>
+						<StandardDialog.Title className="flex items-center gap-2">
+							<MapPin className="w-5 h-5" />
+							Ubicar «{eleccion?.etiqueta}»
+						</StandardDialog.Title>
+					</StandardDialog.Header>
+					<StandardDialog.Body className="space-y-2">
+						<StandardText size="sm" colorScheme="neutral">
+							Aparece en varios documentos. ¿Dónde la ubico?
+						</StandardText>
+						<div className="flex flex-col gap-2 pt-1">
+							<StandardButton
+								styleType="solid"
+								colorScheme="primary"
+								size="sm"
+								leftIcon={MapPin}
+								onClick={() => {
+									if (!eleccion) return;
+									activarUbicacion(eleccion.etiqueta, eleccion.ocurrencias);
+									setEleccion(null);
+								}}>
+								Ver en todos ({eleccion?.ocurrencias.length})
+							</StandardButton>
+							{eleccion?.porDocumento.map((pd) => (
+								<StandardButton
+									key={pd.documento}
+									styleType="outline"
+									colorScheme="neutral"
+									size="sm"
+									onClick={() => {
+										if (!eleccion) return;
+										activarUbicacion(
+											eleccion.etiqueta,
+											eleccion.ocurrencias.filter((o) => o.documento === pd.documento),
+										);
+										setEleccion(null);
+									}}>
+									{NOMBRE_DOCUMENTO[pd.documento] ?? pd.documento} ({pd.cantidad})
+								</StandardButton>
+							))}
+						</div>
+					</StandardDialog.Body>
+				</StandardDialog.Content>
+			</StandardDialog>
+
+			{/* Barra flotante de navegación de ocurrencias. */}
+			{ubicacion && (
+				<div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
+					<StandardCard colorScheme="primary" styleType="filled" className="px-3 py-2">
+						<div className="flex items-center gap-3">
+							<MapPin className="w-4 h-4" />
+							<StandardText size="sm" weight="medium">
+								«{ubicacion.etiqueta}» · {ubicacion.indice + 1} de {ubicacion.ocurrencias.length}
+								{" · "}
+								{NOMBRE_DOCUMENTO[ubicacion.ocurrencias[ubicacion.indice].documento] ??
+									ubicacion.ocurrencias[ubicacion.indice].documento}
+							</StandardText>
+							<StandardButton
+								styleType="ghost"
+								size="sm"
+								iconOnly
+								leftIcon={ChevronLeft}
+								tooltip="Anterior"
+								onClick={() => irOcurrencia(-1)}
+								disabled={ubicacion.ocurrencias.length < 2}
+							/>
+							<StandardButton
+								styleType="ghost"
+								size="sm"
+								iconOnly
+								leftIcon={ChevronRight}
+								tooltip="Siguiente"
+								onClick={() => irOcurrencia(1)}
+								disabled={ubicacion.ocurrencias.length < 2}
+							/>
+							<StandardButton
+								styleType="ghost"
+								size="sm"
+								iconOnly
+								leftIcon={X}
+								tooltip="Cerrar"
+								onClick={() => setUbicacion(null)}
+							/>
+						</div>
+					</StandardCard>
+				</div>
+			)}
+
 		</div>
 	);
 }
+
+/** Etiquetas legibles de los documentos (para "Ubicar"). */
+const NOMBRE_DOCUMENTO: Record<string, string> = {
+	original: "Original",
+	cronica: "Crónica",
+	germinal: "Germinal",
+	destilado: "Destilado",
+	nucleo: "Núcleo",
+};
 //#endregion ![main]
 
 //#region [sub] - 🧩 SECCIÓN HEADER 🧩

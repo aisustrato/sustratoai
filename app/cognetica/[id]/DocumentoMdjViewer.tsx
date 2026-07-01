@@ -10,7 +10,7 @@
 // base. Si `content` todavía es MD plano (legacy), se hornea una vez (server) y se
 // usa el resultado. La interacción con las anotaciones es de la próxima fase.
 
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { Download } from "lucide-react";
 import { StandardMDJViewerClient } from "@/components/mdj-viewer";
 import { StandardAlert } from "@/components/ui/StandardAlert";
@@ -19,6 +19,7 @@ import { StandardText } from "@/components/ui/StandardText";
 import type { Anotacion, DocumentoMDJ } from "@/lib/mdj/types";
 import { esMdj, mdjDesdeContenido, mdDesdeContenido } from "@/lib/cognetica-forense/mdj-contenido";
 import { asegurarMdjCacheado } from "./mdj-cache";
+import { UbicarContext } from "./ubicar-context";
 
 /** Documento que esta instancia está renderizando. */
 export type DocumentoTipo =
@@ -54,6 +55,11 @@ export function DocumentoMdjViewer({
 	onDescargarObsidiana,
 	sha256Descarga,
 }: DocumentoMdjViewerProps) {
+	// "Ubicar en texto": la ocurrencia activa solo aplica si cae en ESTE documento.
+	const ubicar = useContext(UbicarContext);
+	const coincidenciaDirigida =
+		ubicar && ubicar.documento === documento ? ubicar.coincidencia : null;
+
 	const [docMdj, setDocMdj] = useState<DocumentoMDJ | null>(null);
 	const [anotaciones, setAnotaciones] = useState<Anotacion[]>([]);
 	const [error, setError] = useState<string | null>(null);
@@ -159,6 +165,7 @@ export function DocumentoMdjViewer({
 				artefactoId={artefactoId}
 				documento={docMdj ?? undefined}
 				anotaciones={anotaciones}
+				coincidenciaDirigida={coincidenciaDirigida}
 			/>
 		</div>
 	);

@@ -51,6 +51,12 @@ interface StandardMDJViewerClientProps {
   documento?: DocumentoMDJ;
   anotaciones?: Anotacion[];
   className?: string;
+  /**
+   * Ocurrencia dirigida desde "Ubicar en texto" (dirección activa). Si se pasa,
+   * el visor la marca en verde y scrollea a ella. `null` la limpia. Opcional →
+   * el showroom no la usa.
+   */
+  coincidenciaDirigida?: CoincidenciaBusqueda | null;
   /** Callback cuando el usuario selecciona texto */
   onSeleccion?: (sel: SeleccionMDJ) => void;
   /** Callback externo para agregar frase notable — retorna Promise<{ ok: boolean }> */
@@ -68,6 +74,7 @@ export function StandardMDJViewerClient({
   documento,
   anotaciones = [],
   className = "",
+  coincidenciaDirigida,
   onSeleccion,
   onAgregarFraseNotable,
   onAgregarReferencia,
@@ -220,15 +227,36 @@ export function StandardMDJViewerClient({
 
   useSeleccionMDJ(containerRef, doc, handleSeleccion);
 
-  // Scroll al match activo de búsqueda
+  // Scroll al match activo de búsqueda. Reintenta unas veces porque el destino
+  // puede estar montándose (ej. una sección de acordeón recién abierta por "Ubicar").
   useEffect(() => {
     if (!resultadoBusqueda || resultadoBusqueda.indiceActivo < 0) return;
-
-    const el = containerRef.current?.querySelector('[data-busqueda-activa="true"]');
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    let cancelado = false;
+    let intentos = 0;
+    const intentar = () => {
+      if (cancelado) return;
+      const el = containerRef.current?.querySelector('[data-busqueda-activa="true"]');
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+      if (intentos++ < 12) setTimeout(intentar, 120);
+    };
+    intentar();
+    return () => {
+      cancelado = true;
+    };
   }, [resultadoBusqueda]);
+
+  // "Ubicar en texto": la ocurrencia activa (dirección) se inyecta como coincidencia
+  // → se renderiza en verde (misma marca del buscador) y dispara el scroll de arriba.
+  useEffect(() => {
+    if (coincidenciaDirigida) {
+      setResultadoBusqueda({ coincidencias: [coincidenciaDirigida], indiceActivo: 0 });
+    } else {
+      setResultadoBusqueda(null);
+    }
+  }, [coincidenciaDirigida]);
 
   const handleNavegarBusqueda = useCallback(
     (coincidencia: CoincidenciaBusqueda, indice: number, total: number) => {
@@ -237,8 +265,12 @@ export function StandardMDJViewerClient({
         return;
       }
       setResultadoBusqueda({
-        coincidencias: [coincidencia], // Solo la activa para el dispatcher
-        indiceActivo: indice,
+        // Solo se pasa la coincidencia activa al dispatcher, así que su índice
+        // LOCAL es 0. (Pasar el índice global rompía el marcado `activa` —
+        // `i === indiceActivo` nunca daba true → sin `data-busqueda-activa` → sin
+        // scroll. El "N de total" lo lleva BuscadorMDJ con su propio índice.)
+        coincidencias: [coincidencia],
+        indiceActivo: 0,
       });
     },
     [],
