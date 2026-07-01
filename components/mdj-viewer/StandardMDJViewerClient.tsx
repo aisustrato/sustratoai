@@ -341,7 +341,8 @@ export function StandardMDJViewerClient({
         case "crear-pensador":
         case "crear-disciplina":
         case "crear-concepto":
-        case "crear-teoria": {
+        case "crear-teoria":
+        case "crear-cita": {
           // El host (cognética) crea la entidad con el texto seleccionado.
           const tipoEntidad = accion.slice("crear-".length) as TipoEntidadCreable;
           servicios?.onCrearEntidad?.(tipoEntidad, seleccion.fragmento);

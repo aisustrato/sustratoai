@@ -13,8 +13,8 @@ export interface EntidadInfoViva {
 	descripcion: string | null;
 }
 
-/** Tipos de entidad creables desde una selección de texto. */
-export type TipoEntidadCreable = "pensador" | "disciplina" | "concepto" | "teoria";
+/** Tipos creables desde una selección de texto (entidades + cita). */
+export type TipoEntidadCreable = "pensador" | "disciplina" | "concepto" | "teoria" | "cita";
 
 export interface EntidadServicios {
 	/** Info ACTUAL de la entidad por su id (nombre/descripción canónicos vivos). */

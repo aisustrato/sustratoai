@@ -304,9 +304,10 @@ export async function eliminarMencion(
 //#endregion ![api]
 
 //#region [api] - 🔧 CREAR ENTIDAD DESDE EL TEXTO (selección MDJ) 🔧
-/** Tipos de entidad creables desde el texto (cita tiene otra estructura). */
-const TIPO_ENTIDAD_CREABLE = z.enum(["pensador", "disciplina", "concepto", "teoria"]);
-type TipoEntidadCreable = z.infer<typeof TIPO_ENTIDAD_CREABLE>;
+/** Entidades canónicas creables (cita tiene otra estructura). */
+type TipoEntidadCreable = "pensador" | "disciplina" | "concepto" | "teoria";
+/** Todos los tipos creables desde el texto (entidades + cita). */
+const TIPO_CREABLE = z.enum(["pensador", "disciplina", "concepto", "teoria", "cita"]);
 
 /** Hash determinista para la mención humana (idempotencia por artefacto+tipo+texto). */
 function hashEntidadHumana(artefactoId: string, tipo: string, texto: string): string {
@@ -380,7 +381,7 @@ export async function crearEntidadHumana(
 	Result<{ mencionId: string; rehorneadoOk: boolean; rehorneadoError?: string }, ResultErrorCode>
 > {
 	const t = texto.trim();
-	const parseTipo = TIPO_ENTIDAD_CREABLE.safeParse(tipo);
+	const parseTipo = TIPO_CREABLE.safeParse(tipo);
 	if (!UUID_SCHEMA.safeParse(artefactoId).success || !parseTipo.success || t.length < 2) {
 		return fail<ResultErrorCode>("INVALID_INPUT");
 	}
@@ -400,42 +401,65 @@ export async function crearEntidadHumana(
 	if (art.error || !art.data) return fail<ResultErrorCode>("NOT_FOUND");
 	const projectId = art.data.project_id;
 
-	let canon: { id: string; reusada: boolean };
-	try {
-		canon = await crearOReusarCanonica(supabase, parseTipo.data, projectId, t);
-	} catch (e) {
-		console.error("[crearEntidadHumana] canónica:", e);
-		return fail<ResultErrorCode>("INTERNAL");
-	}
+	let mencionId = "";
 
-	const decision: "match_existente" | "nueva_entidad" =
-		canon.reusada ? "match_existente" : "nueva_entidad";
-	const base = {
-		artefacto_id: artefactoId,
-		project_id: projectId,
-		nombre_extractor_crudo: t,
-		descripcion_extractor_cruda: null,
-		hash_extractor_crudo: hashEntidadHumana(artefactoId, parseTipo.data, t),
-		nombre_cartografiador: t,
-		descripcion_cartografiador: null,
-		decision_cartografiador: decision,
-		confianza_cartografiador: 1,
-		justificacion_cartografiador: "Creada manualmente desde el texto",
-		cartografiado_at: new Date().toISOString(),
-	};
-	const insRes =
-		parseTipo.data === "pensador"
-			? await supabase.from("cgt_pensadores_menciones").insert({ ...base, pensador_id: canon.id }).select("id").maybeSingle()
-		: parseTipo.data === "disciplina"
-			? await supabase.from("cgt_disciplinas_menciones").insert({ ...base, disciplina_id: canon.id }).select("id").maybeSingle()
-		: parseTipo.data === "concepto"
-			? await supabase.from("cgt_conceptos_menciones").insert({ ...base, concepto_id: canon.id }).select("id").maybeSingle()
-			: await supabase.from("cgt_teorias_menciones").insert({ ...base, teoria_id: canon.id }).select("id").maybeSingle();
-	if (insRes.error) {
-		console.error("[crearEntidadHumana] insert mención:", insRes.error);
-		return fail<ResultErrorCode>("INTERNAL");
+	if (parseTipo.data === "cita") {
+		// Cita: sin entidad canónica. Guarda el texto; el bake ancla por coincidencia.
+		const insCita = await supabase
+			.from("cgt_citas_menciones")
+			.insert({
+				artefacto_id: artefactoId,
+				project_id: projectId,
+				texto_extractor_crudo: t,
+				origen: "humano",
+				hash_extractor_crudo: hashEntidadHumana(artefactoId, "cita", t),
+			})
+			.select("id")
+			.maybeSingle();
+		if (insCita.error) {
+			console.error("[crearEntidadHumana] insert cita:", insCita.error);
+			return fail<ResultErrorCode>("INTERNAL");
+		}
+		mencionId = insCita.data?.id ?? "";
+	} else {
+		const tipoEnt = parseTipo.data; // pensador | disciplina | concepto | teoria
+		let canon: { id: string; reusada: boolean };
+		try {
+			canon = await crearOReusarCanonica(supabase, tipoEnt, projectId, t);
+		} catch (e) {
+			console.error("[crearEntidadHumana] canónica:", e);
+			return fail<ResultErrorCode>("INTERNAL");
+		}
+
+		const decision: "match_existente" | "nueva_entidad" =
+			canon.reusada ? "match_existente" : "nueva_entidad";
+		const base = {
+			artefacto_id: artefactoId,
+			project_id: projectId,
+			nombre_extractor_crudo: t,
+			descripcion_extractor_cruda: null,
+			hash_extractor_crudo: hashEntidadHumana(artefactoId, tipoEnt, t),
+			nombre_cartografiador: t,
+			descripcion_cartografiador: null,
+			decision_cartografiador: decision,
+			confianza_cartografiador: 1,
+			justificacion_cartografiador: "Creada manualmente desde el texto",
+			cartografiado_at: new Date().toISOString(),
+		};
+		const insRes =
+			tipoEnt === "pensador"
+				? await supabase.from("cgt_pensadores_menciones").insert({ ...base, pensador_id: canon.id }).select("id").maybeSingle()
+			: tipoEnt === "disciplina"
+				? await supabase.from("cgt_disciplinas_menciones").insert({ ...base, disciplina_id: canon.id }).select("id").maybeSingle()
+			: tipoEnt === "concepto"
+				? await supabase.from("cgt_conceptos_menciones").insert({ ...base, concepto_id: canon.id }).select("id").maybeSingle()
+				: await supabase.from("cgt_teorias_menciones").insert({ ...base, teoria_id: canon.id }).select("id").maybeSingle();
+		if (insRes.error) {
+			console.error("[crearEntidadHumana] insert mención:", insRes.error);
+			return fail<ResultErrorCode>("INTERNAL");
+		}
+		mencionId = insRes.data?.id ?? "";
 	}
-	const mencionId = insRes.data?.id ?? "";
 
 	// Re-hornear: el matcher genera direcciones + resaltado (autores por palabra).
 	const rebake = await construirMdjArtefacto(artefactoId);

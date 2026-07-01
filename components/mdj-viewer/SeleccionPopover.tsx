@@ -11,7 +11,7 @@ import { useState, useCallback, useContext } from "react";
 import {
   StandardDropdownMenu,
 } from "@/components/ui/StandardDropdownMenu";
-import { Star, FileText, BookOpen, Copy, Search, User, Lightbulb, Atom, GraduationCap } from "lucide-react";
+import { Star, FileText, BookOpen, Copy, Search, User, Lightbulb, Atom, GraduationCap, Quote } from "lucide-react";
 import { EntidadServiciosContext } from "./entidad-servicios-context";
 
 /** Acciones del menú de selección (incluye crear entidades en cognética). */
@@ -24,7 +24,8 @@ export type AccionSeleccion =
   | "crear-pensador"
   | "crear-disciplina"
   | "crear-concepto"
-  | "crear-teoria";
+  | "crear-teoria"
+  | "crear-cita";
 
 interface SeleccionPopoverProps {
   /** Callback al elegir una opción */
@@ -80,6 +81,10 @@ export function SeleccionPopover({ onSeleccion, onClose }: SeleccionPopoverProps
             <StandardDropdownMenu.Item onClick={() => handleAccion("crear-disciplina")} className="flex items-center gap-2">
               <GraduationCap size={14} className="text-secondary" />
               <span>Crear disciplina</span>
+            </StandardDropdownMenu.Item>
+            <StandardDropdownMenu.Item onClick={() => handleAccion("crear-cita")} className="flex items-center gap-2">
+              <Quote size={14} className="text-warning" />
+              <span>Crear cita</span>
             </StandardDropdownMenu.Item>
           </>
         ) : (
