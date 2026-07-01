@@ -487,17 +487,3 @@ export async function deletePaperAnnex(annexId: string): Promise<void> {
 		throw new Error(`Error eliminando anexo: ${error.message}`);
 	}
 }
-
-/** Tipo MIME → lenguaje del anexo */
-export function inferAnnexLanguage(
-	filename: string,
-	mimeType: string,
-): "python" | "jupyter" | "csv" | "json" | "zip" | "text" {
-	const ext = filename.toLowerCase().slice(filename.lastIndexOf("."));
-	if (ext === ".py") return "python";
-	if (ext === ".ipynb") return "jupyter";
-	if (ext === ".csv") return "csv";
-	if (ext === ".json") return "json";
-	if (ext === ".zip") return "zip";
-	return "text";
-}

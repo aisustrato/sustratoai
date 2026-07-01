@@ -341,3 +341,19 @@ export function hasValidImageExtension(filename: string): boolean {
 	const ext = filename.toLowerCase().slice(filename.lastIndexOf("."));
 	return validExtensions.includes(ext);
 }
+
+/** Tipo MIME/extensión → lenguaje del anexo.
+ *  NOTA: este helper es sincrónico (no async) y vive aquí, no en queries.ts
+ *  (que es "use server" y exige funciones async en todos sus exports). */
+export function inferAnnexLanguage(
+	filename: string,
+	mimeType: string,
+): "python" | "jupyter" | "csv" | "json" | "zip" | "text" {
+	const ext = filename.toLowerCase().slice(filename.lastIndexOf("."));
+	if (ext === ".py") return "python";
+	if (ext === ".ipynb") return "jupyter";
+	if (ext === ".csv") return "csv";
+	if (ext === ".json") return "json";
+	if (ext === ".zip") return "zip";
+	return "text";
+}
