@@ -67,6 +67,7 @@ export async function generateMetadata({
       // Google Scholar
       citation_title: paper.title,
       citation_publication_date: paper.published_at || "",
+      citation_online_date: paper.published_at || paper.created_at || "",
       citation_doi: paper.doi || "",
       citation_pdf_url: paper.pdf_url || "",
       citation_abstract_html_url: url,
