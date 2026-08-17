@@ -4,29 +4,82 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardText } from "@/components/ui/StandardText";
-import { RotateCcw, Info, ImageOff } from "lucide-react";
+import { RotateCcw, Info, ImageOff, Languages } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { IMAGE_END_MARKER } from "@/lib/papers/image-utils";
+import { translatePaperMarkdown } from "@/lib/papers/translate";
+import type { PaperIdioma } from "@/lib/papers/i18n";
 
 interface PaperMarkdownStepProps {
 	initialMarkdown: string;
 	onMarkdownChange: (markdown: string) => void;
 	imagePlaceholdersCount: number;
+	initialMarkdownEn?: string;
+	onMarkdownEnChange: (markdown: string) => void;
 }
 
 export function PaperMarkdownStep({
 	initialMarkdown,
 	onMarkdownChange,
 	imagePlaceholdersCount,
+	initialMarkdownEn = "",
+	onMarkdownEnChange,
 }: PaperMarkdownStepProps) {
 	const [markdown, setMarkdown] = useState(initialMarkdown);
+	const [markdownEn, setMarkdownEn] = useState(initialMarkdownEn);
 	const [wordCount, setWordCount] = useState(0);
 	const [charCount, setCharCount] = useState(0);
+	const [isTranslatingContent, setIsTranslatingContent] = useState(false);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+	// Traduce el cuerpo (solo el Markdown, sin metadatos) con IA — usa el
+	// box que tenga contenido como fuente y rellena el otro. El resultado se
+	// puede seguir editando acá mismo antes de avanzar; no se persiste nada.
+	const handleTranslateContent = async () => {
+		const source: PaperIdioma | null =
+			markdown.trim() ? "es"
+			: markdownEn.trim() ? "en"
+			: null;
+
+		if (!source) {
+			toast.error("No hay contenido todavía para traducir.");
+			return;
+		}
+
+		const target: PaperIdioma = source === "es" ? "en" : "es";
+		const sourceText = source === "es" ? markdown : markdownEn;
+
+		setIsTranslatingContent(true);
+		const toastId = toast.loading(
+			`Traduciendo el cuerpo con IA a ${target === "en" ? "inglés" : "español"}…`,
+		);
+
+		try {
+			const traducido = await translatePaperMarkdown(sourceText, target);
+			if (target === "en") {
+				setMarkdownEn(traducido);
+			} else {
+				setMarkdown(traducido);
+			}
+			toast.success("Cuerpo traducido — revísalo antes de continuar.", {
+				id: toastId,
+			});
+		} catch (err) {
+			console.error("[PaperMarkdownStep:traducir]", err);
+			const msg = err instanceof Error ? err.message : "Error desconocido";
+			toast.error(`No se pudo traducir el cuerpo: ${msg}`, {
+				id: toastId,
+				duration: Infinity,
+			});
+		} finally {
+			setIsTranslatingContent(false);
+		}
+	};
 
 	// Inserta el marcador de fin de imagen en la posición del cursor
 	const handleInsertEndMarker = () => {
@@ -69,6 +122,15 @@ export function PaperMarkdownStep({
 		return () => clearTimeout(timer);
 	}, [markdown, onMarkdownChange]);
 
+	// Notificar cambios del buffer EN al padre (debounced)
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			onMarkdownEnChange(markdownEn);
+		}, 500);
+
+		return () => clearTimeout(timer);
+	}, [markdownEn, onMarkdownEnChange]);
+
 	const handleReset = () => {
 		if (
 			confirm(
@@ -93,7 +155,18 @@ export function PaperMarkdownStep({
 						</span>
 					)}
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-3">
+					<StandardButton
+						styleType="outline"
+						colorScheme="primary"
+						size="sm"
+						onClick={handleTranslateContent}
+						loading={isTranslatingContent}
+						loadingText="Traduciendo..."
+						title="Traducir el cuerpo con IA (rellena el idioma que falte)"
+						leftIcon={Languages}>
+						Traducir con IA
+					</StandardButton>
 					<StandardButton
 						styleType="outline"
 						colorScheme="primary"
@@ -114,14 +187,14 @@ export function PaperMarkdownStep({
 				</div>
 			</div>
 
-			{/* Layout split: Editor + Preview */}
+			{/* Layout split: Editor + Preview (Español) */}
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 				{/* Editor */}
 				<StandardCard styleType="filled" colorScheme="neutral" noPadding>
 					<div className="flex flex-col h-full">
 						<div className="px-4 py-3 border-b border-border-neutral">
 							<StandardText size="sm" weight="medium">
-								Editor Markdown
+								Editor Markdown (Español)
 							</StandardText>
 						</div>
 						<textarea
@@ -146,6 +219,41 @@ export function PaperMarkdownStep({
 						<div className="flex-1 p-4 overflow-y-auto min-h-[600px] max-h-[600px] prose prose-sm dark:prose-invert max-w-none">
 							<ReactMarkdown remarkPlugins={[remarkGfm]}>
 								{markdown}
+							</ReactMarkdown>
+						</div>
+					</div>
+				</StandardCard>
+			</div>
+
+			{/* Layout split: Editor + Preview (English) — manual o rellenado por "Traducir con IA" (paso de Metadatos) */}
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+				<StandardCard styleType="filled" colorScheme="neutral" noPadding>
+					<div className="flex flex-col h-full">
+						<div className="px-4 py-3 border-b border-border-neutral">
+							<StandardText size="sm" weight="medium">
+								Markdown Editor (English)
+							</StandardText>
+						</div>
+						<textarea
+							value={markdownEn}
+							onChange={(e) => setMarkdownEn(e.target.value)}
+							className="flex-1 w-full p-4 bg-transparent resize-none focus:outline-none font-mono text-sm min-h-[400px] max-h-[600px] overflow-y-auto"
+							placeholder="Write or paste the English version of the content..."
+							spellCheck={false}
+						/>
+					</div>
+				</StandardCard>
+
+				<StandardCard styleType="filled" colorScheme="neutral" noPadding>
+					<div className="flex flex-col h-full">
+						<div className="px-4 py-3 border-b border-border-neutral">
+							<StandardText size="sm" weight="medium">
+								Preview
+							</StandardText>
+						</div>
+						<div className="flex-1 p-4 overflow-y-auto min-h-[400px] max-h-[600px] prose prose-sm dark:prose-invert max-w-none">
+							<ReactMarkdown remarkPlugins={[remarkGfm]}>
+								{markdownEn}
 							</ReactMarkdown>
 						</div>
 					</div>

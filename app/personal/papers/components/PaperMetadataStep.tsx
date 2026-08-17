@@ -4,20 +4,28 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardTextarea } from "@/components/ui/StandardTextarea";
-import { Send, Save, AlertCircle, CheckCircle } from "lucide-react";
+import { StandardRadioGroup } from "@/components/ui/StandardRadioGroup";
+import { Send, Save, AlertCircle, CheckCircle, Languages } from "lucide-react";
 import { generatePaperSlug, isSlugAvailableClient } from "@/lib/papers/slug";
 import type { PaperDraftInput } from "@/lib/papers/types";
+import { translatePaperContent } from "@/lib/papers/translate";
+import type { PaperIdioma } from "@/lib/papers/i18n";
 
 interface PaperMetadataStepProps {
 	initialData?: Partial<PaperDraftInput>;
 	onSaveDraft: (data: PaperDraftInput) => Promise<void>;
 	onPublish: (data: PaperDraftInput) => Promise<void>;
 	isPublished?: boolean;
+	/** Recibe el content_md traducido para que el padre actualice el estado que edita PaperMarkdownStep (paso 2). */
+	onContentMdTranslated: (target: PaperIdioma, contentMd: string) => void;
+	/** ID del paper que se está editando — excluye su propio slug de la validación de disponibilidad. */
+	paperId?: string;
 }
 
 export function PaperMetadataStep({
@@ -25,10 +33,14 @@ export function PaperMetadataStep({
 	onSaveDraft,
 	onPublish,
 	isPublished = false,
+	onContentMdTranslated,
+	paperId,
 }: PaperMetadataStepProps) {
 	// Estados del formulario
 	const [title, setTitle] = useState(initialData?.title || "");
+	const [titleEn, setTitleEn] = useState(initialData?.title_en || "");
 	const [subtitle, setSubtitle] = useState(initialData?.subtitle || "");
+	const [subtitleEn, setSubtitleEn] = useState(initialData?.subtitle_en || "");
 	const [slug, setSlug] = useState(initialData?.slug || "");
 	const [abstractEs, setAbstractEs] = useState(initialData?.abstract_es || "");
 	const [abstractEn, setAbstractEn] = useState(initialData?.abstract_en || "");
@@ -36,6 +48,11 @@ export function PaperMetadataStep({
 		initialData?.keywords || [],
 	);
 	const [keywordInput, setKeywordInput] = useState("");
+	const [keywordsEn, setKeywordsEn] = useState<string[]>(
+		initialData?.keywords_en || [],
+	);
+	const [keywordEnInput, setKeywordEnInput] = useState("");
+	const [language, setLanguage] = useState(initialData?.language || "es");
 	const [doi, setDoi] = useState(initialData?.doi || "");
 	const [zenodoUrl, setZenodoUrl] = useState(initialData?.zenodo_url || "");
 
@@ -44,6 +61,7 @@ export function PaperMetadataStep({
 	const [isCheckingSlug, setIsCheckingSlug] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isPublishing, setIsPublishing] = useState(false);
+	const [isTranslating, setIsTranslating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
 
@@ -65,7 +83,7 @@ export function PaperMetadataStep({
 		const checkSlug = async () => {
 			setIsCheckingSlug(true);
 			try {
-				const available = await isSlugAvailableClient(slug);
+				const available = await isSlugAvailableClient(slug, paperId);
 				setSlugAvailable(available);
 			} catch (err) {
 				console.error("Error verificando slug:", err);
@@ -76,7 +94,7 @@ export function PaperMetadataStep({
 
 		const timer = setTimeout(checkSlug, 500);
 		return () => clearTimeout(timer);
-	}, [slug]);
+	}, [slug, paperId]);
 
 	// Agregar keyword
 	const handleAddKeyword = () => {
@@ -90,6 +108,85 @@ export function PaperMetadataStep({
 	// Eliminar keyword
 	const handleRemoveKeyword = (keyword: string) => {
 		setKeywords(keywords.filter((k) => k !== keyword));
+	};
+
+	// Agregar keyword (EN)
+	const handleAddKeywordEn = () => {
+		const trimmed = keywordEnInput.trim();
+		if (trimmed && !keywordsEn.includes(trimmed)) {
+			setKeywordsEn([...keywordsEn, trimmed]);
+			setKeywordEnInput("");
+		}
+	};
+
+	// Eliminar keyword (EN)
+	const handleRemoveKeywordEn = (keyword: string) => {
+		setKeywordsEn(keywordsEn.filter((k) => k !== keyword));
+	};
+
+	// Traducir con IA: toma el contenido del idioma canónico y genera el
+	// faltante vía DeepSeek. No persiste nada — solo rellena el formulario
+	// para que el autor lo revise/edite antes de guardar o publicar.
+	const handleTranslate = async () => {
+		const canonico: PaperIdioma = language === "en" ? "en" : "es";
+		const objetivo: PaperIdioma = canonico === "en" ? "es" : "en";
+
+		const contentMdCanonico =
+			canonico === "en" ?
+				initialData?.content_md_en || ""
+			:	initialData?.content_md || "";
+
+		if (!contentMdCanonico) {
+			setError(
+				`No hay contenido en ${canonico === "en" ? "inglés" : "español"} todavía (paso de Markdown) — no se puede traducir.`,
+			);
+			return;
+		}
+
+		setIsTranslating(true);
+		setError(null);
+		const toastId = toast.loading(
+			`Traduciendo con IA a ${objetivo === "en" ? "inglés" : "español"}…`,
+		);
+
+		try {
+			const traduccion = await translatePaperContent(
+				{
+					title: canonico === "en" ? titleEn || title : title,
+					subtitle: canonico === "en" ? subtitleEn : subtitle,
+					abstract: canonico === "en" ? abstractEn : abstractEs,
+					contentMd: contentMdCanonico,
+					keywords: canonico === "en" ? keywordsEn : keywords,
+				},
+				objetivo,
+			);
+
+			if (objetivo === "en") {
+				setTitleEn(traduccion.title);
+				setSubtitleEn(traduccion.subtitle || "");
+				setAbstractEn(traduccion.abstract);
+				setKeywordsEn(traduccion.keywords);
+			} else {
+				setTitle(traduccion.title);
+				setSubtitle(traduccion.subtitle || "");
+				setAbstractEs(traduccion.abstract);
+				setKeywords(traduccion.keywords);
+			}
+			onContentMdTranslated(objetivo, traduccion.contentMd);
+
+			toast.success("Traducción generada — revísala antes de guardar.", {
+				id: toastId,
+			});
+		} catch (err) {
+			console.error("[PaperMetadataStep:traducir]", err);
+			const msg = err instanceof Error ? err.message : "Error desconocido";
+			toast.error(`No se pudo traducir: ${msg}`, {
+				id: toastId,
+				duration: Infinity,
+			});
+		} finally {
+			setIsTranslating(false);
+		}
 	};
 
 	// Validar formulario
@@ -106,18 +203,22 @@ export function PaperMetadataStep({
 	// Construir objeto de datos
 	const buildDraftData = (): PaperDraftInput => ({
 		title,
+		title_en: titleEn || undefined,
 		subtitle: subtitle || undefined,
+		subtitle_en: subtitleEn || undefined,
 		slug,
 		abstract_es: abstractEs,
 		abstract_en: abstractEn || undefined,
 		keywords,
+		keywords_en: keywordsEn.length > 0 ? keywordsEn : undefined,
 		doi: doi || undefined,
 		zenodo_url: zenodoUrl || undefined,
 		authors: initialData?.authors || [],
 		content_md: initialData?.content_md || "",
+		content_md_en: initialData?.content_md_en || undefined,
 		version: "1.0",
 		license: "CC BY 4.0",
-		language: "es",
+		language,
 		processing_status: "ready",
 	});
 
@@ -193,6 +294,46 @@ export function PaperMetadataStep({
 			{/* Formulario */}
 			<StandardCard styleType="filled" colorScheme="neutral">
 				<div className="space-y-6">
+					{/* Idioma canónico (SEO) */}
+					<div>
+						<StandardRadioGroup
+							label="Idioma canónico (para buscadores/IA)"
+							description="El otro idioma sigue disponible con el toggle en la vista pública. Este es el que se muestra por defecto y el que leen los crawlers."
+							orientation="horizontal"
+							value={language}
+							onChange={setLanguage}
+							disabled={isSaving || isPublishing || isTranslating}
+							options={[
+								{ value: "es", label: "Español" },
+								{ value: "en", label: "English" },
+							]}
+						/>
+					</div>
+
+					{/* Traducir con IA: rellena el idioma faltante para revisar/editar antes de guardar */}
+					<div>
+						<StandardButton
+							styleType="outline"
+							colorScheme="primary"
+							size="md"
+							onClick={handleTranslate}
+							loading={isTranslating}
+							loadingText="Traduciendo..."
+							disabled={isSaving || isPublishing}
+							leftIcon={Languages}>
+							Traducir con IA a {language === "en" ? "Español" : "English"}
+						</StandardButton>
+						<StandardText
+							size="xs"
+							colorScheme="neutral"
+							colorShade="subtle"
+							className="mt-1">
+							Genera el idioma faltante (título, subtítulo, resumen, cuerpo y
+							keywords) vía IA. Puedes revisar y editar el resultado antes de
+							guardar o publicar.
+						</StandardText>
+					</div>
+
 					{/* Título */}
 					<div>
 						<label className="block mb-2">
@@ -208,6 +349,20 @@ export function PaperMetadataStep({
 						/>
 					</div>
 
+					<div>
+						<label className="block mb-2">
+							<StandardText size="sm" weight="medium">
+								Title (English) (opcional)
+							</StandardText>
+						</label>
+						<StandardInput
+							value={titleEn}
+							onChange={(e) => setTitleEn(e.target.value)}
+							placeholder="Full paper title in English"
+							disabled={isSaving || isPublishing}
+						/>
+					</div>
+
 					{/* Subtítulo */}
 					<div>
 						<label className="block mb-2">
@@ -219,6 +374,20 @@ export function PaperMetadataStep({
 							value={subtitle}
 							onChange={(e) => setSubtitle(e.target.value)}
 							placeholder="Subtítulo o descripción breve"
+							disabled={isSaving || isPublishing}
+						/>
+					</div>
+
+					<div>
+						<label className="block mb-2">
+							<StandardText size="sm" weight="medium">
+								Subtitle (English) (opcional)
+							</StandardText>
+						</label>
+						<StandardInput
+							value={subtitleEn}
+							onChange={(e) => setSubtitleEn(e.target.value)}
+							placeholder="Subtitle or short description in English"
 							disabled={isSaving || isPublishing}
 						/>
 					</div>
@@ -288,7 +457,6 @@ export function PaperMetadataStep({
 						/>
 					</div>
 
-					{/* Abstract EN */}
 					<div>
 						<label className="block mb-2">
 							<StandardText size="sm" weight="medium">
@@ -342,6 +510,53 @@ export function PaperMetadataStep({
 										<StandardText size="sm">{keyword}</StandardText>
 										<button
 											onClick={() => handleRemoveKeyword(keyword)}
+											className="text-primary-pure hover:text-primary-hover"
+											disabled={isSaving || isPublishing}>
+											×
+										</button>
+									</div>
+								))}
+							</div>
+						)}
+					</div>
+
+					<div>
+						<label className="block mb-2">
+							<StandardText size="sm" weight="medium">
+								Keywords (English) (opcional)
+							</StandardText>
+						</label>
+						<div className="flex gap-2 mb-2">
+							<StandardInput
+								value={keywordEnInput}
+								onChange={(e) => setKeywordEnInput(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										e.preventDefault();
+										handleAddKeywordEn();
+									}
+								}}
+								placeholder="Type a keyword and press Enter"
+								disabled={isSaving || isPublishing}
+							/>
+							<StandardButton
+								styleType="outline"
+								colorScheme="primary"
+								size="md"
+								onClick={handleAddKeywordEn}
+								disabled={!keywordEnInput.trim() || isSaving || isPublishing}>
+								Add
+							</StandardButton>
+						</div>
+						{keywordsEn.length > 0 && (
+							<div className="flex flex-wrap gap-2">
+								{keywordsEn.map((keyword) => (
+									<div
+										key={keyword}
+										className="inline-flex items-center gap-2 px-3 py-1 bg-primary-bg border border-primary-border rounded-full">
+										<StandardText size="sm">{keyword}</StandardText>
+										<button
+											onClick={() => handleRemoveKeywordEn(keyword)}
 											className="text-primary-pure hover:text-primary-hover"
 											disabled={isSaving || isPublishing}>
 											×

@@ -5,7 +5,12 @@
 
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardBadge } from "@/components/ui/StandardBadge";
-import { ViewDmzButton, PreviewButton, EditButton } from "./PapersPageClient";
+import {
+	ViewDmzButton,
+	PreviewButton,
+	EditButton,
+	DeleteButton,
+} from "./PapersPageClient";
 import type { getMyPapers } from "@/lib/papers/queries";
 
 type Paper = Awaited<ReturnType<typeof getMyPapers>>[number];
@@ -61,6 +66,7 @@ export function PaperCard({ paper, statusConfig }: PaperCardProps) {
 				{paper.is_published && <ViewDmzButton slug={paper.slug} />}
 				{!paper.is_published && <PreviewButton slug={paper.slug} />}
 				<EditButton id={paper.id} />
+				<DeleteButton id={paper.id} title={paper.title} />
 			</StandardCard.Actions>
 		</StandardCard>
 	);

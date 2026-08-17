@@ -3,14 +3,22 @@
 
 import type { Paper } from "@/lib/papers/types";
 import { StandardBadge } from "@/components/ui/StandardBadge";
+import {
+  PAPER_LABELS,
+  resolvePaperContentSafe,
+  type PaperIdioma,
+} from "@/lib/papers/i18n";
 
 interface PaperHeaderProps {
   paper: Paper;
+  idioma: PaperIdioma;
 }
 
-export function PaperHeader({ paper }: PaperHeaderProps) {
+export function PaperHeader({ paper, idioma }: PaperHeaderProps) {
+  const contenido = resolvePaperContentSafe(paper, idioma);
+  const dateLocale = PAPER_LABELS[idioma].dateLocale;
   const publishedDate = paper.published_at
-    ? new Date(paper.published_at).toLocaleDateString("es-CL", {
+    ? new Date(paper.published_at).toLocaleDateString(dateLocale, {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -22,10 +30,10 @@ export function PaperHeader({ paper }: PaperHeaderProps) {
       {/* Título y subtítulo */}
       <div className="space-y-3">
         <h1 className="font-heading text-4xl font-bold tracking-tight lg:text-5xl">
-          {paper.title}
+          {contenido.title}
         </h1>
-        {paper.subtitle && (
-          <p className="text-xl text-muted-foreground">{paper.subtitle}</p>
+        {contenido.subtitle && (
+          <p className="text-xl text-muted-foreground">{contenido.subtitle}</p>
         )}
       </div>
 
@@ -83,9 +91,9 @@ export function PaperHeader({ paper }: PaperHeaderProps) {
       </div>
 
       {/* Keywords */}
-      {paper.keywords.length > 0 && (
+      {contenido.keywords.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {paper.keywords.map((keyword, index) => (
+          {contenido.keywords.map((keyword, index) => (
             <StandardBadge key={index} colorScheme="primary" size="sm" styleType="subtle">
               {keyword}
             </StandardBadge>

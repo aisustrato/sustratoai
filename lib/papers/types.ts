@@ -12,12 +12,16 @@ export interface Paper {
 	id: string;
 	slug: string;
 	title: string;
+	title_en?: string | null;
 	subtitle?: string | null;
+	subtitle_en?: string | null;
 	abstract_es: string;
 	abstract_en?: string | null;
 	authors: PaperAuthor[];
 	keywords: string[];
+	keywords_en?: string[] | null;
 	content_md: string;
+	content_md_en?: string | null;
 	doi?: string | null;
 	zenodo_url?: string | null;
 	pdf_url?: string | null;
@@ -35,12 +39,16 @@ export interface Paper {
 export interface PaperPublicData {
 	slug: string;
 	title: string;
+	title_en?: string | null;
 	subtitle?: string | null;
+	subtitle_en?: string | null;
 	abstract_es: string;
 	abstract_en?: string | null;
 	authors: PaperAuthor[];
 	keywords: string[];
+	keywords_en?: string[] | null;
 	content_md: string;
+	content_md_en?: string | null;
 	doi?: string | null;
 	zenodo_url?: string | null;
 	pdf_url?: string | null;
@@ -96,13 +104,17 @@ export interface PaperImage {
  */
 export interface PaperDraftInput {
 	title: string;
+	title_en?: string;
 	subtitle?: string;
+	subtitle_en?: string;
 	slug: string;
 	abstract_es: string;
 	abstract_en?: string;
 	authors: PaperAuthor[];
 	keywords: string[];
+	keywords_en?: string[];
 	content_md: string;
+	content_md_en?: string;
 	doi?: string;
 	zenodo_url?: string;
 	pdf_url?: string;
@@ -227,6 +239,7 @@ export interface PaperAnnex {
 	mime_type: string;
 	language: AnnexLanguage;
 	description: string;
+	description_en?: string | null;
 	position: number;
 	created_at: string;
 	updated_at: string;
@@ -241,6 +254,7 @@ export interface PaperAnnexInput {
 	mime_type: string;
 	language: AnnexLanguage;
 	description: string;
+	description_en?: string;
 	position: number;
 }
 

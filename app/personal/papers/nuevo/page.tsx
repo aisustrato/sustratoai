@@ -43,6 +43,7 @@ export default function NuevoPaperPage() {
 	const [pdfFile, setPdfFile] = useState<File | null>(null);
 	const [markdownContent, setMarkdownContent] = useState("");
 	const [markdownOriginal, setMarkdownOriginal] = useState("");
+	const [markdownContentEn, setMarkdownContentEn] = useState("");
 	const [imagePlaceholders, setImagePlaceholders] = useState<
 		ImagePlaceholder[]
 	>([]);
@@ -152,6 +153,10 @@ export default function NuevoPaperPage() {
 			const payload = {
 				...data,
 				content_md: stripImageDescriptions(markdownContent),
+				content_md_en:
+					markdownContentEn ?
+						stripImageDescriptions(markdownContentEn)
+					:	undefined,
 			};
 			// Si ya existe borrador (creado en el paso 3), actualizarlo; si no, crear
 			if (paperId) {
@@ -163,7 +168,7 @@ export default function NuevoPaperPage() {
 				console.log("Borrador guardado:", paper);
 			}
 		} catch (error) {
-			console.error("Error guardando borrador:", error);
+			console.error("[NuevoPaperPage] Error guardando borrador:", error);
 			throw error;
 		}
 	};
@@ -171,9 +176,13 @@ export default function NuevoPaperPage() {
 	// Handler: Publicar paper
 	const handlePublish = async (data: PaperDraftInput) => {
 		try {
-			const payload = {
+			const payload: PaperDraftInput = {
 				...data,
 				content_md: stripImageDescriptions(markdownContent),
+				content_md_en:
+					markdownContentEn ?
+						stripImageDescriptions(markdownContentEn)
+					:	undefined,
 			};
 
 			// Primero guardar/actualizar el borrador (update si ya existe)
@@ -187,7 +196,7 @@ export default function NuevoPaperPage() {
 			// Redirigir a la lista de papers
 			router.push("/personal/papers");
 		} catch (error) {
-			console.error("Error publicando paper:", error);
+			console.error("[NuevoPaperPage] Error publicando paper:", error);
 			throw error;
 		}
 	};
@@ -241,6 +250,8 @@ export default function NuevoPaperPage() {
 							initialMarkdown={markdownOriginal}
 							onMarkdownChange={handleMarkdownChange}
 							imagePlaceholdersCount={imagePlaceholders.length}
+							initialMarkdownEn={markdownContentEn}
+							onMarkdownEnChange={setMarkdownContentEn}
 						/>
 						<div className="flex justify-between">
 							<StandardButton
@@ -330,9 +341,16 @@ export default function NuevoPaperPage() {
 							initialData={{
 								title: pdfMetadata?.title || "",
 								content_md: markdownContent,
+								content_md_en: markdownContentEn,
 							}}
 							onSaveDraft={handleSaveDraft}
 							onPublish={handlePublish}
+							paperId={paperId ?? undefined}
+							onContentMdTranslated={(target, contentMd) =>
+								target === "en" ?
+									setMarkdownContentEn(contentMd)
+								:	setMarkdownContent(contentMd)
+							}
 						/>
 						<div className="flex justify-start">
 							<StandardButton

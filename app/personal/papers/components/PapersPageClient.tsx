@@ -3,9 +3,13 @@
 
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { StandardButton } from "@/components/ui/StandardButton";
-import { Plus, Eye, Edit, ExternalLink } from "lucide-react";
+import { Plus, Eye, Edit, ExternalLink, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { deletePaper } from "@/lib/papers/queries";
 
 interface PapersPageClientProps {
 	hasPapers: boolean;
@@ -94,6 +98,53 @@ export function PreviewButton({ slug }: { slug: string }) {
 				iconOnly
 			/>
 		</Link>
+	);
+}
+
+// Botón "Eliminar" (borra el paper — testing: una sola base cloud, sin dev/prod)
+export function DeleteButton({ id, title }: { id: string; title: string }) {
+	const router = useRouter();
+	const [isDeleting, setIsDeleting] = useState(false);
+
+	const handleDelete = async () => {
+		if (
+			!confirm(
+				`¿Eliminar "${title}" definitivamente? Esta acción no se puede deshacer.`,
+			)
+		) {
+			return;
+		}
+
+		setIsDeleting(true);
+		const toastId = toast.loading(`Eliminando "${title}"…`);
+		try {
+			await deletePaper(id);
+			toast.success("Paper eliminado", { id: toastId });
+			router.refresh();
+		} catch (err) {
+			console.error("[DeleteButton] Error eliminando paper:", err);
+			const msg = err instanceof Error ? err.message : "Error desconocido";
+			toast.error(`No se pudo eliminar: ${msg}`, {
+				id: toastId,
+				duration: Infinity,
+			});
+		} finally {
+			setIsDeleting(false);
+		}
+	};
+
+	return (
+		<StandardButton
+			styleType="outline"
+			colorScheme="danger"
+			size="sm"
+			onClick={handleDelete}
+			loading={isDeleting}
+			loadingText="Eliminando..."
+			title="Eliminar paper"
+			leftIcon={Trash2}>
+			Eliminar
+		</StandardButton>
 	);
 }
 

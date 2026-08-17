@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       ai_job_history: {
@@ -5845,6 +5820,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string
+          description_en: string | null
           file_size: number
           filename: string
           id: string
@@ -5858,6 +5834,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string
+          description_en?: string | null
           file_size?: number
           filename: string
           id?: string
@@ -5871,6 +5848,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string
+          description_en?: string | null
           file_size?: number
           filename?: string
           id?: string
@@ -5963,12 +5941,14 @@ export type Database = {
           authors: Json
           citation_apa: string | null
           content_md: string
+          content_md_en: string | null
           created_at: string
           created_by: string | null
           doi: string | null
           id: string
           is_published: boolean
           keywords: string[]
+          keywords_en: string[] | null
           language: string
           license: string
           pdf_sha256: string | null
@@ -5978,7 +5958,9 @@ export type Database = {
           published_at: string | null
           slug: string
           subtitle: string | null
+          subtitle_en: string | null
           title: string
+          title_en: string | null
           updated_at: string
           version: string
           zenodo_url: string | null
@@ -5989,12 +5971,14 @@ export type Database = {
           authors?: Json
           citation_apa?: string | null
           content_md: string
+          content_md_en?: string | null
           created_at?: string
           created_by?: string | null
           doi?: string | null
           id?: string
           is_published?: boolean
           keywords?: string[]
+          keywords_en?: string[] | null
           language?: string
           license?: string
           pdf_sha256?: string | null
@@ -6004,7 +5988,9 @@ export type Database = {
           published_at?: string | null
           slug: string
           subtitle?: string | null
+          subtitle_en?: string | null
           title: string
+          title_en?: string | null
           updated_at?: string
           version?: string
           zenodo_url?: string | null
@@ -6015,12 +6001,14 @@ export type Database = {
           authors?: Json
           citation_apa?: string | null
           content_md?: string
+          content_md_en?: string | null
           created_at?: string
           created_by?: string | null
           doi?: string | null
           id?: string
           is_published?: boolean
           keywords?: string[]
+          keywords_en?: string[] | null
           language?: string
           license?: string
           pdf_sha256?: string | null
@@ -6030,7 +6018,9 @@ export type Database = {
           published_at?: string | null
           slug?: string
           subtitle?: string | null
+          subtitle_en?: string | null
           title?: string
+          title_en?: string | null
           updated_at?: string
           version?: string
           zenodo_url?: string | null
@@ -7964,9 +7954,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       archetype_tone: ["bufon", "auditor", "editor", "colega"],

@@ -130,7 +130,7 @@ export async function createPaperDraft(data: PaperDraftInput): Promise<Paper> {
 			is_published: false,
 			created_at: new Date().toISOString(),
 			updated_at: new Date().toISOString(),
-		} as any) // Temporal: tipos se regenerarán tras migración SQL
+		} as any) // authors: PaperAuthor[] vs Json (jsonb) — mismatch preexistente, no de este cambio
 		.select()
 		.single();
 

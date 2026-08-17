@@ -43,6 +43,9 @@ export function PaperEditClient({ paper }: PaperEditClientProps) {
 	// Estado del pipeline (comienza en paso 2 porque ya tiene el PDF procesado)
 	const [currentStep, setCurrentStep] = useState<PipelineStep>(2);
 	const [markdownContent, setMarkdownContent] = useState(paper.content_md);
+	const [markdownContentEn, setMarkdownContentEn] = useState(
+		paper.content_md_en || "",
+	);
 	const [error, setError] = useState<string | null>(null);
 	const [annexes, setAnnexes] = useState<PaperAnnex[]>(
 		(paper as any).annexes || [],
@@ -80,19 +83,25 @@ export function PaperEditClient({ paper }: PaperEditClientProps) {
 		);
 	}, [currentStep]);
 
-	// Guardar cambios
+	// Guardar cambios (también usada para publicar, ver nota en handlePublish)
 	const handleSaveDraft = async (draftData: PaperDraftInput) => {
 		try {
-			await updatePaperDraft(paper.id, {
+			const payload: PaperDraftInput = {
 				...draftData,
 				content_md: stripImageDescriptions(
 					draftData.content_md ?? markdownContent,
 				),
-			});
+				content_md_en:
+					markdownContentEn ?
+						stripImageDescriptions(markdownContentEn)
+					:	undefined,
+			};
+
+			await updatePaperDraft(paper.id, payload);
 			router.push("/personal/papers");
 		} catch (err) {
 			console.error("[PaperEditClient] Error guardando:", err);
-			setError("Error al guardar los cambios");
+			setError(err instanceof Error ? err.message : "Error al guardar los cambios");
 		}
 	};
 
@@ -121,6 +130,8 @@ export function PaperEditClient({ paper }: PaperEditClientProps) {
 							imagePlaceholdersCount={
 								extractImagePlaceholders(markdownContent).length
 							}
+							initialMarkdownEn={markdownContentEn}
+							onMarkdownEnChange={setMarkdownContentEn}
 						/>
 						<div className="flex justify-between">
 							<StandardButton
@@ -223,19 +234,31 @@ export function PaperEditClient({ paper }: PaperEditClientProps) {
 						<PaperMetadataStep
 							initialData={{
 								title: paper.title,
+								title_en: paper.title_en || undefined,
 								subtitle: paper.subtitle || undefined,
+								subtitle_en: paper.subtitle_en || undefined,
 								slug: paper.slug,
 								authors: Array.isArray(paper.authors) ? paper.authors : [],
 								abstract_es: paper.abstract_es,
 								abstract_en: paper.abstract_en || undefined,
 								keywords: Array.isArray(paper.keywords) ? paper.keywords : [],
+								keywords_en:
+									Array.isArray(paper.keywords_en) ? paper.keywords_en : [],
 								doi: paper.doi || undefined,
 								citation_apa: paper.citation_apa || undefined,
 								content_md: markdownContent,
+								content_md_en: markdownContentEn,
+								language: paper.language,
 							}}
 							onSaveDraft={handleSaveDraft}
 							onPublish={handlePublish}
 							isPublished={paper.is_published}
+							paperId={paper.id}
+							onContentMdTranslated={(target, contentMd) =>
+								target === "en" ?
+									setMarkdownContentEn(contentMd)
+								:	setMarkdownContent(contentMd)
+							}
 						/>
 						<div className="flex justify-start">
 							<StandardButton

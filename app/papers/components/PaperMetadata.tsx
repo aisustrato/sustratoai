@@ -2,19 +2,25 @@
 // Inyecta metadatos estructurados: JSON-LD schema.org + Dublin Core + Google Scholar
 
 import type { Paper } from "@/lib/papers/types";
+import { resolvePaperContentSafe, type PaperIdioma } from "@/lib/papers/i18n";
 
 interface PaperMetadataProps {
   paper: Paper;
 }
 
 export function PaperMetadata({ paper }: PaperMetadataProps) {
+  // Fijo en el idioma canónico del paper — no cambia con el toggle client-side
+  // (una sola URL, un solo JSON-LD para crawlers).
+  const idiomaCanonico: PaperIdioma = paper.language === "en" ? "en" : "es";
+  const contenido = resolvePaperContentSafe(paper, idiomaCanonico);
+
   // JSON-LD para schema.org (ScholarlyArticle)
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ScholarlyArticle",
-    headline: paper.title,
-    alternativeHeadline: paper.subtitle || undefined,
-    abstract: paper.abstract_es,
+    headline: contenido.title,
+    alternativeHeadline: contenido.subtitle || undefined,
+    abstract: contenido.abstract,
     author: paper.authors.map((a) => ({
       "@type": "Person",
       name: a.name,
@@ -36,7 +42,7 @@ export function PaperMetadata({ paper }: PaperMetadataProps) {
     },
     inLanguage: paper.language,
     license: "https://creativecommons.org/licenses/by/4.0/",
-    keywords: paper.keywords.join(", "),
+    keywords: contenido.keywords.join(", "),
     version: paper.version,
   };
 

@@ -7,13 +7,21 @@ import type { Paper } from "@/lib/papers/types";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { Download, ExternalLink, Quote, Share2 } from "lucide-react";
 import { useState } from "react";
+import {
+	PAPER_LABELS,
+	resolvePaperContentSafe,
+	type PaperIdioma,
+} from "@/lib/papers/i18n";
 
 interface PaperActionsProps {
 	paper: Paper;
+	idioma: PaperIdioma;
 }
 
-export function PaperActions({ paper }: PaperActionsProps) {
+export function PaperActions({ paper, idioma }: PaperActionsProps) {
 	const [copied, setCopied] = useState(false);
+	const contenido = resolvePaperContentSafe(paper, idioma);
+	const t = PAPER_LABELS[idioma];
 
 	const handleShare = async () => {
 		const url = `https://sustrato.ai/papers/${paper.slug}`;
@@ -21,8 +29,8 @@ export function PaperActions({ paper }: PaperActionsProps) {
 		if (navigator.share) {
 			try {
 				await navigator.share({
-					title: paper.title,
-					text: paper.abstract_es.substring(0, 200) + "...",
+					title: contenido.title,
+					text: contenido.abstract.substring(0, 200) + "...",
 					url,
 				});
 			} catch (err) {
@@ -55,7 +63,7 @@ export function PaperActions({ paper }: PaperActionsProps) {
 						colorScheme="primary"
 						size="md"
 						leftIcon={Download}>
-						Descargar PDF
+						{t.descargarPdf}
 					</StandardButton>
 				</a>
 			)}
@@ -68,7 +76,7 @@ export function PaperActions({ paper }: PaperActionsProps) {
 						colorScheme="neutral"
 						size="md"
 						leftIcon={ExternalLink}>
-						Ver en Zenodo
+						{t.verEnZenodo}
 					</StandardButton>
 				</a>
 			)}
@@ -81,7 +89,7 @@ export function PaperActions({ paper }: PaperActionsProps) {
 					size="md"
 					onClick={handleCite}
 					leftIcon={Quote}>
-					{copied ? "¡Copiado!" : "Citar"}
+					{copied ? t.copiado : t.citar}
 				</StandardButton>
 			)}
 
@@ -92,7 +100,7 @@ export function PaperActions({ paper }: PaperActionsProps) {
 				size="md"
 				onClick={handleShare}
 				leftIcon={Share2}>
-				{copied ? "¡Copiado!" : "Compartir"}
+				{copied ? t.copiado : t.compartir}
 			</StandardButton>
 		</div>
 	);
