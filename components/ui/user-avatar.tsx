@@ -493,16 +493,12 @@ export function UserAvatar({
 												colorScheme="primary"
 												styleType="solid"
 												onClick={handleCreateProject}
-												disabled={isCreatingProject || isChangingProject}
+												leftIcon={Plus}
+												loading={isCreatingProject}
+												loadingText="Creando..."
+												disabled={isChangingProject}
 												className="w-full">
-												<StandardIcon size="sm">
-													{isCreatingProject ?
-														<Loader2 className="h-4 w-4 animate-spin" />
-													:	<Plus className="h-4 w-4" />}
-												</StandardIcon>
-												<StandardText size="sm" weight="medium">
-													{isCreatingProject ? "Creando..." : "Crear Proyecto"}
-												</StandardText>
+												Crear Proyecto
 											</StandardButton>
 										</div>
 									</div>

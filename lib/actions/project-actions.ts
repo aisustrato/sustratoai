@@ -301,12 +301,24 @@ export async function createMinimalProject(
 		}
 
 		// 3. --- Creación del Proyecto ---
+		// Módulos opcionales apagados por defecto: los proyectos nuevos solo
+		// trabajan en Preclasificación (siempre disponible) + Datos Maestros +
+		// Personal. Cognetica queda deprecado de esta app Next.js (reimplementado
+		// en una app local en Rust); bibliografía/entrevistas/planificación no
+		// forman parte del flujo de los nuevos investigadores por ahora.
 		const { data: newProject, error: insertError } = await supabase
 			.from("projects")
 			.insert({
 				name: name.trim(),
 				owner_id: currentUser.id,
 				status: "active",
+				// ⚠️ `module_bibliography` es, pese al nombre, el flag que habilita
+				// el menú "Artículos" (Preclasificación/Análisis/Grupos/Notas) en
+				// StandardNavbar.tsx — por eso va en `true` acá.
+				module_cognetica: false,
+				module_bibliography: true,
+				module_interviews: false,
+				module_planning: false,
 			})
 			.select()
 			.single();

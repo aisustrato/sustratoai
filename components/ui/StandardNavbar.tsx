@@ -328,8 +328,13 @@ export function StandardNavbar() {
 				href: "/",
 				icon: (isActive) => createMenuIcon(Home, isActive),
 			},
-			// 🧠 COGNÉTICA - Siempre visible (no depende de módulos de BD)
-			{
+		];
+
+		// 🧠 COGNÉTICA - Solo si el módulo está activo en el proyecto. Antes era
+		// "siempre visible" (no dependía de module_cognetica), lo que mostraba
+		// este menú incluso en proyectos nuevos donde el módulo está apagado.
+		if (proyectoActual.module_cognetica) {
+			menuItems.push({
 				id: "cognetica-raiz",
 				label: "Cognética",
 				href: "/cognetica_old",
@@ -351,8 +356,8 @@ export function StandardNavbar() {
 						icon: (isActive) => createMenuIcon(PenTool, isActive),
 					},
 				],
-			},
-		];
+			});
+		}
 
 		if (proyectoActual.module_interviews) {
 			menuItems.push({
