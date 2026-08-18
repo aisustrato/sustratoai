@@ -502,12 +502,16 @@ export type Database = {
         Row: {
           abstract: string | null
           authors: string[] | null
+          cited_by_count: number | null
+          concepts: Json | null
           correlativo: number
           created_at: string | null
           doi: string | null
           id: string
+          is_oa: boolean | null
           journal: string | null
           metadata: Json | null
+          openalex_id: string | null
           project_id: string
           publication_year: number | null
           title: string | null
@@ -516,12 +520,16 @@ export type Database = {
         Insert: {
           abstract?: string | null
           authors?: string[] | null
+          cited_by_count?: number | null
+          concepts?: Json | null
           correlativo?: number
           created_at?: string | null
           doi?: string | null
           id?: string
+          is_oa?: boolean | null
           journal?: string | null
           metadata?: Json | null
+          openalex_id?: string | null
           project_id: string
           publication_year?: number | null
           title?: string | null
@@ -530,12 +538,16 @@ export type Database = {
         Update: {
           abstract?: string | null
           authors?: string[] | null
+          cited_by_count?: number | null
+          concepts?: Json | null
           correlativo?: number
           created_at?: string | null
           doi?: string | null
           id?: string
+          is_oa?: boolean | null
           journal?: string | null
           metadata?: Json | null
+          openalex_id?: string | null
           project_id?: string
           publication_year?: number | null
           title?: string | null
@@ -6508,6 +6520,87 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      staging_articles: {
+        Row: {
+          abstract: string | null
+          authors: string[] | null
+          cited_by_count: number | null
+          concepts: Json | null
+          created_at: string
+          created_by: string | null
+          doi: string | null
+          id: string
+          is_oa: boolean | null
+          journal: string | null
+          oa_url: string | null
+          openalex_id: string
+          project_id: string
+          promoted_article_id: string | null
+          publication_year: number | null
+          source_query: string | null
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          abstract?: string | null
+          authors?: string[] | null
+          cited_by_count?: number | null
+          concepts?: Json | null
+          created_at?: string
+          created_by?: string | null
+          doi?: string | null
+          id?: string
+          is_oa?: boolean | null
+          journal?: string | null
+          oa_url?: string | null
+          openalex_id: string
+          project_id: string
+          promoted_article_id?: string | null
+          publication_year?: number | null
+          source_query?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          abstract?: string | null
+          authors?: string[] | null
+          cited_by_count?: number | null
+          concepts?: Json | null
+          created_at?: string
+          created_by?: string | null
+          doi?: string | null
+          id?: string
+          is_oa?: boolean | null
+          journal?: string | null
+          oa_url?: string | null
+          openalex_id?: string
+          project_id?: string
+          promoted_article_id?: string | null
+          publication_year?: number | null
+          source_query?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staging_articles_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staging_articles_promoted_article_id_fkey"
+            columns: ["promoted_article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_api_keys: {
         Row: {

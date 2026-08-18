@@ -22,6 +22,7 @@ import {
 	ChevronsLeft,
 	ClipboardList,
 	Network,
+	Microscope,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 //#endregion ![head]
@@ -52,6 +53,11 @@ const sidebarNavItems = [
 		title: "Cargar Artículos",
 		href: "/datos-maestros/cargar-articulos",
 		icon: FileUp,
+	},
+	{
+		title: "Pesca OpenAlex",
+		href: "/datos-maestros/harvest-openalex",
+		icon: Microscope,
 	},
 	{
 		title: "Fases",
