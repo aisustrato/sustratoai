@@ -2,14 +2,15 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardTable } from "@/components/ui/StandardTable";
 import { StandardPagination } from "@/components/ui/StandardPagination";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardSelect } from "@/components/ui/StandardSelect";
 import { StandardText } from "@/components/ui/StandardText";
-import { Database, Link as LinkIcon } from "lucide-react";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { Database, Link as LinkIcon, Download, Search } from "lucide-react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { useAuth } from "@/app/auth-provider";
@@ -39,6 +40,7 @@ export default function BaseOriginalPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
 
   // Definición de columnas
   const columns = useMemo<ColumnDef<ArticleRow>[]>(
@@ -108,6 +110,29 @@ export default function BaseOriginalPage() {
           );
         },
       },
+      {
+        id: "actions",
+        header: "",
+        size: 60,
+        cell: ({ row }) => {
+          const articleId = row.original.id;
+          return (
+            <StandardButton
+              styleType="outline"
+              iconOnly
+              size="sm"
+              onClick={() => {
+                const returnHref = encodeURIComponent("/articulos/base-original");
+                const returnLabel = encodeURIComponent("Base Original");
+                window.location.href = `/articulos/detalle?articleId=${articleId}&returnHref=${returnHref}&returnLabel=${returnLabel}`;
+              }}
+              tooltip="Ver detalle del artículo"
+            >
+              <Search size={16} />
+            </StandardButton>
+          );
+        },
+      },
     ],
     []
   );
@@ -158,6 +183,72 @@ export default function BaseOriginalPage() {
     }
   };
 
+  // Escapa un valor para CSV (mismo criterio que StandardTable).
+  const escapeCsvValue = (value: string) => {
+    const cleaned = value.replace(/"/g, '""');
+    return /[,"\n]/.test(cleaned) ? `"${cleaned}"` : cleaned;
+  };
+
+  // Descarga TODA la base del proyecto en CSV, no solo la página visible:
+  // recorre todas las páginas en lotes (la tabla en pantalla está paginada
+  // server-side, así que exportar solo `articles` exportaría una página).
+  const handleDownloadCsv = useCallback(async () => {
+    if (!proyectoActual?.id || totalItems === 0) return;
+    setIsExportingCsv(true);
+    try {
+      const BATCH_SIZE = 500;
+      const allArticles: ArticleRow[] = [];
+      let page = 1;
+      let pagesTotal = 1;
+      do {
+        const result = await getPaginatedArticlesForProject(
+          proyectoActual.id,
+          page,
+          BATCH_SIZE
+        );
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+        allArticles.push(...result.data.articles);
+        pagesTotal = result.data.totalPages;
+        page++;
+      } while (page <= pagesTotal);
+
+      const headers = ["#", "Título", "Autor(es)", "Año", "Revista/Fuente", "DOI"];
+      const rows = allArticles.map((a) => [
+        String(a.correlativo ?? ""),
+        a.title ?? "",
+        (a.authors ?? []).join("; "),
+        a.publication_year != null ? String(a.publication_year) : "",
+        a.journal ?? "",
+        a.doi ?? "",
+      ]);
+      const csvContent = [headers, ...rows]
+        .map((row) => row.map(escapeCsvValue).join(","))
+        .join("\n");
+
+      const blob = new Blob(["﻿" + csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `base-original-${proyectoActual.id}.csv`;
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success(`${allArticles.length} artículo(s) exportado(s) a CSV.`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Error al exportar CSV."
+      );
+    } finally {
+      setIsExportingCsv(false);
+    }
+  }, [proyectoActual?.id, totalItems]);
+
   // Breadcrumbs
   const breadcrumbs = [
     { label: "Artículos", href: "/articulos" },
@@ -195,6 +286,16 @@ export default function BaseOriginalPage() {
             Total: {totalItems} artículo{totalItems !== 1 ? "s" : ""}
           </StandardText>
           <div className="flex items-center gap-2">
+            <StandardButton
+              size="sm"
+              styleType="outline"
+              leftIcon={Download}
+              onClick={handleDownloadCsv}
+              loading={isExportingCsv}
+              disabled={totalItems === 0}
+            >
+              Descargar CSV
+            </StandardButton>
             <StandardText size="sm" colorShade="subtle">
               Mostrar:
             </StandardText>
