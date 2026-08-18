@@ -3,6 +3,7 @@
 
 import { createSupabaseServerClient } from "@/lib/server";
 import { callDeepSeekAPI } from "@/lib/deepseek/api";
+import { resolveDeepSeekApiKey } from "@/lib/deepseek/resolve-key";
 import type { Database } from "@/lib/database.types";
 
 // ========================================================================
@@ -1047,7 +1048,25 @@ export async function simulateDimensionClassification(
 
 		// 🔧 MIGRACIÓN: Ahora usamos DeepSeek en lugar de Gemini
 		// DeepSeek es más accesible para investigadores independientes
-		const { result } = await callDeepSeekAPI("deepseek-chat", prompt);
+		// BYOK: si el usuario tiene su propia key configurada, se usa esa.
+		const supabase = await createSupabaseServerClient();
+		const {
+			data: { user: currentUser },
+		} = await supabase.auth.getUser();
+		let deepSeekApiKey: string | undefined;
+		if (currentUser) {
+			const resolved = await resolveDeepSeekApiKey(currentUser.id, supabase);
+			deepSeekApiKey = resolved.apiKey;
+			console.log(
+				`🔑 [${opId}] Usando key DeepSeek: ${resolved.source === "user" ? "personal del investigador" : "global del proyecto"}`,
+			);
+		}
+
+		const { result } = await callDeepSeekAPI(
+			"deepseek-chat",
+			prompt,
+			deepSeekApiKey,
+		);
 
 		// Limpieza básica de JSON si viene con backticks
 		let cleanJson = result.trim();

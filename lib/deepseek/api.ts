@@ -99,9 +99,17 @@ export function calcularCostoDeepSeek(
  * Cliente DeepSeek legacy. **No usar en código nuevo** — queda para compat
  * con papers/preclasificación. Convierte el texto en un único user prompt,
  * temperatura y `max_tokens` fijos, sin system ni response_format.
+ *
+ * `apiKeyOverride` permite BYOK: si se pasa (ej. la key propia de un
+ * investigador, resuelta vía `resolveDeepSeekApiKey`), se usa esa en vez de
+ * la key global de `process.env`. Ver `lib/deepseek/resolve-key.ts`.
  */
-export async function callDeepSeekAPI(model: string, text: string) {
-	const apiKey = process.env.DEEPSEEK_API_KEY;
+export async function callDeepSeekAPI(
+	model: string,
+	text: string,
+	apiKeyOverride?: string,
+) {
+	const apiKey = apiKeyOverride || process.env.DEEPSEEK_API_KEY;
 	if (!apiKey) {
 		throw new Error("La clave de API de DeepSeek no está configurada.");
 	}

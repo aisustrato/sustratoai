@@ -6509,6 +6509,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_api_keys: {
+        Row: {
+          created_at: string
+          encrypted_key: string
+          id: string
+          key_last4: string
+          provider: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_key: string
+          id?: string
+          key_last4: string
+          provider: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_key?: string
+          id?: string
+          key_last4?: string
+          provider?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       users_profiles: {
         Row: {
           contact_phone: string | null
@@ -7575,6 +7605,14 @@ export type Database = {
           titulo: string
           url: string
         }[]
+      }
+      decrypt_api_key: {
+        Args: { p_encrypted: string; p_secret: string }
+        Returns: string
+      }
+      encrypt_api_key: {
+        Args: { p_plain: string; p_secret: string }
+        Returns: string
       }
       get_all_project_batches: {
         Args: { p_project_id: string }

@@ -7,6 +7,7 @@ import {
 	createSupabaseUserClient,
 } from "@/lib/server";
 import { callDeepSeekAPI } from "@/lib/deepseek/api";
+import { resolveDeepSeekApiKey } from "@/lib/deepseek/resolve-key";
 import type { Database } from "@/lib/database.types";
 import type { ResultadoOperacion } from "./types";
 import type {
@@ -1649,6 +1650,11 @@ async function runSingleArticlePreclassificationJob(
 			`🔑 [${jobId}] Reprocesando artículo individual: ${articleItemId}`,
 		);
 		const admin = await createSupabaseServiceRoleClient();
+		const { apiKey: deepSeekApiKey, source: deepSeekKeySource } =
+			await resolveDeepSeekApiKey(userId, admin);
+		console.log(
+			`🔑 [${jobId}] Usando key DeepSeek: ${deepSeekKeySource === "user" ? "personal del investigador" : "global del proyecto"}`,
+		);
 
 		// Obtener datos del proyecto
 		const { data: batchData } = await admin
@@ -1722,6 +1728,7 @@ async function runSingleArticlePreclassificationJob(
 		const { result: aiResponse } = await callDeepSeekAPI(
 			"deepseek-chat",
 			prompt,
+			deepSeekApiKey,
 		);
 
 		console.log(`📥 [${jobId}] RESPUESTA RECIBIDA DE DEEPSEEK:\n${aiResponse}`);
@@ -1952,6 +1959,12 @@ async function runPreclassificationJob(
 		const admin = await createSupabaseServiceRoleClient();
 		console.log(`✅ [${jobId}] Cliente de Service Role creado exitosamente`);
 
+		const { apiKey: deepSeekApiKey, source: deepSeekKeySource } =
+			await resolveDeepSeekApiKey(userId, admin);
+		console.log(
+			`🔑 [${jobId}] Usando key DeepSeek: ${deepSeekKeySource === "user" ? "personal del investigador" : "global del proyecto"}`,
+		);
+
 		const { data: batchData } = await admin
 			.from("article_batches")
 			.select("phase_id, projects(id, name, proposal, proposal_bibliography)")
@@ -2048,6 +2061,7 @@ async function runPreclassificationJob(
 				const { result, usage } = await callDeepSeekAPI(
 					"deepseek-chat",
 					prompt,
+					deepSeekApiKey,
 				);
 				rawResponse = result;
 
@@ -3096,6 +3110,12 @@ async function runTranslationJob(
 	}
 
 	try {
+		const { apiKey: deepSeekApiKey, source: deepSeekKeySource } =
+			await resolveDeepSeekApiKey(userId, admin);
+		console.log(
+			`🔑 [${jobId}] Usando key DeepSeek: ${deepSeekKeySource === "user" ? "personal del investigador" : "global del proyecto"}`,
+		);
+
 		// 1️⃣ OBTENER ARTÍCULOS DEL LOTE
 		console.log(
 			`📊 [runTranslationJob] Obteniendo datos del lote ${batchId}...`,
@@ -3257,6 +3277,7 @@ async function runTranslationJob(
 					const { result, usage } = await callDeepSeekAPI(
 						"deepseek-chat",
 						prompt,
+						deepSeekApiKey,
 					);
 
 					// Acumular tokens
@@ -6047,6 +6068,12 @@ async function runDiscrepancyReconciliationJob(
 		const admin = await createSupabaseServiceRoleClient();
 		console.log(`✅ [${jobId}] Cliente de Service Role creado exitosamente`);
 
+		const { apiKey: deepSeekApiKey, source: deepSeekKeySource } =
+			await resolveDeepSeekApiKey(userId, admin);
+		console.log(
+			`🔑 [${jobId}] Usando key DeepSeek: ${deepSeekKeySource === "user" ? "personal del investigador" : "global del proyecto"}`,
+		);
+
 		// Obtener datos del lote y proyecto
 		const { data: batchData } = await admin
 			.from("article_batches")
@@ -6193,6 +6220,7 @@ async function runDiscrepancyReconciliationJob(
 				const { result, usage } = await callDeepSeekAPI(
 					"deepseek-chat",
 					prompt,
+					deepSeekApiKey,
 				);
 
 				console.log(`\n📥 [${jobId}] RESPUESTA RECIBIDA DE DEEPSEEK:`);

@@ -9,7 +9,7 @@ import { SidebarNav } from "@/components/ui/sidebar-nav";
 import { LayoutProvider } from "@/app/contexts/layout-context";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { StandardText } from "@/components/ui/StandardText";
-import { User, History, ChevronsLeft, FileText } from "lucide-react";
+import { User, History, ChevronsLeft, FileText, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 //#endregion ![head]
 
@@ -30,12 +30,11 @@ const sidebarNavItems = [
 		href: "/personal/papers",
 		icon: FileText,
 	},
-	// Futuras rutas personales pueden agregarse aquí
-	// {
-	// 	title: "Configuración",
-	// 	href: "/personal/configuracion",
-	// 	icon: Settings,
-	// },
+	{
+		title: "Configuración",
+		href: "/personal/configuracion",
+		icon: Settings,
+	},
 ];
 
 export default function PersonalLayout({
