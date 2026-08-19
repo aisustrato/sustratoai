@@ -809,7 +809,7 @@ export default function LotesOrquestadorPage() {
 					</StandardCard.Header>
 					<StandardCard.Content className="space-y-4">
 						<StandardText>
-							{error && "Ha ocurrido un error inesperado."}
+							{error || "Ha ocurrido un error inesperado."}
 						</StandardText>
 						<div className="flex justify-center">
 							<StandardButton
