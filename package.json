@@ -52,6 +52,7 @@
     "@types/js-yaml": "^4.0.9",
     "@upstash/ratelimit": "^2.0.6",
     "@upstash/redis": "^1.35.3",
+    "@vercel/functions": "^3.9.3",
     "autoprefixer": "^10.4.20",
     "canvas": "^3.2.3",
     "class-variance-authority": "^0.7.1",

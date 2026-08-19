@@ -1,6 +1,7 @@
 // lib/actions/preclassification-actions.ts
 "use server";
 
+import { waitUntil } from "@vercel/functions";
 import {
 	createSupabaseServerClient,
 	createSupabaseServiceRoleClient,
@@ -1262,13 +1263,18 @@ export async function startSingleArticlePreclassification(
 		`✅ [startSingleArticlePreclassification] Job creado con UUID: ${jobUUID}`,
 	);
 
-	// Iniciar el trabajo en background
-	runSingleArticlePreclassificationJob(
-		jobUUID,
-		articleItemId,
-		batch.id,
-		batch.phase_id,
-		user.id,
+	// Iniciar el trabajo en background. `waitUntil()` le indica a Vercel que
+	// mantenga viva la invocación hasta que esto termine — sin esto, el
+	// runtime puede cortar la ejecución apenas se envía la respuesta (ver
+	// docs/preclasificacion-auditoria-funcional/06_Nota_Vercel_Job_Manager.md).
+	waitUntil(
+		runSingleArticlePreclassificationJob(
+			jobUUID,
+			articleItemId,
+			batch.id,
+			batch.phase_id,
+			user.id,
+		),
 	);
 
 	return { success: true, data: { jobId: jobUUID } };
@@ -1415,8 +1421,8 @@ export async function startInitialPreclassification(
 		`✅ [startInitialPreclassification] Sin duplicados, iniciando proceso para UUID: ${jobUUID}`,
 	);
 
-	// 🚀 Iniciar el trabajo en background
-	runPreclassificationJob(jobUUID, batchId, user.id);
+	// 🚀 Iniciar el trabajo en background (ver nota sobre waitUntil() más arriba).
+	waitUntil(runPreclassificationJob(jobUUID, batchId, user.id));
 
 	return { success: true, data: { jobId: jobUUID } };
 }
@@ -3020,8 +3026,8 @@ export async function startBatchTranslation(
 		`✅ [startBatchTranslation] Sin duplicados, iniciando proceso para UUID: ${jobUUID}`,
 	);
 
-	// 🚀 Iniciar el trabajo en background
-	runTranslationJob(jobUUID, batchId, user.id);
+	// 🚀 Iniciar el trabajo en background (ver nota sobre waitUntil() más arriba).
+	waitUntil(runTranslationJob(jobUUID, batchId, user.id));
 
 	return { success: true, data: { jobId: jobUUID } };
 }
@@ -5887,17 +5893,20 @@ export async function startDiscrepancyReconciliation(
 	console.log(
 		`🚀 [startDiscrepancyReconciliation] Iniciando trabajo en background con UUID: ${jobUUID}`,
 	);
-	runDiscrepancyReconciliationJob(
-		jobUUID,
-		batchId,
-		user.id,
-		discrepancies,
-	).catch((error) => {
-		console.error(
-			`❌ [startDiscrepancyReconciliation] Error no capturado en runJob:`,
-			error,
-		);
-	});
+	// ver nota sobre waitUntil() más arriba.
+	waitUntil(
+		runDiscrepancyReconciliationJob(
+			jobUUID,
+			batchId,
+			user.id,
+			discrepancies,
+		).catch((error) => {
+			console.error(
+				`❌ [startDiscrepancyReconciliation] Error no capturado en runJob:`,
+				error,
+			);
+		}),
+	);
 
 	return { success: true, data: { jobId: jobUUID } };
 }
