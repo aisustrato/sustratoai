@@ -4,7 +4,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useJobManager, type Job } from '@/app/contexts/JobManagerContext';
 import { supabase } from '@/app/auth/client';
-import { startBatchTranslation } from '@/lib/actions/preclassification-actions';
 import { StandardProgressBar } from '@/components/ui/StandardProgressBar';
 import { StandardText } from '@/components/ui/StandardText';
 import { Languages, AlertCircle, CheckCircle } from 'lucide-react';
@@ -47,9 +46,19 @@ export function TranslationJobHandler({ job }: TranslationJobHandlerProps) {
       setStatusMessage('Validando lote y verificando trabajos duplicados...');
       updateJobProgress(job.id, 5);
       
-      // 🛡️ VALIDACIÓN BACKEND: TranslationJobHandler maneja validaciones y errores
-      const result = await startBatchTranslation(job.payload.batchId);
-      
+      // 🛡️ VALIDACIÓN BACKEND: dispara el workflow de Vercel (ver
+      // docs/preclasificacion-auditoria-funcional/07_Requerimiento_Preclasificacion_Workflow_Vercel.md).
+      // Reemplaza al startBatchTranslation síncrono con waitUntil() — mismo
+      // contrato de respuesta ({ success, data: { jobId } } / { success, error }),
+      // así que el resto de este handler (realtime + polling sobre
+      // ai_job_history) no necesita cambios.
+      const response = await fetch('/api/workflows/translation/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batchId: job.payload.batchId }),
+      });
+      const result = await response.json();
+
       if (!result.success) {
         // 🚨 MANEJO DE ERRORES: Mostrar error específico (ej: trabajo duplicado)
         const errorMessage = result.error || 'Error desconocido al iniciar la traducción';

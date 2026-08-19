@@ -26,6 +26,10 @@ import { saveBatchTranslations } from "@/lib/actions/preclassification-actions";
 import type { TranslatedArticlePayload } from "@/lib/types/preclassification-types";
 //#endregion ![head]
 
+//#region [def] - 🎯 CONSTANTES 🎯
+export const DEEPSEEK_MODEL = "deepseek-chat";
+//#endregion ![def]
+
 //#region [def] - 📦 TYPES 📦
 interface ArticleForTranslation {
 	id: string;
@@ -142,7 +146,7 @@ async function translateArticleStep(
 			);
 
 			const { result, usage } = await callDeepSeekAPI(
-				"deepseek-chat",
+				DEEPSEEK_MODEL,
 				prompt,
 				apiKey,
 			);
@@ -165,7 +169,7 @@ async function translateArticleStep(
 					abstract: parsedResult.translatedAbstract,
 					summary: parsedResult.translatedSummary,
 					translated_by: userId,
-					translator_system: "deepseek-chat",
+					translator_system: DEEPSEEK_MODEL,
 				},
 				inputTokens: usage?.promptTokenCount || 0,
 				outputTokens: usage?.candidatesTokenCount || 0,

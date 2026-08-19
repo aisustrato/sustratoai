@@ -4,7 +4,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useJobManager, type Job } from '@/app/contexts/JobManagerContext';
 import { supabase } from '@/app/auth/client';
-import { startInitialPreclassification } from '@/lib/actions/preclassification-actions';
 import { StandardProgressBar } from '@/components/ui/StandardProgressBar';
 import { StandardText } from '@/components/ui/StandardText';
 import { Brain, AlertCircle, CheckCircle } from 'lucide-react';
@@ -46,9 +45,17 @@ export function PreclassificationJobHandler({ job }: PreclassificationJobHandler
       setStatusMessage('Validando lote y verificando trabajos duplicados...');
       updateJobProgress(job.id, 5);
       
-      // 🛡️ VALIDACIÓN BACKEND: PreclassificationJobHandler maneja validaciones y errores
-      const result = await startInitialPreclassification(job.payload.batchId);
-      
+      // 🛡️ VALIDACIÓN BACKEND: dispara el workflow de Vercel (ver
+      // docs/preclasificacion-auditoria-funcional/07_Requerimiento_Preclasificacion_Workflow_Vercel.md).
+      // Reemplaza al startInitialPreclassification síncrono con waitUntil() —
+      // mismo contrato de respuesta, el resto de este handler no cambia.
+      const response = await fetch('/api/workflows/preclassification/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batchId: job.payload.batchId }),
+      });
+      const result = await response.json();
+
       if (!result.success) {
         // 🚨 MANEJO DE ERRORES: Mostrar error específico (ej: trabajo duplicado)
         const errorMessage = result.error || 'Error desconocido al iniciar la preclasificación';

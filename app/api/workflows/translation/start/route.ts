@@ -16,7 +16,7 @@ import {
 	createSupabaseServerClient,
 	createSupabaseUserClient,
 } from "@/lib/server";
-import { translationWorkflow } from "@/workflows/translation-workflow";
+import { translationWorkflow, DEEPSEEK_MODEL } from "@/workflows/translation-workflow";
 //#endregion ![head]
 
 //#region [def] - 🎯 CONSTANTES 🎯
@@ -87,6 +87,7 @@ export async function POST(request: Request) {
 			project_id: batch.projects!.id,
 			user_id: user.id,
 			job_type: WORKFLOW_JOB_TYPE,
+			ai_model: DEEPSEEK_MODEL,
 			status: "running",
 			description: `[Workflow] Traduciendo Lote #${batch.batch_number}`,
 			progress: 0,

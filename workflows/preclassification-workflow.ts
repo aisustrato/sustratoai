@@ -62,7 +62,13 @@ interface ChunkResult {
 	success: boolean;
 	failedArticles: ArticleForPrompt[];
 	successfulReviews: ReviewInsert[];
+	inputTokens: number;
+	outputTokens: number;
 }
+//#endregion ![def]
+
+//#region [def] - 🎯 CONSTANTES 🎯
+export const DEEPSEEK_MODEL = "deepseek-chat";
 //#endregion ![def]
 
 //#region [helpers] - 🛠️ PROMPT (clon exacto de buildPreclassificationPrompt) 🛠️
@@ -265,7 +271,7 @@ async function processChunkStep(
 	try {
 		const prompt = buildPreclassificationPrompt(project, dimensions, chunk);
 		const { result, usage } = await callDeepSeekAPI(
-			"deepseek-chat",
+			DEEPSEEK_MODEL,
 			prompt,
 			apiKey,
 		);
@@ -384,24 +390,25 @@ async function processChunkStep(
 			}
 		}
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		await (admin.rpc as any)("increment_job_tokens", {
-			job_id: jobId,
-			input_increment: usage?.promptTokenCount || 0,
-			output_increment: usage?.candidatesTokenCount || 0,
-		});
-
 		return {
 			success: true,
 			failedArticles: chunkFailedArticles,
 			successfulReviews: chunkSuccessfulReviews,
+			inputTokens: usage?.promptTokenCount || 0,
+			outputTokens: usage?.candidatesTokenCount || 0,
 		};
 	} catch (chunkError) {
 		console.error(
 			`❌❌ [${jobId}] Error crítico procesando chunk completo (intento ${attemptNumber}):`,
 			chunkError instanceof Error ? chunkError.message : chunkError,
 		);
-		return { success: false, failedArticles: chunk, successfulReviews: [] };
+		return {
+			success: false,
+			failedArticles: chunk,
+			successfulReviews: [],
+			inputTokens: 0,
+			outputTokens: 0,
+		};
 	}
 }
 
@@ -429,6 +436,8 @@ async function finalizeClassificationJobStep(
 	totalItems: number,
 	processedCount: number,
 	successfulReviews: ReviewInsert[],
+	totalInputTokens: number,
+	totalOutputTokens: number,
 ): Promise<void> {
 	"use step";
 	const admin = await createSupabaseServiceRoleClient();
@@ -467,6 +476,8 @@ async function finalizeClassificationJobStep(
 			progress: 100,
 			details: { total: totalItems, processed: processedCount, step: "Completado" },
 			completed_at: new Date().toISOString(),
+			input_tokens: totalInputTokens,
+			output_tokens: totalOutputTokens,
 		})
 		.eq("id", jobId);
 
@@ -516,6 +527,8 @@ export async function preclassificationWorkflow(
 		const articulosParaRepechaje: ArticleForPrompt[] = [];
 		const clasificacionesExitosas: ReviewInsert[] = [];
 		let processedCount = 0;
+		let totalInputTokens = 0;
+		let totalOutputTokens = 0;
 
 		// 🎯 PRIMER INTENTO
 		for (let i = 0; i < items.length; i += MINI_BATCH_SIZE) {
@@ -529,6 +542,8 @@ export async function preclassificationWorkflow(
 				1,
 			);
 			processedCount += chunk.length;
+			totalInputTokens += result.inputTokens;
+			totalOutputTokens += result.outputTokens;
 
 			await updateProgressStep(
 				jobId,
@@ -570,6 +585,8 @@ export async function preclassificationWorkflow(
 					repechageChunk,
 					2,
 				);
+				totalInputTokens += repeResult.inputTokens;
+				totalOutputTokens += repeResult.outputTokens;
 				if (repeResult.successfulReviews.length > 0) {
 					clasificacionesExitosas.push(...repeResult.successfulReviews);
 				}
@@ -582,6 +599,8 @@ export async function preclassificationWorkflow(
 			items.length,
 			processedCount,
 			clasificacionesExitosas,
+			totalInputTokens,
+			totalOutputTokens,
 		);
 	} catch (error) {
 		const errorMessage =
