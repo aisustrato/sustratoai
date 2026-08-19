@@ -1,3 +1,5 @@
+const { withWorkflow } = require('workflow/next')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
@@ -16,4 +18,7 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+// withWorkflow() habilita las directivas "use workflow"/"use step" (ver
+// docs/preclasificacion-auditoria-funcional/07_Requerimiento_Preclasificacion_Workflow_Vercel.md).
+// Aditivo: no cambia nada del comportamiento existente.
+module.exports = withWorkflow(nextConfig)
