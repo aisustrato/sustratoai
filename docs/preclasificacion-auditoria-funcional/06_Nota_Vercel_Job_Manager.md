@@ -30,6 +30,20 @@ Es decir: **no es tan restrictivo como se asumía inicialmente** ("Hobby = 10s" 
   1. Estar en plan **Pro** (sube el máximo configurable a 800s, o 1800s en beta).
   2. Declarar explícitamente `export const maxDuration = N` — **en la página (`page.tsx`) o layout que dispara la Server Action**, no en el archivo de la action. Complicación real de este proyecto: tanto `app/articulos/layout.tsx` como `app/articulos/preclasificacion/[batchId]/page.tsx` son `"use client"`, y `maxDuration` no puede exportarse desde un archivo con esa directiva. Si se necesita subir el límite, va a requerir introducir un `layout.tsx` server component en ese segmento de ruta (hoy no existe) — pendiente, no implementado.
 
+### Aclaración: el chunking de 5 NO ayuda con el límite de duración
+
+`runPreclassificationJob` procesa artículos en mini-lotes de `miniBatchSize = 5` (línea ~2321), pero es un único `for` loop **secuencial dentro de la misma invocación**: procesa chunk 1, espera, chunk 2, espera... todo dentro de la misma promesa que recibe `waitUntil()`. El reloj de `maxDuration` no se resetea entre chunks — se acumula. El chunking existe para mantener el prompt chico y hacer el repechaje granular (reintentar solo el chunk que falló), no para esquivar el límite de tiempo.
+
+**Cálculo aproximado**: un lote de 200 artículos → 40 chunks. Con ~5-10s por llamada a DeepSeek (más backoff en los que fallan y reintentan), el total puede rondar 200-400s — cerca o por encima del techo de 300s en lotes grandes.
+
+**Si esto se vuelve un problema real**, la solución no es "esperar menos" sino partir el trabajo en **múltiples invocaciones separadas** en vez de una sola continua (patrón de posta/relevo): cada invocación procesa unos pocos chunks y dispara la continuación, sin que ninguna invocación individual necesite superar el `maxDuration`. Tres formas de implementarlo, de menor a mayor esfuerzo:
+
+1. **Auto-relevo simple**: la función procesa N chunks y, antes de terminar, dispara (sin esperar) su propia continuación para los chunks restantes.
+2. **Upstash QStash**: el proyecto ya tiene `@upstash/redis` y `@upstash/ratelimit` instalados — Upstash también ofrece QStash, una cola de mensajes pensada específicamente para este problema en serverless (llama de vuelta por HTTP cuando toca el siguiente paso). Aprovecharía una relación que ya existe en el stack.
+3. **Vercel Workflows**: la opción "oficial" de Vercel para jobs largos sin límite de duración (ver sección de Estado actual).
+
+No implementado — evaluar solo si el volumen real de lotes empieza a acercarse al techo de 300s.
+
 ### Estado actual
 
 - ✅ Fix de `waitUntil()` aplicado a los 4 flujos — corrige el riesgo de terminación prematura.
