@@ -492,8 +492,18 @@ export function StandardNavbar() {
 			submenu: [
 				{
 					label: "Historial",
-					href: "/personal/historial",
+					href: "/personal/historial_ai",
 					icon: (isActive) => createMenuIcon(ClipboardList, isActive),
+				},
+				{
+					label: "Publicaciones",
+					href: "/personal/papers",
+					icon: (isActive) => createMenuIcon(FileText, isActive),
+				},
+				{
+					label: "Configuración",
+					href: "/personal/configuracion",
+					icon: (isActive) => createMenuIcon(Settings, isActive),
 				},
 				{
 					label: "Consumo AI",
