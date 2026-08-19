@@ -321,8 +321,10 @@ export async function getBatchesForPhaseDisplay(
 			};
 		}
 
-		// Usar get_all_project_batches (que existe y funciona en preclasificación)
-		const { data, error } = await supabase.rpc("get_all_project_batches", {
+		// v4 es la única versión de esta RPC que devuelve `phase_id` (v1-v3 no lo
+		// incluyen) — el filtro de abajo depende de ese campo. Usar una versión
+		// anterior hace que el filtro descarte silenciosamente todas las filas.
+		const { data, error } = await supabase.rpc("get_all_project_batches_v4", {
 			p_project_id: phaseData.project_id,
 		});
 

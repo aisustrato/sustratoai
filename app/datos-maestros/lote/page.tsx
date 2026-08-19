@@ -378,9 +378,19 @@ export default function LotesOrquestadorPage() {
 				case "READY_FOR_BATCHING":
 					setViewState("ready_for_batching");
 					break;
+				case "BATCHES_CREATED":
+					// El conteo directo dice que hay lotes, pero getBatchesForPhaseDisplay
+					// no los trajo arriba (desync) — mensaje específico, no genérico.
+					setViewState("error");
+					setError(
+						"Se detectaron lotes existentes para esta fase, pero no se pudieron cargar sus datos. Probá recargar la página.",
+					);
+					break;
 				default:
 					setViewState("error");
-					setError("Estado desconocido recibido del servidor.");
+					setError(
+						`Estado desconocido recibido del servidor: "${status.status}".`,
+					);
 			}
 		} catch (error) {
 			console.error("❌ Excepción al cargar estado de loteo:", error);
