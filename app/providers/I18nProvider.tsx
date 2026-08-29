@@ -8,6 +8,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { defaultLocale, locales, type Locale, localeNames, localeFlags } from "@/i18n/config";
+import defaultMessages from "@/messages/es.json";
 
 //#region [types] - 🎨 TIPOS
 interface I18nContextType {
@@ -61,9 +62,17 @@ interface I18nProviderProps {
 }
 
 export function I18nProvider({ children }: I18nProviderProps) {
+  // 🔧 DECISIÓN: arrancar con el locale/mensajes por defecto ya resueltos
+  // (import estático, sin esperar un useEffect) para que SSR y el primer
+  // paint del cliente rendericen contenido real de inmediato. Antes,
+  // `isReady`/`messages` solo se poblaban dentro de un useEffect (que nunca
+  // corre en servidor) y el componente hacía `return null` mientras tanto —
+  // como este es el provider más externo de toda la app, bloqueaba TODO el
+  // árbol (incluido el contenido de /papers/*) en el HTML inicial servido.
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
-  const [messages, setMessages] = useState<Record<string, unknown> | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  const [messages, setMessages] = useState<Record<string, unknown>>(
+    defaultMessages as Record<string, unknown>,
+  );
 
   // 🔄 Cargar mensajes según locale
   const loadMessages = useCallback(async (loc: Locale) => {
@@ -81,27 +90,25 @@ export function I18nProvider({ children }: I18nProviderProps) {
   // 🔄 Cambiar locale y persistir
   const setLocale = useCallback((newLocale: Locale) => {
     if (!locales.includes(newLocale)) return;
-    
+
     setLocaleState(newLocale);
     localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
     loadMessages(newLocale);
-    
+
     // Actualizar atributo lang del documento
     document.documentElement.lang = newLocale;
   }, [loadMessages]);
 
-  // 🚀 Inicialización
+  // 🚀 Inicialización: solo ajusta si el locale real difiere del default ya
+  // renderizado (localStorage/navegador), sin bloquear el render inicial.
   useEffect(() => {
     const initialLocale = getInitialLocale();
-    setLocaleState(initialLocale);
     document.documentElement.lang = initialLocale;
-    loadMessages(initialLocale).then(() => setIsReady(true));
+    if (initialLocale !== defaultLocale) {
+      setLocaleState(initialLocale);
+      loadMessages(initialLocale);
+    }
   }, [loadMessages]);
-
-  // ⏳ Loading state
-  if (!isReady || !messages) {
-    return null; // O un skeleton/loader si prefieres
-  }
 
   return (
     <I18nContext.Provider
