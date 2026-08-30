@@ -74,13 +74,13 @@ export async function getPaperBySlug(slug: string): Promise<Paper | null> {
  * Para generar el sitemap dinámicamente
  */
 export async function getAllPublishedPapersForSitemap(): Promise<
-	Pick<Paper, "slug" | "updated_at">[]
+	Pick<Paper, "slug" | "slug_en" | "updated_at">[]
 > {
 	const supabase = await createServerSupabaseClient();
 
 	const { data, error } = await supabase
 		.from("papers")
-		.select("slug, updated_at")
+		.select("slug, slug_en, updated_at")
 		.eq("is_published", true)
 		.order("published_at", { ascending: false });
 
@@ -92,7 +92,61 @@ export async function getAllPublishedPapersForSitemap(): Promise<
 		return [];
 	}
 
-	return data || [];
+	return (data || []) as unknown as Pick<Paper, "slug" | "slug_en" | "updated_at">[];
+}
+
+/**
+ * Resultado de resolver un slug contra las dos posibles URLs de un paper
+ * (español en `slug`, inglés en `slug_en`).
+ */
+export interface PaperSlugMatch {
+	paper: Paper;
+	idioma: "es" | "en";
+}
+
+/**
+ * Obtiene un paper por slug, sea cual sea el idioma de la URL.
+ * Primero intenta `slug` (español, la URL históricamente citada); si no
+ * matchea, intenta `slug_en`. Devuelve también qué idioma correspondió al
+ * match, para que la página no tenga que volver a decidirlo.
+ * Para la página /papers/[slug].
+ */
+export async function getPaperBySlugEitherLang(
+	slug: string,
+): Promise<PaperSlugMatch | null> {
+	const supabase = await createServerSupabaseClient();
+
+	const { data: bySlug, error: errorBySlug } = await supabase
+		.from("papers")
+		.select("*")
+		.eq("slug", slug)
+		.eq("is_published", true)
+		.maybeSingle();
+
+	if (errorBySlug) {
+		console.error(`[getPaperBySlugEitherLang] Error buscando por slug ${slug}:`, errorBySlug);
+	}
+
+	if (bySlug) {
+		return { paper: bySlug as unknown as Paper, idioma: "es" };
+	}
+
+	const { data: bySlugEn, error: errorBySlugEn } = await supabase
+		.from("papers")
+		.select("*")
+		.eq("slug_en", slug)
+		.eq("is_published", true)
+		.maybeSingle();
+
+	if (errorBySlugEn) {
+		console.error(`[getPaperBySlugEitherLang] Error buscando por slug_en ${slug}:`, errorBySlugEn);
+	}
+
+	if (bySlugEn) {
+		return { paper: bySlugEn as unknown as Paper, idioma: "en" };
+	}
+
+	return null;
 }
 
 // ============================================================================

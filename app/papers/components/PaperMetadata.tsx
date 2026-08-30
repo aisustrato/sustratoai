@@ -6,13 +6,12 @@ import { resolvePaperContentSafe, type PaperIdioma } from "@/lib/papers/i18n";
 
 interface PaperMetadataProps {
   paper: Paper;
+  idioma: PaperIdioma;
 }
 
-export function PaperMetadata({ paper }: PaperMetadataProps) {
-  // Fijo en el idioma canónico del paper — no cambia con el toggle client-side
-  // (una sola URL, un solo JSON-LD para crawlers).
-  const idiomaCanonico: PaperIdioma = paper.language === "en" ? "en" : "es";
-  const contenido = resolvePaperContentSafe(paper, idiomaCanonico);
+export function PaperMetadata({ paper, idioma }: PaperMetadataProps) {
+  const contenido = resolvePaperContentSafe(paper, idioma);
+  const slugActual = idioma === "en" && paper.slug_en ? paper.slug_en : paper.slug;
 
   // JSON-LD para schema.org (ScholarlyArticle)
   const jsonLd = {
@@ -34,51 +33,22 @@ export function PaperMetadata({ paper }: PaperMetadataProps) {
     })),
     datePublished: paper.published_at || undefined,
     identifier: paper.doi ? `https://doi.org/${paper.doi}` : undefined,
-    url: `https://sustrato.ai/papers/${paper.slug}`,
+    url: `https://sustrato.ai/papers/${slugActual}`,
     publisher: {
       "@type": "Organization",
       name: "sustrato.ai",
       url: "https://sustrato.ai",
     },
-    inLanguage: paper.language,
+    inLanguage: idioma,
     license: "https://creativecommons.org/licenses/by/4.0/",
     keywords: contenido.keywords.join(", "),
     version: paper.version,
   };
 
   return (
-    <>
-      {/* JSON-LD para crawlers */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-
-      {/* Meta tags Dublin Core (en head via Next.js metadata API, estos son informativos) */}
-      {/* Los meta tags reales se exportan desde page.tsx con generateMetadata */}
-      
-      {/* 
-        Meta tags que se deben incluir en generateMetadata del page.tsx:
-        
-        Dublin Core:
-        - DC.title
-        - DC.creator (uno por autor)
-        - DC.date
-        - DC.identifier (DOI)
-        - DC.language
-        - DC.type = "Text.Article"
-        - DC.rights
-        - DC.publisher = "sustrato.ai"
-        
-        Google Scholar (citation_*):
-        - citation_title
-        - citation_author (uno por autor)
-        - citation_publication_date
-        - citation_doi
-        - citation_pdf_url
-        - citation_abstract_html_url
-        - citation_language
-      */}
-    </>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
   );
 }
