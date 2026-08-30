@@ -1,8 +1,11 @@
 // 📍 app/papers/layout.tsx
-// Layout para la DMZ (zona pública de papers)
+// Layout para la DMZ (zona pública de papers).
+// El navbar y el footer NO viven acá: un layout compartido por /papers y
+// /papers/[slug] no tiene acceso al idioma resuelto de un paper puntual, así
+// que cada página los renderiza directamente con su propio idioma (ver
+// DMZNavbar/PapersFooter y su prop `idioma`).
 
 import type { Metadata } from "next";
-import { DMZNavbar } from "./components/DMZNavbar";
 
 export const metadata: Metadata = {
   title: {
@@ -33,51 +36,5 @@ export default function PapersLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="flex min-h-screen flex-col">
-      <DMZNavbar />
-      <main className="flex-1">{children}</main>
-      <footer className="border-t py-8">
-        <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
-          <div className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} sustrato.ai — Licencia{" "}
-            <a
-              href="https://creativecommons.org/licenses/by/4.0/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground transition-colors underline"
-            >
-              CC-BY-4.0
-            </a>
-          </div>
-          <div className="flex gap-4 text-sm text-muted-foreground">
-            <a
-              href="https://zenodo.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground transition-colors"
-            >
-              Zenodo
-            </a>
-            <a
-              href="https://orcid.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground transition-colors"
-            >
-              ORCID
-            </a>
-            <a
-              href="https://github.com/sustratoai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground transition-colors"
-            >
-              GitHub
-            </a>
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
+  return <div className="flex min-h-screen flex-col">{children}</div>;
 }

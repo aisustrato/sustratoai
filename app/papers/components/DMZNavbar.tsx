@@ -4,8 +4,16 @@
 
 import Link from "next/link";
 import { StandardButton } from "@/components/ui/StandardButton";
+import { PAPER_LABELS, type PaperIdioma } from "@/lib/papers/i18n";
 
-export function DMZNavbar() {
+interface DMZNavbarProps {
+	/** Idioma de la página actual (por defecto "es" para el índice, que es bilingüe/mixto). */
+	idioma?: PaperIdioma;
+}
+
+export function DMZNavbar({ idioma = "es" }: DMZNavbarProps) {
+	const t = PAPER_LABELS[idioma];
+
 	return (
 		<nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
 			<div className="container flex h-16 items-center justify-between">
@@ -23,12 +31,12 @@ export function DMZNavbar() {
 						<Link
 							href="/papers"
 							className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-							Publicaciones
+							{t.navPublicaciones}
 						</Link>
 						<Link
 							href="#"
 							className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-							Sobre
+							{t.navSobre}
 						</Link>
 					</div>
 				</div>
@@ -37,7 +45,7 @@ export function DMZNavbar() {
 				<div className="flex items-center gap-4">
 					<Link href="/">
 						<StandardButton styleType="outline" size="sm">
-							Ir a la app
+							{t.navIrALaApp}
 						</StandardButton>
 					</Link>
 				</div>

@@ -84,6 +84,10 @@ export interface PaperLabels {
 	copiado: string;
 	compartir: string;
 	dateLocale: string;
+	navPublicaciones: string;
+	navSobre: string;
+	navIrALaApp: string;
+	footerLicenciaPrefix: string;
 }
 
 export const PAPER_LABELS: Record<PaperIdioma, PaperLabels> = {
@@ -100,6 +104,10 @@ export const PAPER_LABELS: Record<PaperIdioma, PaperLabels> = {
 		copiado: "¡Copiado!",
 		compartir: "Compartir",
 		dateLocale: "es-CL",
+		navPublicaciones: "Publicaciones",
+		navSobre: "Sobre",
+		navIrALaApp: "Ir a la app",
+		footerLicenciaPrefix: "Licencia",
 	},
 	en: {
 		resumen: "Abstract",
@@ -114,5 +122,9 @@ export const PAPER_LABELS: Record<PaperIdioma, PaperLabels> = {
 		copiado: "Copied!",
 		compartir: "Share",
 		dateLocale: "en-US",
+		navPublicaciones: "Publications",
+		navSobre: "About",
+		navIrALaApp: "Go to the app",
+		footerLicenciaPrefix: "License",
 	},
 };

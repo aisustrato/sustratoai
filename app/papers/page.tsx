@@ -7,6 +7,8 @@ import { getPublishedPapers } from "@/lib/papers/queries";
 import { StandardCard, StandardCardHeader, StandardCardTitle, StandardCardContent } from "@/components/ui/StandardCard";
 import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardButton } from "@/components/ui/StandardButton";
+import { DMZNavbar } from "./components/DMZNavbar";
+import { PapersFooter } from "./components/PapersFooter";
 
 export const metadata: Metadata = {
   title: "Publicaciones",
@@ -21,7 +23,9 @@ export default async function PapersIndexPage() {
   const papers = await getPublishedPapers();
 
   return (
-    <div className="container py-12">
+    <>
+      <DMZNavbar idioma="es" />
+      <main className="flex-1 container py-12">
       <div className="mx-auto max-w-4xl space-y-8">
         {/* Header */}
         <div className="space-y-4">
@@ -138,6 +142,8 @@ export default async function PapersIndexPage() {
           </div>
         )}
       </div>
-    </div>
+      </main>
+      <PapersFooter idioma="es" />
+    </>
   );
 }

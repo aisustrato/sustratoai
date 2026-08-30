@@ -9,6 +9,8 @@ import { notFound } from "next/navigation";
 import { getPaperBySlugEitherLang, getPaperAnnexes } from "@/lib/papers/queries";
 import { PaperMetadata } from "../components/PaperMetadata";
 import { PaperBilingualView } from "../components/PaperBilingualView";
+import { DMZNavbar } from "../components/DMZNavbar";
+import { PapersFooter } from "../components/PapersFooter";
 import { resolvePaperContentSafe } from "@/lib/papers/i18n";
 
 interface PaperPageProps {
@@ -109,9 +111,11 @@ export default async function PaperPage({ params }: PaperPageProps) {
       {/* Metadatos estructurados (JSON-LD), en el idioma resuelto por la URL */}
       <PaperMetadata paper={paper} idioma={idioma} />
 
-      <div className="container py-12">
+      <DMZNavbar idioma={idioma} />
+      <main className="flex-1 container py-12">
         <PaperBilingualView paper={paper} annexes={annexes} idioma={idioma} />
-      </div>
+      </main>
+      <PapersFooter idioma={idioma} />
     </>
   );
 }
