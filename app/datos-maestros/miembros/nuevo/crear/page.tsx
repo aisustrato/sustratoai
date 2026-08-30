@@ -27,6 +27,7 @@ import { useLoading } from "@/contexts/LoadingContext"; // Opcional, para loadin
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardCard } from "@/components/ui/StandardCard";
+import { StandardText } from "@/components/ui/StandardText";
 //#endregion ![head]
 
 //#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
@@ -45,6 +46,12 @@ export default function CrearMiembroPage() {
   const [isSubmitting, setIsSubmitting] = useState(false); // Para el estado de envío del formulario
   const [rolesDisponibles, setRolesDisponibles] = useState<SelectOption[]>([]);
   const [errorPage, setErrorPage] = useState<string | null>(null); // Errores de carga de página
+  // Credenciales de una cuenta recién creada: se muestran una sola vez, antes de salir de esta página.
+  const [credencialesCreadas, setCredencialesCreadas] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
+  const [passwordCopiada, setPasswordCopiada] = useState(false);
 
   // Cargar roles disponibles
   const cargarRoles = useCallback(async () => {
@@ -110,6 +117,7 @@ export default function CrearMiembroPage() {
       proyectoId: proyectoActual.id,
       emailUsuarioNuevo: data.emailUsuario,
       rolIdAsignar: data.rolId,
+      crearUsuarioSiNoExiste: data.esUsuarioNuevo,
       datosPerfilInicial: { // Mapear los campos opcionales del formulario
         first_name: data.firstName || null,
         last_name: data.lastName || null,
@@ -122,7 +130,11 @@ export default function CrearMiembroPage() {
       },
     };
 
-    let resultado: ResultadoOperacion<{ project_member_id: string; profile_action: string; }> | null = null;
+    let resultado: ResultadoOperacion<{
+      project_member_id: string;
+      profile_action: string;
+      temporary_password?: string;
+    }> | null = null;
 
     try {
       resultado = await agregarMiembroAProyecto(payload);
@@ -140,14 +152,23 @@ export default function CrearMiembroPage() {
     if (typeof hideLoading === 'function') hideLoading(); // Opcional
 
     if (resultado?.success) {
-      toast.success("Miembro Agregado", {
-        description: `El miembro ${data.emailUsuario} ha sido agregado exitosamente. Perfil: ${resultado.data.profile_action}.`,
-        duration: 4000,
-      });
-      // Retrasar la redirección para que el toast sea visible
-      setTimeout(() => {
-        router.push("/datos-maestros/miembros");
-      }, 1500); 
+      if (resultado.data.temporary_password) {
+        // No redirigimos todavía: esta es la única vez que se muestra la
+        // contraseña provisoria, hay que dejar que la copien antes de salir.
+        setCredencialesCreadas({
+          email: data.emailUsuario,
+          password: resultado.data.temporary_password,
+        });
+      } else {
+        toast.success("Miembro Agregado", {
+          description: `El miembro ${data.emailUsuario} ha sido agregado exitosamente. Perfil: ${resultado.data.profile_action}.`,
+          duration: 4000,
+        });
+        // Retrasar la redirección para que el toast sea visible
+        setTimeout(() => {
+          router.push("/datos-maestros/miembros");
+        }, 1500);
+      }
     } else {
       toast.error("Error al Agregar Miembro", {
         description: resultado?.error || "Ocurrió un error desconocido.",
@@ -159,9 +180,73 @@ export default function CrearMiembroPage() {
   const handleVolver = () => {
     router.push("/datos-maestros/miembros");
   };
+
+  const handleCopiarPassword = async () => {
+    if (!credencialesCreadas) return;
+    await navigator.clipboard.writeText(credencialesCreadas.password);
+    setPasswordCopiada(true);
+    setTimeout(() => setPasswordCopiada(false), 2000);
+  };
   //#endregion ![sub]
 
   //#region [render] - 🎨 RENDER SECTION 🎨
+  if (credencialesCreadas) {
+    return (
+      <StandardPageBackground variant="gradient">
+        <div className="container mx-auto py-6">
+          <div className="space-y-6 max-w-xl mx-auto">
+            <StandardPageTitle
+              title="Cuenta creada"
+              subtitle="Copiá la contraseña provisoria antes de salir de esta página — no se vuelve a mostrar."
+              mainIcon={UserPlus}
+            />
+            <StandardCard styleType="filled" colorScheme="success" accentPlacement="top">
+              <div className="space-y-4 p-2">
+                <div>
+                  <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
+                    Email
+                  </StandardText>
+                  <StandardText size="md" weight="medium">
+                    {credencialesCreadas.email}
+                  </StandardText>
+                </div>
+                <div>
+                  <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
+                    Contraseña provisoria
+                  </StandardText>
+                  <div className="flex items-center gap-3">
+                    <StandardText size="lg" weight="bold" className="font-mono">
+                      {credencialesCreadas.password}
+                    </StandardText>
+                    <StandardButton
+                      styleType="outline"
+                      size="sm"
+                      onClick={handleCopiarPassword}
+                    >
+                      {passwordCopiada ? "¡Copiada!" : "Copiar"}
+                    </StandardButton>
+                  </div>
+                </div>
+                <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
+                  Pasásela directamente a la persona (no queda guardada en ningún
+                  lado en texto plano). Puede cambiarla después por su cuenta.
+                </StandardText>
+                <div className="flex justify-end pt-2">
+                  <StandardButton
+                    colorScheme="primary"
+                    onClick={() => router.push("/datos-maestros/miembros")}
+                  >
+                    Listo, ir a Miembros
+                  </StandardButton>
+                </div>
+              </div>
+            </StandardCard>
+          </div>
+        </div>
+      </StandardPageBackground>
+    );
+  }
+
   if (isPageLoading) {
     return (
       <div className="flex justify-center py-8">

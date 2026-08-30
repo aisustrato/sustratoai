@@ -14,6 +14,7 @@ import {
 	type SelectOption,
 } from "@/components/ui/StandardSelect"; // Assuming SelectOption type is compatible or similar
 import { StandardFormField } from "@/components/ui/StandardFormField"; // Asegúrate de que StandardFormField pueda recibir y mostrar 'hint' y 'successMessage'
+import { StandardCheckbox } from "@/components/ui/StandardCheckbox";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
@@ -35,6 +36,7 @@ const formSchema = z.object({
 		.email("Email inválido")
 		.min(1, "El email es requerido"),
 	rolId: z.string().min(1, "Debe seleccionar un rol"),
+	esUsuarioNuevo: z.boolean().optional(),
 
 	firstName: z
 		.string()
@@ -316,6 +318,21 @@ export const MiembroForm = ({
 							/>
 						</StandardFormField>
 					</div>
+
+					{modo === "crear" && (
+						<Controller
+							name="esUsuarioNuevo"
+							control={form.control}
+							render={({ field }) => (
+								<StandardCheckbox
+									checked={!!field.value}
+									onChange={(e) => field.onChange(e.target.checked)}
+									label="Es un usuario nuevo (todavía no tiene cuenta en Sustrato)"
+									description="Se le crea la cuenta con una contraseña provisoria que vas a poder copiar al terminar, para pasársela directamente. La puede cambiar después por su cuenta."
+								/>
+							)}
+						/>
+					)}
 					{/* //#endregion [render_sub] */}
 
 					{/* //#region [render_sub] - 📝 Información Adicional de Perfil (Opcional) 📝 */}

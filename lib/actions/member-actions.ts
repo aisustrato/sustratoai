@@ -1,7 +1,7 @@
 // lib/actions/member-actions.ts
 "use server";
 
-import { createSupabaseServerClient } from "@/lib/server";
+import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/server";
 import type { Database } from "@/lib/database.types";
 
 // ========================================================================
@@ -357,6 +357,26 @@ interface AddMemberPayload {
 		Partial<UserProfileInsert>,
 		"user_id" | "public_contact_email"
 	>;
+	/**
+	 * Si el email no corresponde a ningún usuario existente, crea la cuenta
+	 * de Auth directamente (con una contraseña provisoria generada acá) en
+	 * vez de fallar con USER_NOT_FOUND. Pensado para altas presenciales
+	 * (ej. un nuevo embajador) mientras el flujo de invitación por correo
+	 * no está verificado — el usuario nuevo cambia esa contraseña después
+	 * por su cuenta.
+	 */
+	crearUsuarioSiNoExiste?: boolean;
+}
+
+/** Contraseña provisoria legible pero con buena entropía (ej. "sustrato-fq72-lynx"). */
+function generarPasswordProvisoria(): string {
+	const palabras = [
+		"lynx", "nova", "cedro", "orbita", "coral", "brisa", "ambar", "faro",
+		"raiz", "eco", "cauce", "puma", "vela", "junco", "niebla", "canto",
+	];
+	const palabra = palabras[Math.floor(Math.random() * palabras.length)];
+	const numero = Math.floor(1000 + Math.random() * 9000);
+	return `sustrato-${numero}-${palabra}`;
 }
 
 export async function agregarMiembroAProyecto(
@@ -365,6 +385,7 @@ export async function agregarMiembroAProyecto(
 	ResultadoOperacion<{
 		project_member_id: string;
 		profile_action: "created" | "existed" | "error";
+		temporary_password?: string;
 	}>
 > {
 	const opId = `AMPv3-${Math.floor(Math.random() * 10000)}`;
@@ -423,14 +444,46 @@ export async function agregarMiembroAProyecto(
 				errorCode: "RPC_ERROR",
 			};
 		}
+		let targetUserId: string;
+		let temporaryPassword: string | undefined;
+
 		if (rpcData === null || typeof rpcData === "undefined") {
-			return {
-				success: false,
-				error: `Usuario con email '${emailUsuarioNuevo}' no encontrado.`,
-				errorCode: "USER_NOT_FOUND",
-			};
+			if (!payload.crearUsuarioSiNoExiste) {
+				return {
+					success: false,
+					error: `Usuario con email '${emailUsuarioNuevo}' no encontrado.`,
+					errorCode: "USER_NOT_FOUND",
+				};
+			}
+
+			console.log(
+				`ℹ️ [${opId}] Usuario no existe, creando cuenta nueva para ${emailUsuarioNuevo}...`,
+			);
+			temporaryPassword = generarPasswordProvisoria();
+			const adminClient = await createSupabaseServiceRoleClient();
+			const { data: nuevoUsuario, error: createUserError } =
+				await adminClient.auth.admin.createUser({
+					email: emailUsuarioNuevo,
+					password: temporaryPassword,
+					email_confirm: true, // sin flujo de invitación por correo activo: se confirma directo
+				});
+
+			if (createUserError || !nuevoUsuario?.user) {
+				console.error(
+					`❌ [${opId}] Error creando usuario de Auth:`,
+					createUserError,
+				);
+				return {
+					success: false,
+					error: `Error al crear la cuenta: ${createUserError?.message || "sin detalle"}`,
+					errorCode: "CREATE_USER_ERROR",
+				};
+			}
+			targetUserId = nuevoUsuario.user.id;
+			console.log(`✅ [${opId}] Usuario de Auth creado: ${targetUserId}`);
+		} else {
+			targetUserId = rpcData; // TypeScript ahora sabe que es string
 		}
-		const targetUserId: string = rpcData; // TypeScript ahora sabe que es string
 		console.log(`👤 [${opId}] Usuario a agregar ID: ${targetUserId}`);
 
 		const { data: existingMember, error: checkMemberError } = await supabase
@@ -548,6 +601,7 @@ export async function agregarMiembroAProyecto(
 			data: {
 				project_member_id: nuevaMembresia.id,
 				profile_action: profile_action_status,
+				temporary_password: temporaryPassword,
 			},
 		};
 	} catch (error) {
