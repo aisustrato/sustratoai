@@ -36,6 +36,7 @@ import { toast } from "sonner";
 
 import { useFontTheme } from "@/app/font-provider";
 import { useTheme } from "@/app/theme-provider";
+import { isPublicPath } from "@/lib/routes/public-paths";
 
 const LOG_PREFIX = "[AUTH_PROVIDER_V10.19]";
 const isDev = process.env.NODE_ENV === "development";
@@ -658,9 +659,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		setUiIsDarkModeLocal,
 	};
 
+	// Rutas públicas (DMZ /papers/*, login, etc.) nunca esperan el estado de
+	// auth: este overlay era el bloqueo real de SSR para esas páginas (se
+	// renderiza ANTES que AuthLayoutWrapper, que vive dentro de `children`),
+	// tapando con un spinner incluso el HTML servido a crawlers.
 	const mostrarOverlayGlobal =
-		(authLoading && !authInitializedRef.current) ||
-		(authLoading && authLoadingGlobalActivationAttemptRef.current === 1);
+		!isPublicPath(pathname) &&
+		((authLoading && !authInitializedRef.current) ||
+			(authLoading && authLoadingGlobalActivationAttemptRef.current === 1));
 
 	return (
 		<AuthContext.Provider value={authContextValue}>

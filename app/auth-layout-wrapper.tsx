@@ -8,47 +8,7 @@ import { useAuth } from "./auth-provider";
 import { StandardNavbar } from "@/components/ui/StandardNavbar";
 import { StandardSolidNavbarWrapper } from "@/components/ui/StandardSolidNavbarWrapper";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
-
-// Constantes base para rutas de autenticación
-const NO_NAVBAR_PAGES = [
-	"/login",
-	"/signup",
-	"/reset-password",
-	"/update-password",
-];
-
-const PUBLIC_PATHS = ["/login", "/signup", "/reset-password", "/contact"];
-
-// Función helper para determinar si una ruta es pública
-// Incluye rutas de autenticación Y la DMZ (/papers/*)
-const isPublicPath = (pathname: string | null): boolean => {
-	if (!pathname) return false;
-
-	// Verificar rutas públicas estándar
-	if (PUBLIC_PATHS.includes(pathname)) return true;
-	if (PUBLIC_PATHS.some((path) => pathname.startsWith(`${path}/`))) return true;
-
-	// DMZ: cualquier ruta que empiece con /papers es pública
-	if (pathname.startsWith("/papers")) return true;
-
-	return false;
-};
-
-// Función helper para determinar si una ruta NO debe mostrar StandardNavbar
-// Incluye páginas de autenticación Y la DMZ (que tiene su propio navbar)
-const isNoNavbarPage = (pathname: string | null): boolean => {
-	if (!pathname) return false;
-
-	// Verificar páginas sin navbar estándar
-	if (NO_NAVBAR_PAGES.includes(pathname)) return true;
-	if (NO_NAVBAR_PAGES.some((path) => pathname.startsWith(`${path}/`)))
-		return true;
-
-	// DMZ: /papers/* usa DMZNavbar, no StandardNavbar
-	if (pathname.startsWith("/papers")) return true;
-
-	return false;
-};
+import { isPublicPath, isNoNavbarPage } from "@/lib/routes/public-paths";
 
 export function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
 	// MODIFICACIÓN V2.2: Obtenemos más estados para la lógica defensiva
@@ -58,6 +18,16 @@ export function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
 	// Usar las funciones helper para determinar el tipo de página
 	const currentPathIsNoNavbar = isNoNavbarPage(pathname);
 	const currentPathIsPublic = isPublicPath(pathname);
+
+	// CASO 0: Rutas públicas sin navbar propia (DMZ /papers/*, login, signup, etc.)
+	// Se renderizan siempre directo, sin esperar el estado de auth. Antes,
+	// `authLoading` (true en el render inicial, mientras se resuelve la sesión)
+	// no estaba excluido para estas rutas, así que tapaban con el spinner
+	// global incluso páginas pensadas para ser 100% públicas y server-rendered
+	// (rompiendo la indexación de /papers/* por Google Scholar y crawlers).
+	if (currentPathIsPublic && currentPathIsNoNavbar) {
+		return <>{children}</>;
+	}
 
 	// CASO 1: Carga Global del AuthProvider Activa (o carga inicial antes de que authInitialized sea true)
 	// `authLoading` cubre el inicio de sesión, cierre de sesión, cambio de proyecto.

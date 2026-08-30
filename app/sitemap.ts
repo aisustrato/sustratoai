@@ -21,5 +21,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.8,
     })),
+    // Una entrada extra por cada paper que tenga página en el otro idioma
+    ...papers
+      .filter((p) => p.slug_en)
+      .map((p) => ({
+        url: `${base}/papers/${p.slug_en}`,
+        lastModified: p.updated_at ? new Date(p.updated_at) : new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.8,
+      })),
   ];
 }

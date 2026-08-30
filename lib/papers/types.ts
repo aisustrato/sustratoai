@@ -11,6 +11,7 @@ export interface PaperAuthor {
 export interface Paper {
 	id: string;
 	slug: string;
+	slug_en?: string | null;
 	title: string;
 	title_en?: string | null;
 	subtitle?: string | null;
@@ -25,6 +26,7 @@ export interface Paper {
 	doi?: string | null;
 	zenodo_url?: string | null;
 	pdf_url?: string | null;
+	pdf_url_en?: string | null;
 	language: string;
 	published_at?: string | null;
 	is_published: boolean;
@@ -108,6 +110,7 @@ export interface PaperDraftInput {
 	subtitle?: string;
 	subtitle_en?: string;
 	slug: string;
+	slug_en?: string;
 	abstract_es: string;
 	abstract_en?: string;
 	authors: PaperAuthor[];
@@ -118,6 +121,7 @@ export interface PaperDraftInput {
 	doi?: string;
 	zenodo_url?: string;
 	pdf_url?: string;
+	pdf_url_en?: string;
 	version: string;
 	citation_apa?: string;
 	license: string;

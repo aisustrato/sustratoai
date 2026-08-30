@@ -43,6 +43,14 @@ export default function RootLayout({
 }) {
 	const fontVariables = getAllFontVariables();
 
+	// 🔧 DECISIÓN: `<html lang>` queda fijo en "es" para todo el sitio.
+	// Resolverlo dinámicamente por paper requeriría leer headers()/cookies()
+	// en el ÚNICO layout raíz de la app (compartido por cada ruta), lo que
+	// fuerza renderizado dinámico en TODO el sitio incluso donde hoy no hace
+	// falta — un costo de performance sitewide desproporcionado para un
+	// atributo secundario. Las señales fuertes que sí lee Scholar/agregadores
+	// (citation_language, DC.language, og:locale) ya se emiten correctas por
+	// idioma en app/papers/[slug]/page.tsx. Documentado también en el PR.
 	return (
 		<html lang="es" suppressHydrationWarning className={fontVariables}>
 			<body className="h-full bg-background text-foreground antialiased">

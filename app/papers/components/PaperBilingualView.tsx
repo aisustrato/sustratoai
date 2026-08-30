@@ -1,20 +1,17 @@
 // 📍 app/papers/components/PaperBilingualView.tsx
-// Cuerpo del paper (header, acciones, resumen, contenido, anexos, footer) con
-// toggle de idioma client-side. El toggle solo aparece si hay traducción real
-// — nunca se muestra contenido inventado o mezclado.
+// Cuerpo del paper (header, acciones, resumen, contenido, anexos, footer).
+// El idioma llega ya resuelto por la URL (/papers/[slug] o /papers/[slug_en])
+// — no hay toggle client-side; si existe traducción, se ofrece un link real
+// a la página hermana (mejor para SEO/UX que un switch en memoria).
 
-"use client";
-
-import { useState } from "react";
+import Link from "next/link";
 import { Globe } from "lucide-react";
-import { StandardButton } from "@/components/ui/StandardButton";
 import { PaperHeader } from "./PaperHeader";
 import { PaperActions } from "./PaperActions";
 import { PaperContent } from "./PaperContent";
 import type { Paper, PaperAnnex } from "@/lib/papers/types";
 import {
 	PAPER_LABELS,
-	hasTranslation,
 	resolveAnnexDescription,
 	resolvePaperContentSafe,
 	type PaperIdioma,
@@ -23,33 +20,31 @@ import {
 interface PaperBilingualViewProps {
 	paper: Paper;
 	annexes: PaperAnnex[];
+	idioma: PaperIdioma;
 }
 
-export function PaperBilingualView({ paper, annexes }: PaperBilingualViewProps) {
-	const idiomaCanonico: PaperIdioma = paper.language === "en" ? "en" : "es";
-	const [idioma, setIdioma] = useState<PaperIdioma>(idiomaCanonico);
-	const puedeAlternar = hasTranslation(paper);
+export function PaperBilingualView({ paper, annexes, idioma }: PaperBilingualViewProps) {
 	const t = PAPER_LABELS[idioma];
 	const contenido = resolvePaperContentSafe(paper, idioma);
+	const slugOtroIdioma = idioma === "es" ? paper.slug_en : paper.slug;
 
 	return (
 		<div className="mx-auto max-w-4xl space-y-8">
-			{/* Header + toggle de idioma */}
+			{/* Header + link a la versión en el otro idioma (si existe) */}
 			<div className="flex items-start justify-between gap-4">
 				<div className="flex-1">
 					<PaperHeader paper={paper} idioma={idioma} />
 				</div>
-				{puedeAlternar && (
-					<StandardButton
-						styleType="outline"
-						colorScheme="neutral"
-						size="sm"
-						leftIcon={Globe}
-						onClick={() => setIdioma(idioma === "es" ? "en" : "es")}
-						aria-label={idioma === "es" ? "Switch to English" : "Cambiar a español"}
-						title={idioma === "es" ? "Switch to English" : "Cambiar a español"}>
+				{slugOtroIdioma && (
+					<Link
+						href={`/papers/${slugOtroIdioma}`}
+						hrefLang={idioma === "es" ? "en" : "es"}
+						className="inline-flex items-center gap-2 rounded-md border border-border-neutral px-3 py-1.5 text-sm hover:border-primary-pure transition-colors"
+						aria-label={idioma === "es" ? "Read in English" : "Leer en español"}
+						title={idioma === "es" ? "Read in English" : "Leer en español"}>
+						<Globe className="h-4 w-4" />
 						{idioma === "es" ? "EN" : "ES"}
-					</StandardButton>
+					</Link>
 				)}
 			</div>
 

@@ -22,9 +22,11 @@ export function PaperActions({ paper, idioma }: PaperActionsProps) {
 	const [copied, setCopied] = useState(false);
 	const contenido = resolvePaperContentSafe(paper, idioma);
 	const t = PAPER_LABELS[idioma];
+	const slugActual = idioma === "en" && paper.slug_en ? paper.slug_en : paper.slug;
+	const pdfUrl = idioma === "en" ? paper.pdf_url_en : paper.pdf_url;
 
 	const handleShare = async () => {
-		const url = `https://sustrato.ai/papers/${paper.slug}`;
+		const url = `https://sustrato.ai/papers/${slugActual}`;
 
 		if (navigator.share) {
 			try {
@@ -56,8 +58,8 @@ export function PaperActions({ paper, idioma }: PaperActionsProps) {
 	return (
 		<div className="flex flex-wrap gap-3 border-y py-6">
 			{/* Descargar PDF */}
-			{paper.pdf_url && (
-				<a href={paper.pdf_url} target="_blank" rel="noopener noreferrer">
+			{pdfUrl && (
+				<a href={pdfUrl} target="_blank" rel="noopener noreferrer">
 					<StandardButton
 						styleType="solid"
 						colorScheme="primary"
