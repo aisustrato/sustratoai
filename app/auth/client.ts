@@ -41,7 +41,20 @@ function fetchWithTimeout(
 export const supabase = createBrowserClient<Database>(
 	process.env.NEXT_PUBLIC_SUPABASE_URL!,
 	process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-	{ global: { fetch: fetchWithTimeout } },
+	{
+		global: { fetch: fetchWithTimeout },
+		// 🔧 CAUSA RAÍZ del cuelgue tras el enlace de recuperación: sin esto,
+		// gotrue-js intenta procesar automáticamente el `?code=` de la URL en
+		// su propia inicialización (_initialize() → _getSessionFromURL()), EN
+		// PARALELO con el exchangeCodeForSession explícito que ya hace
+		// app/update-password/page.tsx. Dos intentos de canjear el mismo
+		// código PKCE de un solo uso, uno de los cuales siempre falla y deja
+		// el cliente en un estado inconsistente que se propaga a las demás
+		// pestañas vía BroadcastChannel (mecanismo de sincronización
+		// multi-pestaña de gotrue-js). Como esta app ya maneja el código
+		// explícitamente donde corresponde, el auto-detect es puro riesgo.
+		auth: { detectSessionInUrl: false },
+	},
 );
 
 // ========================================================================
