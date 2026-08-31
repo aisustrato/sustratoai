@@ -9,6 +9,30 @@ import { Database } from "@/lib/database.types";
 const LOG_PREFIX_CLIENT = "[AUTH_CLIENT_V5.0]";
 
 // ========================================================================
+// 🛡️ TIMEOUT DE RED PARA LLAMADAS DE AUTH
+// ========================================================================
+// gotrue-js serializa las operaciones de sesión (refresh, exchangeCodeForSession,
+// signOut, etc.) entre TODAS las pestañas del mismo origen con un lock exclusivo
+// de Navigator LockManager: mientras una pestaña sostiene el lock haciendo la
+// llamada de red, cualquier otra pestaña que también necesite tocar la sesión
+// queda esperando a que se libere. Si esa llamada de red se cuelga sin resolver
+// ni rechazar (fetch nunca trae timeout por defecto), el lock nunca se suelta y
+// TODAS las pestañas de sustrato.ai quedan pegadas indefinidamente — exactamente
+// el síntoma reportado tras un enlace de recuperación de contraseña. Este
+// wrapper corta cualquier fetch de auth a los 15s, forzando que la promesa
+// se rechace y el lock se libere, en vez de colgar para siempre.
+const AUTH_FETCH_TIMEOUT_MS = 15000;
+
+function fetchWithTimeout(
+	input: RequestInfo | URL,
+	init: RequestInit = {},
+): Promise<Response> {
+	const signals = [AbortSignal.timeout(AUTH_FETCH_TIMEOUT_MS)];
+	if (init.signal) signals.push(init.signal);
+	return fetch(input, { ...init, signal: AbortSignal.any(signals) });
+}
+
+// ========================================================================
 // ✅ PASO 1: CREACIÓN DE LA INSTANCIA ÚNICA (SINGLETON)
 // El cliente se crea UNA SOLA VEZ y se exporta para ser reutilizado.
 // ========================================================================
@@ -17,7 +41,7 @@ const LOG_PREFIX_CLIENT = "[AUTH_CLIENT_V5.0]";
 export const supabase = createBrowserClient<Database>(
 	process.env.NEXT_PUBLIC_SUPABASE_URL!,
 	process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-	// Sin configuración explícita de cookies - usa el adaptador por defecto
+	{ global: { fetch: fetchWithTimeout } },
 );
 
 // ========================================================================
