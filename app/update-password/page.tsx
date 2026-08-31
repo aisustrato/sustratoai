@@ -27,6 +27,7 @@ export default function UpdatePasswordPage() {
 	const searchParams = useSearchParams();
 	const token = searchParams.get("token");
 	const type = searchParams.get("type");
+	const code = searchParams.get("code");
 
 	// Configuración del formulario con react-hook-form y Zod
 	const {
@@ -47,13 +48,40 @@ export default function UpdatePasswordPage() {
 	useEffect(() => {
 		const checkSession = async () => {
 			try {
-				// Verificar si hay un token en la URL (para el flujo de recuperación de contraseña)
+				// Flujo PKCE (el que realmente emite el cliente de @supabase/ssr):
+				// el enlace del correo trae `?code=...` y hay que canjearlo por una
+				// sesión explícitamente. Antes esta página solo sabía leer el
+				// formato viejo `?token=&type=recovery`, así que un `code` nunca se
+				// canjeaba: getSession() no encontraba sesión y la página quedaba
+				// mostrando "Verificando tu enlace..." para terminar en un error
+				// de enlace inválido / redirect, sin haber intentado nunca el canje.
+				if (code) {
+					const { error: exchangeError } =
+						await supabase.auth.exchangeCodeForSession(code);
+					if (exchangeError) {
+						console.error("Error al canjear el código:", exchangeError);
+						toast.error(
+							"Enlace inválido o expirado. Por favor, solicita un nuevo enlace de recuperación.",
+						);
+						setSessionError("Sesión inválida o expirada");
+						setTimeout(() => {
+							router.push("/reset-password");
+						}, 3000);
+						return;
+					}
+					setSessionLoading(false);
+					return;
+				}
+
+				// Formato legado (`?token=&type=recovery`), por si algún enlace
+				// viejo sigue circulando.
 				if (token && type === "recovery") {
 					setSessionLoading(false);
 					return;
 				}
 
-				// Si no hay token, verificar si ya hay una sesión válida
+				// Sin `code` ni `token`: verificar si ya hay una sesión válida
+				// (ej. el usuario recargó la página después de canjear el código).
 				const {
 					data: { session },
 					error: sessionError,
@@ -81,7 +109,7 @@ export default function UpdatePasswordPage() {
 		};
 
 		checkSession();
-	}, [router, token, type]);
+	}, [router, token, type, code]);
 
 	// Función para obtener el estado de éxito de un campo
 	const getSuccessState = (
