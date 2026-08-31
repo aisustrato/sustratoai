@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
@@ -44,8 +44,26 @@ export default function UpdatePasswordPage() {
 		},
 	});
 
+	// Evita procesar el enlace dos veces. searchParams.get("code") vuelve a
+	// leerse en cada render, y si el `code` desaparece de la URL en algún
+	// momento (p. ej. por una navegación/re-render posterior), este efecto
+	// re-ejecutaría con code=null — una segunda pasada totalmente redundante
+	// (el canje ya se hizo o está en curso) que puede quedar esperando algo
+	// que nunca va a pasar y trabar la pantalla en "Verificando tu enlace...".
+	// El código PKCE es de un solo uso de todos modos, así que solo tiene
+	// sentido intentarlo una vez por carga de página.
+	const hasProcessedRef = useRef(false);
+
 	// Verificar la sesión al cargar el componente
 	useEffect(() => {
+		if (hasProcessedRef.current) {
+			console.log(
+				"[DEBUG_UPDATE_PW] useEffect re-disparado, IGNORADO por hasProcessedRef (esto confirma que había una segunda pasada redundante)",
+			);
+			return;
+		}
+		hasProcessedRef.current = true;
+
 		// 🔍 TEMPORAL: diagnóstico del cuelgue tras clickear el enlace de
 		// recuperación — sacar estos logs (y el prefijo DEBUG_UPDATE_PW) una vez
 		// resuelto.
