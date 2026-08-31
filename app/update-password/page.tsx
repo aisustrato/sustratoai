@@ -46,6 +46,15 @@ export default function UpdatePasswordPage() {
 
 	// Verificar la sesión al cargar el componente
 	useEffect(() => {
+		// 🔍 TEMPORAL: diagnóstico del cuelgue tras clickear el enlace de
+		// recuperación — sacar estos logs (y el prefijo DEBUG_UPDATE_PW) una vez
+		// resuelto.
+		const t0 = Date.now();
+		const log = (msg: string, extra?: unknown) =>
+			console.log(`[DEBUG_UPDATE_PW +${Date.now() - t0}ms] ${msg}`, extra ?? "");
+
+		log("useEffect montado", { code, token, type });
+
 		const checkSession = async () => {
 			try {
 				// Flujo PKCE (el que realmente emite el cliente de @supabase/ssr):
@@ -56,8 +65,13 @@ export default function UpdatePasswordPage() {
 				// mostrando "Verificando tu enlace..." para terminar en un error
 				// de enlace inválido / redirect, sin haber intentado nunca el canje.
 				if (code) {
-					const { error: exchangeError } =
+					log("hay code, llamando a exchangeCodeForSession...");
+					const { data: exchangeData, error: exchangeError } =
 						await supabase.auth.exchangeCodeForSession(code);
+					log("exchangeCodeForSession resolvió", {
+						error: exchangeError,
+						hasSession: !!exchangeData?.session,
+					});
 					if (exchangeError) {
 						console.error("Error al canjear el código:", exchangeError);
 						toast.error(
@@ -69,6 +83,7 @@ export default function UpdatePasswordPage() {
 						}, 3000);
 						return;
 					}
+					log("seteando sessionLoading=false");
 					setSessionLoading(false);
 					return;
 				}
@@ -76,16 +91,19 @@ export default function UpdatePasswordPage() {
 				// Formato legado (`?token=&type=recovery`), por si algún enlace
 				// viejo sigue circulando.
 				if (token && type === "recovery") {
+					log("formato legado token+type=recovery detectado");
 					setSessionLoading(false);
 					return;
 				}
 
 				// Sin `code` ni `token`: verificar si ya hay una sesión válida
 				// (ej. el usuario recargó la página después de canjear el código).
+				log("sin code ni token, llamando a getSession()...");
 				const {
 					data: { session },
 					error: sessionError,
 				} = await supabase.auth.getSession();
+				log("getSession() resolvió", { hasSession: !!session, sessionError });
 
 				if (sessionError || !session) {
 					toast.error(
@@ -100,6 +118,7 @@ export default function UpdatePasswordPage() {
 
 				setSessionLoading(false);
 			} catch (err) {
+				log("EXCEPCIÓN en checkSession", err);
 				console.error("Error al verificar sesión:", err);
 				setSessionError(
 					"Error al verificar la sesión. Por favor, intenta de nuevo.",
@@ -109,6 +128,10 @@ export default function UpdatePasswordPage() {
 		};
 
 		checkSession();
+
+		return () => {
+			log("useEffect DESMONTADO (cleanup) — si esto se repite en loop, ahí está el problema");
+		};
 	}, [router, token, type, code]);
 
 	// Función para obtener el estado de éxito de un campo

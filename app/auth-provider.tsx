@@ -40,7 +40,7 @@ import { isPublicPath } from "@/lib/routes/public-paths";
 
 const LOG_PREFIX = "[AUTH_PROVIDER_V10.19]";
 const isDev = process.env.NODE_ENV === "development";
-const VERBOSE_LOGS = false; // Cambiar a true solo para debugging profundo
+const VERBOSE_LOGS = true; // 🔍 TEMPORAL: prendido para diagnosticar el cuelgue del link de recuperación de contraseña — volver a false después
 
 interface AuthContextType {
 	supabase: SupabaseClient;
