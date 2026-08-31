@@ -5,7 +5,13 @@
 
 const NO_NAVBAR_PAGES = ["/login", "/signup", "/reset-password", "/update-password"];
 
-const PUBLIC_PATHS = ["/login", "/signup", "/reset-password", "/contact"];
+// 🐛 "/update-password" faltaba acá (solo estaba en NO_NAVBAR_PAGES): esta
+// página necesita renderizar de inmediato, independiente del estado de auth
+// de AuthProvider, porque su trabajo es justamente ESTABLECER esa sesión a
+// partir del código del enlace de recuperación. Sin esto, quedaba esperando
+// a que authInitialized se resolviera antes de montar nada — su propio
+// código (y cualquier log de diagnóstico) nunca llegaba a correr.
+const PUBLIC_PATHS = ["/login", "/signup", "/reset-password", "/update-password", "/contact"];
 
 /** Rutas públicas: páginas de auth estándar + toda la DMZ /papers/*. */
 export const isPublicPath = (pathname: string | null): boolean => {
