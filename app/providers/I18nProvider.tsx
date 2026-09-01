@@ -120,7 +120,11 @@ export function I18nProvider({ children }: I18nProviderProps) {
         localeFlags,
       }}
     >
-      <NextIntlClientProvider locale={locale} messages={messages}>
+      <NextIntlClientProvider
+        locale={locale}
+        messages={messages}
+        timeZone="America/Santiago">
+
         {children}
       </NextIntlClientProvider>
     </I18nContext.Provider>

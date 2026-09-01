@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,6 +21,7 @@ import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustr
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function UpdatePasswordPage() {
+	const t = useTranslations("auth.updatePassword");
 	const [sessionLoading, setSessionLoading] = useState(true); // Para la verificación inicial de sesión
 	const [success, setSuccess] = useState(false);
 	const [sessionError, setSessionError] = useState<string | null>(null);
@@ -93,9 +95,9 @@ export default function UpdatePasswordPage() {
 					if (exchangeError) {
 						console.error("Error al canjear el código:", exchangeError);
 						toast.error(
-							"Enlace inválido o expirado. Por favor, solicita un nuevo enlace de recuperación.",
+							t("invalidLinkError"),
 						);
-						setSessionError("Sesión inválida o expirada");
+						setSessionError(t("invalidSessionError"));
 						setTimeout(() => {
 							router.push("/reset-password");
 						}, 3000);
@@ -125,9 +127,9 @@ export default function UpdatePasswordPage() {
 
 				if (sessionError || !session) {
 					toast.error(
-						"Enlace inválido o expirado. Por favor, solicita un nuevo enlace de recuperación.",
+						t("invalidLinkError"),
 					);
-					setSessionError("Sesión inválida o expirada");
+					setSessionError(t("invalidSessionError"));
 					setTimeout(() => {
 						router.push("/reset-password");
 					}, 3000);
@@ -139,7 +141,7 @@ export default function UpdatePasswordPage() {
 				log("EXCEPCIÓN en checkSession", err);
 				console.error("Error al verificar sesión:", err);
 				setSessionError(
-					"Error al verificar la sesión. Por favor, intenta de nuevo.",
+					t("sessionCheckError"),
 				);
 				setSessionLoading(false);
 			}
@@ -150,7 +152,7 @@ export default function UpdatePasswordPage() {
 		return () => {
 			log("useEffect DESMONTADO (cleanup) — si esto se repite en loop, ahí está el problema");
 		};
-	}, [router, token, type, code]);
+	}, [router, token, type, code, t]);
 
 	// Función para obtener el estado de éxito de un campo
 	const getSuccessState = (
@@ -170,8 +172,8 @@ export default function UpdatePasswordPage() {
 		data,
 	) => {
 		console.log("UpdatePassword_OnSubmit (Válido):", { password: "[HIDDEN]" });
-		toast.success("Actualizando contraseña...", {
-			description: "Validaciones exitosas.",
+		toast.success(t("updatingToast"), {
+			description: t("validationsOkToast"),
 		});
 
 		try {
@@ -184,16 +186,16 @@ export default function UpdatePasswordPage() {
 				// Si hay error de servidor, mostrarlo en el campo de contraseña
 				setError("password", {
 					type: "server",
-					message: updateError.message || "Error al actualizar la contraseña",
+					message: updateError.message || t("passwordUpdateError"),
 				});
-				toast.error("Error del servidor", { description: updateError.message });
+				toast.error(t("serverErrorToast"), { description: updateError.message });
 				return;
 			}
 
 			// Éxito: mostrar mensaje y preparar redirección
 			setSuccess(true);
-			toast.success("¡Contraseña actualizada con éxito!", {
-				description: "Redirigiendo al inicio de sesión...",
+			toast.success(t("successToast"), {
+				description: t("redirectingToast"),
 			});
 
 			// Cerrar sesión después de actualizar la contraseña
@@ -206,9 +208,9 @@ export default function UpdatePasswordPage() {
 		} catch (err: unknown) {
 			console.error("Error al actualizar la contraseña:", err);
 			const errorMessage =
-				err instanceof Error ? err.message : "Ocurrió un error inesperado.";
+				err instanceof Error ? err.message : t("unexpectedError");
 			setError("password", { type: "server", message: errorMessage });
-			toast.error("Error inesperado", { description: errorMessage });
+			toast.error(t("unexpectedErrorToast"), { description: errorMessage });
 		}
 		// Nota: No agregamos finally aquí porque queremos mantener isSubmitting=true
 		// hasta que se complete la redirección para evitar que el usuario haga clic nuevamente
@@ -217,8 +219,8 @@ export default function UpdatePasswordPage() {
 	// Handler para envío inválido del formulario
 	const onInvalidSubmit = () => {
 		console.log("UpdatePassword_OnSubmit (Inválido):", errors);
-		toast.error("El formulario tiene errores.", {
-			description: "Por favor, revisa los campos marcados.",
+		toast.error(t("formErrorToast"), {
+			description: t("formErrorDescription"),
 		});
 	};
 
@@ -245,15 +247,13 @@ export default function UpdatePasswordPage() {
 							weight="bold"
 							colorScheme="primary"
 							className="text-center mt-4">
-							Crear nueva contraseña
+							{t("title")}
 						</StandardText>
 						<StandardText
 							asElement="p"
 							colorScheme="neutral"
 							className="text-center text-muted-foreground">
-							{!success ?
-								"Ingresa tu nueva contraseña. Debe cumplir con los requisitos de seguridad."
-							:	"Contraseña actualizada. Serás redirigido al inicio de sesión."}
+							{!success ? t("instructions") : t("successMessage")}
 						</StandardText>
 					</StandardCard.Header>
 
@@ -261,7 +261,7 @@ export default function UpdatePasswordPage() {
 						{sessionLoading ?
 							<div className="flex flex-col items-center justify-center py-8">
 								<Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-								<StandardText>Verificando tu enlace...</StandardText>
+								<StandardText>{t("verifyingLink")}</StandardText>
 							</div>
 						: sessionError ?
 							<div className="text-center py-6 space-y-4">
@@ -272,7 +272,7 @@ export default function UpdatePasswordPage() {
 									onClick={() => (window.location.href = "/reset-password")}
 									leftIcon={ArrowLeft}
 									colorScheme="primary">
-									Volver a recuperar contraseña
+									{t("backToResetPassword")}
 								</StandardButton>
 							</div>
 						: !success ?
@@ -280,9 +280,9 @@ export default function UpdatePasswordPage() {
 								onSubmit={handleSubmit(onValidSubmit, onInvalidSubmit)}
 								className="space-y-4">
 								<StandardFormField
-									label="Nueva contraseña"
+									label={t("newPasswordLabel")}
 									htmlFor="password"
-									hint="Mínimo 8 caracteres, una mayúscula, un número y un símbolo"
+									hint={t("newPasswordHint")}
 									error={errors.password?.message}
 									isRequired>
 									<Controller
@@ -304,9 +304,9 @@ export default function UpdatePasswordPage() {
 								</StandardFormField>
 
 								<StandardFormField
-									label="Confirmar nueva contraseña"
+									label={t("confirmPasswordLabel")}
 									htmlFor="confirmPassword"
-									hint="Vuelve a escribir la misma contraseña"
+									hint={t("confirmPasswordHint")}
 									error={errors.confirmPassword?.message}
 									isRequired>
 									<Controller
@@ -331,12 +331,12 @@ export default function UpdatePasswordPage() {
 									type="submit"
 									fullWidth
 									loading={isSubmitting}
-									loadingText="Actualizando..."
+									loadingText={t("submittingButton")}
 									colorScheme="primary"
 									leftIcon={KeyRound}
 									className="mt-6"
 									disabled={isSubmitting}>
-									Actualizar contraseña
+									{t("submitButton")}
 								</StandardButton>
 							</form>
 						:	<div className="text-center py-4 flex flex-col items-center">
@@ -345,8 +345,7 @@ export default function UpdatePasswordPage() {
 									colorScheme="positive"
 									size="sm"
 									className="text-sm">
-									¡Todo listo! Tu acceso ha sido restaurado. En breves momentos
-									te llevaremos al inicio de sesión.
+									{t("successReady")}
 								</StandardText>
 							</div>
 						}
@@ -359,7 +358,7 @@ export default function UpdatePasswordPage() {
 								leftIcon={ArrowLeft}
 								size="sm"
 								disabled={isSubmitting}>
-								Volver a inicio de sesión
+								{t("backToLogin")}
 							</StandardButton>
 						</Link>
 					</StandardCard.Footer>

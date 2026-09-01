@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import { StandardButton } from "@/components/ui/StandardButton";
@@ -19,6 +20,8 @@ import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustr
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function LoginPage() {
+	const t = useTranslations("auth.login");
+	const tAuth = useTranslations("auth");
 	const searchParams = useSearchParams();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -44,13 +47,12 @@ export default function LoginPage() {
 			(errorDescription && errorDescription.toLowerCase().includes("expired"))
 		) {
 			// ...mostramos un toast de error informativo y amigable.
-			toast.error("El enlace de recuperación ha expirado", {
-				description:
-					"Por favor, solicita un nuevo enlace para restablecer tu contraseña.",
+			toast.error(t("expiredLinkTitle"), {
+				description: t("expiredLinkDescription"),
 				duration: 8000, // Duración extendida para que el usuario pueda leerlo
 			});
 		}
-	}, [searchParams]); // Este efecto se ejecuta cada vez que los parámetros de la URL cambien
+	}, [searchParams, t]); // Este efecto se ejecuta cada vez que los parámetros de la URL cambien
 
 	// La lógica de redirección ahora es manejada por AuthProvider
 
@@ -60,7 +62,7 @@ export default function LoginPage() {
 		console.log("[LOGIN_PAGE] Iniciando proceso de login");
 
 		if (!email || !password) {
-			toast.error("Por favor, completa todos los campos"); // Este toast local para validación de form se mantiene
+			toast.error(t("emptyFieldsError")); // Este toast local para validación de form se mantiene
 			return;
 		}
 
@@ -74,10 +76,9 @@ export default function LoginPage() {
 			if (!success) {
 				console.error("[LOGIN_PAGE] ❌ Error CRÍTICO en signIn:", error);
 				// Forzamos el toast aquí para asegurar que lo veas
-				toast.error("Error de inicio de sesión", {
+				toast.error(t("loginErrorTitle"), {
 					description:
-						(error as any)?.message ||
-						"Credenciales inválidas o error de conexión",
+						(error as any)?.message || t("loginErrorDescription"),
 					duration: 5000,
 				});
 				setLoading(false); // Asegurar que el loading local se quite si el signIn falla
@@ -87,8 +88,8 @@ export default function LoginPage() {
 			console.log(
 				"[LOGIN_PAGE] ✅ signIn exitoso! Esperando redirección del AuthProvider...",
 			);
-			toast.success("¡Bienvenido de vuelta!", {
-				description: "Redirigiendo al sistema...",
+			toast.success(t("welcomeBackToast"), {
+				description: t("redirectingToast"),
 			});
 
 			// MODIFICACIÓN: AuthProvider se encarga de la redirección principal post-login.
@@ -134,10 +135,10 @@ export default function LoginPage() {
 							preset="heading"
 							colorScheme="primary"
 							className="mt-4">
-							Ya has iniciado sesión
+							{t("alreadyLoggedIn")}
 						</StandardText>
 						<StandardText preset="body" colorScheme="neutral" className="mt-2">
-							Redirigiendo a tu página...
+							{t("redirecting")}
 						</StandardText>
 					</div>
 				</div>
@@ -173,12 +174,10 @@ export default function LoginPage() {
 											weight="semibold"
 											colorScheme="tertiary"
 											className="mb-2">
-											Investigación Cualitativa Aumentada
+											{t("marketingTitle")}
 										</StandardText>
 										<StandardText asElement="p" colorScheme="neutral" size="sm">
-											Potencia tu análisis cualitativo con nuestra plataforma
-											que combina el rigor académico con la innovación
-											tecnológica. Diseñada por humanistas, para humanistas.
+											{t("marketingBody")}
 										</StandardText>
 									</div>
 
@@ -188,9 +187,7 @@ export default function LoginPage() {
 											colorScheme="neutral"
 											size="sm"
 											className="italic">
-											&quot;No buscamos reemplazar el pensamiento crítico, sino
-											expandir su alcance a través de la co-creación entre la
-											perspectiva humana y las capacidades de la IA.&quot;
+											{t("quote")}
 										</StandardText>
 									</div>
 								</div>
@@ -213,7 +210,7 @@ export default function LoginPage() {
 									weight="bold"
 									colorScheme="primary"
 									className="mb-2">
-									Inicio de sesión
+									{t("title")}
 								</StandardText>
 								<StandardText
 									asElement="p"
@@ -221,31 +218,31 @@ export default function LoginPage() {
 									colorScheme="neutral"
 									colorShade="text"
 									className="mb-6">
-									Ingresa tus credenciales para acceder a la plataforma
+									{t("subtitle")}
 								</StandardText>
 
 								<form onSubmit={handleSubmit} className="space-y-4">
-									<StandardFormField label="Correo electrónico" htmlFor="email">
+									<StandardFormField label={tAuth("email")} htmlFor="email">
 										<StandardInput
 											id="email"
 											type="email"
 											leadingIcon={Mail} // Manteniendo tu prop
 											value={email}
 											onChange={(e) => setEmail(e.target.value)}
-											placeholder="tucorreo@ejemplo.com"
+											placeholder={t("emailPlaceholder")}
 											required
 											disabled={loading || authProviderLoading} // Añadido authProviderLoading
 										/>
 									</StandardFormField>
 
-									<StandardFormField label="Contraseña" htmlFor="password">
+									<StandardFormField label={tAuth("password")} htmlFor="password">
 										<StandardInput
 											id="password"
 											type="password"
 											leadingIcon={Lock} // Manteniendo tu prop
 											value={password}
 											onChange={(e) => setPassword(e.target.value)}
-											placeholder="Tu contraseña"
+											placeholder={t("passwordPlaceholder")}
 											required
 											disabled={loading || authProviderLoading} // Añadido authProviderLoading
 										/>
@@ -260,7 +257,7 @@ export default function LoginPage() {
 													"Clic en enlace de recuperación de contraseña - Navegando a /reset-password",
 												);
 											}}>
-											¿Olvidaste tu contraseña?
+											{tAuth("forgotPassword")}
 										</Link>
 									</div>
 
@@ -269,21 +266,21 @@ export default function LoginPage() {
 											type="submit"
 											fullWidth
 											loading={loading}
-											loadingText="Iniciando sesión..."
+											loadingText={t("submittingButton")}
 											colorScheme="primary"
 											leftIcon={LogIn} // Pass component reference
 											disabled={loading || authProviderLoading}>
-											Iniciar sesión
+											{t("submitButton")}
 										</StandardButton>
 									</div>
 
 									<div className="flex items-center justify-center mt-6">
 										<div className="text-sm text-neutral-600 dark:text-neutral-400">
-											¿No tienes una cuenta?{" "}
+											{t("noAccount")}{" "}
 											<Link
 												href="/signup"
 												className="text-primary hover:underline font-medium">
-												Solicita acceso
+												{t("requestAccess")}
 											</Link>
 										</div>
 									</div>

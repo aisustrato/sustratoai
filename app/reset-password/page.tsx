@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { supabase } from "@/lib/supabase"; // ⚠️ ¡OJO! Asegúrate que la ruta a tu cliente de supabase sea correcta.
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardInput } from "@/components/ui/StandardInput";
@@ -14,6 +15,8 @@ import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustr
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function ResetPasswordPage() {
+	const t = useTranslations("auth.resetPassword");
+	const tAuth = useTranslations("auth");
 	const [email, setEmail] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [sent, setSent] = useState(false);
@@ -22,7 +25,7 @@ export default function ResetPasswordPage() {
 		e.preventDefault();
 
 		if (!email) {
-			toast.error("Por favor, ingresa tu correo electrónico");
+			toast.error(t("emailRequired"));
 			return;
 		}
 
@@ -45,16 +48,12 @@ export default function ResetPasswordPage() {
 
 			setSent(true);
 			// Mantenemos un mensaje genérico por seguridad, para no revelar si un email existe o no en la base de datos.
-			toast.success(
-				"Si existe una cuenta, se ha enviado un correo con instrucciones.",
-			);
+			toast.success(t("successToast"));
 		} catch (error: unknown) {
 			console.error("Error al enviar correo de recuperación:", error);
 			const errorMessage =
-				error instanceof Error ?
-					error.message
-				:	"Por favor, intenta nuevamente.";
-			toast.error(`Ocurrió un error: ${errorMessage}`);
+				error instanceof Error ? error.message : t("genericError");
+			toast.error(t("errorToast", { message: errorMessage }));
 		} finally {
 			setLoading(false);
 		}
@@ -83,30 +82,27 @@ export default function ResetPasswordPage() {
 							weight="bold"
 							colorScheme="primary"
 							className="text-center mt-4">
-							Recuperar contraseña
+							{t("title")}
 						</StandardText>
 						<StandardText
 							asElement="p"
 							colorScheme="neutral"
 							className="text-center text-muted-foreground">
-							{!sent ?
-								"Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu contraseña."
-							:	"Hemos enviado instrucciones a tu correo electrónico. Sigue los pasos indicados en el mensaje."
-							}
+							{!sent ? t("instructions") : t("instructionsSent")}
 						</StandardText>
 					</StandardCard.Header>
 
 					<StandardCard.Content>
 						{!sent ?
 							<form onSubmit={handleSubmit} className="space-y-4">
-								<StandardFormField label="Correo electrónico" htmlFor="email">
+								<StandardFormField label={tAuth("email")} htmlFor="email">
 									<StandardInput
 										id="email"
 										type="email"
 										leadingIcon={Mail}
 										value={email}
 										onChange={(e) => setEmail(e.target.value)}
-										placeholder="tucorreo@ejemplo.com"
+										placeholder={t("emailPlaceholder")}
 										required
 										disabled={loading}
 									/>
@@ -116,11 +112,11 @@ export default function ResetPasswordPage() {
 									type="submit"
 									fullWidth
 									loading={loading}
-									loadingText="Enviando instrucciones..."
+									loadingText={t("sendingButton")}
 									colorScheme="primary"
 									leftIcon={Send}
 									className="mt-6">
-									Enviar instrucciones
+									{t("submitButton")}
 								</StandardButton>
 							</form>
 						:	<div className="text-center py-4">
@@ -129,9 +125,8 @@ export default function ResetPasswordPage() {
 										colorScheme="primary"
 										size="sm"
 										className="text-sm">
-										Revisa tu bandeja de entrada y sigue las instrucciones
-										enviadas a <strong>{email}</strong>. Si no encuentras el
-										correo, verifica también tu carpeta de spam.
+										{t("checkInboxPrefix")} <strong>{email}</strong>.{" "}
+										{t("checkInboxSuffix")}
 									</StandardText>
 								</div>
 								<StandardButton
@@ -140,7 +135,7 @@ export default function ResetPasswordPage() {
 									styleType="outline"
 									fullWidth
 									className="mb-2">
-									Intentar con otro correo
+									{t("tryAnotherEmail")}
 								</StandardButton>
 							</div>
 						}
@@ -153,7 +148,7 @@ export default function ResetPasswordPage() {
 								leftIcon={ArrowLeft}
 								size="sm"
 								disabled={loading}>
-								Volver a inicio de sesión
+								{t("backToLogin")}
 							</StandardButton>
 						</Link>
 					</StandardCard.Footer>
