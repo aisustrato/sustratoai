@@ -15,12 +15,16 @@ import {
 } from "lucide-react";
 import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustratoLogoWithFixedText";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 
 export default function SignUpPage() {
 	const t = useTranslations("auth.signup");
 	return (
 		/* CORRECCIÓN FINAL: Volvemos a 'gradient' que es el real. Adiós a la alucinación 'dots' */
 		<StandardPageBackground variant="gradient" bubbles={true}>
+			<div className="fixed top-4 right-4 z-50">
+				<LocaleSwitcher />
+			</div>
 			<div className="flex items-center justify-center min-h-screen p-4">
 				<StandardCard 
                     className="max-w-3xl w-full" 

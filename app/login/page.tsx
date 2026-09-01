@@ -18,6 +18,7 @@ import { Mail, Lock, LogIn } from "lucide-react";
 import { toast } from "sonner";
 import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustratoLogoWithFixedText";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 
 export default function LoginPage() {
 	const t = useTranslations("auth.login");
@@ -123,6 +124,9 @@ export default function LoginPage() {
 	if (authInitialized && user) {
 		return (
 			<StandardPageBackground variant="gradient">
+				<div className="fixed top-4 right-4 z-50">
+					<LocaleSwitcher />
+				</div>
 				<div className="flex items-center justify-center min-h-screen p-4">
 					<div className="text-center">
 						<StandardSustratoLogoWithFixedText
@@ -148,6 +152,9 @@ export default function LoginPage() {
 
 	return (
 		<StandardPageBackground variant="gradient">
+			<div className="fixed top-4 right-4 z-50">
+				<LocaleSwitcher />
+			</div>
 			<div className="flex items-center justify-center min-h-screen p-4">
 				<StandardCard
 					className="max-w-4xl w-full"

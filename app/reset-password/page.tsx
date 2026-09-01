@@ -13,6 +13,7 @@ import { Mail, ArrowLeft, Send } from "lucide-react";
 import { toast } from "sonner";
 import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustratoLogoWithFixedText";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 
 export default function ResetPasswordPage() {
 	const t = useTranslations("auth.resetPassword");
@@ -61,6 +62,9 @@ export default function ResetPasswordPage() {
 
 	return (
 		<StandardPageBackground variant="subtle" bubbles={true}>
+			<div className="fixed top-4 right-4 z-50">
+				<LocaleSwitcher />
+			</div>
 			<div className="flex items-center justify-center min-h-screen p-4">
 				<StandardCard
 					className="max-w-md w-full"
