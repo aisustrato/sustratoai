@@ -17,6 +17,7 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import { getPhasesForProject } from "@/lib/actions/preclassification_phases_actions";
 import { getRandomEligibleArticleAbstract } from "@/lib/actions/phase-eligible-articles-actions";
@@ -56,13 +57,16 @@ import { StandardBadge } from "@/components/ui/StandardBadge";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
+type DimensionFormTranslator = ReturnType<typeof useTranslations<"datosMaestros.dimensionForm">>;
+
+const makeDimensionFormSchema = (t: DimensionFormTranslator) => {
 // Esquemas Zod para los sub-elementos
 const optionSchema = z.object({
 	id: z.string().optional(),
 	value: z
 		.string()
-		.min(1, "El valor de la opción es requerido.")
-		.max(200, "Máximo 200 caracteres."),
+		.min(1, t("validation.optionValueRequired"))
+		.max(200, t("validation.max200")),
 	ordering: z.number().int(),
 	emoticon: z
 		.string()
@@ -82,7 +86,7 @@ const optionSchema = z.object({
 					/\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji}\uFE0F/u;
 				return emojiRegex.test(grapheme);
 			},
-			{ message: "Debe ser exactamente un emoji, o dejarlo vacío." },
+			{ message: t("validation.emojiInvalid") },
 		),
 });
 
@@ -90,8 +94,8 @@ const questionSchema = z.object({
 	id: z.string().optional(),
 	question: z
 		.string()
-		.min(5, "La pregunta debe tener al menos 5 caracteres.")
-		.max(1500, "Máximo 1500 caracteres."),
+		.min(5, t("validation.questionMin"))
+		.max(1500, t("validation.max1500")),
 	ordering: z.number().int(),
 });
 
@@ -99,27 +103,27 @@ const exampleSchema = z.object({
 	id: z.string().optional(),
 	example: z
 		.string()
-		.min(5, "El ejemplo debe tener al menos 5 caracteres.")
-		.max(1500, "Máximo 1500 caracteres."),
+		.min(5, t("validation.exampleMin"))
+		.max(1500, t("validation.max1500")),
 });
 
 // Esquema Zod principal para el formulario de Dimensión
-const dimensionFormSchema = z
+return z
 	.object({
 		name: z
 			.string()
-			.min(3, "El nombre debe tener al menos 3 caracteres.")
-			.max(100, "Máximo 100 caracteres."),
-		phaseId: z.string().min(1, "Debe seleccionar una fase."),
+			.min(3, t("validation.nameMin"))
+			.max(100, t("validation.max100")),
+		phaseId: z.string().min(1, t("validation.phaseRequired")),
 		type: z.enum(["finite", "open"], {
-			required_error: "Debe seleccionar un tipo de dimensión.",
+			required_error: t("validation.typeRequired"),
 		}),
 		description: z
 			.string()
-			.max(500, "La descripción no puede exceder los 500 caracteres.")
+			.max(500, t("validation.descriptionMax500"))
 			.optional()
 			.nullable(),
-		icon: z.string().max(100, "Máximo 100 caracteres.").optional().nullable(),
+		icon: z.string().max(100, t("validation.max100")).optional().nullable(),
 		options: z.array(optionSchema).optional(),
 		questions: z.array(questionSchema).optional(),
 		examples: z.array(exampleSchema).optional(),
@@ -135,13 +139,13 @@ const dimensionFormSchema = z
 			return true;
 		},
 		{
-			message:
-				"Las dimensiones de tipo 'Selección Múltiple' deben tener al menos una opción.",
+			message: t("validation.optionsRequiredForFinite"),
 			path: ["options"], // Asociar el error al array de opciones
 		},
 	);
+};
 
-export type DimensionFormValues = z.infer<typeof dimensionFormSchema>;
+export type DimensionFormValues = z.infer<ReturnType<typeof makeDimensionFormSchema>>;
 
 // Definir el tipo de fase para TypeScript
 type Phase = {
@@ -181,6 +185,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 	activePhaseId,
 }) => {
 	//#region [sub] - 🧰 HOOKS, STATE, FORM SETUP & EFFECTS 🧰
+	const t = useTranslations("datosMaestros.dimensionForm");
+	const dimensionFormSchema = useMemo(() => makeDimensionFormSchema(t), [t]);
 	const { proyectoActual } = useAuth();
 
 	// Catálogo dinámico de íconos Lucide (filtra solo componentes funcionales)
@@ -459,9 +465,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 	const handleGetRandomAbstract = async () => {
 		if (!proyectoActual?.id) return;
 		if (!currentPhaseId) {
-			toast.error("Selecciona una fase primero", {
-				description:
-					"El calibrador necesita saber la fase para buscar artículos dentro de su universo elegible.",
+			toast.error(t("toastSelectPhaseFirstTitle"), {
+				description: t("toastSelectPhaseFirstDescription"),
 			});
 			return;
 		}
@@ -470,12 +475,12 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 			const result = await getRandomEligibleArticleAbstract(currentPhaseId);
 			if (result.success) {
 				setCalibrationText(result.data.abstract);
-				toast.success("Abstract aleatorio cargado (universo de la fase)");
+				toast.success(t("toastRandomAbstractLoaded"));
 			} else {
-				toast.error("Error al cargar abstract", { description: result.error });
+				toast.error(t("toastErrorLoadingAbstractTitle"), { description: result.error });
 			}
 		} catch (error) {
-			toast.error("Error inesperado");
+			toast.error(t("toastUnexpectedError"));
 		} finally {
 			setIsLoadingRandom(false);
 		}
@@ -485,9 +490,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 		const currentValues = form.getValues();
 
 		if (!currentValues.name || !calibrationText.trim()) {
-			toast.error("Faltan datos", {
-				description:
-					"Debes ingresar un nombre para la dimensión y un texto de prueba.",
+			toast.error(t("toastMissingDataTitle"), {
+				description: t("toastMissingDataDescription"),
 			});
 			return;
 		}
@@ -496,9 +500,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 			currentValues.type === "finite" &&
 			(!currentValues.options || currentValues.options.length === 0)
 		) {
-			toast.error("Configuración incompleta", {
-				description:
-					"Para dimensiones finitas, debes agregar al menos una opción.",
+			toast.error(t("toastIncompleteConfigTitle"), {
+				description: t("toastIncompleteConfigDescription"),
 			});
 			return;
 		}
@@ -526,13 +529,13 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 
 			if (result.success) {
 				setCalibrationResult(result.data);
-				toast.success("Simulación completada");
+				toast.success(t("toastSimulationComplete"));
 			} else {
-				toast.error("Error en simulación", { description: result.error });
+				toast.error(t("toastSimulationErrorTitle"), { description: result.error });
 			}
 		} catch (error) {
-			toast.error("Error inesperado", {
-				description: "No se pudo conectar con Quipu.",
+			toast.error(t("toastUnexpectedError"), {
+				description: t("toastSimulationUnexpectedErrorDescription"),
 			});
 		} finally {
 			setIsCalibrating(false);
@@ -543,8 +546,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 
 	//#region [sub] - 🧰 HELPER FUNCTIONS 🧰
 	const typeOptions: SelectOption[] = [
-		{ value: "finite", label: "Selección Múltiple (Opciones Predefinidas)" },
-		{ value: "open", label: "Respuesta Abierta (Texto Libre)" },
+		{ value: "finite", label: t("typeFiniteLabel") },
+		{ value: "open", label: t("typeOpenLabel") },
 	];
 
 	const addNewOption = () =>
@@ -610,12 +613,12 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 							className="p-0">
 							<StandardCard.Header className="pb-3">
 								<StandardText size="lg" weight="medium" colorScheme="primary">
-									Definición de la Dimensión
+									{t("definitionTitle")}
 								</StandardText>
 							</StandardCard.Header>
 							<StandardCard.Content className="space-y-5">
 								<StandardFormField
-									label="Nombre de la Dimensión"
+									label={t("nameLabel")}
 									htmlFor="dim-name"
 									isRequired
 									error={errors.name?.message}>
@@ -625,7 +628,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 										render={({ field }) => (
 											<StandardInput
 												id="dim-name"
-												placeholder="Ej: Relevancia para el Estudio"
+												placeholder={t("namePlaceholder")}
 												readOnly={isReadOnlyEffective}
 												isEditing={modo === "editar" && !isReadOnlyEffective}
 												error={errors.name?.message} // Input muestra su propio borde/icono de error
@@ -637,7 +640,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 								</StandardFormField>
 
 								<StandardFormField
-									label="Fase de Preclasificación"
+									label={t("phaseLabel")}
 									htmlFor="dim-phase"
 									isRequired
 									error={errors.phaseId?.message}>
@@ -648,7 +651,10 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 											const phaseOptions: SelectOption[] = phases.map(
 												(phase) => ({
 													value: phase.id,
-													label: `${phase.name} (Fase ${phase.phase_number})`,
+													label: t("phaseOptionLabel", {
+														name: phase.name,
+														number: phase.phase_number,
+													}),
 													disabled:
 														phase.status === "completed" ||
 														phase.status === "annulled",
@@ -660,8 +666,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 													id="dim-phase"
 													options={phaseOptions}
 													placeholder={
-														loadingPhases ? "Cargando fases..." : (
-															"Selecciona una fase..."
+														loadingPhases ? t("phaseLoadingPlaceholder") : (
+															t("phasePlaceholder")
 														)
 													}
 													disabled={
@@ -679,7 +685,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 								</StandardFormField>
 
 								<StandardFormField
-									label="Tipo de Dimensión"
+									label={t("typeLabel")}
 									htmlFor="dim-type"
 									isRequired
 									error={errors.type?.message}>
@@ -690,7 +696,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 											<StandardSelect
 												id="dim-type"
 												options={typeOptions}
-												placeholder="Selecciona un tipo..."
+												placeholder={t("typePlaceholder")}
 												disabled={
 													isReadOnlyEffective ||
 													(modo === "editar" && !!valoresIniciales?.type)
@@ -706,24 +712,23 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 											size="xs"
 											colorScheme="neutral"
 											className="mt-1">
-											Indica si la dimensión tendrá opciones predefinidas o será
-											de respuesta abierta.
+											{t("typeHintEdit")}
 										</StandardText>
 									)}
 								</StandardFormField>
 
 								<StandardFormField
-									label="Descripción (Opcional)"
+									label={t("descriptionLabel")}
 									htmlFor="dim-description"
 									error={errors.description?.message}
-									hint="Explica brevemente el propósito o criterio de esta dimensión (máx. 500 caracteres).">
+									hint={t("descriptionHint")}>
 									<Controller
 										name="description"
 										control={control}
 										render={({ field }) => (
 											<StandardTextarea
 												id="dim-description"
-												placeholder="Ej: Evalúa qué tan central es el artículo para los objetivos principales de la investigación..."
+												placeholder={t("descriptionPlaceholder")}
 												rows={8}
 												readOnly={isReadOnlyEffective}
 												isEditing={modo === "editar" && !isReadOnlyEffective}
@@ -739,9 +744,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 								</StandardFormField>
 
 								<StandardFormField
-									label="Icono de la Dimensión (Solo íconos)"
+									label={t("iconLabel")}
 									htmlFor="dim-icon"
-									hint="Selecciona un ícono Lucide de la galería (sin emojis).">
+									hint={t("iconHint")}>
 									<Controller
 										name="icon"
 										control={control}
@@ -764,7 +769,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 
 													<StandardInput
 														id="dim-icon"
-														placeholder="Selecciona desde la galería de íconos"
+														placeholder={t("iconPlaceholder")}
 														readOnly={true}
 														isEditing={false}
 														error={errors.icon?.message}
@@ -780,7 +785,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 														size="sm"
 														leftIcon={Search}
 														onClick={() => setIconDialogOpen(true)}>
-														Elegir ícono
+														{t("iconChooseButton")}
 													</StandardButton>
 												)}
 											</div>
@@ -813,14 +818,14 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 											colorScheme="primary">
 											{" "}
 											{/* Usar 'as="div"' para evitar anidación p > p */}
-											Opciones de Clasificación
+											{t("optionsTitle")}
 										</StandardText>
 										{optionsArray && optionsArray.length > 0 && (
 											<StandardText
 												size="xs"
 												colorScheme="neutral"
 												className="mt-0.5 block">
-												Define los valores posibles si es de selección múltiple.
+												{t("optionsSubtitle")}
 											</StandardText>
 										)}
 									</div>
@@ -832,8 +837,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 											leftIcon={PlusCircle}
 											onClick={addNewOption}>
 											{optionFields.length === 0 ?
-												"Añadir Opción"
-											:	"Añadir Otra Opción"}
+												t("addOption")
+											:	t("addAnotherOption")}
 										</StandardButton>
 									)}
 								</StandardCard.Header>
@@ -857,7 +862,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 											<StandardText
 												colorScheme="neutral"
 												className="text-sm italic">
-												No se han definido opciones aún. Agrega la primera.
+												{t("noOptionsYet")}
 											</StandardText>
 										)}
 									{optionFields.map(
@@ -874,7 +879,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 															{ field }, // 'field' aquí se refiere al campo del Controller
 														) => (
 															<StandardInput
-																placeholder={`Valor Opción ${index + 1}`}
+																placeholder={t("optionValuePlaceholder", { n: index + 1 })}
 																readOnly={isReadOnlyEffective}
 																isEditing={
 																	modo === "editar" && !isReadOnlyEffective
@@ -921,8 +926,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 																				typeof navigator !== "undefined" &&
 																				/Mac/i.test(navigator.userAgent)
 																			) ?
-																				"⌃⌘ Espacio para emojis"
-																			:	"Win + . para emojis"}
+																				t("emojiHintMac")
+																			:	t("emojiHintWin")}
 																		</div>
 																	</div>
 																:	<span className="w-full text-center text-lg leading-none">
@@ -963,8 +968,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 														iconOnly={true}
 														leftIcon={Trash2}
 														onClick={() => removeOption(index)}
-														aria-label="Eliminar opción">
-														Eliminar
+														aria-label={t("removeOptionAria")}>
+														{t("removeButton")}
 													</StandardButton>
 												)}
 												{getFieldSuccessState("options", index, "value") &&
@@ -997,9 +1002,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 										weight="medium"
 										colorScheme="primary"
 										className="flex items-center gap-2">
-										Preguntas Guía{" "}
+										{t("questionsTitle")}{" "}
 										<StandardBadge colorScheme="neutral" styleType="subtle">
-											Opcional
+											{t("optionalBadge")}
 										</StandardBadge>
 									</StandardText>
 									{questionsArray && questionsArray.length > 0 && (
@@ -1009,8 +1014,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 											className="mt-0.5 block">
 											{questionsArray.length}{" "}
 											{questionsArray.length === 1 ?
-												"pregunta definida"
-											:	"preguntas definidas"}
+												t("questionCountSingular")
+											:	t("questionCountPlural")}
 										</StandardText>
 									)}
 								</div>
@@ -1022,8 +1027,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 										leftIcon={HelpCircle}
 										onClick={addNewQuestion}>
 										{questionFields.length === 0 ?
-											"Añadir Pregunta"
-										:	"Añadir Otra Pregunta"}
+											t("addQuestion")
+										:	t("addAnotherQuestion")}
 									</StandardButton>
 								)}
 							</StandardCard.Header>
@@ -1032,7 +1037,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 									<StandardText
 										colorScheme="neutral"
 										className="text-sm italic">
-										No se han definido preguntas guía.
+										{t("noQuestionsReadonly")}
 									</StandardText>
 								)}
 								{questionFields.map((item, index) => (
@@ -1043,7 +1048,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 												control={control}
 												render={({ field }) => (
 													<StandardTextarea
-														placeholder={`Pregunta guía ${index + 1}`}
+														placeholder={t("questionPlaceholder", { n: index + 1 })}
 														readOnly={isReadOnlyEffective}
 														isEditing={
 															modo === "editar" && !isReadOnlyEffective
@@ -1079,8 +1084,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 												leftIcon={Trash2}
 												onClick={() => removeQuestion(index)}
 												className="mt-1"
-												aria-label="Eliminar pregunta">
-												Eliminar
+												aria-label={t("removeQuestionAria")}>
+												{t("removeButton")}
 											</StandardButton>
 										)}
 										{getFieldSuccessState("questions", index, "question") &&
@@ -1111,9 +1116,9 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 										weight="medium"
 										colorScheme="primary"
 										className="flex items-center gap-2">
-										Ejemplos Ilustrativos{" "}
+										{t("examplesTitle")}{" "}
 										<StandardBadge colorScheme="neutral" styleType="subtle">
-											Opcional
+											{t("optionalBadge")}
 										</StandardBadge>
 									</StandardText>
 									{examplesArray && examplesArray.length > 0 && (
@@ -1123,8 +1128,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 											className="mt-0.5 block">
 											{examplesArray.length}{" "}
 											{examplesArray.length === 1 ?
-												"ejemplo definido"
-											:	"ejemplos definidos"}
+												t("exampleCountSingular")
+											:	t("exampleCountPlural")}
 										</StandardText>
 									)}
 								</div>
@@ -1136,8 +1141,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 										leftIcon={Lightbulb}
 										onClick={addNewExample}>
 										{exampleFields.length === 0 ?
-											"Añadir Ejemplo"
-										:	"Añadir Otro Ejemplo"}
+											t("addExample")
+										:	t("addAnotherExample")}
 									</StandardButton>
 								)}
 							</StandardCard.Header>
@@ -1146,7 +1151,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 									<StandardText
 										colorScheme="neutral"
 										className="text-sm italic">
-										No se definieron ejemplos.
+										{t("noExamplesReadonly")}
 									</StandardText>
 								)}
 								{exampleFields.map((item, index) => (
@@ -1157,7 +1162,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 												control={control}
 												render={({ field }) => (
 													<StandardTextarea
-														placeholder={`Ejemplo ${index + 1}`}
+														placeholder={t("examplePlaceholder", { n: index + 1 })}
 														readOnly={isReadOnlyEffective}
 														isEditing={
 															modo === "editar" && !isReadOnlyEffective
@@ -1193,8 +1198,8 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 												leftIcon={Trash2}
 												onClick={() => removeExample(index)}
 												className="mt-1"
-												aria-label="Eliminar ejemplo">
-												Eliminar
+												aria-label={t("removeExampleAria")}>
+												{t("removeButton")}
 											</StandardButton>
 										)}
 										{getFieldSuccessState("examples", index, "example") &&
@@ -1224,11 +1229,10 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 									</StandardIcon>
 									<div>
 										<StandardText size="lg" weight="bold" colorScheme="accent">
-											Calibrador Quipu (IA)
+											{t("calibratorTitle")}
 										</StandardText>
 										<StandardText size="xs" colorScheme="neutral">
-											Prueba cómo la IA interpretará tus instrucciones antes de
-											guardar.
+											{t("calibratorSubtitle")}
 										</StandardText>
 									</div>
 								</div>
@@ -1239,7 +1243,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 									<div className="space-y-3">
 										<div className="flex items-center justify-between">
 											<StandardText size="sm" weight="medium">
-												Texto de Prueba (Abstract o Fragmento)
+												{t("calibratorTestTextLabel")}
 											</StandardText>
 											<StandardButton
 												type="button"
@@ -1250,11 +1254,11 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 												loading={isLoadingRandom}
 												disabled={isCalibrating || isLoadingRandom}
 												className="text-xs h-7 px-2">
-												Azar
+												{t("randomButton")}
 											</StandardButton>
 										</div>
 										<StandardTextarea
-											placeholder="Pega aquí un texto o usa el botón de azar..."
+											placeholder={t("calibratorTextareaPlaceholder")}
 											rows={6}
 											value={calibrationText}
 											onChange={(e) => setCalibrationText(e.target.value)}
@@ -1269,14 +1273,14 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 											loading={isCalibrating}
 											disabled={isCalibrating || !calibrationText.trim()}
 											leftIcon={Play}>
-											Simular Clasificación
+											{t("simulateButton")}
 										</StandardButton>
 									</div>
 
 									{/* Columna Derecha: Resultados */}
 									<div className="space-y-3 bg-white/50 p-4 rounded-lg border border-neutral-border h-full">
 										<StandardText size="sm" weight="medium" className="mb-2">
-											Resultado de la Simulación
+											{t("resultTitle")}
 										</StandardText>
 
 										{calibrationResult ?
@@ -1286,7 +1290,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 														size="xs"
 														colorScheme="neutral"
 														className="uppercase tracking-wider font-bold mb-1">
-														Clasificación
+														{t("classificationLabel")}
 													</StandardText>
 													<div className="flex items-center gap-3">
 														<StandardText
@@ -1303,7 +1307,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 																	"warning"
 																:	"danger"
 															}>
-															Confianza: {calibrationResult.confidence}
+															{t("confidenceLabel", { value: calibrationResult.confidence })}
 														</StandardBadge>
 													</div>
 												</div>
@@ -1313,7 +1317,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 														size="xs"
 														colorScheme="accent"
 														className="uppercase tracking-wider font-bold mb-1">
-														Justificación (Quipu)
+														{t("rationaleLabel")}
 													</StandardText>
 													<StandardText
 														size="sm"
@@ -1325,8 +1329,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 										:	<div className="h-full flex flex-col items-center justify-center text-center opacity-50 min-h-[150px]">
 												<Sparkles className="h-8 w-8 mb-2 text-neutral-400" />
 												<StandardText size="sm" colorScheme="neutral">
-													Define tu dimensión y escribe un texto de prueba para
-													ver el resultado aquí.
+													{t("resultPlaceholder")}
 												</StandardText>
 											</div>
 										}
@@ -1349,7 +1352,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 										(modo === "editar" && !Object.keys(dirtyFields).length) ||
 										(!isValid && isSubmitted)
 									}>
-									{modo === "crear" ? "Crear Dimensión" : "Guardar Cambios"}
+									{modo === "crear" ? t("submitCreate") : t("submitSave")}
 								</StandardButton>
 							</div>
 						)}
@@ -1362,16 +1365,15 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 			<StandardDialog open={iconDialogOpen} onOpenChange={setIconDialogOpen}>
 				<StandardDialog.Content size="lg" colorScheme="neutral">
 					<StandardDialog.Header>
-						<StandardDialog.Title>Seleccionar ícono</StandardDialog.Title>
+						<StandardDialog.Title>{t("iconDialogTitle")}</StandardDialog.Title>
 						<StandardDialog.Description>
-							Elige un ícono de la lista para usarlo como representación visual
-							de la dimensión.
+							{t("iconDialogDescription")}
 						</StandardDialog.Description>
 					</StandardDialog.Header>
 					<StandardDialog.Body>
 						<div className="mb-3">
 							<StandardInput
-								placeholder="Buscar ícono por nombre..."
+								placeholder={t("iconSearchPlaceholder")}
 								value={iconSearch}
 								onChange={(e) => setIconSearch(e.target.value)}
 							/>
@@ -1412,7 +1414,7 @@ export const DimensionForm: React.FC<DimensionFormProps> = ({
 						<StandardButton
 							styleType="ghost"
 							onClick={() => setIconDialogOpen(false)}>
-							Cerrar
+							{t("closeButton")}
 						</StandardButton>
 					</StandardDialog.Footer>
 				</StandardDialog.Content>

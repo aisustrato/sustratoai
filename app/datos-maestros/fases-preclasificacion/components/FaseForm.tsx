@@ -8,6 +8,8 @@ import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { Save, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useTranslations } from "next-intl";
+import { useMemo } from "react";
 
 // Componentes UI
 import { StandardInput } from "@/components/ui/StandardInput";
@@ -20,23 +22,26 @@ import { StandardSelect, type SelectOption } from "@/components/ui/StandardSelec
 //#endregion [head]
 
 //#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
-const formSchema = z.object({
-    name: z
-        .string()
-        .min(3, "El nombre debe tener al menos 3 caracteres")
-        .max(100, "El nombre no puede exceder los 100 caracteres"),
-    description: z
-        .string()
-        .max(500, "La descripción no puede exceder los 500 caracteres")
-        .optional(),
-    phase_number: z.coerce
-        .number()
-        .int("El número de fase debe ser un número entero")
-        .positive("El número de fase debe ser mayor a cero"),
-    status: z.enum(['active', 'inactive', 'completed', 'annulled']).default('inactive'),
-});
+type FaseFormTranslator = ReturnType<typeof useTranslations<"datosMaestros.faseForm">>;
 
-type FaseFormValues = z.infer<typeof formSchema> & { id?: string };
+const makeFormSchema = (t: FaseFormTranslator) =>
+    z.object({
+        name: z
+            .string()
+            .min(3, t("validation.nameMin"))
+            .max(100, t("validation.nameMax")),
+        description: z
+            .string()
+            .max(500, t("validation.descriptionMax"))
+            .optional(),
+        phase_number: z.coerce
+            .number()
+            .int(t("validation.phaseNumberInt"))
+            .positive(t("validation.phaseNumberPositive")),
+        status: z.enum(['active', 'inactive', 'completed', 'annulled']).default('inactive'),
+    });
+
+type FaseFormValues = z.infer<ReturnType<typeof makeFormSchema>> & { id?: string };
 
 type FaseFormProps = {
     modo: "crear" | "editar" | "ver";
@@ -57,6 +62,8 @@ export default function FaseForm({
 }: FaseFormProps) {
     const router = useRouter();
     const { toast } = useToast();
+    const t = useTranslations("datosMaestros.faseForm");
+    const formSchema = useMemo(() => makeFormSchema(t), [t]);
 
     const {
         control,
@@ -96,23 +103,23 @@ export default function FaseForm({
                 }
                 
                 toast({
-                    title: modo === "crear" ? "¡Fase creada!" : "¡Cambios guardados!",
-                    description: 
-                        modo === "crear" 
-                            ? "La fase se ha creado correctamente."
-                            : "Los cambios en la fase se han guardado correctamente.",
+                    title: modo === "crear" ? t("toastCreatedTitle") : t("toastSavedTitle"),
+                    description:
+                        modo === "crear"
+                            ? t("toastCreatedDescription")
+                            : t("toastSavedDescription"),
                 });
-                
+
                 router.push("/datos-maestros/fases-preclasificacion");
             }
         } catch (error) {
             console.error("Error al guardar la fase:", error);
             toast({
-                title: "Error",
-                description: 
-                    error instanceof Error 
-                        ? error.message 
-                        : "Ocurrió un error al guardar la fase. Por favor, inténtalo de nuevo.",
+                title: t("toastErrorTitle"),
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : t("toastErrorGeneric"),
                 variant: "destructive",
             });
         }
@@ -132,18 +139,18 @@ export default function FaseForm({
                             render={({ field }) => (
                                 <div className="space-y-2">
                                     <StandardFormField
-                                        label="Nombre de la fase"
+                                        label={t("nameLabel")}
                                         htmlFor="name"
                                         error={errors.name?.message}
                                         isRequired
                                     >
                                         <div className="text-sm text-muted-foreground mb-2">
-                                            Un nombre descriptivo para esta fase
+                                            {t("nameHint")}
                                         </div>
                                         <StandardInput
                                             id="name"
                                             {...field}
-                                            placeholder="Ej: Revisión inicial"
+                                            placeholder={t("namePlaceholder")}
                                             disabled={modo === "ver" || loading}
                                         />
                                     </StandardFormField>
@@ -158,13 +165,13 @@ export default function FaseForm({
                             render={({ field }) => (
                                 <div className="space-y-2">
                                     <StandardFormField
-                                        label="Número de fase"
+                                        label={t("numberLabel")}
                                         htmlFor="phase_number"
                                         error={errors.phase_number?.message}
                                         isRequired
                                     >
                                         <div className="text-sm text-muted-foreground mb-2">
-                                            Define el orden de esta fase en el flujo de trabajo
+                                            {t("numberHint")}
                                         </div>
                                         <StandardInput
                                             id="phase_number"
@@ -184,21 +191,21 @@ export default function FaseForm({
                             control={control}
                             render={({ field }) => {
                                 const statusOptions: SelectOption[] = [
-                                    { value: 'active', label: 'Activo' },
-                                    { value: 'inactive', label: 'Inactivo' },
-                                    { value: 'completed', label: 'Completado' },
-                                    { value: 'annulled', label: 'Anulado' }
+                                    { value: 'active', label: t("statusActive") },
+                                    { value: 'inactive', label: t("statusInactive") },
+                                    { value: 'completed', label: t("statusCompleted") },
+                                    { value: 'annulled', label: t("statusAnnulled") }
                                 ];
-                                
+
                                 return (
                                     <div className="space-y-2">
                                         <StandardFormField
-                                            label="Estado"
+                                            label={t("statusLabel")}
                                             htmlFor="status"
                                             error={errors.status?.message}
                                         >
                                             <div className="text-sm text-muted-foreground mb-2">
-                                                Estado actual de la fase
+                                                {t("statusHint")}
                                             </div>
                                             <StandardSelect
                                                 id="status"
@@ -206,7 +213,7 @@ export default function FaseForm({
                                                 value={field.value}
                                                 onChange={(value) => field.onChange(value)}
                                                 disabled={modo === "ver" || loading}
-                                                placeholder="Seleccionar estado..."
+                                                placeholder={t("statusPlaceholder")}
                                             />
                                         </StandardFormField>
                                     </div>
@@ -222,18 +229,18 @@ export default function FaseForm({
                         render={({ field }) => (
                             <div className="space-y-2">
                                 <StandardFormField
-                                    label="Descripción"
+                                    label={t("descriptionLabel")}
                                     htmlFor="description"
                                     error={errors.description?.message}
                                 >
                                     <div className="text-sm text-muted-foreground mb-2">
-                                        Detalles adicionales sobre esta fase (opcional)
+                                        {t("descriptionHint")}
                                     </div>
                                     <StandardTextarea
                                         id="description"
                                         {...field}
                                         rows={4}
-                                        placeholder="Describe el propósito y alcance de esta fase..."
+                                        placeholder={t("descriptionPlaceholder")}
                                         disabled={modo === "ver" || loading}
                                     />
                                 </StandardFormField>
@@ -250,9 +257,9 @@ export default function FaseForm({
                             disabled={loading}
                             size="md"
                         >
-                            Cancelar
+                            {t("cancelButton")}
                         </StandardButton>
-                        
+
                         {modo !== "ver" && (
                             <StandardButton
                                 type="submit"
@@ -263,9 +270,9 @@ export default function FaseForm({
                                 className="w-full sm:w-auto"
                                 leftIcon={loading ? Loader2 : Save}
                                 loading={loading}
-                                loadingText="Guardando..."
+                                loadingText={t("submittingButton")}
                             >
-                                {modo === "crear" ? "Crear fase" : "Guardar cambios"}
+                                {modo === "crear" ? t("submitCreate") : t("submitSave")}
                             </StandardButton>
                         )}
                     </div>

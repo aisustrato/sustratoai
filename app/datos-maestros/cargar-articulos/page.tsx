@@ -8,6 +8,7 @@
  */
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/auth-provider';
 import { parse as papaParse } from 'papaparse';
 import { toast } from 'sonner';
@@ -42,6 +43,8 @@ interface ArticleForTable {
 
 // --- Componente Principal ---
 export default function CargarArticulosPage() {
+    const t = useTranslations('datosMaestros.cargarArticulos');
+    const tNav = useTranslations('nav');
     const { proyectoActual } = useAuth();
 
     // State for data and UI control
@@ -86,19 +89,19 @@ export default function CargarArticulosPage() {
                 if (result.success) {
                     setDataAlreadyExists(result.data.hasArticles);
                 } else {
-                    toast.error(result.error || 'No se pudo verificar el estado de los artículos.');
+                    toast.error(result.error || t('toastCheckError'));
                 }
             })
-            .catch(() => toast.error('Error de red al verificar los artículos.'))
+            .catch(() => toast.error(t('toastNetworkCheckError')))
             .finally(() => setIsChecking(false));
-    }, [proyectoActual]);
+    }, [proyectoActual, t]);
 
     const handleSave = async () => {
         if (!proyectoActual || fullArticlesPayload.length === 0) return;
 
         setIsSaving(true);
         setUploadProgress(0);
-        setStatusMessage("Iniciando subida...");
+        setStatusMessage(t('toastUploadStart'));
         setIsDialogOpen(false);
 
         const CHUNK_SIZE = 200;
@@ -111,7 +114,7 @@ export default function CargarArticulosPage() {
                 const currentChunk = fullArticlesPayload.slice(start, end);
 
                 const progress = ((i + 1) / totalChunks) * 100;
-                setStatusMessage(`Subiendo lote ${i + 1} de ${totalChunks}... (${currentChunk.length} registros)`);
+                setStatusMessage(t('toastUploadingBatch', { current: i + 1, total: totalChunks, count: currentChunk.length }));
 
                 const result = await uploadAndProcessArticles({
                     projectId: proyectoActual.id,
@@ -119,16 +122,16 @@ export default function CargarArticulosPage() {
                 });
 
                 if (!result.success) {
-                    throw new Error(result.error || `Ocurrió un error en el lote ${i + 1}`);
+                    throw new Error(result.error || t('toastBatchError', { n: i + 1 }));
                 }
 
                 setUploadProgress(progress);
             }
 
-            setStatusMessage(`✅ Carga completada con éxito`);
+            setStatusMessage(t('toastUploadCompleteStatus'));
             setUploadProgress(100);
             setUploadComplete(true);
-            toast.success(`¡${fullArticlesPayload.length} artículos fueron guardados con éxito!`);
+            toast.success(t('toastUploadSuccess', { count: fullArticlesPayload.length }));
 
             // Limpiar datos después de mostrar el mensaje
             setTimeout(() => {
@@ -139,7 +142,7 @@ export default function CargarArticulosPage() {
             }, 1000);
 
         } catch (e: unknown) {
-            const errorMessage = e instanceof Error ? e.message : "Error inesperado durante la carga.";
+            const errorMessage = e instanceof Error ? e.message : t('toastUploadUnexpectedError');
             setStatusMessage(`Error: ${errorMessage}`);
             toast.error(errorMessage);
             setUploadProgress(prev => prev);
@@ -152,17 +155,17 @@ export default function CargarArticulosPage() {
         try {
             const result = await deleteUploadedArticles(proyectoActual.id);
             if (result.success) {
-                toast.success('Los artículos existentes han sido eliminados.');
+                toast.success(t('toastDeleteSuccess'));
                 setDataAlreadyExists(false);
                 setFileName(null);
                 setPreviewArticles([]);
                 setFullArticlesPayload([]);
             } else {
-                toast.error(result.error || 'No se pudieron eliminar los artículos.');
+                toast.error(result.error || t('toastDeleteError'));
             }
         } catch {
             // No necesitamos usar la variable de error aquí, pero capturamos para el toast.
-            toast.error('Ocurrió un error inesperado al eliminar.');
+            toast.error(t('toastDeleteUnexpectedError'));
         } finally {
             setIsDeleting(false);
         }
@@ -192,7 +195,7 @@ export default function CargarArticulosPage() {
                 skipEmptyLines: true,
                 complete: (results) => {
                     if (results.errors.length > 0) {
-                        toast.error('Se encontraron errores en el CSV. Revisa el formato.');
+                        toast.error(t('toastCsvParseErrors'));
                         setIsParsing(false);
                         return;
                     }
@@ -225,22 +228,22 @@ export default function CargarArticulosPage() {
                     setPreviewArticles(articlesForTable);
                     setFullArticlesPayload(allParsedArticles);
                     setIsParsing(false);
-                    toast.success(`Se leyeron ${allParsedArticles.length} registros del archivo.`);
+                    toast.success(t('toastCsvReadSuccess', { count: allParsedArticles.length }));
                 },
                 error: (error: Error) => {
-                    toast.error(`Error al parsear el archivo: ${error.message}`);
+                    toast.error(t('toastCsvParseError', { message: error.message }));
                     setIsParsing(false);
                 },
             });
         };
 
         reader.onerror = () => {
-            toast.error('Error al leer el archivo');
+            toast.error(t('toastFileReadError'));
             setIsParsing(false);
         };
 
         reader.readAsText(file);
-    }, []);
+    }, [t]);
 
     const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -259,7 +262,7 @@ export default function CargarArticulosPage() {
         if (!hasAnyMetadata) {
             return (
                 <div className="p-4 bg-neutral-bg/30">
-                    <StandardText size="sm" color="neutral">No hay metadatos adicionales para este registro.</StandardText>
+                    <StandardText size="sm" color="neutral">{t('noAdditionalMetadata')}</StandardText>
                 </div>
             );
         }
@@ -290,13 +293,13 @@ export default function CargarArticulosPage() {
 
     const columns = useMemo<ColumnDef<ArticleForTable>[]>(() => [
         { id: 'expander', header: () => null, cell: ({ row }) => row.getCanExpand() ? '' : null, meta: { isSticky: 'left' }, size: 40, enableHiding: false },
-        { accessorKey: 'Title', header: 'Título', size: 250, meta: { isTruncatable: true } },
-        { accessorKey: 'Abstract', header: 'Abstract', size: 300, meta: { isTruncatable: true, tooltipType: 'longText' } },
-        { accessorKey: 'Authors', header: 'Autores', size: 150, meta: { isTruncatable: true } },
-        { accessorKey: 'Publication Year', header: 'Año', size: 80, meta: { align: 'center' } },
+        { accessorKey: 'Title', header: t('columnTitle'), size: 250, meta: { isTruncatable: true } },
+        { accessorKey: 'Abstract', header: t('columnAbstract'), size: 300, meta: { isTruncatable: true, tooltipType: 'longText' } },
+        { accessorKey: 'Authors', header: t('columnAuthors'), size: 150, meta: { isTruncatable: true } },
+        { accessorKey: 'Publication Year', header: t('columnYear'), size: 80, meta: { align: 'center' } },
         {
             accessorKey: 'DOI',
-            header: 'DOI',
+            header: t('columnDoi'),
             size: 50,
             meta: { isSticky: 'right' },
             cell: (info) => {
@@ -309,20 +312,20 @@ export default function CargarArticulosPage() {
                 );
             },
         },
-    ], []);
+    ], [t]);
 
     if (isChecking) {
-        return <div className="flex h-full w-full items-center justify-center"><SustratoLoadingLogo text="Verificando datos del proyecto..." /></div>;
+        return <div className="flex h-full w-full items-center justify-center"><SustratoLoadingLogo text={t('checkingProjectData')} /></div>;
     }
 
     if (dataAlreadyExists) {
         return (
             <div className="max-w-3xl mx-auto">
                 <StandardPageTitle
-                    title="Ya existen artículos cargados"
-                    subtitle="Ya se han cargado artículos previamente en este proyecto. "
+                    title={t('existingTitle')}
+                    subtitle={t('existingSubtitle')}
                     mainIcon={FileCheck}
-                    breadcrumbs={[ { label: "Datos Maestros", href: "/datos-maestros" }, { label: "Cargar Artículos", href: "/datos-maestros/cargar-articulos" } ]}
+                    breadcrumbs={[ { label: tNav("datosMaestros"), href: "/datos-maestros" }, { label: t('breadcrumbCargarArticulos'), href: "/datos-maestros/cargar-articulos" } ]}
                     showBackButton={{ href: "/datos-maestros" }}
                 />
                 <StandardCard accentPlacement="top">
@@ -330,55 +333,54 @@ export default function CargarArticulosPage() {
                         <div className="flex items-center justify-between">
                             <StandardCard.Title className="flex items-center gap-2">
                                 <StandardIcon colorScheme="danger" size="md"> <Trash2 /> </StandardIcon>
-                                Artículos Existentes
+                                {t('existingArticlesCardTitle')}
                             </StandardCard.Title>
                             <StandardBadge colorScheme="warning" styleType="subtle" size="md">
-                                Acción Requerida
+                                {t('actionRequiredBadge')}
                             </StandardBadge>
                         </div>
                         <StandardCard.Subtitle>
                             <StandardText size="sm" colorScheme="secondary">
-                                Este proyecto ya contiene datos de artículos. Para cargar un nuevo archivo, primero debes eliminar los existentes.
+                                {t('existingWarning')}
                             </StandardText>
                         </StandardCard.Subtitle>
                     </StandardCard.Header>
                     <StandardCard.Content>
                         <div className="mb-4">
                             <StandardText>
-                                Esta acción eliminará permanentemente todos los artículos asociados a este proyecto.
-                                Asegúrate de haber respaldado cualquier información importante antes de continuar.
+                                {t('deleteWarning')}
                             </StandardText>
                         </div>
                     </StandardCard.Content>
                     <StandardCard.Actions className="justify-between">
                         <Link href="/articulos/base-original">
-                            <StandardButton 
-                                colorScheme="primary" 
+                            <StandardButton
+                                colorScheme="primary"
                                 styleType="outline"
                                 leftIcon={FileCheck}
                             >
-                                Ver artículos en la base original
+                                {t('viewInBaseButton')}
                             </StandardButton>
                         </Link>
                         <StandardDialog>
                             <StandardDialog.Trigger>
                                 <StandardButton colorScheme="danger" styleType="outline" loading={isDeleting} leftIcon={Trash2} >
-                                    Eliminar Artículos
+                                    {t('deleteArticlesButton')}
                                 </StandardButton>
                             </StandardDialog.Trigger>
                             <StandardDialog.Content>
                                 <StandardDialog.Header>
-                                    <StandardDialog.Title>Confirmar Eliminación</StandardDialog.Title>
+                                    <StandardDialog.Title>{t('confirmDeleteTitle')}</StandardDialog.Title>
                                     <StandardDialog.Description>
-                                        ¿Estás seguro que deseas eliminar todos los artículos de este proyecto? Esta acción no se puede deshacer.
+                                        {t('confirmDeleteDescription')}
                                     </StandardDialog.Description>
                                 </StandardDialog.Header>
                                 <StandardDialog.Footer>
                                     <StandardDialog.Close asChild>
-                                        <StandardButton styleType="outline"> Cancelar </StandardButton>
+                                        <StandardButton styleType="outline"> {t('cancelButton')} </StandardButton>
                                     </StandardDialog.Close>
                                     <StandardButton colorScheme="danger" onClick={handleDelete} loading={isDeleting} leftIcon={Trash2} >
-                                        Confirmar Eliminación
+                                        {t('confirmDeleteButton')}
                                     </StandardButton>
                                 </StandardDialog.Footer>
                             </StandardDialog.Content>
@@ -398,26 +400,26 @@ export default function CargarArticulosPage() {
                         
                         {!uploadComplete && (
                             <StandardText as="p" size="sm" className="text-center mt-3 text-neutral-600 dark:text-neutral-400">
-                                Por favor, no cierres esta ventana hasta que el proceso finalice.
+                                {t('savingWaitMessage')}
                             </StandardText>
                         )}
-                        
+
                         {uploadComplete && (
                             <div className="flex flex-col gap-3 mt-4">
                                 <StandardText as="p" size="sm" className="text-center text-neutral-600 dark:text-neutral-400">
-                                    Los artículos han sido cargados exitosamente en la base de datos.
+                                    {t('savingCompleteMessage')}
                                 </StandardText>
                                 <Link href="/articulos/base-original" className="w-full">
-                                    <StandardButton 
-                                        className="w-full" 
+                                    <StandardButton
+                                        className="w-full"
                                         colorScheme="primary"
                                         leftIcon={FileCheck}
                                     >
-                                        Ver artículos en la base original
+                                        {t('viewInBaseButton')}
                                     </StandardButton>
                                 </Link>
-                                <StandardButton 
-                                    styleType="outline" 
+                                <StandardButton
+                                    styleType="outline"
                                     className="w-full"
                                     onClick={() => {
                                         setIsSaving(false);
@@ -426,7 +428,7 @@ export default function CargarArticulosPage() {
                                         setStatusMessage("");
                                     }}
                                 >
-                                    Cerrar
+                                    {t('closeButton')}
                                 </StandardButton>
                             </div>
                         )}
@@ -435,10 +437,10 @@ export default function CargarArticulosPage() {
             )}
             <div className="container mx-auto py-8">
                 <StandardPageTitle
-                    title="Cargar Artículos"
-                    subtitle="Sube un archivo CSV con los datos de los artículos a precalasificar. "
+                    title={t('pageTitle')}
+                    subtitle={t('pageSubtitle')}
                     mainIcon={FileUp}
-                    breadcrumbs={[ { label: "Datos Maestros", href: "/datos-maestros" }, { label: "Cargar Artículos", href: "/datos-maestros/cargar-articulos" } ]}
+                    breadcrumbs={[ { label: tNav("datosMaestros"), href: "/datos-maestros" }, { label: t('breadcrumbCargarArticulos'), href: "/datos-maestros/cargar-articulos" } ]}
                     showBackButton={{ href: "/datos-maestros" }}
                 />
                 {showUploadCard && (
@@ -448,7 +450,7 @@ export default function CargarArticulosPage() {
                                 <div className="flex flex-col items-center space-y-4 w-full max-w-md">
                                     <div className="relative">
                                         <StandardButton onClick={() => fileInputRef.current?.click()} size="lg" disabled={isParsing || isSaving} leftIcon={FileUp} className="px-8 py-6 text-base" >
-                                            Seleccionar Archivo
+                                            {t('selectFileButton')}
                                         </StandardButton>
                                         <input ref={fileInputRef} id="csv-upload" type="file" accept=".csv" className="hidden" onChange={handleFileChange} disabled={isParsing || isSaving} />
                                         {isParsing && (
@@ -459,13 +461,13 @@ export default function CargarArticulosPage() {
                                     </div>
 
                                     <StandardCard colorScheme="neutral" className="w-full">
-                                        <StandardCard.Header> <StandardCard.Title>Configuración del archivo</StandardCard.Title> </StandardCard.Header>
+                                        <StandardCard.Header> <StandardCard.Title>{t('fileConfigTitle')}</StandardCard.Title> </StandardCard.Header>
                                         <StandardCard.Content>
                                             <div>
                                                 <StandardRadioGroup
                                                     name="csv-delimiter"
-                                                    label="Separador de columnas"
-                                                    options={[ { value: ',', label: 'Coma (,) - Estándar' }, { value: ';', label: 'Punto y coma (;)' } ]}
+                                                    label={t('delimiterLabel')}
+                                                    options={[ { value: ',', label: t('delimiterComma') }, { value: ';', label: t('delimiterSemicolon') } ]}
                                                     value={delimiter}
                                                     onChange={(value: string) => setDelimiter(value as ',' | ';')}
                                                     orientation="horizontal"
@@ -474,7 +476,7 @@ export default function CargarArticulosPage() {
                                             </div>
                                             <div className="mt-4">
                                                 <StandardText size="md" weight="medium" colorScheme="secondary" className="mb-2 block">
-                                                    Columnas requeridas en el archivo CSV:
+                                                    {t('requiredColumnsLabel')}
                                                 </StandardText>
                                                 <div className="text-xs space-y-2 mt-4">
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
@@ -504,7 +506,7 @@ export default function CargarArticulosPage() {
                                             </div>
                                             <div className="pt-3 border-t border-neutral-200 dark:border-neutral-700">
                                                 <StandardText size="xs" weight="medium" className="mb-2 block">
-                                                    Ejemplo de formato ({delimiter === ',' ? 'separado por comas' : 'separado por punto y coma'}):
+                                                    {t('exampleFormatLabel', { delimiter: delimiter === ',' ? t('delimiterCommaWord') : t('delimiterSemicolonWord') })}
                                                 </StandardText>
                                                 <pre className="text-xs bg-neutral-100 dark:bg-neutral-800 p-2 rounded overflow-x-auto">
                                                     {`Publication Type${delimiter}Authors${delimiter}Author Full Names${delimiter}Title${delimiter}Journal${delimiter}Abstract${delimiter}ORCIDs${delimiter}ISSN${delimiter}eISSN${delimiter}ISBN${delimiter}Publication Date${delimiter}Publication Year${delimiter}Volume${delimiter}Issue${delimiter}Special Issue${delimiter}Start Page${delimiter}End Page${delimiter}Article Number${delimiter}DOI${delimiter}DOI Link${delimiter}UT (Unique WOS ID)
@@ -528,21 +530,21 @@ export default function CargarArticulosPage() {
                                         <FileText />
                                     </StandardIcon>
                                     <div>
-                                        <StandardCard.Title>Previsualización de Datos</StandardCard.Title>
+                                        <StandardCard.Title>{t('previewTitle')}</StandardCard.Title>
                                         <StandardCard.Subtitle>
                                             <div className="flex items-center gap-1">
-                                                <StandardText size="sm">Archivo: </StandardText>
+                                                <StandardText size="sm">{t('fileLabel')} </StandardText>
                                                 <StandardText size="sd" colorScheme="secondary" weight="bold">
                                                     {fileName}
                                                 </StandardText>
-                                                <StandardText size="sm"> • {fullArticlesPayload.length} registros cargados</StandardText>
+                                                <StandardText size="sm"> • {t('recordsLoaded', { count: fullArticlesPayload.length })}</StandardText>
                                             </div>
                                         </StandardCard.Subtitle>
                                     </div>
                                 </div>
                                 <div>
                                     <StandardButton onClick={handleChangeFileClick} styleType="outline" size="sm" leftIcon={FileUp} className="mt-2 sm:mt-0" >
-                                        Cambiar Archivo
+                                        {t('changeFileButton')}
                                     </StandardButton>
                                     <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} disabled={isParsing || isSaving} />
                                 </div>
@@ -556,7 +558,7 @@ export default function CargarArticulosPage() {
                                     data={previewArticles}
                                     renderSubComponent={renderSubComponent}
                                     enableTruncation={true}
-                                    filterPlaceholder="Buscar en previsualización..."
+                                    filterPlaceholder={t('searchInPreviewPlaceholder')}
                                     isStickyHeader={false}
                                     stickyOffset={64}
                                 >
@@ -569,23 +571,22 @@ export default function CargarArticulosPage() {
                             <StandardDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                                 <StandardDialog.Trigger asChild>
                                     <StandardButton disabled={isSaving || isParsing} leftIcon={Save} >
-                                        Guardar {fullArticlesPayload.length} Artículos
+                                        {t('saveButton', { count: fullArticlesPayload.length })}
                                     </StandardButton>
                                 </StandardDialog.Trigger>
                                 <StandardDialog.Content>
                                     <StandardDialog.Header>
-                                        <StandardDialog.Title>Confirmar Carga Masiva</StandardDialog.Title>
+                                        <StandardDialog.Title>{t('confirmBulkTitle')}</StandardDialog.Title>
                                         <StandardDialog.Description>
-                                            Estás a punto de guardar {fullArticlesPayload.length} artículos.
-                                            El proceso se ejecutará en segundo plano. ¿Deseas continuar?
+                                            {t('confirmBulkDescription', { count: fullArticlesPayload.length })}
                                         </StandardDialog.Description>
                                     </StandardDialog.Header>
                                     <StandardDialog.Footer>
                                         <StandardDialog.Close asChild>
-                                            <StandardButton styleType="outline"> Cancelar </StandardButton>
+                                            <StandardButton styleType="outline"> {t('cancelButton')} </StandardButton>
                                         </StandardDialog.Close>
                                         <StandardButton onClick={handleSave} leftIcon={Save} >
-                                            Confirmar y Cargar
+                                            {t('confirmAndUploadButton')}
                                         </StandardButton>
                                     </StandardDialog.Footer>
                                 </StandardDialog.Content>
