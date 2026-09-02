@@ -4,6 +4,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useAuth } from "@/app/auth-provider";
 import { obtenerRolesDelProyecto } from "@/lib/actions/proyect-role-actions";
@@ -41,6 +42,7 @@ import { StandardIcon } from "@/components/ui/StandardIcon";
 //#region [main] - 🔧 COMPONENT 🔧
 export default function RolesPage() {
 	const router = useRouter();
+	const t = useTranslations("datosMaestrosPages.rolesListPage");
 	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HANDLERS 🧰
 	const { proyectoActual } = useAuth();
 	const { toast } = useToast();
@@ -57,7 +59,7 @@ export default function RolesPage() {
 		setError(null);
 
 		if (!proyectoActual?.id) {
-			setError("No hay un proyecto seleccionado.");
+			setError(t("errorNoProject"));
 			setIsLoading(false);
 			return;
 		}
@@ -68,9 +70,9 @@ export default function RolesPage() {
 			if (resultado.success) {
 				setRoles(resultado.data);
 			} else {
-				setError(resultado.error || "Error al cargar los roles del proyecto.");
+				setError(resultado.error || t("errorLoadingRoles"));
 				toast({
-					title: "Error al cargar roles",
+					title: t("errorLoadingRolesToastTitle"),
 					description: resultado.error,
 					variant: "destructive",
 				});
@@ -79,18 +81,18 @@ export default function RolesPage() {
 			const errorMessage =
 				err instanceof Error
 					? err.message
-					: "Error desconocido al cargar roles.";
+					: t("errorUnknownLoading");
 			setError(errorMessage);
 			console.error("Error cargando roles:", err);
 			toast({
-				title: "Error Inesperado",
+				title: t("errorUnexpectedToastTitle"),
 				description: errorMessage,
 				variant: "destructive",
 			});
 		} finally {
 			setIsLoading(false);
 		}
-	}, [proyectoActual?.id, toast]);
+	}, [proyectoActual?.id, toast, t]);
 
 	useEffect(() => {
 		if (proyectoActual?.id) {
@@ -156,7 +158,7 @@ export default function RolesPage() {
 			accessorKey: "role_name",
 			header: () => (
 				<StandardText weight="semibold">
-					<div className="text-left">Nombre del Rol</div>
+					<div className="text-left">{t("columnRoleName")}</div>
 				</StandardText>
 			),
 			cell: (info) => (
@@ -174,11 +176,11 @@ export default function RolesPage() {
 		// Columnas de Permisos con ancho fijo
 		{
 			accessorKey: "can_manage_master_data",
-			header: () => <div className="text-center">Gest. Datos</div>,
+			header: () => <div className="text-center">{t("columnManageData")}</div>,
 			cell: (info) => (
 				<PermisoCell
 					value={info.getValue() as boolean}
-					tooltipText="Permite gestionar datos maestros (miembros, roles, etc.)"
+					tooltipText={t("tooltipManageData")}
 				/>
 			),
 			meta: {
@@ -188,11 +190,11 @@ export default function RolesPage() {
 		},
 		{
 			accessorKey: "can_create_batches",
-			header: () => <div className="text-center">Crear Lotes</div>,
+			header: () => <div className="text-center">{t("columnCreateBatches")}</div>,
 			cell: (info) => (
 				<PermisoCell
 					value={info.getValue() as boolean}
-					tooltipText="Permite crear nuevos lotes de trabajo o análisis"
+					tooltipText={t("tooltipCreateBatches")}
 				/>
 			),
 			meta: {
@@ -202,11 +204,11 @@ export default function RolesPage() {
 		},
 		{
 			accessorKey: "can_upload_files",
-			header: () => <div className="text-center">Subir Archs.</div>,
+			header: () => <div className="text-center">{t("columnUploadFiles")}</div>,
 			cell: (info) => (
 				<PermisoCell
 					value={info.getValue() as boolean}
-					tooltipText="Permite subir archivos al proyecto"
+					tooltipText={t("tooltipUploadFiles")}
 				/>
 			),
 			meta: {
@@ -216,11 +218,11 @@ export default function RolesPage() {
 		},
 		{
 			accessorKey: "can_bulk_edit_master_data",
-			header: () => <div className="text-center">Edit. Masiva</div>,
+			header: () => <div className="text-center">{t("columnBulkEdit")}</div>,
 			cell: (info) => (
 				<PermisoCell
 					value={info.getValue() as boolean}
-					tooltipText="Permite editar datos maestros de forma masiva"
+					tooltipText={t("tooltipBulkEdit")}
 				/>
 			),
 			meta: {
@@ -230,7 +232,7 @@ export default function RolesPage() {
 		},
 		{
 			id: "actions",
-			header: () => <div className="text-center">Acciones</div>,
+			header: () => <div className="text-center">{t("columnActions")}</div>,
 			cell: ({ row }) => {
 				const rol = row.original;
 				return (
@@ -240,8 +242,8 @@ export default function RolesPage() {
 							colorScheme="primary"
 							size="sm"
 							onClick={() => handleVerRol(rol)}
-							aria-label={`Ver detalles del rol ${rol.role_name}`}
-							tooltip="Ver detalles"
+							aria-label={t("viewAriaLabel", { roleName: rol.role_name })}
+							tooltip={t("viewTooltip")}
 							leftIcon={Eye}
 							iconOnly={true}
 						/>
@@ -252,8 +254,8 @@ export default function RolesPage() {
 									colorScheme="primary"
 									size="sm"
 									onClick={() => handleEditarRol(rol)}
-									aria-label={`Editar el rol ${rol.role_name}`}
-									tooltip="Editar rol"
+									aria-label={t("editAriaLabel", { roleName: rol.role_name })}
+									tooltip={t("editTooltip")}
 									leftIcon={PenLine}
 									iconOnly={true}
 								/>
@@ -262,8 +264,8 @@ export default function RolesPage() {
 									colorScheme="danger"
 									size="sm"
 									onClick={() => handleEliminarRol(rol)}
-									aria-label={`Eliminar el rol ${rol.role_name}`}
-									tooltip="Eliminar rol"
+									aria-label={t("deleteAriaLabel", { roleName: rol.role_name })}
+									tooltip={t("deleteTooltip")}
 									leftIcon={Trash2}
 									iconOnly={true}
 								/>
@@ -287,14 +289,14 @@ export default function RolesPage() {
 			<div className="container mx-auto py-6">
 				<div className="space-y-6">
 					<StandardPageTitle
-						title="Roles y Permisos"
-						subtitle="Gestión de roles"
-						description="Administra los roles y permisos de los miembros del proyecto."
+						title={t("pageTitle")}
+						subtitle={t("pageSubtitle")}
+						description={t("pageDescription")}
 						mainIcon={Shield}
 						showBackButton={{ href: "/datos-maestros" }}
 						breadcrumbs={[
-							{ label: "Datos Maestros", href: "/datos-maestros" },
-							{ label: "Roles y Permisos" },
+							{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+							{ label: t("pageTitle") },
 						]}
 						actions={
 							puedeGestionarRoles ? (
@@ -302,7 +304,7 @@ export default function RolesPage() {
 									onClick={handleAgregarRol}
 									leftIcon={ShieldPlus}
 									colorScheme="primary">
-									Crear Rol
+									{t("createRoleButton")}
 								</StandardButton>
 							) : undefined
 						}
@@ -317,7 +319,7 @@ export default function RolesPage() {
 								size={50}
 								variant="spin-pulse"
 								showText={true}
-								text="Cargando roles..."
+								text={t("loadingRoles")}
 							/>
 						</div>
 					) : error ? (
@@ -343,7 +345,7 @@ export default function RolesPage() {
 										preset="subheading"
 										colorScheme="danger"
 										className="flex items-center gap-2">
-										<StandardIcon colorScheme="danger"><AlertCircle className="h-5 w-5" /></StandardIcon> Error al Cargar Roles
+										<StandardIcon colorScheme="danger"><AlertCircle className="h-5 w-5" /></StandardIcon> {t("errorCardTitle")}
 									</StandardText>
 								</StandardCard.Header>
 								<StandardCard.Content>
@@ -352,7 +354,7 @@ export default function RolesPage() {
 										onClick={cargarRoles}
 										styleType="outline"
 										className="mt-4">
-										Reintentar Carga
+										{t("retryButton")}
 									</StandardButton>
 								</StandardCard.Content>
 							</StandardCard>
@@ -360,17 +362,17 @@ export default function RolesPage() {
 					) : roles.length === 0 ? (
 						<StandardEmptyState
 							icon={ShieldPlus}
-							title="No hay roles definidos para este proyecto"
+							title={t("emptyTitle")}
 							description={
 								puedeGestionarRoles
-									? "Crea roles para definir los conjuntos de permisos para los miembros."
-									: "Aún no se han configurado roles específicos para este proyecto."
+									? t("emptyDescriptionCanManage")
+									: t("emptyDescriptionCannotManage")
 							}
 							action={
 								puedeGestionarRoles ? (
 									<Link href="/datos-maestros/roles/crear" passHref>
 										<StandardButton colorScheme="primary" leftIcon={ShieldPlus}>
-											Crear Primer Rol
+											{t("createFirstRoleButton")}
 										</StandardButton>
 									</Link>
 								) : undefined
@@ -400,7 +402,7 @@ export default function RolesPage() {
 								<StandardTable<ProjectRoleRow>
 									data={roles}
 									columns={columnas}
-									filterPlaceholder="Buscar por nombre de rol..."
+									filterPlaceholder={t("searchPlaceholder")}
 								>
 									<StandardTable.Table />
 								</StandardTable>

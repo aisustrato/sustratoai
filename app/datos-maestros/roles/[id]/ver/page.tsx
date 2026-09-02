@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider"; //> 📝 Solo necesitamos proyectoActual
 import { RolForm } from "../../components/RolForm";
 import {
@@ -32,6 +33,7 @@ import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 export default function VerRolPage() {
 	const router = useRouter();
 	const params = useParams();
+	const t = useTranslations("datosMaestrosPages.rolesVerPage");
 	const { proyectoActual } = useAuth(); //> 📝 CORRECCIÓN: Eliminado isLoading de aquí
 
 	const roleId = params && typeof params.id === "string" ? params.id : null;
@@ -63,42 +65,40 @@ export default function VerRolPage() {
 			if (resultado.success) {
 				if (resultado.data) {
 					if (resultado.data.project_id !== proyectoActual.id) {
-						setPageError(
-							"Error de consistencia: El rol consultado no pertenece al proyecto activo.",
-						);
+						setPageError(t("errorConsistency"));
 						setRolVisualizado(null);
-						sonnerToast.error("Error de Datos", {
-							description: "El rol no pertenece a este proyecto.",
+						sonnerToast.error(t("toastDataErrorTitle"), {
+							description: t("toastDataErrorDescription"),
 						}); //> 📝 Mantener toast si es útil
 					} else {
 						setRolVisualizado(resultado.data);
 					}
 				} else {
 					setPageError(
-						`El rol con ID "${roleId}" no fue encontrado en el proyecto "${proyectoActual.name}".`,
+						t("errorNotFound", { roleId: roleId ?? "", projectName: proyectoActual.name }),
 					);
-					sonnerToast.warning("Rol no Encontrado", {
-						description: `No se encontró el rol en el proyecto ${proyectoActual.name}.`,
+					sonnerToast.warning(t("toastNotFoundTitle"), {
+						description: t("toastNotFoundDescription", { projectName: proyectoActual.name }),
 					}); //> 📝 Mantener toast
 				}
 			} else {
 				setPageError(
-					resultado.error || "Error al cargar los detalles del rol.",
+					resultado.error || t("errorLoadingDetails"),
 				);
-				sonnerToast.error("Error al Cargar Rol", {
+				sonnerToast.error(t("toastLoadErrorTitle"), {
 					description: resultado.error,
 				}); //> 📝 Mantener toast
 			}
 		} catch (err) {
 			const errorMessage =
-				err instanceof Error ? err.message : "Error desconocido.";
-			setPageError(`Error inesperado: ${errorMessage}`);
-			sonnerToast.error("Error Inesperado", { description: errorMessage });
+				err instanceof Error ? err.message : t("errorUnknown");
+			setPageError(t("errorUnexpectedPrefix", { message: errorMessage }));
+			sonnerToast.error(t("toastUnexpectedTitle"), { description: errorMessage });
 			console.error("Error cargando detalles del rol:", err);
 		} finally {
 			setIsPageLoading(false);
 		}
-	}, [roleId, proyectoActual?.id, proyectoActual?.name]);
+	}, [roleId, proyectoActual?.id, proyectoActual?.name, t]);
 
 	useEffect(() => {
 		//> 📝 La lógica aquí asume que `proyectoActual` se resuelve (a un objeto o null) sincrónicamente
@@ -111,12 +111,12 @@ export default function VerRolPage() {
 		} else {
 			setIsPageLoading(false);
 			if (!proyectoActual?.id) {
-				setPageError("No hay un proyecto activo seleccionado.");
+				setPageError(t("noActiveProjectSelected"));
 			} else if (!roleId) {
-				setPageError("No se ha especificado un ID de rol para visualizar.");
+				setPageError(t("noRoleIdSpecified"));
 			}
 		}
-	}, [roleId, proyectoActual, cargarDetallesRol]);
+	}, [roleId, proyectoActual, cargarDetallesRol, t]);
 	//#endregion ![sub]
 
 	//#region [render] - 🎨 RENDER SECTION 🎨
@@ -128,7 +128,7 @@ export default function VerRolPage() {
 				<SustratoLoadingLogo
 					size={50}
 					showText
-					text="Cargando detalles del rol..."
+					text={t("loadingDetails")}
 				/>{" "}
 			</StandardPageBackground>
 		);
@@ -154,19 +154,19 @@ export default function VerRolPage() {
 							</StandardIcon>{" "}
 						</div>{" "}
 						<StandardPageTitle
-							title="Proyecto Requerido"
+							title={t("projectRequiredTitle")}
 							className="mt-4"
 						/>{" "}
 					</StandardCard.Header>{" "}
 					<StandardCard.Content>
 						<StandardText>
-							{pageError || "No hay un proyecto activo."}
+							{pageError || t("noActiveProject")}
 						</StandardText>
 					</StandardCard.Content>{" "}
 					<StandardCard.Footer>
 						{" "}
 						<Link href="/" passHref>
-							<StandardButton styleType="outline">Ir a Inicio</StandardButton>
+							<StandardButton styleType="outline">{t("goHomeButton")}</StandardButton>
 						</Link>{" "}
 					</StandardCard.Footer>{" "}
 				</StandardCard>{" "}
@@ -201,7 +201,7 @@ export default function VerRolPage() {
 							</StandardIcon>{" "}
 						</div>{" "}
 						<StandardPageTitle
-							title="Error al Cargar Rol"
+							title={t("errorLoadingTitle")}
 							className="mt-4"
 						/>{" "}
 					</StandardCard.Header>{" "}
@@ -212,7 +212,7 @@ export default function VerRolPage() {
 						{" "}
 						<Link href="/datos-maestros/roles" passHref>
 							<StandardButton styleType="outline">
-								Volver al Listado
+								{t("backToList")}
 							</StandardButton>
 						</Link>{" "}
 					</StandardCard.Footer>{" "}
@@ -236,18 +236,18 @@ export default function VerRolPage() {
 				>
 					{" "}
 					<StandardCard.Header>
-						<StandardPageTitle title="Rol no Encontrado" />
+						<StandardPageTitle title={t("notFoundTitle")} />
 					</StandardCard.Header>{" "}
 					<StandardCard.Content>
 						<StandardText>
-							{pageError || "No se encontraron datos para el rol especificado."}
+							{pageError || t("notFoundDescription")}
 						</StandardText>
 					</StandardCard.Content>{" "}
 					<StandardCard.Footer>
 						{" "}
 						<Link href="/datos-maestros/roles" passHref>
 							<StandardButton styleType="outline">
-								Volver al Listado
+								{t("backToList")}
 							</StandardButton>
 						</Link>{" "}
 					</StandardCard.Footer>{" "}
@@ -260,13 +260,13 @@ export default function VerRolPage() {
 		<StandardPageBackground variant="default">
 			<div className="container mx-auto py-6">
 				<StandardPageTitle
-					title={`Detalle del Rol: ${rolVisualizado.role_name}`}
-					subtitle={`Visualizando los permisos asignados a este rol en el proyecto "${proyectoActual.name}"`}
+					title={t("pageTitle", { roleName: rolVisualizado.role_name })}
+					subtitle={t("pageSubtitle", { projectName: proyectoActual.name })}
 					mainIcon={ShieldCheck}
 					showBackButton={{ href: "/datos-maestros/roles" }}
 					breadcrumbs={[
-						{ label: "Datos Maestros", href: "/datos-maestros" },
-						{ label: "Roles", href: "/datos-maestros/roles" },
+						{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+						{ label: t("breadcrumbRoles"), href: "/datos-maestros/roles" },
 						{ label: rolVisualizado.role_name },
 					]}
 				/>
@@ -292,7 +292,7 @@ export default function VerRolPage() {
 									onClick={() =>
 										router.push(`/datos-maestros/roles/${roleId}/modificar`)
 									}>
-									Modificar Rol
+									{t("modifyButton")}
 								</StandardButton>
 								<StandardButton
 									styleType="outline"
@@ -301,7 +301,7 @@ export default function VerRolPage() {
 									onClick={() =>
 										router.push(`/datos-maestros/roles/${roleId}/eliminar`)
 									}>
-									Eliminar Rol
+									{t("deleteButton")}
 								</StandardButton>
 							</>
 						)}

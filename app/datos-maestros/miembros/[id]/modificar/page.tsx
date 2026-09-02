@@ -4,6 +4,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import {
   obtenerDetallesMiembroProyecto,
@@ -35,6 +36,7 @@ interface RolOption {
 //#region [main] - 🔧 COMPONENT 🔧
 export default function ModificarMiembroPage() {
   //#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
+  const t = useTranslations("datosMaestrosPages.miembrosModificarPage");
   const router = useRouter();
   const params = useParams();
   const memberId = params?.id ? String(params.id) : "";
@@ -53,12 +55,12 @@ export default function ModificarMiembroPage() {
     setMiembro(null);
 
     if (!proyectoActual?.id) {
-      setError("No hay un proyecto activo seleccionado. Por favor, seleccione uno.");
+      setError(t("errorNoActiveProject"));
       setIsPageLoading(false); // Detenemos la carga si no hay datos para proceder.
       return;
     }
     if (!memberId) {
-      setError("ID de miembro no especificado en la URL.");
+      setError(t("errorNoMemberIdInUrl"));
       setIsPageLoading(false); // Detenemos la carga.
       return;
     }
@@ -74,7 +76,7 @@ export default function ModificarMiembroPage() {
       if (!resultadoRoles.success) {
         // Si falla, establecemos un error pero no bloqueamos la renderización del resto.
         console.error("Error al cargar roles:", resultadoRoles.error);
-        setError(resultadoRoles.error || "No se pudieron cargar los roles disponibles.");
+        setError(resultadoRoles.error || t("errorLoadingRolesGeneric"));
       } else if (resultadoRoles.data) {
         const opcionesRoles = resultadoRoles.data.map((rol: ProjectRoleInfo) => ({
           value: rol.id,
@@ -86,23 +88,23 @@ export default function ModificarMiembroPage() {
       // Procesamos el resultado del miembro.
       if (!resultadoMiembro.success) {
         // Si el miembro no se encuentra, es un error que debe detener el flujo.
-        setError(resultadoMiembro.error || "El miembro especificado no fue encontrado.");
+        setError(resultadoMiembro.error || t("errorMemberNotFoundGeneric"));
         setMiembro(null); // Aseguramos que no haya datos de miembro.
       } else if (resultadoMiembro.data) {
         setMiembro(resultadoMiembro.data);
       } else {
         // Si la operación fue exitosa pero no hay datos, significa que no se encontró.
-        setError("El miembro especificado no fue encontrado.");
+        setError(t("errorMemberNotFoundGeneric"));
         setMiembro(null);
       }
     } catch (err) {
       console.error("[Page] cargarDatos: Excepción:", err);
-      setError(`Error inesperado al cargar datos: ${(err as Error).message}`);
+      setError(t("errorUnexpectedLoadingData", { message: (err as Error).message }));
     } finally {
       // Independientemente del resultado, la carga de la página ha finalizado.
       setIsPageLoading(false);
     }
-  }, [proyectoActual?.id, memberId]);
+  }, [proyectoActual?.id, memberId, t]);
 
   useEffect(() => {
     // Este efecto se ejecuta una vez cuando el componente se monta
@@ -112,7 +114,7 @@ export default function ModificarMiembroPage() {
 
   const onSubmit = async (data: MiembroFormValues) => {
     if (!proyectoActual?.id || !memberId || !miembro) {
-      toast.error("Error de Aplicación: Faltan datos esenciales para la actualización.");
+      toast.error(t("toastAppErrorMissingData"));
       return;
     }
 
@@ -133,7 +135,7 @@ export default function ModificarMiembroPage() {
     }
 
     if (Object.keys(profileUpdates).length === 0 && Object.keys(memberUpdatesForAction).length === 0) {
-      toast("Sin Cambios", { description: "No se detectaron modificaciones para guardar." });
+      toast(t("toastNoChangesTitle"), { description: t("toastNoChangesDescription") });
       return;
     }
 
@@ -151,21 +153,21 @@ export default function ModificarMiembroPage() {
       const resultado = await modificarDetallesMiembroEnProyecto(payloadFinal);
 
       if (resultado.success) {
-        toast.success("Miembro Actualizado", {
-          description: "La información ha sido guardada exitosamente.",
+        toast.success(t("toastMemberUpdatedTitle"), {
+          description: t("toastMemberUpdatedDescription"),
           duration: 2000,
         });
         // Retrasamos la redirección para que el usuario pueda ver el toast.
         setTimeout(() => router.push("/datos-maestros/miembros"), 1500);
       } else {
-        toast.error("Error al Actualizar", {
-          description: resultado.error || "Ocurrió un error desconocido.",
+        toast.error(t("toastErrorUpdatingTitle"), {
+          description: resultado.error || t("toastErrorUnknown"),
         });
       }
     } catch (err) {
       console.error("[Page] onSubmit: Excepción al llamar a la Server Action:", err);
-      toast.error("Error de Comunicación", {
-        description: `No se pudo procesar la solicitud: ${(err as Error).message}`,
+      toast.error(t("toastCommErrorTitle"), {
+        description: t("toastCommErrorDescription", { message: (err as Error).message }),
       });
     } finally {
       // 4. Finalizar el estado de envío, sin importar el resultado.
@@ -178,15 +180,15 @@ export default function ModificarMiembroPage() {
   };
 
   const getNombreMiembro = (): string => {
-    if (!miembro?.profile) return "Miembro";
+    if (!miembro?.profile) return t("defaultMemberName");
     const { public_display_name, first_name, last_name } = miembro.profile;
     if (public_display_name) return public_display_name;
     if (first_name || last_name) return `${first_name || ""} ${last_name || ""}`.trim();
-    return "Miembro";
+    return t("defaultMemberName");
   };
 
   const valoresIniciales: MiembroFormValues | undefined = miembro ? {
-    emailUsuario: miembro.profile?.public_contact_email || (miembro.user_id ? `Usuario ID: ${miembro.user_id.substring(0,8)}...` : "Email no disponible"),
+    emailUsuario: miembro.profile?.public_contact_email || (miembro.user_id ? t("userIdFallback", { id: miembro.user_id.substring(0,8) }) : t("unavailableEmail")),
     rolId: miembro.project_role_id || "",
     firstName: miembro.profile?.first_name || "",
     lastName: miembro.profile?.last_name || "",
@@ -207,7 +209,7 @@ export default function ModificarMiembroPage() {
           size={50}
           variant="spin-pulse"
           showText={true}
-          text="Cargando datos del miembro..."
+          text={t("loadingMemberData")}
         />
       </div>
     );
@@ -218,12 +220,12 @@ export default function ModificarMiembroPage() {
       <div className="container mx-auto py-6">
         <div className="space-y-6">
           <PageHeader
-            title="Error al Cargar Datos"
+            title={t("errorLoadingTitle")}
             description={error}
             actions={
               <StandardButton onClick={handleCancel} styleType="outline">
                 <StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
-                Volver a Miembros
+                {t("backToMembers")}
               </StandardButton>
             }
           />
@@ -231,19 +233,19 @@ export default function ModificarMiembroPage() {
       </div>
     );
   }
-  
+
   if (!miembro) {
     // Este caso cubre cuando la carga terminó (isPageLoading=false) pero no hay miembro y no necesariamente un error.
     return (
        <div className="container mx-auto py-6">
         <div className="space-y-6">
           <PageHeader
-            title="Miembro no Encontrado"
-            description="No se pudo cargar la información del miembro o el miembro no existe."
+            title={t("memberNotFoundTitle")}
+            description={t("memberNotFoundDescription")}
             actions={
               <StandardButton onClick={handleCancel} styleType="outline">
                 <StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
-                Volver a Miembros
+                {t("backToMembers")}
               </StandardButton>
             }
           />
@@ -255,18 +257,18 @@ export default function ModificarMiembroPage() {
   return (
     <div className="container mx-auto py-6">
       <div className="space-y-6">
-        <StandardPageTitle 
-          title={`Editar Miembro: ${getNombreMiembro()}`}
-          subtitle="Actualiza la información del miembro en el proyecto"
+        <StandardPageTitle
+          title={t("editTitle", { name: getNombreMiembro() })}
+          subtitle={t("editSubtitle")}
           mainIcon={User}
           breadcrumbs={[
-            { label: "Datos Maestros", href: "/datos-maestros" },
-            { label: "Miembros ", href: "/datos-maestros/miembros" },
-            { label: "Modificar Miembro" }
+            { label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+            { label: t("breadcrumbMiembros"), href: "/datos-maestros/miembros" },
+            { label: t("breadcrumbModificar") }
           ]}
           showBackButton={{ href: "/datos-maestros/miembros" }}
         />
-        
+
         {valoresIniciales && roles.length > 0 ? (
           <StandardCard
             disableShadowHover={true}
@@ -287,7 +289,7 @@ export default function ModificarMiembroPage() {
         ) : (
           // Renderiza un mensaje si los roles no se pudieron cargar pero el miembro sí
           <StandardCard>
-             <p>No se pueden editar los roles en este momento. Por favor, intente más tarde.</p>
+             <p>{t("rolesUnavailableMessage")}</p>
           </StandardCard>
         )}
       </div>

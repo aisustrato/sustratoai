@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import { 
   obtenerDetallesMiembroProyecto,
@@ -31,6 +32,7 @@ import { StandardDialog } from "@/components/ui/StandardDialog";
 //#region [main] - 🔧 COMPONENT 🔧
 export default function EliminarMiembroPage() {
   //#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
+  const t = useTranslations("datosMaestrosPages.miembrosEliminarPage");
   const router = useRouter();
   const params = useParams();
   const memberId = params?.id ? String(params.id) : "";
@@ -44,7 +46,7 @@ export default function EliminarMiembroPage() {
 
   const cargarDatosMiembro = useCallback(async () => {
     if (!proyectoActual?.id || !memberId) {
-      setError("No se ha seleccionado un proyecto o el miembro no es válido.");
+      setError(t("errorNoProjectOrInvalidMember"));
       setIsLoading(false);
       return;
     }
@@ -52,22 +54,22 @@ export default function EliminarMiembroPage() {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const resultado = await obtenerDetallesMiembroProyecto(memberId, proyectoActual.id);
-      
+
       if (!resultado.success || !resultado.data) {
-        setError("No se pudo cargar la información del miembro.");
+        setError(t("errorLoadingMemberInfo"));
         return;
       }
-      
+
       setMiembro(resultado.data);
     } catch (err) {
       console.error("Error al cargar el miembro:", err);
-      setError("Ocurrió un error al cargar la información del miembro.");
+      setError(t("errorLoadingMemberGeneric"));
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, proyectoActual?.id]);
+  }, [memberId, proyectoActual?.id, t]);
 
   useEffect(() => {
     cargarDatosMiembro();
@@ -84,14 +86,14 @@ export default function EliminarMiembroPage() {
       });
       
       if (resultado.success) {
-        toast.success("Miembro eliminado correctamente");
+        toast.success(t("toastMemberDeletedSuccess"));
         router.push("/datos-maestros/miembros");
       } else {
-        setError(resultado.error || "Error al eliminar el miembro");
+        setError(resultado.error || t("errorDeletingMember"));
       }
     } catch (err) {
       console.error("Error al eliminar miembro:", err);
-      setError("Ocurrió un error al intentar eliminar el miembro");
+      setError(t("errorUnexpectedDeleting"));
     } finally {
       setIsDeleting(false);
       setShowDeleteDialog(false);
@@ -125,11 +127,11 @@ export default function EliminarMiembroPage() {
               leftIcon={ArrowLeft}
               className="mb-4"
             >
-              Volver
+              {t("backButton")}
             </StandardButton>
             <div className="flex items-center gap-3">
               <StandardIcon><AlertTriangle className="h-6 w-6" /></StandardIcon>
-              <StandardText>Error: {error}</StandardText>
+              <StandardText>{t("errorPrefix", { error })}</StandardText>
             </div>
           </StandardCard.Header>
         </StandardCard>
@@ -151,11 +153,11 @@ export default function EliminarMiembroPage() {
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3">
                 <StandardIcon><AlertTriangle className="h-6 w-6" /></StandardIcon>
-                <StandardText>No se encontró información para este miembro.</StandardText>
+                <StandardText>{t("memberNotFoundText")}</StandardText>
               </div>
               <div className="ml-9 space-y-1">
-                <StandardText weight="bold" size="lg">No se encontró el miembro</StandardText>
-                <StandardText>El miembro solicitado no existe o no tienes permisos para verlo.</StandardText>
+                <StandardText weight="bold" size="lg">{t("memberNotFoundTitle")}</StandardText>
+                <StandardText>{t("memberNotFoundDescription")}</StandardText>
               </div>
             </div>
           </StandardCard.Content>
@@ -166,14 +168,14 @@ export default function EliminarMiembroPage() {
 
   return (
     <StandardPageBackground variant="gradient">
-      <StandardPageTitle 
-        title={`Eliminar Miembro: ${miembro?.profile?.public_display_name || miembro?.profile?.first_name || 'Sin nombre'}`}
-        subtitle="Confirme la eliminación de este miembro del proyecto."
+      <StandardPageTitle
+        title={t("deleteTitle", { name: miembro?.profile?.public_display_name || miembro?.profile?.first_name || t("noNameFallback") })}
+        subtitle={t("deleteSubtitle")}
         mainIcon={User}
         breadcrumbs={[
-          { label: 'Datos Maestros', href: '/datos-maestros' },
-          { label: 'Miembros', href: '/datos-maestros/miembros' },
-          { label: 'Eliminar Miembro' }
+          { label: t("breadcrumbDatosMaestros"), href: '/datos-maestros' },
+          { label: t("breadcrumbMiembros"), href: '/datos-maestros/miembros' },
+          { label: t("breadcrumbEliminar") }
         ]}
         showBackButton={{ href: "/datos-maestros/miembros" }}
         className="max-w-4xl mx-auto mt-6 mb-4 px-6"
@@ -190,33 +192,33 @@ export default function EliminarMiembroPage() {
           <div className="space-y-6">
             <div>
               <StandardText size="lg" weight="semibold" className="mb-4">
-                ¿Está seguro que desea eliminar a este miembro?
+                {t("confirmQuestion")}
               </StandardText>
               <div className="space-y-2 mb-6">
                 <StandardText colorScheme="neutral">
-                  Esta acción no se puede deshacer.
+                  {t("irreversibleWarning")}
                 </StandardText>
                 <StandardText colorScheme="neutral">
-                  El miembro perderá el acceso al proyecto.
+                  {t("accessLossWarning")}
                 </StandardText>
               </div>
             </div>
-            
+
             <StandardCard colorScheme="neutral" styleType="subtle" hasOutline={true} className="mb-6">
               <StandardCard.Content>
-                <StandardText weight="medium" className="mb-4">Detalles del miembro</StandardText>
+                <StandardText weight="medium" className="mb-4">{t("memberDetailsTitle")}</StandardText>
                 <div className="space-y-3 pt-4">
                   <div>
-                    <StandardText weight="medium" colorScheme="neutral">Nombre:</StandardText>
-                    <StandardText>{miembro.profile?.public_display_name || 'No especificado'}</StandardText>
+                    <StandardText weight="medium" colorScheme="neutral">{t("nameLabel")}</StandardText>
+                    <StandardText>{miembro.profile?.public_display_name || t("notSpecified")}</StandardText>
                   </div>
                   <div>
-                    <StandardText weight="medium" colorScheme="neutral">Email:</StandardText>
-                    <StandardText>{miembro.profile?.public_contact_email || 'No especificado'}</StandardText>
+                    <StandardText weight="medium" colorScheme="neutral">{t("emailLabel")}</StandardText>
+                    <StandardText>{miembro.profile?.public_contact_email || t("notSpecified")}</StandardText>
                   </div>
                   <div>
-                    <StandardText weight="medium" colorScheme="neutral">Rol:</StandardText>
-                    <StandardText>{miembro.role_name || 'No especificado'}</StandardText>
+                    <StandardText weight="medium" colorScheme="neutral">{t("roleLabel")}</StandardText>
+                    <StandardText>{miembro.role_name || t("notSpecified")}</StandardText>
                   </div>
                 </div>
               </StandardCard.Content>
@@ -228,7 +230,7 @@ export default function EliminarMiembroPage() {
                 onClick={() => router.back()}
                 disabled={isDeleting}
               >
-                Cancelar
+                {t("cancelButton")}
               </StandardButton>
               <StandardButton
                 styleType="solid"
@@ -238,8 +240,8 @@ export default function EliminarMiembroPage() {
                 loading={isDeleting}
                 leftIcon={Trash2}
               >
-                
-                {isDeleting ? 'Eliminando...' : 'Eliminar miembro'}
+
+                {isDeleting ? t("deletingButton") : t("deleteMemberButton")}
               </StandardButton>
             </div>
           </div>
@@ -250,23 +252,23 @@ export default function EliminarMiembroPage() {
       <StandardDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <StandardDialog.Content colorScheme="danger" size="md">
           <StandardDialog.Header>
-            <StandardDialog.Title>{`¿Está seguro que desea eliminar a ${miembro?.profile?.first_name || 'este miembro'}?`}</StandardDialog.Title>
+            <StandardDialog.Title>{t("confirmDialogTitle", { name: miembro?.profile?.first_name || t("confirmDialogThisMember") })}</StandardDialog.Title>
           </StandardDialog.Header>
           <StandardDialog.Body>
             <StandardDialog.Description>
-              Esta acción no se puede deshacer. El miembro perderá el acceso al proyecto.
+              {t("confirmDialogDescription")}
             </StandardDialog.Description>
           </StandardDialog.Body>
           <StandardDialog.Footer>
             <StandardDialog.Close asChild>
-              <StandardButton styleType="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</StandardButton>
+              <StandardButton styleType="outline" onClick={() => setShowDeleteDialog(false)}>{t("cancelButton")}</StandardButton>
             </StandardDialog.Close>
-            <StandardButton 
-              colorScheme="danger" 
+            <StandardButton
+              colorScheme="danger"
               onClick={handleConfirmarEliminacion}
               loading={isDeleting}
             >
-              {isDeleting ? 'Eliminando...' : 'Sí, eliminar'}
+              {isDeleting ? t("deletingButton") : t("yesDeleteButton")}
             </StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>

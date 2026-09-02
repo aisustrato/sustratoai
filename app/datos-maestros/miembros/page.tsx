@@ -10,6 +10,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import { obtenerMiembrosConPerfilesYRolesDelProyecto } from "@/lib/actions/member-actions";
 import { StandardText } from "@/components/ui/StandardText";
@@ -35,6 +36,7 @@ import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 //#region [main] - 🔧 COMPONENT 🔧
 export default function MiembrosPage() {
 	const router = useRouter();
+	const t = useTranslations("datosMaestrosPages.miembrosListPage");
 	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HANDLERS 🧰
 	const { proyectoActual } = useAuth();
 	const { toast } = useToast();
@@ -51,7 +53,7 @@ export default function MiembrosPage() {
 		setError(null);
 
 		if (!proyectoActual?.id) {
-			setError("No hay un proyecto seleccionado.");
+			setError(t("errorNoProject"));
 			setIsLoading(false);
 			return;
 		}
@@ -65,21 +67,21 @@ export default function MiembrosPage() {
 				setMiembros(resultado.data);
 			} else {
 				setError(
-					resultado.error || "Error al cargar los miembros del proyecto."
+					resultado.error || t("errorLoadingGeneric")
 				);
 				toast({
-					title: "Error al cargar miembros",
+					title: t("toastErrorLoadingTitle"),
 					description: resultado.error,
 					variant: "destructive",
 				});
 			}
 		} catch (err) {
-			setError("Error al cargar los miembros del proyecto.");
+			setError(t("errorLoadingGeneric"));
 			console.error("Error cargando miembros:", err);
 		} finally {
 			setIsLoading(false);
 		}
-	}, [proyectoActual?.id, toast]);
+	}, [proyectoActual?.id, toast, t]);
 
   useEffect(() => {
     if (proyectoActual?.id) {
@@ -111,12 +113,12 @@ export default function MiembrosPage() {
 	//#region [sub_render_logic] - 📊 Pro-Table Column Definitions 📊
 	const columnas: ColumnDef<ProjectMemberDetails>[] = [
 		{
-			header: "Nombre",
+			header: t("columnName"),
 			accessorFn: (row: ProjectMemberDetails) => {
 				const profile = row.profile;
 				if (profile?.public_display_name) return profile.public_display_name;
 				if (profile?.first_name || profile?.last_name) return `${profile.first_name || ""} ${profile.last_name || ""}`.trim();
-				return "Sin nombre registrado";
+				return t("noNameRegistered");
 			},
 			cell: ({ getValue }) => (
 				<div className="font-medium">
@@ -126,34 +128,34 @@ export default function MiembrosPage() {
 			meta: { size: 250 },
 		},
 		{
-			header: "Institución",
-			accessorFn: (row: ProjectMemberDetails) => row.profile?.primary_institution || "No especificada",
+			header: t("columnInstitution"),
+			accessorFn: (row: ProjectMemberDetails) => row.profile?.primary_institution || t("notSpecifiedFem"),
 			cell: ({ getValue }) => (
 				<div className="truncate">
 					{getValue() as string}
 				</div>
 			),
-			meta: { 
+			meta: {
 				size: 200,
 				isTruncatable: true
 			},
 		},
 		{
-			header: "Perfil de Usuario",
-			accessorFn: (row: ProjectMemberDetails) => row.profile?.public_contact_email || "No especificado",
+			header: t("columnUserProfile"),
+			accessorFn: (row: ProjectMemberDetails) => row.profile?.public_contact_email || t("notSpecifiedMasc"),
 			cell: ({ getValue }) => (
 				<div className="truncate">
 					{getValue() as string}
 				</div>
 			),
-			meta: { 
+			meta: {
 				size: 200,
-				isTruncatable: true 
+				isTruncatable: true
 			},
 		},
 		{
-			header: "Rol en el Proyecto",
-			accessorFn: (row: ProjectMemberDetails) => row.role_name || "Sin rol asignado",
+			header: t("columnRole"),
+			accessorFn: (row: ProjectMemberDetails) => row.role_name || t("noRoleAssigned"),
 			cell: ({ getValue }) => (
 				<div className="flex justify-center">
 					<StandardBadge size="xs" colorScheme="primary" styleType="subtle">
@@ -161,16 +163,16 @@ export default function MiembrosPage() {
 					</StandardBadge>
 				</div>
 			),
-			meta: { 
+			meta: {
 				size: 180,
-				align: 'center' 
+				align: 'center'
 			},
 		},
 		{
 			id: 'actions',
-			header: () => <div className="text-center">Acciones</div>,
-			meta: { 
-				align: 'center', 
+			header: () => <div className="text-center">{t("columnActions")}</div>,
+			meta: {
+				align: 'center',
 				isSticky: 'right',
 				size: 200 // Ancho fijo para la columna de acciones
 			},
@@ -184,9 +186,9 @@ export default function MiembrosPage() {
 							size="sm"
 							iconOnly={true}
 							onClick={() => handleVerMiembro(miembro)}
-							tooltip="Ver detalles"
+							tooltip={t("viewDetailsTooltip")}
 							leftIcon={Eye}
-							aria-label="Ver detalles del miembro"
+							aria-label={t("viewDetailsAria")}
 						/>
 						{puedeGestionarMiembros && (
 							<>
@@ -196,9 +198,9 @@ export default function MiembrosPage() {
 									size="sm"
 									iconOnly={true}
 									onClick={() => handleEditarMiembro(miembro)}
-									tooltip="Editar miembro"
+									tooltip={t("editMemberTooltip")}
 									leftIcon={PenLine}
-									aria-label="Editar miembro"
+									aria-label={t("editMemberAria")}
 								/>
 								<StandardButton
 									styleType="outline"
@@ -206,11 +208,11 @@ export default function MiembrosPage() {
 									iconOnly={true}
 									onClick={() => handleEliminarMiembro(miembro)}
 									colorScheme="danger"
-									tooltip="Eliminar miembro"
+									tooltip={t("deleteMemberTooltip")}
 									leftIcon={Trash2}
-									aria-label="Eliminar miembro"
+									aria-label={t("deleteMemberAria")}
 								>
-									Eliminar
+									{t("deleteButton")}
 								</StandardButton>
 							</>
 						)}
@@ -227,14 +229,14 @@ export default function MiembrosPage() {
 			<div className="container mx-auto py-6">
 				<div className="space-y-6">
 					<StandardPageTitle
-						title="Miembros del Proyecto"
-						subtitle="Gestión de los participantes del proyecto"
-						description="Añade, edita o elimina los perfiles de los investigadores y colaboradores asignados a este proyecto."
+						title={t("pageTitle")}
+						subtitle={t("pageSubtitle")}
+						description={t("pageDescription")}
 						mainIcon={User}
 						showBackButton={{ href: "/datos-maestros" }}
 						breadcrumbs={[
-							{ label: "Datos Maestros", href: "/datos-maestros" },
-							{ label: "Miembros" },
+							{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+							{ label: t("breadcrumbMiembros") },
 						]}
 						actions={
 							puedeGestionarMiembros ? (
@@ -243,7 +245,7 @@ export default function MiembrosPage() {
 									colorScheme="primary"
 									leftIcon={UserPlus}
 								>
-									Agregar Miembro
+									{t("addMemberButton")}
 								</StandardButton>
 							) : undefined
 						}
@@ -256,7 +258,7 @@ export default function MiembrosPage() {
 								size={50}
 								variant="spin-pulse"
 								showText={true}
-								text="Cargando miembros..."
+								text={t("loadingMembers")}
 							/>
 						</div>
 					) : error ? (
@@ -270,26 +272,26 @@ export default function MiembrosPage() {
 						>
 							<div className="flex items-center gap-3">
 								<StandardIcon><AlertCircle className="h-6 w-6 text-destructive" /></StandardIcon>
-								<StandardText>Error: {error}</StandardText>
+								<StandardText>{t("errorPrefix", { error })}</StandardText>
 							</div>
 						</StandardCard>
 					) : miembros.length === 0 ? (
 						<StandardEmptyState
 							icon={UserPlus}
-							title="No hay miembros en este proyecto"
+							title={t("emptyTitle")}
 							description={
 								puedeGestionarMiembros
-								? "Agrega investigadores al proyecto para comenzar a colaborar."
-								: "Aún no hay investigadores asociados a este proyecto."
+								? t("emptyDescriptionCanManage")
+								: t("emptyDescriptionCannotManage")
 							}
 							action={
 								puedeGestionarMiembros ? (
-									<StandardButton 
+									<StandardButton
 										onClick={handleAgregarMiembro}
 										colorScheme="primary"
 										leftIcon={UserPlus}
 									>
-										Agregar Miembro
+										{t("addMemberButton")}
 									</StandardButton>
 								) : undefined
 							}
@@ -301,13 +303,13 @@ export default function MiembrosPage() {
 							colorScheme="primary"
 							accentPlacement="top"
 							shadow="md"
-							
+
 						>
 							<StandardCard.Content>
 							<StandardTable<ProjectMemberDetails>
 								data={miembros}
 								columns={columnas}
-								filterPlaceholder="Buscar por nombre, rol o perfil..."
+								filterPlaceholder={t("searchPlaceholder")}
 							>
 								<StandardTable.Table />
 							</StandardTable>

@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider"; //> 📝 Solo se usa proyectoActual y user
 import { RolForm, type RolFormValues } from "../../components/RolForm";
 import {
@@ -33,6 +34,7 @@ import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 export default function ModificarRolPage() {
 	const router = useRouter();
 	const params = useParams();
+	const t = useTranslations("datosMaestrosPages.rolesModificarPage");
 	const { proyectoActual } = useAuth(); //> 📝 CORRECCIÓN: Eliminado isLoading de aquí
 
 	const roleId = params && typeof params.id === "string" ? params.id : null;
@@ -66,45 +68,40 @@ export default function ModificarRolPage() {
 			if (resultado.success) {
 				if (resultado.data) {
 					if (resultado.data.project_id !== proyectoActual.id) {
-						setPageError(
-							"Error de consistencia: El rol consultado no pertenece al proyecto activo.",
-						);
+						setPageError(t("errorConsistency"));
 						setRolParaEditar(null);
-						sonnerToast.error("Error de Datos", {
-							description: "El rol no pertenece a este proyecto.",
+						sonnerToast.error(t("toastDataErrorTitle"), {
+							description: t("toastDataErrorDescription"),
 						});
 					} else {
 						setRolParaEditar(resultado.data);
 					}
 				} else {
 					setPageError(
-						`El rol con ID "${roleId}" no fue encontrado en el proyecto "${proyectoActual.name}".`,
+						t("errorNotFound", { roleId: roleId ?? "", projectName: proyectoActual.name }),
 					);
-					sonnerToast.warning("Rol no Encontrado", {
-						description: `No se encontró el rol en el proyecto ${proyectoActual.name}.`,
+					sonnerToast.warning(t("toastNotFoundTitle"), {
+						description: t("toastNotFoundDescription", { projectName: proyectoActual.name }),
 					});
 				}
 			} else {
 				setPageError(
-					resultado.error || "Error al cargar los detalles del rol.",
+					resultado.error || t("errorLoadingDetails"),
 				);
-				sonnerToast.error("Error al Cargar Rol", {
+				sonnerToast.error(t("toastLoadErrorTitle"), {
 					description: resultado.error,
 				});
 			}
 		} catch (err) {
 			console.error("Error al cargar el rol:", err);
-			setPageError(
-				"Error al cargar los detalles del rol. Por favor, inténtalo de nuevo más tarde.",
-			);
-			sonnerToast.error("Error al cargar el rol", {
-				description:
-					"No se pudieron cargar los detalles del rol. Por favor, inténtalo de nuevo.",
+			setPageError(t("errorLoadingGeneric"));
+			sonnerToast.error(t("toastLoadErrorGenericTitle"), {
+				description: t("toastLoadErrorGenericDescription"),
 			});
 		} finally {
 			setIsPageLoading(false);
 		}
-	}, [roleId, proyectoActual?.id, proyectoActual?.name]);
+	}, [roleId, proyectoActual?.id, proyectoActual?.name, t]);
 
 	useEffect(() => {
 		//> 📝 Este useEffect determina si se puede proceder a cargar el rol.
@@ -117,17 +114,17 @@ export default function ModificarRolPage() {
 			//> 📝 Si falta algo crucial al inicio, terminamos la carga y establecemos error.
 			setIsPageLoading(false);
 			if (!proyectoActual?.id) {
-				setPageError("No hay un proyecto activo seleccionado.");
+				setPageError(t("noActiveProjectSelected"));
 			} else if (!roleId) {
-				setPageError("No se ha especificado un ID de rol para modificar.");
+				setPageError(t("noRoleIdSpecifiedModify"));
 			}
 		}
-	}, [roleId, proyectoActual, cargarDetallesRol]); //> 📝 Depender de proyectoActual completo
+	}, [roleId, proyectoActual, cargarDetallesRol, t]); //> 📝 Depender de proyectoActual completo
 
 	const handleModificarRol = async (data: RolFormValues) => {
 		if (!roleId || !proyectoActual?.id || !rolParaEditar) {
-			sonnerToast.error("Error de Aplicación", {
-				description: "Falta información crítica.",
+			sonnerToast.error(t("toastAppErrorTitle"), {
+				description: t("toastAppErrorDescription"),
 			});
 			return;
 		}
@@ -152,13 +149,13 @@ export default function ModificarRolPage() {
 			await modificarRolEnProyecto(payload);
 
 		if (resultado.success) {
-			sonnerToast.success("Rol Actualizado", {
-				description: `El rol "${data.role_name}" ha sido actualizado.`,
+			sonnerToast.success(t("toastUpdatedTitle"), {
+				description: t("toastUpdatedDescription", { roleName: data.role_name }),
 			});
 			router.push("/datos-maestros/roles");
 		} else {
-			sonnerToast.error("Error al Modificar Rol", {
-				description: resultado.error || "No se pudo actualizar.",
+			sonnerToast.error(t("toastUpdateErrorTitle"), {
+				description: resultado.error || t("toastUpdateErrorFallback"),
 			});
 			setPageError(resultado.error);
 		}
@@ -173,7 +170,7 @@ export default function ModificarRolPage() {
 		return (
 			<StandardPageBackground variant="gradient">
 				{" "}
-				<SustratoLoadingLogo size={50} showText text="Cargando..." />{" "}
+				<SustratoLoadingLogo size={50} showText text={t("loadingGeneric")} />{" "}
 			</StandardPageBackground>
 		);
 	}
@@ -199,19 +196,19 @@ export default function ModificarRolPage() {
 							</StandardIcon>{" "}
 						</div>{" "}
 						<StandardPageTitle
-							title="Proyecto Requerido"
+							title={t("projectRequiredTitle")}
 							className="mt-4"
 						/>{" "}
 					</StandardCard.Header>{" "}
 					<StandardCard.Content>
 						<StandardText>
-							{pageError || "No hay un proyecto activo."}
+							{pageError || t("noActiveProject")}
 						</StandardText>
 					</StandardCard.Content>{" "}
 					<StandardCard.Footer>
 						{" "}
 						<Link href="/" passHref>
-							<StandardButton styleType="outline">Ir a Inicio</StandardButton>
+							<StandardButton styleType="outline">{t("goHomeButton")}</StandardButton>
 						</Link>{" "}
 					</StandardCard.Footer>{" "}
 				</StandardCard>{" "}
@@ -238,18 +235,18 @@ export default function ModificarRolPage() {
 								<AlertTriangle />
 							</StandardIcon>{" "}
 						</div>{" "}
-						<StandardPageTitle title="Acceso Denegado" className="mt-4" />{" "}
+						<StandardPageTitle title={t("accessDeniedTitle")} className="mt-4" />{" "}
 					</StandardCard.Header>{" "}
 					<StandardCard.Content>
 						<StandardText>
-							No tienes permisos para modificar roles en este proyecto.
+							{t("accessDeniedDescriptionModify")}
 						</StandardText>
 					</StandardCard.Content>{" "}
 					<StandardCard.Footer>
 						{" "}
 						<Link href="/datos-maestros/roles" passHref>
 							<StandardButton styleType="outline">
-								Volver al Listado
+								{t("backToList")}
 							</StandardButton>
 						</Link>{" "}
 					</StandardCard.Footer>{" "}
@@ -281,7 +278,7 @@ export default function ModificarRolPage() {
 							</StandardIcon>{" "}
 						</div>{" "}
 						<StandardPageTitle
-							title="Error al Cargar Rol"
+							title={t("errorLoadingTitle")}
 							className="mt-4"
 						/>{" "}
 					</StandardCard.Header>{" "}
@@ -292,7 +289,7 @@ export default function ModificarRolPage() {
 						{" "}
 						<Link href="/datos-maestros/roles" passHref>
 							<StandardButton styleType="outline">
-								Volver al Listado
+								{t("backToList")}
 							</StandardButton>
 						</Link>{" "}
 					</StandardCard.Footer>{" "}
@@ -316,18 +313,18 @@ export default function ModificarRolPage() {
 				>
 					{" "}
 					<StandardCard.Header>
-						<StandardPageTitle title="Rol no Encontrado" />
+						<StandardPageTitle title={t("notFoundTitle")} />
 					</StandardCard.Header>{" "}
 					<StandardCard.Content>
 						<StandardText>
-							{pageError || "No se encontraron datos para el rol especificado."}
+							{pageError || t("notFoundDescription")}
 						</StandardText>
 					</StandardCard.Content>{" "}
 					<StandardCard.Footer>
 						{" "}
 						<Link href="/datos-maestros/roles" passHref>
 							<StandardButton styleType="outline">
-								Volver al Listado
+								{t("backToList")}
 							</StandardButton>
 						</Link>{" "}
 					</StandardCard.Footer>{" "}
@@ -349,17 +346,17 @@ export default function ModificarRolPage() {
 		<StandardPageBackground variant="gradient">
 			<div className="container mx-auto py-6">
 				<StandardPageTitle
-					title={`Modificar Rol: ${rolParaEditar.role_name}`}
-					subtitle={`Actualiza los permisos para este rol en el proyecto "${proyectoActual.name}"`}
+					title={t("pageTitle", { roleName: rolParaEditar.role_name })}
+					subtitle={t("pageSubtitle", { projectName: proyectoActual.name })}
 					mainIcon={ShieldCheck}
 					breadcrumbs={[
-						{ label: "Datos Maestros", href: "/datos-maestros" },
-						{ label: "Roles", href: "/datos-maestros/roles" },
+						{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+						{ label: t("breadcrumbRoles"), href: "/datos-maestros/roles" },
 						{
 							label: rolParaEditar.role_name,
 							href: `/datos-maestros/roles/${roleId}/ver`,
 						},
-						{ label: "Modificar" },
+						{ label: t("breadcrumbModificar") },
 					]}
 					showBackButton={{ href: `/datos-maestros/roles` }}
 				/>

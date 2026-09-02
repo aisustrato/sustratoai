@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import { 
     eliminarRolDeProyecto,
@@ -31,8 +32,9 @@ import { StandardDialog } from "@/components/ui/StandardDialog";
 export default function EliminarRolPage() {
   const router = useRouter();
   const params = useParams();
-  const { proyectoActual } = useAuth(); 
-  
+  const t = useTranslations("datosMaestrosPages.rolesEliminarPage");
+  const { proyectoActual } = useAuth();
+
   const roleId = (params && typeof params.id === "string") ? params.id : null;
 
   const [rolParaEliminar, setRolParaEliminar] = useState<ProjectRoleRow | null>(null);
@@ -57,28 +59,28 @@ export default function EliminarRolPage() {
       if (resultado.success && resultado.data) {
         setRolParaEliminar(resultado.data);
       } else {
-        setPageError(resultado.success ? "Rol no encontrado." : resultado.error || "Error al cargar datos del rol.");
+        setPageError(resultado.success ? t("notFoundRole") : resultado.error || t("errorLoadingRoleData"));
       }
     } catch (err) {
-      setPageError(err instanceof Error ? err.message : "Error inesperado.");
+      setPageError(err instanceof Error ? err.message : t("errorUnexpected"));
     } finally {
       setIsPageLoading(false);
     }
-  }, [roleId, proyectoActual?.id]);
+  }, [roleId, proyectoActual?.id, t]);
 
   useEffect(() => {
     if (roleId && proyectoActual?.id) {
       cargarNombreRol();
     } else {
       setIsPageLoading(false);
-      if (!proyectoActual?.id) setPageError("Proyecto no activo.");
-      else if (!roleId) setPageError("ID de rol no especificado.");
+      if (!proyectoActual?.id) setPageError(t("noActiveProjectShort"));
+      else if (!roleId) setPageError(t("noRoleIdShort"));
     }
-  }, [roleId, proyectoActual, cargarNombreRol]);
+  }, [roleId, proyectoActual, cargarNombreRol, t]);
 
   const handleConfirmarEliminacion = async () => {
     if (!roleId || !proyectoActual?.id || !rolParaEliminar) {
-      sonnerToast.error("Error de Aplicación", { description: "Falta información crítica." });
+      sonnerToast.error(t("toastAppErrorTitle"), { description: t("toastAppErrorDescription") });
       setShowConfirmDialog(false);
       return;
     }
@@ -89,13 +91,13 @@ export default function EliminarRolPage() {
     const resultado = await eliminarRolDeProyecto({ role_id: roleId, project_id: proyectoActual.id });
 
     if (resultado.success) {
-      sonnerToast.success("Rol Eliminado", {
-        description: `El rol "${rolParaEliminar.role_name}" ha sido eliminado exitosamente.`,
+      sonnerToast.success(t("toastDeletedTitle"), {
+        description: t("toastDeletedDescription", { roleName: rolParaEliminar.role_name }),
       });
       router.push("/datos-maestros/roles");
     } else {
-      sonnerToast.error("Error al Eliminar Rol", {
-        description: resultado.error || "No se pudo eliminar el rol.",
+      sonnerToast.error(t("toastDeleteErrorTitle"), {
+        description: resultado.error || t("toastDeleteErrorFallback"),
         duration: 5000, // Mostrar más tiempo si es un error importante
       });
       setPageError(resultado.error); // Mostrar el error en la página también
@@ -112,7 +114,7 @@ export default function EliminarRolPage() {
     return (
       <div>
         <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <SustratoLoadingLogo showText text="Cargando datos del rol..." />
+          <SustratoLoadingLogo showText text={t("loadingRoleData")} />
         </div>
       </div>
     );
@@ -134,18 +136,18 @@ export default function EliminarRolPage() {
             <StandardCard.Header className="items-center flex flex-col text-center">
               <StandardIcon><ShieldAlert className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
               <StandardText preset="subheading" weight="bold" colorScheme="danger">
-                Acceso Denegado
+                {t("accessDeniedTitle")}
               </StandardText>
             </StandardCard.Header>
             <StandardCard.Content className="text-center">
               <StandardText>
-                No tienes permisos para eliminar roles en este proyecto.
+                {t("accessDeniedDescription")}
               </StandardText>
             </StandardCard.Content>
             <StandardCard.Footer className="flex justify-center">
               <Link href="/datos-maestros/roles" passHref>
                 <StandardButton styleType="outline">
-                  Volver al Listado de Roles
+                  {t("backToListButton")}
                 </StandardButton>
               </Link>
             </StandardCard.Footer>
@@ -171,18 +173,18 @@ export default function EliminarRolPage() {
             <StandardCard.Header className="items-center flex flex-col text-center">
               <StandardIcon><ShieldAlert className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
               <StandardText preset="subheading" weight="bold" colorScheme="danger">
-                Acceso Denegado
+                {t("accessDeniedTitle")}
               </StandardText>
             </StandardCard.Header>
             <StandardCard.Content className="text-center">
               <StandardText>
-                No tienes permisos para eliminar roles en este proyecto.
+                {t("accessDeniedDescription")}
               </StandardText>
             </StandardCard.Content>
             <StandardCard.Footer className="flex justify-center">
               <Link href="/datos-maestros/roles" passHref>
                 <StandardButton styleType="outline">
-                  Volver al Listado de Roles
+                  {t("backToListButton")}
                 </StandardButton>
               </Link>
             </StandardCard.Footer>
@@ -208,7 +210,7 @@ export default function EliminarRolPage() {
             <StandardCard.Header className="items-center flex flex-col text-center">
               <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
               <StandardText preset="subheading" weight="bold" colorScheme="danger">
-                Error al Cargar Rol
+                {t("errorLoadingTitle")}
               </StandardText>
             </StandardCard.Header>
             <StandardCard.Content className="text-center">
@@ -219,7 +221,7 @@ export default function EliminarRolPage() {
             <StandardCard.Footer className="flex justify-center">
               <Link href="/datos-maestros/roles" passHref>
                 <StandardButton styleType="outline">
-                  Volver al Listado de Roles
+                  {t("backToListButton")}
                 </StandardButton>
               </Link>
             </StandardCard.Footer>
@@ -233,29 +235,29 @@ export default function EliminarRolPage() {
     return (
       <div>
         <div className="container mx-auto py-8 flex flex-col items-center justify-center min-h-[70vh]">
-          <StandardCard 
-            colorScheme="primary" 
-            accentPlacement="none" 
-            hasOutline={false} 
-            shadow="none" 
+          <StandardCard
+            colorScheme="primary"
+            accentPlacement="none"
+            hasOutline={false}
+            shadow="none"
             disableShadowHover={true}
             styleType="subtle"
             className="max-w-lg w-full"
           >
             <StandardCard.Header className="items-center flex flex-col text-center">
               <StandardText preset="subheading" weight="bold" colorScheme="danger">
-                Rol no Encontrado
+                {t("notFoundTitle")}
               </StandardText>
             </StandardCard.Header>
             <StandardCard.Content className="text-center">
               <StandardText>
-                {pageError || "No se encontraron datos para el rol especificado."}
+                {pageError || t("notFoundDescription")}
               </StandardText>
             </StandardCard.Content>
             <StandardCard.Footer className="flex justify-center">
               <Link href="/datos-maestros/roles" passHref>
                 <StandardButton styleType="outline">
-                  Volver al Listado de Roles
+                  {t("backToListButton")}
                 </StandardButton>
               </Link>
             </StandardCard.Footer>
@@ -270,14 +272,14 @@ export default function EliminarRolPage() {
     <div>
       <div className="container mx-auto py-8">
         <StandardPageTitle
-          title={`Eliminar Rol: ${rolParaEliminar.role_name}`}
-          subtitle={`Confirmación para eliminar el rol del proyecto "${proyectoActual.name}"`}
+          title={t("pageTitle", { roleName: rolParaEliminar.role_name })}
+          subtitle={t("pageSubtitle", { projectName: proyectoActual.name })}
           mainIcon={ShieldAlert}
           breadcrumbs={[
-            { label: "Datos Maestros", href: "/datos-maestros" },
-            { label: "Roles", href: "/datos-maestros/roles" },
+            { label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+            { label: t("breadcrumbRoles"), href: "/datos-maestros/roles" },
             { label: rolParaEliminar.role_name, href: `/datos-maestros/roles/${roleId}/ver` },
-            { label: "Eliminar" }
+            { label: t("breadcrumbEliminar") }
           ]}
           showBackButton={{ href: `/datos-maestros/roles/${roleId}/ver` }}
         />
@@ -293,17 +295,16 @@ export default function EliminarRolPage() {
         >
           <StandardCard.Header>
             <StandardText preset="heading" size="lg" colorScheme="danger">
-              Confirmar Eliminación
+              {t("confirmDeletionHeader")}
             </StandardText>
           </StandardCard.Header>
           <StandardCard.Content className="space-y-4">
             <StandardText>
-              Estás a punto de eliminar el rol <StandardText asElement="span" weight="bold">{rolParaEliminar.role_name}</StandardText>. 
-              Esta acción no se puede deshacer.
+              {t("confirmDeletionBefore")} <StandardText asElement="span" weight="bold">{rolParaEliminar.role_name}</StandardText>{t("confirmDeletionAfter")}
             </StandardText>
             <StandardText colorScheme="warning" colorShade="text" className="flex items-start gap-2">
               <StandardIcon size="sm" colorScheme="warning"><AlertTriangle className="mt-0.5 flex-shrink-0" /></StandardIcon>
-              <span>Asegúrate de que ningún miembro esté actualmente asignado a este rol. Si el rol está en uso, la eliminación fallará.</span>
+              <span>{t("warningText")}</span>
             </StandardText>
             {pageError && ( // Mostrar errores de la action de eliminar aquí
               <div className="p-3 text-sm text-destructive-foreground border border-destructive bg-destructive/10 rounded-md">
@@ -312,12 +313,12 @@ export default function EliminarRolPage() {
             )}
           </StandardCard.Content>
           <StandardCard.Footer className="flex justify-end gap-3">
-            <StandardButton 
-              styleType="outline" 
+            <StandardButton
+              styleType="outline"
               onClick={() => router.push(`/datos-maestros/roles/${roleId}/ver`)}
               disabled={isSubmitting}
             >
-              Cancelar
+              {t("cancelButton")}
             </StandardButton>
             <StandardButton
               colorScheme="danger"
@@ -325,7 +326,7 @@ export default function EliminarRolPage() {
               loading={isSubmitting}
               leftIcon={Trash2}
             >
-              Eliminar Rol Permanentemente
+              {t("deletePermanentlyButton")}
             </StandardButton>
           </StandardCard.Footer>
         </StandardCard>
@@ -333,23 +334,21 @@ export default function EliminarRolPage() {
         <StandardDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
           <StandardDialog.Content>
             <StandardDialog.Header>
-              <StandardDialog.Title>¿Estás absolutamente seguro?</StandardDialog.Title>
+              <StandardDialog.Title>{t("confirmDialogTitle")}</StandardDialog.Title>
               <StandardDialog.Description>
-                Esta acción eliminará permanentemente el rol <StandardText asElement="span" weight="bold">{rolParaEliminar?.role_name}</StandardText>. 
-                Si hay miembros asignados a este rol, la operación fallará y deberás reasignarlos primero.
-                No podrás deshacer esta acción.
+                {t("confirmDialogDescriptionBefore")} <StandardText asElement="span" weight="bold">{rolParaEliminar?.role_name}</StandardText>{t("confirmDialogDescriptionAfter")}
               </StandardDialog.Description>
             </StandardDialog.Header>
             <StandardDialog.Footer>
               <StandardButton styleType="outline" onClick={() => setShowConfirmDialog(false)} disabled={isSubmitting}>
-                Cancelar
+                {t("cancelButton")}
               </StandardButton>
               <StandardButton
                 colorScheme="danger"
                 onClick={handleConfirmarEliminacion}
-                loading={isSubmitting} 
+                loading={isSubmitting}
               >
-                {isSubmitting ? "Eliminando..." : "Sí, eliminar rol"}
+                {isSubmitting ? t("deletingButton") : t("confirmDeleteButton")}
               </StandardButton>
             </StandardDialog.Footer>
           </StandardDialog.Content>
