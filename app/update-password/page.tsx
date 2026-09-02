@@ -83,6 +83,35 @@ export default function UpdatePasswordPage() {
 				// mostrando "Verificando tu enlace..." para terminar en un error
 				// de enlace inválido / redirect, sin haber intentado nunca el canje.
 				if (code) {
+					// Un `code` PKCE es de un solo uso: si YA lo canjeamos con éxito
+					// antes en esta misma pestaña, cualquier intento posterior de
+					// volver a canjearlo fallará con "código inválido/expirado" aunque
+					// la sesión siga siendo perfectamente válida. `hasProcessedRef` no
+					// alcanza a cubrir esto porque es un `useRef` en memoria: si por
+					// lo que sea el componente se vuelve a montar (o el efecto se
+					// re-dispara desde una instancia nueva), el ref arranca de cero.
+					// `sessionStorage` sí sobrevive un remount dentro de la misma
+					// pestaña, así que lo usamos como memoria de "este code ya está
+					// validado" y saltamos derecho a mostrar el formulario sin volver
+					// a tocar la red.
+					const exchangedKey = `pkce_exchanged_${code}`;
+					let alreadyExchanged = false;
+					try {
+						alreadyExchanged =
+							sessionStorage.getItem(exchangedKey) === "success";
+					} catch {
+						// sessionStorage puede no estar disponible (modo privado, etc.)
+						// — si falla, seguimos con el flujo normal de canje.
+					}
+
+					if (alreadyExchanged) {
+						log(
+							"code ya fue canjeado con éxito antes en esta pestaña, no se reintenta",
+						);
+						setSessionLoading(false);
+						return;
+					}
+
 					log("hay code, llamando a exchangeCodeForSession...");
 					const { data: exchangeData, error: exchangeError } =
 						await supabase.auth.exchangeCodeForSession(code);
@@ -100,6 +129,13 @@ export default function UpdatePasswordPage() {
 							router.push("/reset-password");
 						}, 3000);
 						return;
+					}
+					try {
+						sessionStorage.setItem(exchangedKey, "success");
+					} catch {
+						// No crítico si no se puede persistir: en el peor caso, si el
+						// componente se remonta de nuevo, se repite el intento fallido
+						// de antes — no empeora la situación previa.
 					}
 					log("seteando sessionLoading=false");
 					setSessionLoading(false);
