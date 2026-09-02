@@ -974,6 +974,40 @@
       "cancelButton": "Cancel",
       "saveChangesButton": "Save changes"
     },
+    "articleDetailActions": {
+      "viewNote": "View note",
+      "newNote": "New note",
+      "createNote": "Create note",
+      "createGroup": "Create group"
+    },
+    "articlePreclassificationSummary": {
+      "phaseLabel": "Phase {number}",
+      "assignedTo": "Assigned to: {name}",
+      "unassigned": "Unassigned",
+      "batchLabel": "Batch #{number}",
+      "batchStatusLabel": "Batch status: {status}",
+      "byLabel": "By: {reviewer}",
+      "reviewerAI": "AI",
+      "reviewerHuman": "Human",
+      "iterationSuffix": " • Iteration {n}"
+    },
+    "detailClient": {
+      "viewOriginal": "View original",
+      "viewTranslated": "View translated",
+      "toggleTranslationAria": "Toggle translation",
+      "noTranslations": "No translations",
+      "loadingHighlights": "Loading highlights...",
+      "savingLabel": "Saving...",
+      "highlightButton": "Highlight",
+      "clearButton": "Clear",
+      "summaryLabel": "Summary",
+      "summaryTranslatedLabel": "Summary (translated)",
+      "aiSummaryLabel": "AI Summary",
+      "doiLabel": "DOI: {doi}",
+      "translatorLabel": "Translator: {system}",
+      "toastErrorSavingHighlights": "Error saving highlights",
+      "toastErrorDeletingHighlights": "Error deleting highlights"
+    },
     "noteEditor": {
       "dialogTitle": "New Article Note",
       "untitledArticle": "Untitled",

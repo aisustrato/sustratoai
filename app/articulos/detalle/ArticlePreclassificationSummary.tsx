@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import {
 	StandardCard,
 	StandardCardHeader,
@@ -45,6 +46,8 @@ export default function ArticlePreclassificationSummary({
 }: {
 	summaries: PhaseSummaryView[];
 }) {
+	const t = useTranslations("articulos.articlePreclassificationSummary");
+
 	if (!summaries || summaries.length === 0) return null;
 
 	const phaseAccentFor = (n?: number | null): CardVariant => {
@@ -81,20 +84,20 @@ export default function ArticlePreclassificationSummary({
 								<StandardCardTitle>
 									<div className="flex items-center justify-between gap-2">
 										<StandardText size="md" weight="semibold">
-											{s.phase.name || `Fase ${s.phase.phase_number ?? "?"}`}
+											{s.phase.name || t("phaseLabel", { number: s.phase.phase_number ?? "?" })}
 										</StandardText>
 										<StandardTooltip
 											content={
 												s.batch.assigned_member_name ?
-													`Asignado a: ${s.batch.assigned_member_name}`
-												:	"Sin asignación"
+													t("assignedTo", { name: s.batch.assigned_member_name })
+												:	t("unassigned")
 											}
 											trigger={
 												<StandardBadge
 													colorScheme="neutral"
 													styleType="subtle"
 													size="sm">
-													Lote #{s.batch.batch_number ?? "?"}
+													{t("batchLabel", { number: s.batch.batch_number ?? "?" })}
 												</StandardBadge>
 											}
 											colorScheme="neutral"
@@ -110,7 +113,7 @@ export default function ArticlePreclassificationSummary({
 											size="sm"
 											colorScheme="neutral"
 											colorShade="subtle">
-											Estado lote: {String(s.batch.status)}
+											{t("batchStatusLabel", { status: String(s.batch.status) })}
 										</StandardText>
 									</StandardCardSubtitle>
 								)}
@@ -138,10 +141,11 @@ export default function ArticlePreclassificationSummary({
 															size="xs"
 															colorScheme="neutral"
 															colorShade="subtle">
-															Por:{" "}
-															{latest.reviewer_type === "ai" ? "IA" : "Humano"}
+															{t("byLabel", {
+																reviewer: latest.reviewer_type === "ai" ? t("reviewerAI") : t("reviewerHuman"),
+															})}
 															{typeof latest.iteration === "number" ?
-																` • Iteración ${latest.iteration}`
+																t("iterationSuffix", { n: latest.iteration })
 															:	""}
 														</StandardText>
 													</div>

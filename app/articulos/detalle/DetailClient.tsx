@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Database } from "@/lib/database.types";
 import { StandardText } from "@/components/ui/StandardText";
@@ -29,6 +30,7 @@ export default function DetailClient({
   translations: TranslationRow[];
   initialTranslated?: boolean;
 }) {
+  const t = useTranslations("articulos.detailClient");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -61,14 +63,14 @@ export default function DetailClient({
       });
       const json = await res.json();
       if (!res.ok || !json?.success) {
-        throw new Error(json?.error || 'Error al guardar resaltados');
+        throw new Error(json?.error || t('toastErrorSavingHighlights'));
       }
       console.log('✅ [DetailClient] Resaltados guardados:', json);
     } catch (error) {
       console.error('❌ [DetailClient] Error al guardar resaltados:', error);
       throw error; // Re-lanzar para que el hook maneje el error
     }
-  }, []);
+  }, [t]);
 
   const handleDeleteHighlights = React.useCallback(async (data: {
     articleId: string;
@@ -83,14 +85,14 @@ export default function DetailClient({
       });
       const json = await res.json();
       if (!res.ok || !json?.success) {
-        throw new Error(json?.error || 'Error al eliminar resaltados');
+        throw new Error(json?.error || t('toastErrorDeletingHighlights'));
       }
       console.log('✅ [DetailClient] Resaltados eliminados:', json);
     } catch (error) {
       console.error('❌ [DetailClient] Error al eliminar resaltados:', error);
       throw error; // Re-lanzar para que el hook maneje el error
     }
-  }, []);
+  }, [t]);
 
   // Hook para manejo de resaltado de texto SIN llamadas client-side a BD
   const {
@@ -166,17 +168,17 @@ export default function DetailClient({
           {hasTranslations ? (
             <>
               <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
-                Ver original
+                {t('viewOriginal')}
               </StandardText>
               <StandardSwitch
                 size="md"
                 colorScheme="primary"
                 checked={showTranslated}
                 onCheckedChange={handleToggle}
-                aria-label="Alternar traducción"
+                aria-label={t('toggleTranslationAria')}
               />
               <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
-                Ver traducido
+                {t('viewTranslated')}
               </StandardText>
               {latest?.language && (
                 <StandardBadge size="sm" styleType="subtle" colorScheme="secondary">
@@ -186,7 +188,7 @@ export default function DetailClient({
             </>
           ) : (
             <StandardBadge size="sm" styleType="subtle" colorScheme="neutral">
-              Sin traducciones
+              {t('noTranslations')}
             </StandardBadge>
           )}
         </div>
@@ -196,13 +198,13 @@ export default function DetailClient({
           {isLoading && (
             <div className="flex items-center gap-1 text-sm text-neutral-500">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Cargando resaltados...
+              {t('loadingHighlights')}
             </div>
           )}
           {isSaving && (
             <div className="flex items-center gap-1 text-sm text-neutral-500">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Guardando...
+              {t('savingLabel')}
             </div>
           )}
           {showHighlightButton && (
@@ -215,8 +217,7 @@ export default function DetailClient({
               leftIcon={Highlighter}
               className="animate-in fade-in-0 zoom-in-95 duration-200"
             >
-             
-              Resaltar
+              {t('highlightButton')}
             </StandardButton>
           )}
           {highlightedTexts.length > 0 && (
@@ -228,8 +229,7 @@ export default function DetailClient({
               disabled={isSaving}
               leftIcon={Eraser}
             >
-              
-              Limpiar
+              {t('clearButton')}
             </StandardButton>
           )}
         </div>
@@ -245,7 +245,7 @@ export default function DetailClient({
       {/* Abstract / Resumen */}
       <div>
         <StandardText size="sm" colorScheme="neutral" colorShade="subtle" className="mb-1">
-          {showTranslated ? "Resumen (traducido)" : "Resumen"}
+          {showTranslated ? t('summaryTranslatedLabel') : t('summaryLabel')}
         </StandardText>
         {shownAbstract ? (
           <div 
@@ -264,7 +264,7 @@ export default function DetailClient({
       {aiSummary && (
         <div>
           <StandardText size="sm" colorScheme="neutral" colorShade="subtle" className="mt-4 mb-1">
-            Resumen AI
+            {t('aiSummaryLabel')}
           </StandardText>
           <div className="text-base leading-relaxed" style={{ fontFamily: 'inherit' }}>
             {aiSummary}
@@ -276,12 +276,12 @@ export default function DetailClient({
       <div className="flex flex-wrap gap-2">
         {article.doi && (
           <StandardBadge size="sm" styleType="outline" colorScheme="tertiary">
-            DOI: {article.doi}
+            {t('doiLabel', { doi: article.doi })}
           </StandardBadge>
         )}
         {latest?.translator_system && showTranslated && (
           <StandardBadge size="sm" styleType="outline" colorScheme="accent">
-            Traductor: {latest.translator_system}
+            {t('translatorLabel', { system: latest.translator_system })}
           </StandardBadge>
         )}
         {latest?.translated_at && showTranslated && (

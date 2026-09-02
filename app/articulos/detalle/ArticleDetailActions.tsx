@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { StandardButton } from "@/components/ui/StandardButton";
 import GroupNoteEditor from "@/app/articulos/grupos/GroupNoteEditor";
@@ -19,6 +20,7 @@ export default function ArticleDetailActions({
   hasNotesForArticle,
   noteHref,
 }: ArticleDetailActionsProps) {
+  const t = useTranslations("articulos.articleDetailActions");
   const router = useRouter();
   const [openNote, setOpenNote] = useState(false);
   const [openGroup, setOpenGroup] = useState(false);
@@ -38,20 +40,20 @@ export default function ArticleDetailActions({
       {notesExist ? (
         <>
           <StandardButton asChild styleType="outline" colorScheme="primary">
-            <a href={noteHref}>Ver nota</a>
+            <a href={noteHref}>{t("viewNote")}</a>
           </StandardButton>
           <StandardButton styleType="solid" colorScheme="primary" onClick={() => setOpenNote(true)}>
-            Nueva nota
+            {t("newNote")}
           </StandardButton>
         </>
       ) : (
         <StandardButton styleType="solid" colorScheme="primary" onClick={() => setOpenNote(true)}>
-          Crear nota
+          {t("createNote")}
         </StandardButton>
       )}
 
       <StandardButton styleType="outline" colorScheme="secondary" onClick={() => setOpenGroup(true)}>
-        Crear grupo
+        {t("createGroup")}
       </StandardButton>
 
       <GroupNoteEditor

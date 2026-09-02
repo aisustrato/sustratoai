@@ -974,6 +974,40 @@
       "cancelButton": "Cancelar",
       "saveChangesButton": "Guardar cambios"
     },
+    "articleDetailActions": {
+      "viewNote": "Ver nota",
+      "newNote": "Nueva nota",
+      "createNote": "Crear nota",
+      "createGroup": "Crear grupo"
+    },
+    "articlePreclassificationSummary": {
+      "phaseLabel": "Fase {number}",
+      "assignedTo": "Asignado a: {name}",
+      "unassigned": "Sin asignación",
+      "batchLabel": "Lote #{number}",
+      "batchStatusLabel": "Estado lote: {status}",
+      "byLabel": "Por: {reviewer}",
+      "reviewerAI": "IA",
+      "reviewerHuman": "Humano",
+      "iterationSuffix": " • Iteración {n}"
+    },
+    "detailClient": {
+      "viewOriginal": "Ver original",
+      "viewTranslated": "Ver traducido",
+      "toggleTranslationAria": "Alternar traducción",
+      "noTranslations": "Sin traducciones",
+      "loadingHighlights": "Cargando resaltados...",
+      "savingLabel": "Guardando...",
+      "highlightButton": "Resaltar",
+      "clearButton": "Limpiar",
+      "summaryLabel": "Resumen",
+      "summaryTranslatedLabel": "Resumen (traducido)",
+      "aiSummaryLabel": "Resumen AI",
+      "doiLabel": "DOI: {doi}",
+      "translatorLabel": "Traductor: {system}",
+      "toastErrorSavingHighlights": "Error al guardar resaltados",
+      "toastErrorDeletingHighlights": "Error al eliminar resaltados"
+    },
     "noteEditor": {
       "dialogTitle": "Nueva Nota del Artículo",
       "untitledArticle": "Sin título",

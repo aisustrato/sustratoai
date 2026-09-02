@@ -36,6 +36,16 @@ export function useLocale() {
 
 //#region [helpers] - 🔄 FUNCIONES AUXILIARES
 const LOCALE_STORAGE_KEY = "sustrato-locale";
+const LOCALE_COOKIE_KEY = "sustrato-locale";
+
+// 🍪 Persistimos el locale también en una cookie (no solo localStorage) para
+// que los Server Components (que no tienen acceso a localStorage) puedan
+// leerlo en `i18n/request.ts` vía `cookies()` y renderizar en el idioma
+// correcto desde el servidor, en vez de quedar siempre fijos en español.
+function persistLocaleCookie(locale: Locale) {
+  if (typeof document === "undefined") return;
+  document.cookie = `${LOCALE_COOKIE_KEY}=${locale}; path=/; max-age=31536000; SameSite=Lax`;
+}
 
 function getInitialLocale(): Locale {
   if (typeof window === "undefined") return defaultLocale;
@@ -93,6 +103,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
 
     setLocaleState(newLocale);
     localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
+    persistLocaleCookie(newLocale);
     loadMessages(newLocale);
 
     // Actualizar atributo lang del documento
@@ -104,6 +115,11 @@ export function I18nProvider({ children }: I18nProviderProps) {
   useEffect(() => {
     const initialLocale = getInitialLocale();
     document.documentElement.lang = initialLocale;
+    // Aseguramos que la cookie quede sincronizada desde la primera carga,
+    // incluso si el locale coincide con el default (evita que la cookie
+    // quede desactualizada si el usuario cambió antes y luego volvió al
+    // idioma por defecto).
+    persistLocaleCookie(initialLocale);
     if (initialLocale !== defaultLocale) {
       setLocaleState(initialLocale);
       loadMessages(initialLocale);
