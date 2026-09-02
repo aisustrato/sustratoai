@@ -10,6 +10,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import { getPhasesForProject } from "@/lib/actions/preclassification_phases_actions";
 import { StandardText } from "@/components/ui/StandardText";
@@ -51,6 +52,7 @@ interface PreclassificationPhase {
 //#region [main] - 🔧 COMPONENT 🔧
 export default function FasesPreclasificacionPage() {
 	const router = useRouter();
+	const t = useTranslations("datosMaestrosPages.fasesListPage");
 	const { proyectoActual } = useAuth();
 
 	const [fases, setFases] = useState<PreclassificationPhase[]>([]);
@@ -70,7 +72,7 @@ export default function FasesPreclasificacionPage() {
 			const { data, error } = await getPhasesForProject(proyectoActual.id);
 
 			if (error) {
-				throw new Error(error.message || "Error al cargar las fases");
+				throw new Error(error.message || t("errorLoadingPhases"));
 			}
 
 			setFases((data || []) as any);
@@ -79,8 +81,8 @@ export default function FasesPreclasificacionPage() {
 			const errorMessage =
 				err instanceof Error ?
 					err.message
-				:	"Error desconocido al cargar las fases";
-			toast.error("Error al cargar", {
+				:	t("errorUnknownLoading");
+			toast.error(t("toastErrorLoadingTitle"), {
 				description: errorMessage,
 				icon: <AlertCircle className="h-5 w-5 text-destructive" />,
 			});
@@ -88,7 +90,7 @@ export default function FasesPreclasificacionPage() {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [proyectoActual?.id]);
+	}, [proyectoActual?.id, t]);
 
 	useEffect(() => {
 		cargarFases();
@@ -98,13 +100,13 @@ export default function FasesPreclasificacionPage() {
 	const columnas: ColumnDef<PreclassificationPhase>[] = [
 		{
 			accessorKey: "name",
-			header: "Nombre",
+			header: t("columnName"),
 			size: 250, // Ancho fijo para la columna de nombre
 			cell: ({ row }) => <div className="font-medium">{row.original.name}</div>,
 		},
 		{
 			accessorKey: "description",
-			header: "Descripción",
+			header: t("columnDescription"),
 			size: 300, // Ancho fijo para la columna de descripción
 			cell: ({ row }) => (
 				<div className="truncate">{row.original.description || "-"}</div>
@@ -113,7 +115,7 @@ export default function FasesPreclasificacionPage() {
 		},
 		{
 			accessorKey: "status",
-			header: "Estado",
+			header: t("columnStatus"),
 			size: 120, // Ancho fijo para la columna de estado
 			cell: ({ row }) => {
 				const estado = row.original.status;
@@ -128,12 +130,12 @@ export default function FasesPreclasificacionPage() {
 					<div className="flex justify-center">
 						<StandardBadge colorScheme={variant} styleType="solid">
 							{estado === "active" ?
-								"Activo"
+								t("statusActive")
 							: estado === "completed" ?
-								"Completado"
+								t("statusCompleted")
 							: estado === "annulled" ?
-								"Anulado"
-							:	"Inactivo"}
+								t("statusAnnulled")
+							:	t("statusInactive")}
 						</StandardBadge>
 					</div>
 				);
@@ -141,7 +143,7 @@ export default function FasesPreclasificacionPage() {
 		},
 		{
 			id: "acciones",
-			header: "Acciones",
+			header: t("columnActions"),
 			size: 180, // Ancho fijo en píxeles
 			cell: ({ row }) => (
 				<div className="flex justify-center space-x-1">
@@ -156,9 +158,9 @@ export default function FasesPreclasificacionPage() {
 								`/datos-maestros/fases-preclasificacion/${row.original.id}/ver`,
 							)
 						}
-						tooltip="Ver detalles"
+						tooltip={t("tooltipView")}
 						leftIcon={Eye}
-						aria-label="Ver detalles de la fase"
+						aria-label={t("ariaView")}
 					/>
 
 					{/* Botones de edición y eliminación - Solo con permisos */}
@@ -174,9 +176,9 @@ export default function FasesPreclasificacionPage() {
 										`/datos-maestros/fases-preclasificacion/${row.original.id}/editar`,
 									)
 								}
-								tooltip="Editar fase"
+								tooltip={t("tooltipEdit")}
 								leftIcon={Edit}
-								aria-label="Editar fase"
+								aria-label={t("ariaEdit")}
 							/>
 
 							<StandardButton
@@ -189,9 +191,9 @@ export default function FasesPreclasificacionPage() {
 										`/datos-maestros/fases-preclasificacion/${row.original.id}/eliminar`,
 									)
 								}
-								tooltip="Eliminar fase"
+								tooltip={t("tooltipDelete")}
 								leftIcon={Trash2}
-								aria-label="Eliminar fase"
+								aria-label={t("ariaDelete")}
 							/>
 						</>
 					)}
@@ -207,7 +209,7 @@ export default function FasesPreclasificacionPage() {
 				<div className="flex items-center gap-3 p-3">
 					<AlertCircle className="h-5 w-5 text-primary" />
 					<StandardText className="text-sm text-primary">
-						Tienes acceso de solo lectura a las fases de preclasificación.
+						{t("readOnlyNotice")}
 					</StandardText>
 				</div>
 			</StandardCard>
@@ -233,7 +235,7 @@ export default function FasesPreclasificacionPage() {
 							<AlertCircle size={24} />
 						</StandardIcon>
 						<StandardText variant="h3" className="mb-2">
-							Error al cargar las fases
+							{t("errorTitle")}
 						</StandardText>
 						<StandardText className="text-muted-foreground mb-6">
 							{error}
@@ -241,8 +243,8 @@ export default function FasesPreclasificacionPage() {
 						<StandardButton
 							onClick={cargarFases}
 							leftIcon={RotateCw}
-							aria-label="Reintentar carga">
-							Reintentar
+							aria-label={t("ariaRetry")}>
+							{t("retryButton")}
 						</StandardButton>
 					</div>
 				</StandardCard>
@@ -255,14 +257,14 @@ export default function FasesPreclasificacionPage() {
 			<div className="container mx-auto py-6">
 				<div className="space-y-6">
 					<StandardPageTitle
-						title="Fases de Preclasificación"
-						subtitle="Gestión de las fases del proceso de preclasificación"
-						description="Crea y gestiona las fases para organizar el proceso de preclasificación de documentos en tu proyecto."
+						title={t("pageTitle")}
+						subtitle={t("pageSubtitle")}
+						description={t("pageDescription")}
 						mainIcon={Network}
 						showBackButton={{ href: "/datos-maestros" }}
 						breadcrumbs={[
-							{ label: "Datos Maestros", href: "/datos-maestros" },
-							{ label: "Fases de Preclasificación" },
+							{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+							{ label: t("pageTitle") },
 						]}
 						actions={
 							puedeGestionarFases ?
@@ -274,7 +276,7 @@ export default function FasesPreclasificacionPage() {
 									}
 									colorScheme="primary"
 									leftIcon={Plus}>
-									Nueva Fase
+									{t("newPhaseButton")}
 								</StandardButton>
 							:	undefined
 						}
@@ -289,13 +291,13 @@ export default function FasesPreclasificacionPage() {
 							<StandardTable<PreclassificationPhase>
 								data={fases}
 								columns={columnas}
-								filterPlaceholder="Buscar fases...">
+								filterPlaceholder={t("searchPlaceholder")}>
 								<StandardTable.Table />
 							</StandardTable>
 						:	<div className="p-8 text-center">
 								<StandardEmptyState
-									title="No hay fases"
-									description="Aún no se han creado fases de preclasificación para este proyecto."
+									title={t("emptyTitle")}
+									description={t("emptyDescription")}
 									icon={Layers}
 									action={
 										<StandardButton
@@ -305,8 +307,8 @@ export default function FasesPreclasificacionPage() {
 												)
 											}
 											leftIcon={Plus}
-											aria-label="Crear primera fase">
-											Crear Primera Fase
+											aria-label={t("ariaCreateFirst")}>
+											{t("createFirstButton")}
 										</StandardButton>
 									}
 								/>

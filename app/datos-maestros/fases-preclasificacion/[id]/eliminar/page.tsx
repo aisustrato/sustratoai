@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import {
 	getPhasesForProject,
@@ -26,6 +27,7 @@ import { useToast } from "@/components/ui/use-toast";
 
 export default function EliminarFasePage() {
 	const router = useRouter();
+	const t = useTranslations("datosMaestrosPages.fasesEliminarPage");
 	const { id } = useParams<{ id: string }>();
 	const { proyectoActual } = useAuth();
 	const { toast } = useToast();
@@ -50,7 +52,7 @@ export default function EliminarFasePage() {
 	useEffect(() => {
 		const cargarFase = async () => {
 			if (!proyectoActual?.id) {
-				setError("No se ha seleccionado un proyecto");
+				setError(t("errorNoProject"));
 				setLoading(false);
 				return;
 			}
@@ -62,13 +64,13 @@ export default function EliminarFasePage() {
 				);
 
 				if (fetchError) {
-					throw new Error(fetchError.message || "Error al cargar la fase");
+					throw new Error(fetchError.message || t("errorLoadingPhase"));
 				}
 
 				const faseEncontrada = fases?.find((f) => f.id === id);
 
 				if (!faseEncontrada) {
-					throw new Error("Fase no encontrada");
+					throw new Error(t("errorPhaseNotFound"));
 				}
 
 				// Asegurar que el status sea uno de los permitidos
@@ -90,7 +92,7 @@ export default function EliminarFasePage() {
 				setError(
 					err instanceof Error ?
 						err.message
-					:	"Error desconocido al cargar la fase",
+					:	t("errorUnknownLoading"),
 				);
 			} finally {
 				setLoading(false);
@@ -98,7 +100,7 @@ export default function EliminarFasePage() {
 		};
 
 		cargarFase();
-	}, [id, proyectoActual?.id]);
+	}, [id, proyectoActual?.id, t]);
 
 	const handleEliminar = async () => {
 		if (!fase) return;
@@ -109,12 +111,12 @@ export default function EliminarFasePage() {
 			const { error } = await deletePhase(fase.id);
 
 			if (error) {
-				throw new Error(error.message || "Error al eliminar la fase");
+				throw new Error(error.message || t("errorDeletingPhase"));
 			}
 
 			toast({
-				title: "¡Fase eliminada!",
-				description: `La fase "${fase.name}" ha sido eliminada correctamente.`,
+				title: t("toastDeletedTitle"),
+				description: t("toastDeletedDescription", { name: fase.name }),
 			});
 
 			// Redirigir a la lista de fases
@@ -124,7 +126,7 @@ export default function EliminarFasePage() {
 			setError(
 				err instanceof Error ?
 					err.message
-				:	"Error desconocido al eliminar la fase",
+				:	t("errorUnknownDeleting"),
 			);
 		} finally {
 			setDeleting(false);
@@ -142,7 +144,7 @@ export default function EliminarFasePage() {
 			<StandardPageBackground className="flex items-center justify-center">
 				<div className="flex flex-col items-center gap-4">
 					<Loader2 className="h-8 w-8 animate-spin text-primary" />
-					<StandardText>Cargando información de la fase...</StandardText>
+					<StandardText>{t("loadingText")}</StandardText>
 				</div>
 			</StandardPageBackground>
 		);
@@ -157,7 +159,7 @@ export default function EliminarFasePage() {
 							<AlertCircle className="h-12 w-12 text-destructive mx-auto" />
 						</StandardIcon>
 						<StandardText variant="h4" className="text-destructive">
-							Error al cargar la fase
+							{t("errorTitle")}
 						</StandardText>
 						<StandardText className="text-muted-foreground">
 							{error}
@@ -168,8 +170,8 @@ export default function EliminarFasePage() {
 								styleType="solid"
 								colorScheme="primary"
 								leftIcon={RotateCw}
-								aria-label="Reintentar carga">
-								Reintentar
+								aria-label={t("retryButton")}>
+								{t("retryButton")}
 							</StandardButton>
 						</div>
 					</div>
@@ -187,10 +189,10 @@ export default function EliminarFasePage() {
 							<AlertCircle className="h-12 w-12 text-warning mx-auto" />
 						</StandardIcon>
 						<StandardText variant="h4" className="text-warning">
-							Fase no encontrada
+							{t("notFoundTitle")}
 						</StandardText>
 						<StandardText className="text-muted-foreground">
-							No se encontró la fase solicitada.
+							{t("notFoundDescription")}
 						</StandardText>
 						<div className="pt-4">
 							<StandardButton
@@ -198,8 +200,8 @@ export default function EliminarFasePage() {
 								styleType="outline"
 								colorScheme="neutral"
 								leftIcon={ArrowLeft}
-								aria-label="Volver atrás">
-								Volver atrás
+								aria-label={t("backButton")}>
+								{t("backButton")}
 							</StandardButton>
 						</div>
 					</div>
@@ -213,24 +215,24 @@ export default function EliminarFasePage() {
 			<div className="container mx-auto py-6">
 				<div className="space-y-6">
 					<StandardPageTitle
-						title={`Eliminar Fase: ${fase.name}`}
-						subtitle="Confirmar eliminación de fase de preclasificación"
-						description="Esta acción es irreversible. Por favor, confirma que deseas eliminar esta fase."
+						title={t("pageTitle", { name: fase.name })}
+						subtitle={t("pageSubtitle")}
+						description={t("pageDescription")}
 						mainIcon={Network}
 						showBackButton={{
 							href: `/datos-maestros/fases-preclasificacion/${id}/ver`,
 						}}
 						breadcrumbs={[
-							{ label: "Datos Maestros", href: "/datos-maestros" },
+							{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
 							{
-								label: "Fases de Preclasificación",
+								label: t("breadcrumbFases"),
 								href: "/datos-maestros/fases-preclasificacion",
 							},
 							{
 								label: fase.name,
 								href: `/datos-maestros/fases-preclasificacion/${id}/ver`,
 							},
-							{ label: "Eliminar" },
+							{ label: t("breadcrumbEliminar") },
 						]}
 					/>
 
@@ -243,22 +245,21 @@ export default function EliminarFasePage() {
 
 								<div className="space-y-2">
 									<StandardText variant="h3">
-										¿Eliminar fase de preclasificación?
+										{t("confirmTitle")}
 									</StandardText>
 									<StandardText className="text-muted-foreground">
-										Estás a punto de eliminar la fase &quot;{fase.name}&quot;.
-										Esta acción no se puede deshacer.
+										{t("confirmDescription", { name: fase.name })}
 									</StandardText>
 								</div>
 
 								<div className="bg-muted/50 p-4 rounded-lg w-full text-left space-y-2">
 									<StandardText variant="small" className="font-medium">
-										Detalles de la fase:
+										{t("detailsLabel")}
 									</StandardText>
 									<StandardText
 										variant="small"
 										className="text-muted-foreground">
-										Nombre:{" "}
+										{t("nameLabel")}{" "}
 										<span className="font-medium text-foreground">
 											{fase.name}
 										</span>
@@ -266,7 +267,7 @@ export default function EliminarFasePage() {
 									<StandardText
 										variant="small"
 										className="text-muted-foreground">
-										Número:{" "}
+										{t("numberLabel")}{" "}
 										<span className="font-medium text-foreground">
 											{fase.phase_number}
 										</span>
@@ -274,15 +275,15 @@ export default function EliminarFasePage() {
 									<StandardText
 										variant="small"
 										className="text-muted-foreground">
-										Estado:{" "}
+										{t("statusLabel")}{" "}
 										<span className="font-medium text-foreground">
 											{fase.status === "active" ?
-												"Activo"
+												t("statusActive")
 											: fase.status === "completed" ?
-												"Completado"
+												t("statusCompleted")
 											: fase.status === "annulled" ?
-												"Anulado"
-											:	"Inactivo"}
+												t("statusAnnulled")
+											:	t("statusInactive")}
 										</span>
 									</StandardText>
 								</div>
@@ -295,8 +296,8 @@ export default function EliminarFasePage() {
 										className="flex-1"
 										leftIcon={ArrowLeft}
 										disabled={deleting}
-										aria-label="Cancelar eliminación">
-										Cancelar
+										aria-label={t("ariaCancel")}>
+										{t("cancelButton")}
 									</StandardButton>
 									<StandardButton
 										onClick={handleDelete}
@@ -306,8 +307,8 @@ export default function EliminarFasePage() {
 										leftIcon={Trash2}
 										loading={deleting}
 										disabled={deleting}
-										aria-label="Confirmar eliminación">
-										{deleting ? "Eliminando..." : "Eliminar definitivamente"}
+										aria-label={t("ariaConfirmDelete")}>
+										{deleting ? t("deletingButton") : t("deleteButton")}
 									</StandardButton>
 								</div>
 							</div>

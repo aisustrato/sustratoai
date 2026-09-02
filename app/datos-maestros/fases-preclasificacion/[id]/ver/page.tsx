@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import FaseForm from "../../components/FaseForm";
 import { getPhasesForProject } from "@/lib/actions/preclassification_phases_actions";
@@ -25,6 +26,7 @@ import { toast } from "sonner";
 
 export default function VerFasePage() {
 	const router = useRouter();
+	const t = useTranslations("datosMaestrosPages.fasesVerPage");
 	const { id } = useParams<{ id: string }>();
 	const { proyectoActual } = useAuth();
 
@@ -44,7 +46,7 @@ export default function VerFasePage() {
 	useEffect(() => {
 		const cargarFase = async () => {
 			if (!proyectoActual?.id) {
-				setError("No se ha seleccionado un proyecto");
+				setError(t("errorNoProject"));
 				setLoading(false);
 				return;
 			}
@@ -56,20 +58,20 @@ export default function VerFasePage() {
 				);
 
 				if (fetchError) {
-					throw new Error(fetchError.message || "Error al cargar la fase");
+					throw new Error(fetchError.message || t("errorLoadingPhase"));
 				}
 
 				const faseEncontrada = fases?.find((f) => f.id === id);
 
 				if (!faseEncontrada) {
-					throw new Error("Fase no encontrada");
+					throw new Error(t("errorPhaseNotFound"));
 				}
 
 				setFase(faseEncontrada as any);
 
 				// Mostrar toast de éxito solo si no hay error
-				toast.success("Fase cargada", {
-					description: "Los datos de la fase se han cargado correctamente",
+				toast.success(t("toastLoadedTitle"), {
+					description: t("toastLoadedDescription"),
 					icon: <CheckCircle2 className="h-5 w-5 text-success" />,
 				});
 			} catch (err) {
@@ -77,10 +79,10 @@ export default function VerFasePage() {
 				const errorMsg =
 					err instanceof Error ?
 						err.message
-					:	"Error desconocido al cargar la fase";
+					:	t("errorUnknownLoading");
 
 				// Mostrar toast de error
-				toast.error("Error al cargar", {
+				toast.error(t("toastErrorTitle"), {
 					description: errorMsg,
 					icon: <AlertCircle className="h-5 w-5 text-destructive" />,
 				});
@@ -92,7 +94,7 @@ export default function VerFasePage() {
 		};
 
 		cargarFase();
-	}, [id, proyectoActual?.id]);
+	}, [id, proyectoActual?.id, t]);
 
 	if (loading) {
 		return (
@@ -114,7 +116,7 @@ export default function VerFasePage() {
 								<AlertCircle />
 							</StandardIcon>
 							<StandardText variant="h4" className="text-center mb-2">
-								Error al cargar la fase
+								{t("errorTitle")}
 							</StandardText>
 							<StandardText className="text-center mb-6">{error}</StandardText>
 							<StandardButton
@@ -122,8 +124,8 @@ export default function VerFasePage() {
 								colorScheme="primary"
 								styleType="solid"
 								leftIcon={RotateCw}
-								aria-label="Reintentar carga">
-								Reintentar
+								aria-label={t("retryButton")}>
+								{t("retryButton")}
 							</StandardButton>
 						</div>
 					</StandardCard>
@@ -142,18 +144,18 @@ export default function VerFasePage() {
 								<AlertCircle />
 							</StandardIcon>
 							<StandardText variant="h4" className="text-center mb-2">
-								Fase no encontrada
+								{t("notFoundTitle")}
 							</StandardText>
 							<StandardText className="text-center mb-6">
-								La fase solicitada no existe o no tienes permisos para verla.
+								{t("notFoundDescription")}
 							</StandardText>
 							<StandardButton
 								onClick={() => router.back()}
 								colorScheme="primary"
 								styleType="outline"
 								leftIcon={ArrowLeft}
-								aria-label="Volver atrás">
-								Volver atrás
+								aria-label={t("backButton")}>
+								{t("backButton")}
 							</StandardButton>
 						</div>
 					</StandardCard>
@@ -170,15 +172,15 @@ export default function VerFasePage() {
 			<div className="container mx-auto py-6">
 				<div className="space-y-6">
 					<StandardPageTitle
-						title={`Fase: ${fase.name}`}
-						subtitle="Detalles de la fase de preclasificación"
-						description="Revisa la información detallada de esta fase del proceso de preclasificación."
+						title={t("pageTitle", { name: fase.name })}
+						subtitle={t("pageSubtitle")}
+						description={t("pageDescription")}
 						mainIcon={Network}
 						showBackButton={{ href: "/datos-maestros/fases-preclasificacion" }}
 						breadcrumbs={[
-							{ label: "Datos Maestros", href: "/datos-maestros" },
+							{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
 							{
-								label: "Fases de Preclasificación",
+								label: t("breadcrumbFases"),
 								href: "/datos-maestros/fases-preclasificacion",
 							},
 							{ label: fase.name },
@@ -194,8 +196,8 @@ export default function VerFasePage() {
 											`/datos-maestros/fases-preclasificacion/${id}/editar`,
 										)
 									}
-									aria-label="Editar fase">
-									Editar Fase
+									aria-label={t("editButton")}>
+									{t("editButton")}
 								</StandardButton>
 							:	undefined
 						}

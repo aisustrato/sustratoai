@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import FaseForm from "../../components/FaseForm";
 import { createPhase } from "@/lib/actions/preclassification_phases_actions";
@@ -18,6 +19,7 @@ import { toast } from "sonner";
 
 export default function NuevaFasePage() {
     const router = useRouter();
+    const t = useTranslations("datosMaestrosPages.fasesCrearPage");
     const { proyectoActual } = useAuth();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -25,59 +27,59 @@ export default function NuevaFasePage() {
     // Verificar permisos y cargar datos iniciales
     useEffect(() => {
         if (!proyectoActual) {
-            setError("No se ha seleccionado un proyecto");
+            setError(t("errorNoProject"));
             setLoading(false);
             return;
         }
 
         if (!proyectoActual.permissions?.can_manage_master_data) {
-            setError("No tienes permisos para crear fases de preclasificación");
+            setError(t("errorNoPermission"));
         }
-        
+
         setLoading(false);
-    }, [proyectoActual]);
+    }, [proyectoActual, t]);
 
     const handleSubmit = async (formData: FormData) => {
         if (!proyectoActual?.id) {
-            const errorMsg = 'No se ha seleccionado un proyecto';
-            toast.error('Error', { description: errorMsg });
+            const errorMsg = t("errorNoProject");
+            toast.error(t("toastErrorNoProjectTitle"), { description: errorMsg });
             return { error: { message: errorMsg } };
         }
-        
+
         try {
             setLoading(true);
-            
+
             // Asegurarse de que el project_id esté en el FormData
             if (!formData.get('project_id')) {
                 formData.append('project_id', proyectoActual.id);
             }
-            
+
             const { data: newPhase, error } = await createPhase(formData);
-            
+
             if (error) {
-                const errorMsg = error.message || 'Error al crear la fase';
-                toast.error('Error al guardar', { 
+                const errorMsg = error.message || t("toastErrorGeneric");
+                toast.error(t("toastErrorTitle"), {
                     description: errorMsg,
                     icon: <AlertCircle className="h-5 w-5 text-destructive" />
                 });
                 return { error: { message: errorMsg } };
             }
-            
-            toast.success('Fase creada', {
-                description: 'La fase se ha creado correctamente',
+
+            toast.success(t("toastSuccessTitle"), {
+                description: t("toastSuccessDescription"),
                 icon: <CheckCircle2 className="h-5 w-5 text-success" />
             });
-            
+
             // Redirigir después de 1 segundo para dar tiempo a ver el mensaje
             setTimeout(() => {
                 router.push('/datos-maestros/fases-preclasificacion');
             }, 1000);
-            
+
             return { data: newPhase };
         } catch (err) {
             console.error('Error al crear la fase:', err);
-            const errorMsg = err instanceof Error ? err.message : 'Error desconocido al crear la fase';
-            toast.error('Error inesperado', {
+            const errorMsg = err instanceof Error ? err.message : t("toastUnexpectedDescription");
+            toast.error(t("toastUnexpectedTitle"), {
                 description: errorMsg,
                 icon: <AlertCircle className="h-5 w-5 text-destructive" />
             });
@@ -94,7 +96,7 @@ export default function NuevaFasePage() {
                     size={50}
                     variant="spin-pulse"
                     showText={true}
-                    text="Cargando..."
+                    text={t("loadingText")}
                 />
             </div>
         );
@@ -113,7 +115,7 @@ export default function NuevaFasePage() {
                 >
                     <div className="flex items-center gap-3">
                         <StandardIcon><AlertCircle className="h-6 w-6 text-destructive" /></StandardIcon>
-                        <StandardText>Error: {error}</StandardText>
+                        <StandardText>{t("errorLabel", { error })}</StandardText>
                     </div>
                     <div className="mt-4">
                         <StandardButton
@@ -121,7 +123,7 @@ export default function NuevaFasePage() {
                             size="sm"
                             styleType="outline"
                         >
-                            Reintentar
+                            {t("retryButton")}
                         </StandardButton>
                     </div>
                 </StandardCard>
@@ -137,15 +139,15 @@ export default function NuevaFasePage() {
             <div className="container mx-auto py-6">
                 <div className="space-y-6">
                     <StandardPageTitle
-                        title="Nueva Fase de Preclasificación"
-                        subtitle="Crea una nueva fase para el proceso de preclasificación"
-                        description="Completa los siguientes campos para crear una nueva fase en el proceso de preclasificación de documentos."
+                        title={t("pageTitle")}
+                        subtitle={t("pageSubtitle")}
+                        description={t("pageDescription")}
                         mainIcon={Network}
                         showBackButton={{ href: "/datos-maestros/fases-preclasificacion" }}
                         breadcrumbs={[
-                            { label: "Datos Maestros", href: "/datos-maestros" },
-                            { label: "Fases de Preclasificación", href: "/datos-maestros/fases-preclasificacion" },
-                            { label: "Nueva Fase" }
+                            { label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+                            { label: t("breadcrumbFases"), href: "/datos-maestros/fases-preclasificacion" },
+                            { label: t("breadcrumbNueva") }
                         ]}
                     />
                     
