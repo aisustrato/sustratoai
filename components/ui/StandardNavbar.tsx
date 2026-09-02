@@ -881,7 +881,7 @@ export function StandardNavbar() {
 														</StandardText>
 														{item.disabled && (
 															<span className="ml-2 text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">
-																Próximamente
+																{t("comingSoon")}
 															</span>
 														)}
 													</Link>
@@ -923,7 +923,7 @@ export function StandardNavbar() {
 											)
 										}
 										aria-label={mobileMenuOpen ? t("closeMenu") : t("openMenu")}
-										tooltip={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}>
+										tooltip={mobileMenuOpen ? t("closeMenu") : t("openMenu")}>
 										{mobileMenuOpen ?
 											<StandardIcon className="h-6 w-6">
 												<X className="h-full w-full" />
@@ -1193,7 +1193,7 @@ export function StandardNavbar() {
 													</StandardText>
 													{item.disabled && (
 														<span className="ml-2 text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">
-															Próximamente
+															{t("comingSoon")}
 														</span>
 													)}
 												</Link>
