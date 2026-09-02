@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { LogOut, Check, Loader2, Plus } from "lucide-react"; // Añadido Loader2 para feedback visual y Plus para crear proyecto
 import { StandardIcon } from "@/components/ui/StandardIcon"; // Added StandardIcon import
@@ -23,13 +24,15 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useRouter } from "next/navigation";
 import { StandardButton } from "@/components/ui/StandardButton";
 
-// Traducciones amigables para los nombres de permisos (sin cambios)
-const permissionTranslations = {
-	can_manage_master_data: "Administrar datos maestros",
-	can_create_batches: "Crear lotes",
-	can_upload_files: "Subir archivos",
-	can_bulk_edit_master_data: "Edición masiva de datos",
-};
+// Traducciones amigables para los nombres de permisos
+const makePermissionTranslations = (
+	t: ReturnType<typeof useTranslations<"navChrome.userAvatar">>,
+) => ({
+	can_manage_master_data: t("permManageMasterData"),
+	can_create_batches: t("permCreateBatches"),
+	can_upload_files: t("permUploadFiles"),
+	can_bulk_edit_master_data: t("permBulkEditMasterData"),
+});
 
 interface UserAvatarProps {
 	showFontSwitcher?: boolean;
@@ -40,6 +43,11 @@ export function UserAvatar({
 	showFontSwitcher = false,
 	showThemeSwitcher = false,
 }: UserAvatarProps = {}) {
+	const t = useTranslations("navChrome.userAvatar");
+	const permissionTranslations = useMemo(
+		() => makePermissionTranslations(t),
+		[t],
+	);
 	const {
 		user,
 		logout,
@@ -135,22 +143,22 @@ export function UserAvatar({
 	// Handler para crear nuevo proyecto
 	const handleCreateProject = async () => {
 		if (!user?.id) {
-			toast.error("Error de autenticación.");
+			toast.error(t("toastAuthError"));
 			return;
 		}
 
 		setIsOpen(false);
 		setIsCreatingProject(true);
-		toast.loading("Creando proyecto...", { id: "creating-project-toast" });
+		toast.loading(t("toastCreatingProject"), { id: "creating-project-toast" });
 
 		try {
-			const result = await createMinimalProject("Nuevo Proyecto");
+			const result = await createMinimalProject(t("defaultProjectName"));
 			if (result.success) {
 				const newProjectId = result.data.project.id;
 				console.log(`[UserAvatar] Proyecto creado con ID: ${newProjectId}`);
 
 				// Activar el proyecto recién creado
-				toast.loading("Activando proyecto...", {
+				toast.loading(t("toastActivatingProject"), {
 					id: "creating-project-toast",
 				});
 				const activateResult = await actualizarProyectoActivo(
@@ -159,7 +167,7 @@ export function UserAvatar({
 				);
 
 				if (activateResult.success) {
-					toast.success("Proyecto creado y activado. Redirigiendo...", {
+					toast.success(t("toastProjectCreatedActivated"), {
 						id: "creating-project-toast",
 					});
 
@@ -172,7 +180,7 @@ export function UserAvatar({
 					}, 500);
 				} else {
 					toast.error(
-						"Proyecto creado pero no se pudo activar. Recarga la página.",
+						t("toastProjectCreatedNotActivated"),
 						{
 							id: "creating-project-toast",
 						},
@@ -183,7 +191,7 @@ export function UserAvatar({
 					);
 				}
 			} else {
-				toast.error(result.error || "Error al crear el proyecto.", {
+				toast.error(result.error || t("toastErrorCreatingProject"), {
 					id: "creating-project-toast",
 				});
 				console.error(
@@ -193,7 +201,7 @@ export function UserAvatar({
 			}
 		} catch (error) {
 			console.error("[UserAvatar] Excepción al crear proyecto:", error);
-			toast.error("Se produjo una excepción al crear el proyecto.", {
+			toast.error(t("toastExceptionCreatingProject"), {
 				id: "creating-project-toast",
 			});
 		} finally {
@@ -236,7 +244,7 @@ export function UserAvatar({
 			console.error(
 				"[UserAvatar v1.1] User ID no disponible. No se puede cambiar el proyecto.",
 			);
-			toast.error("Error de autenticación al cambiar proyecto.");
+			toast.error(t("toastAuthErrorChangingProject"));
 			return;
 		}
 
@@ -249,25 +257,25 @@ export function UserAvatar({
 			console.error(
 				`[UserAvatar v1.1] Proyecto con ID ${finalProjectId} no encontrado en proyectosDisponibles.`,
 			);
-			toast.error("Error: Proyecto no encontrado en la lista disponible.");
+			toast.error(t("toastProjectNotFound"));
 			return;
 		}
 
 		setIsChangingProject(true);
-		toast.loading("Cambiando proyecto...", { id: "changing-project-toast" });
+		toast.loading(t("toastChangingProject"), { id: "changing-project-toast" });
 
 		try {
 			const result = await actualizarProyectoActivo(user.id, finalProjectId);
 			if (result.success) {
 				setProyectoActivoLocal(proyectoSeleccionado); // Actualiza el contexto localmente
-				toast.success("Proyecto cambiado exitosamente.", {
+				toast.success(t("toastProjectChangedSuccess"), {
 					id: "changing-project-toast",
 				});
 				console.log(
 					`[UserAvatar v1.1] Proyecto cambiado a ${proyectoSeleccionado.name} via setProyectoActivoLocal.`,
 				);
 			} else {
-				toast.error(result.error || "Error al cambiar de proyecto.", {
+				toast.error(result.error || t("toastErrorChangingProject"), {
 					id: "changing-project-toast",
 				});
 				console.error(
@@ -280,7 +288,7 @@ export function UserAvatar({
 				"[UserAvatar v1.1] Excepción al cambiar de proyecto:",
 				error,
 			);
-			toast.error("Se produjo una excepción al cambiar de proyecto.", {
+			toast.error(t("toastExceptionChangingProject"), {
 				id: "changing-project-toast",
 			});
 		} finally {
@@ -325,9 +333,9 @@ export function UserAvatar({
 			user?.user_metadata?.public_display_name ||
 			user?.user_metadata?.name ||
 			user?.email ||
-			"Usuario"
+			t("defaultUserName")
 		);
-	}, [user, userProfile]);
+	}, [user, userProfile, t]);
 
 	return (
 		<div className="relative">
@@ -357,7 +365,7 @@ export function UserAvatar({
 							avatarTokens.avatar.transition
 						:	"all 0.2s ease-in-out",
 				}}
-				aria-label="Menú de usuario"
+				aria-label={t("ariaLabelUserMenu")}
 				aria-expanded={isOpen}
 				aria-haspopup="true"
 				disabled={isChangingProject} // Deshabilitar botón mientras se cambia
@@ -461,7 +469,7 @@ export function UserAvatar({
 										colorScheme="neutral"
 										colorShade="textShade"
 										className="mb-1 px-2">
-										Proyecto actual
+										{t("currentProjectLabel")}
 									</StandardText>
 									<div className="px-2 mb-2">
 										<StandardSelect
@@ -469,7 +477,7 @@ export function UserAvatar({
 											options={projectOptions}
 											value={proyectoActual?.id || ""}
 											onChange={handleProjectChange}
-											placeholder="Seleccionar proyecto"
+											placeholder={t("selectProjectPlaceholder")}
 											disabled={isChangingProject} // Deshabilitar select mientras se cambia
 										/>
 										{proyectoActual &&
@@ -480,7 +488,7 @@ export function UserAvatar({
 														weight="medium"
 														colorScheme="neutral"
 														className="mr-2">
-														Rol:
+														{t("roleLabel")}
 													</StandardText>
 													<span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
 														{proyectoActual.permissions.role_name}
@@ -495,10 +503,10 @@ export function UserAvatar({
 												onClick={handleCreateProject}
 												leftIcon={Plus}
 												loading={isCreatingProject}
-												loadingText="Creando..."
+												loadingText={t("creatingButton")}
 												disabled={isChangingProject}
 												className="w-full">
-												Crear Proyecto
+												{t("createProjectButton")}
 											</StandardButton>
 										</div>
 									</div>
@@ -511,7 +519,7 @@ export function UserAvatar({
 											colorScheme="neutral"
 											colorShade="textShade"
 											className="mb-1 px-2">
-											Proyecto actual
+											{t("currentProjectLabel")}
 										</StandardText>
 										<div className="px-2 py-1 mb-2 bg-gray-50 dark:bg-gray-800 rounded-md">
 											<StandardText
@@ -527,7 +535,7 @@ export function UserAvatar({
 														weight="medium"
 														colorScheme="neutral"
 														className="mr-2">
-														Rol:
+														{t("roleLabel")}
 													</StandardText>
 													<span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
 														{proyectoActual.permissions.role_name}
@@ -548,7 +556,7 @@ export function UserAvatar({
 										colorScheme="neutral"
 										colorShade="textShade"
 										className="mb-1 px-2">
-										Tus permisos
+										{t("yourPermissionsLabel")}
 									</StandardText>
 									<div className="px-2 space-y-1">
 										{activePermissions.map((permission) => (
@@ -590,7 +598,7 @@ export function UserAvatar({
 									{showFontSwitcher && (
 										<div className="flex items-center justify-between">
 											<StandardText size="sm" colorScheme="neutral">
-												Fuente
+												{t("fontLabel")}
 											</StandardText>
 											<StandardFontThemeSwitcher />
 										</div>
@@ -598,7 +606,7 @@ export function UserAvatar({
 									{showThemeSwitcher && (
 										<div className="flex items-center justify-between">
 											<StandardText size="sm" colorScheme="neutral">
-												Tema
+												{t("themeLabel")}
 											</StandardText>
 											<ThemeSwitcher />
 										</div>
@@ -641,7 +649,7 @@ export function UserAvatar({
 											colorScheme="secondary"
 											colorShade="pure"
 											size="sm">
-											Cerrar sesión
+											{t("logoutButton")}
 										</StandardText>
 									</div>
 								</motion.button>

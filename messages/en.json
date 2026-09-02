@@ -2384,6 +2384,71 @@
       "toastKeyDeleted": "Your personal API key was deleted. The project's global key will be used."
     }
   },
+  "navChrome": {
+    "colorSchemeSwitcher": {
+      "ariaLabel": "Select color theme",
+      "colorBlue": "Blue",
+      "colorGreen": "Green",
+      "colorOrange": "Orange",
+      "colorGraphite": "Graphite",
+      "colorMidnight": "Midnight",
+      "colorZenith": "Zenith",
+      "colorOcean": "Ocean",
+      "colorCrimson": "Crimson",
+      "toastErrorSaving": "Oops! We had a problem saving your theme preference. Your previous configuration may load on your next login.",
+      "toastErrorException": "Oops! There was an exception while saving your theme preference. Your previous configuration may load on your next login."
+    },
+    "darkModeSwitcher": {
+      "toastErrorSaving": "Could not save your dark/light mode preference.",
+      "toastErrorUnexpected": "Unexpected error saving your mode preference.",
+      "ariaLabelToLight": "Switch to light mode",
+      "ariaLabelToDark": "Switch to dark mode"
+    },
+    "fontThemeSwitcher": {
+      "fontSustrato": "Sustrato Font",
+      "fontClassic": "Classic Font",
+      "fontTechnical": "Technical Font",
+      "fontCreative": "Creative Font",
+      "fontAccessible": "Accessible Font",
+      "fontModern": "Modern Font",
+      "fontMinimalist": "Minimalist Font",
+      "defaultFallback": "Default",
+      "sampleText": "This is a sample text with this font.",
+      "toastErrorSaving": "Oops! We had a problem saving your font preference. Your previous configuration may load on your next login.",
+      "toastErrorException": "Oops! There was an exception while saving your font preference. Your previous configuration may load on your next login."
+    },
+    "userAvatar": {
+      "permManageMasterData": "Manage master data",
+      "permCreateBatches": "Create batches",
+      "permUploadFiles": "Upload files",
+      "permBulkEditMasterData": "Bulk edit master data",
+      "defaultUserName": "User",
+      "defaultProjectName": "New Project",
+      "toastAuthError": "Authentication error.",
+      "toastCreatingProject": "Creating project...",
+      "toastActivatingProject": "Activating project...",
+      "toastProjectCreatedActivated": "Project created and activated. Redirecting...",
+      "toastProjectCreatedNotActivated": "Project created but could not be activated. Reload the page.",
+      "toastErrorCreatingProject": "Error creating the project.",
+      "toastExceptionCreatingProject": "An exception occurred while creating the project.",
+      "toastAuthErrorChangingProject": "Authentication error while changing project.",
+      "toastProjectNotFound": "Error: Project not found in the available list.",
+      "toastChangingProject": "Changing project...",
+      "toastProjectChangedSuccess": "Project changed successfully.",
+      "toastErrorChangingProject": "Error changing project.",
+      "toastExceptionChangingProject": "An exception occurred while changing project.",
+      "ariaLabelUserMenu": "User menu",
+      "currentProjectLabel": "Current project",
+      "selectProjectPlaceholder": "Select project",
+      "roleLabel": "Role:",
+      "createProjectButton": "Create Project",
+      "creatingButton": "Creating...",
+      "yourPermissionsLabel": "Your permissions",
+      "fontLabel": "Font",
+      "themeLabel": "Theme",
+      "logoutButton": "Log out"
+    }
+  },
   "showroom": {
     "standardButton": {
       "title": "StandardButton Showroom v4.1 🌸",

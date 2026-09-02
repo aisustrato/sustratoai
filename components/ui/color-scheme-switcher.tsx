@@ -6,6 +6,7 @@ import { useTheme } from "@/app/theme-provider";
 import { Check, ChevronDown, Palette } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRef, useState, useEffect, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardIcon } from "@/components/ui/StandardIcon";
 import { generateThemeSelectorTokens } from "@/lib/theme/components/theme-selector-tokens";
@@ -27,6 +28,7 @@ type ColorSchemeId =
 	| "crimson";
 
 export function ColorSchemeSwitcher() {
+	const t = useTranslations("navChrome.colorSchemeSwitcher");
 	const { colorScheme, mode, setColorScheme, appColorTokens } = useTheme();
 	const auth = useAuth(); // Hook para acceder al contexto de autenticación
 
@@ -102,8 +104,7 @@ export function ColorSchemeSwitcher() {
 				);
 			} else {
 				toast.error(
-					result.error ||
-						"Ups! Tuvimos un problema al guardar tu preferencia de tema. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.",
+					result.error || t("toastErrorSaving"),
 				);
 				console.error(
 					"[ColorSchemeSwitcher v1.1] Error en persistencia desde actualizarPreferenciasUI:",
@@ -118,7 +119,7 @@ export function ColorSchemeSwitcher() {
 			const errorMessage =
 				error instanceof Error ?
 					error.message
-				:	"Ups! Hubo una excepción al guardar tu preferencia de tema. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.";
+				:	t("toastErrorException");
 			toast.error(errorMessage);
 		}
 	};
@@ -174,21 +175,24 @@ export function ColorSchemeSwitcher() {
 		id: ColorSchemeId;
 		name: string;
 		bgColorClass: string;
-	}> = [
-		{ id: "blue", name: "Azul", bgColorClass: "bg-blue-600" },
-		{ id: "green", name: "Verde", bgColorClass: "bg-green-600" },
-		{ id: "orange", name: "Naranja", bgColorClass: "bg-orange-500" },
-		{ id: "graphite", name: "Grafito", bgColorClass: "bg-gray-500" },
-		{ id: "midnight", name: "Medianoche", bgColorClass: "bg-[#0A0F2C]" },
-		{ id: "zenith", name: "Zenith", bgColorClass: "bg-[#A0D2DB]" },
-		{ id: "ocean", name: "Ocean", bgColorClass: "bg-[#0EA5E9]" },
-		{ id: "crimson", name: "Crimson", bgColorClass: "bg-[#8D0027]" },
-	];
+	}> = useMemo(
+		() => [
+			{ id: "blue", name: t("colorBlue"), bgColorClass: "bg-blue-600" },
+			{ id: "green", name: t("colorGreen"), bgColorClass: "bg-green-600" },
+			{ id: "orange", name: t("colorOrange"), bgColorClass: "bg-orange-500" },
+			{ id: "graphite", name: t("colorGraphite"), bgColorClass: "bg-gray-500" },
+			{ id: "midnight", name: t("colorMidnight"), bgColorClass: "bg-[#0A0F2C]" },
+			{ id: "zenith", name: t("colorZenith"), bgColorClass: "bg-[#A0D2DB]" },
+			{ id: "ocean", name: t("colorOcean"), bgColorClass: "bg-[#0EA5E9]" },
+			{ id: "crimson", name: t("colorCrimson"), bgColorClass: "bg-[#8D0027]" },
+		],
+		[t],
+	);
 
 	const getCurrentColorSchemeName = () => {
 		// La UI del selector se basa en `colorScheme` de `useTheme()`, que es actualizado por `setColorScheme`
 		const current = colorSchemes.find((s) => s.id === colorScheme);
-		return current ? current.name : "Azul"; // Fallback a Azul si no se encuentra
+		return current ? current.name : t("colorBlue"); // Fallback a Azul si no se encuentra
 	};
 
 	const defaultBackgroundColor = "rgba(200, 200, 200, 0.5)";
@@ -228,7 +232,7 @@ export function ColorSchemeSwitcher() {
 							:	defaultTextColor,
 						maxWidth: "150px",
 					}}
-					aria-label="Seleccionar tema de color"
+					aria-label={t("ariaLabel")}
 					aria-expanded={isOpen}
 					aria-haspopup="true">
 					<div className="flex items-center gap-2">
