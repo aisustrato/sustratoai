@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardSwitch } from "@/components/ui/StandardSwitch";
@@ -48,6 +49,7 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 	autoScrollIntoView = false,
 	...props
 }) => {
+	const t = useTranslations("articulos.notesCard");
 	// Estado de edición para notas (declarar SIEMPRE antes de cualquier return)
 	const [isEditing, setIsEditing] = React.useState(false);
 	const [title, setTitle] = React.useState<string>((note as any)?.title || "");
@@ -140,13 +142,13 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 		}
 		if (autoScrollIntoView && containerRef.current) {
 			// Timeout para asegurar que el layout esté listo
-			const t = setTimeout(() => {
+			const scrollTimeout = setTimeout(() => {
 				containerRef.current?.scrollIntoView({
 					behavior: "smooth",
 					block: "start",
 				});
 			}, 0);
-			return () => clearTimeout(t);
+			return () => clearTimeout(scrollTimeout);
 		}
 	}, [autoOpen, autoOpenMode, autoScrollIntoView, (note as any)?.id]);
 
@@ -167,7 +169,7 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 			const json = await res.json();
 			if (!res.ok || !json.success) {
 				throw new Error(
-					json.error || "No se pudieron cargar notas relacionadas",
+					json.error || t("errorLoadingRelated"),
 				);
 			}
 			const fetched: DetailedNote[] = (json.data ?? []) as DetailedNote[];
@@ -179,12 +181,12 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 			}
 			setRelatedNotes(Array.from(uniqueById.values()));
 		} catch (e) {
-			const msg = e instanceof Error ? e.message : "Error desconocido";
+			const msg = e instanceof Error ? e.message : t("toastUnknownError");
 			setRelatedError(msg);
 		} finally {
 			setIsLoadingRelated(false);
 		}
-	}, [(note as any)?.article_id, (note as any)?.project_id, (note as any)?.id]);
+	}, [(note as any)?.article_id, (note as any)?.project_id, (note as any)?.id, t]);
 
 	const handleAccordionChange = (val: string | undefined) => {
 		setAccordionValue(val);
@@ -232,32 +234,32 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 		try {
 			setSaving(true);
 			if (!(note as any)?.id) {
-				toast.error("Nota inválida para guardar");
+				toast.error(t("toastInvalidNoteToSave"));
 				return;
 			}
 			const res = await updateArticleNote({
 				noteId: (note as any).id,
-				title: title || "sin título",
+				title: title || t("untitledDefaultValue"),
 				noteContent: content,
 				visibility,
 			});
 			if (!res.success) {
-				toast.error(res.error || "No se pudo actualizar la nota");
+				toast.error(res.error || t("toastCouldNotUpdate"));
 				return;
 			}
 			if (!res.data) {
-				toast.error("No se pudo actualizar la nota");
+				toast.error(t("toastCouldNotUpdate"));
 				return;
 			}
-			toast.success("Nota actualizada correctamente");
+			toast.success(t("toastNoteUpdated"));
 			setIsEditing(false);
 			// Actualizamos baseline al último guardado
 			setBaselineTitle(title || "");
 			setBaselineContent(content || "");
 			setBaselineVisibility(visibility);
 		} catch (e) {
-			const msg = e instanceof Error ? e.message : "Error desconocido";
-			toast.error(`Error al guardar: ${msg}`);
+			const msg = e instanceof Error ? e.message : t("toastUnknownError");
+			toast.error(t("toastErrorSaving", { message: msg }));
 		} finally {
 			setSaving(false);
 		}
@@ -267,19 +269,19 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 		try {
 			setDeleting(true);
 			if (!(note as any)?.id) {
-				toast.error("Nota inválida para eliminar");
+				toast.error(t("toastInvalidNoteToDelete"));
 				return;
 			}
 			const res = await deleteArticleNote((note as any).id);
 			if (res.success) {
-				toast.success("Nota eliminada");
+				toast.success(t("toastNoteDeleted"));
 				setIsDeleted(true);
 			} else {
-				toast.error(res.error || "No se pudo eliminar la nota");
+				toast.error(res.error || t("toastCouldNotDelete"));
 			}
 		} catch (e) {
-			const msg = e instanceof Error ? e.message : "Error desconocido";
-			toast.error(`Error al eliminar: ${msg}`);
+			const msg = e instanceof Error ? e.message : t("toastUnknownError");
+			toast.error(t("toastErrorDeleting", { message: msg }));
 		} finally {
 			setDeleting(false);
 			setShowDeleteConfirm(false);
@@ -307,18 +309,18 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 							{isEditing ?
 								<div className="space-y-2">
 									<StandardText size="sm" className="font-medium">
-										Título
+										{t("titleLabel")}
 									</StandardText>
 									<StandardInput
 										value={title}
 										onChange={(e) => setTitle(e.target.value)}
-										placeholder="Título de la nota"
+										placeholder={t("titlePlaceholder")}
 										colorScheme="primary"
 										size="md"
 									/>
 								</div>
 							:	<h3 className="text-base font-semibold truncate">
-									{title || "(sin título)"}
+									{title || t("untitled")}
 								</h3>
 							}
 						</div>
@@ -328,14 +330,14 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 									size="sm"
 									styleType="outline"
 									onClick={() => setIsEditing(true)}>
-									Editar
+									{t("editButton")}
 								</StandardButton>
 							:	<>
 									<StandardButton
 										size="sm"
 										styleType="outline"
 										onClick={onCancelClick}>
-										Cancelar
+										{t("cancelButton")}
 									</StandardButton>
 									<StandardButton
 										size="sm"
@@ -343,7 +345,7 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 										colorScheme="primary"
 										onClick={onSave}
 										disabled={!isDirty || saving}>
-										{saving ? "Guardando..." : "Guardar"}
+										{saving ? t("savingButton") : t("saveButton")}
 									</StandardButton>
 									<StandardButton
 										size="sm"
@@ -351,7 +353,7 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 										colorScheme="danger"
 										onClick={() => setShowDeleteConfirm(true)}
 										disabled={deleting}>
-										Eliminar
+										{t("deleteButton")}
 									</StandardButton>
 								</>
 							}
@@ -364,7 +366,7 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 							<StandardText
 								size="xs"
 								className="text-gray-600 dark:text-gray-300 truncate">
-								Artículo: {(note as any).article_title || "(sin título)"}
+								{t("articleLabel", { title: (note as any).article_title || t("untitled") })}
 							</StandardText>
 							<StandardButton
 								size="sm"
@@ -373,7 +375,7 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 								asChild>
 								<Link
 									href={`/articulos/detalle?articleId=${(note as any).article_id}`}>
-									Ver artículo
+									{t("viewArticleButton")}
 								</Link>
 							</StandardButton>
 						</div>
@@ -394,14 +396,14 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 									htmlFor={`note-visibility-${(note as any).id ?? controlId}`}
 									className="text-sm select-none cursor-pointer">
 									{visibility === "public" ?
-										"🌐 Pública (visible para el equipo)"
-									:	"🔒 Privada (solo tú)"}
+										t("publicVisibilityEditing")
+									:	t("privateVisibilityEditing")}
 								</label>
 							</div>
 						:	<StandardText size="xs" className="text-gray-500">
 								{visibility === "public" ?
-									"🌐 Nota pública"
-								:	"🔒 Nota privada"}
+									t("publicVisibilityView")
+								:	t("privateVisibilityView")}
 							</StandardText>
 						}
 					</div>
@@ -413,7 +415,7 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 								<StandardNote
 									value={content}
 									onChange={setContent}
-									placeholder="Escribe tus notas sobre este artículo..."
+									placeholder={t("contentPlaceholder")}
 									colorScheme="primary"
 									size="lg"
 									minimalToolbar={true}
@@ -430,7 +432,7 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 								{content}
 							</p>
 						:	<StandardText size="sm" className="text-gray-500">
-								(sin contenido)
+								{t("noContent")}
 							</StandardText>
 						}
 					</div>
@@ -448,12 +450,12 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 								className="w-full">
 								<StandardAccordionItem value="related">
 									<StandardAccordionTrigger>
-										Otras notas del mismo artículo
+										{t("otherNotesAccordionTitle")}
 									</StandardAccordionTrigger>
 									<StandardAccordionContent>
 										{isLoadingRelated ?
 											<StandardText size="sm" className="text-gray-500">
-												Cargando notas relacionadas…
+												{t("loadingRelatedNotes")}
 											</StandardText>
 										: relatedError ?
 											<StandardText size="sm" className="text-red-600">
@@ -461,7 +463,7 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 											</StandardText>
 										: relatedNotes.length === 0 ?
 											<StandardText size="sm" className="text-gray-500">
-												No hay notas públicas relacionadas.
+												{t("noPublicRelatedNotes")}
 											</StandardText>
 										:	<ul className="space-y-3">
 												{relatedNotes.map((n) => {
@@ -486,7 +488,7 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 																		href={`/articulos/notas?noteId=${(n as any).id}&visibility=${(n as any).visibility}&mode=preview`}
 																		className="block">
 																		<span className="text-sm font-medium line-clamp-1">
-																			{(n as any).title || "(sin título)"}
+																			{(n as any).title || t("untitled")}
 																		</span>
 																	</Link>
 																	<div className="mt-1 flex items-center gap-2">
@@ -499,14 +501,14 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 																				:	"neutral"
 																			}>
 																			{(n as any).visibility === "public" ?
-																				"Pública"
-																			:	"Privada"}
+																				t("publicBadge")
+																			:	t("privateBadge")}
 																		</StandardBadge>
 																		{(n as any).author_name ?
 																			<StandardText
 																				size="xs"
 																				className="text-gray-500">
-																				Autor: {(n as any).author_name}
+																				{t("authorLabel", { name: (n as any).author_name })}
 																			</StandardText>
 																		:	null}
 																		{dateStr ?
@@ -546,11 +548,10 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 					<StandardDialog.Content size="sm" colorScheme="warning">
 						<StandardDialog.Header>
 							<StandardDialog.Title>
-								⚠️ Confirmar visibilidad pública
+								{t("confirmPublicTitle")}
 							</StandardDialog.Title>
 							<StandardDialog.Description>
-								Estás a punto de hacer esta nota visible para todo el equipo del
-								proyecto.
+								{t("confirmPublicDescription")}
 							</StandardDialog.Description>
 						</StandardDialog.Header>
 						<StandardDialog.Footer>
@@ -558,13 +559,13 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 								styleType="outline"
 								colorScheme="neutral"
 								onClick={() => setShowPublicConfirm(false)}>
-								Cancelar
+								{t("cancelButton")}
 							</StandardButton>
 							<StandardButton
 								styleType="solid"
 								colorScheme="warning"
 								onClick={confirmMakePublic}>
-								Sí, hacer pública
+								{t("confirmPublicYes")}
 							</StandardButton>
 						</StandardDialog.Footer>
 					</StandardDialog.Content>
@@ -577,10 +578,10 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 					<StandardDialog.Content size="sm">
 						<StandardDialog.Header>
 							<StandardDialog.Title>
-								Hay cambios sin guardar
+								{t("unsavedChangesTitle")}
 							</StandardDialog.Title>
 							<StandardDialog.Description>
-								Si sales ahora, se perderán los cambios realizados en esta nota.
+								{t("unsavedChangesDescription")}
 							</StandardDialog.Description>
 						</StandardDialog.Header>
 						<StandardDialog.Footer>
@@ -588,7 +589,7 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 								styleType="outline"
 								colorScheme="neutral"
 								onClick={() => setShowUnsavedConfirm(false)}>
-								Seguir editando
+								{t("continueEditingButton")}
 							</StandardButton>
 							<StandardButton
 								styleType="solid"
@@ -598,7 +599,7 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 									setIsEditing(false);
 									setShowUnsavedConfirm(false);
 								}}>
-								Salir sin guardar
+								{t("exitWithoutSavingButton")}
 							</StandardButton>
 						</StandardDialog.Footer>
 					</StandardDialog.Content>
@@ -609,24 +610,23 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 					onOpenChange={setShowDeleteConfirm}>
 					<StandardDialog.Content size="md">
 						<StandardDialog.Header>
-							<StandardDialog.Title>Confirmar eliminación</StandardDialog.Title>
+							<StandardDialog.Title>{t("confirmDeleteTitle")}</StandardDialog.Title>
 							<StandardDialog.Description>
-								¿Estás seguro de que quieres eliminar esta nota? Esta acción no
-								puede ser revertida.
+								{t("confirmDeleteDescription")}
 							</StandardDialog.Description>
 						</StandardDialog.Header>
 						<StandardDialog.Footer>
 							<StandardButton
 								styleType="outline"
 								onClick={() => setShowDeleteConfirm(false)}>
-								Cancelar
+								{t("cancelButton")}
 							</StandardButton>
 							<StandardButton
 								styleType="solid"
 								colorScheme="danger"
 								onClick={onDelete}
 								disabled={deleting}>
-								{deleting ? "Eliminando..." : "Eliminar definitivamente"}
+								{deleting ? t("deletingButton") : t("deletePermanentlyButton")}
 							</StandardButton>
 						</StandardDialog.Footer>
 					</StandardDialog.Content>
