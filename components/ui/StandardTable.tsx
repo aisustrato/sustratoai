@@ -10,6 +10,7 @@ import React, {
 	cloneElement,
 	useLayoutEffect,
 } from "react";
+import { useTranslations } from "next-intl";
 import {
 	type ColumnDef,
 	flexRender,
@@ -156,6 +157,7 @@ const StandardTableToolbar = <TData extends object>({
 	showColumnSelector?: boolean;
 	showTruncationDropdown?: boolean;
 }) => {
+	const t = useTranslations("designSystem.standardTable");
 	// 🔍 Estado para keyword temporal (debe estar antes del early return)
 	const [tempKeyword, setTempKeyword] = useState("");
 
@@ -238,14 +240,14 @@ const StandardTableToolbar = <TData extends object>({
 
 	const { globalFilter } = table.getState();
 	const filterPlaceholder =
-		(table.options.meta && table.options.meta.filterPlaceholder) || "Buscar...";
+		(table.options.meta && table.options.meta.filterPlaceholder) || t("filterPlaceholder");
 	const allColumns = table.getAllLeafColumns();
 	const truncateOptions = [
-		{ label: "Ver todo", value: null },
-		{ label: "1 línea", value: 1 },
-		{ label: "2 líneas", value: 2 },
-		{ label: "3 líneas", value: 3 },
-		{ label: "5 líneas", value: 5 },
+		{ label: t("viewAllOption"), value: null },
+		{ label: t("linesCountOption", { count: 1 }), value: 1 },
+		{ label: t("linesCountOption", { count: 2 }), value: 2 },
+		{ label: t("linesCountOption", { count: 3 }), value: 3 },
+		{ label: t("linesCountOption", { count: 5 }), value: 5 },
 	];
 
 	return (
@@ -264,7 +266,7 @@ const StandardTableToolbar = <TData extends object>({
 					className={`flex items-center gap-2 mr-4 ${enableKeywordHighlighting ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
 					<StandardInput
 						placeholder={
-							keywordHighlightPlaceholder || "Resaltar palabra clave..."
+							keywordHighlightPlaceholder || t("keywordPlaceholder")
 						}
 						value={tempKeyword}
 						onChange={(e) => setTempKeyword(e.target.value)}
@@ -283,7 +285,7 @@ const StandardTableToolbar = <TData extends object>({
 						size="sm"
 						onClick={handleApplyKeyword}
 						disabled={!tempKeyword.trim()}>
-						Aplicar
+						{t("applyButton")}
 					</StandardButton>
 					<StandardButton
 						styleType="outline"
@@ -291,7 +293,7 @@ const StandardTableToolbar = <TData extends object>({
 						size="sm"
 						onClick={handleClearKeyword}
 						disabled={!keywordHighlight}>
-						Limpiar
+						{t("clearButton")}
 					</StandardButton>
 				</div>
 
@@ -303,8 +305,8 @@ const StandardTableToolbar = <TData extends object>({
 						size="sm"
 						leftIcon={Download}
 						onClick={handleExportCsv}
-						tooltip="Descargar datos en CSV">
-						Exportar CSV
+						tooltip={t("exportCsvTooltip")}>
+						{t("exportCsvButton")}
 					</StandardButton>
 				)}
 
@@ -316,13 +318,13 @@ const StandardTableToolbar = <TData extends object>({
 								styleType="outline"
 								leftIcon={Columns}
 								size="sm"
-								tooltip="ocultar/mostrar columnas">
-								Columnas
+								tooltip={t("toggleColumnsTooltip")}>
+								{t("columnsButton")}
 							</StandardButton>
 						</StandardDropdownMenu.Trigger>
 						<StandardDropdownMenu.Content align="end">
 							<StandardDropdownMenu.Label>
-								Mostrar/Ocultar Columnas
+								{t("showHideColumnsLabel")}
 							</StandardDropdownMenu.Label>
 							<StandardDropdownMenu.Separator />
 							{allColumns.map((column) => {
@@ -356,13 +358,13 @@ const StandardTableToolbar = <TData extends object>({
 								styleType="outline"
 								leftIcon={Rows}
 								size="sm"
-								tooltip="línea(s) de texto visibles en las filas">
-								{truncateValue ? `${truncateValue} línea(s)` : "Ver todo"}
+								tooltip={t("linesTooltip")}>
+								{truncateValue ? t("linesCountOption", { count: truncateValue }) : t("viewAllOption")}
 							</StandardButton>
 						</StandardDropdownMenu.Trigger>
 						<StandardDropdownMenu.Content align="start">
 							<StandardDropdownMenu.Label>
-								Máximo de líneas por fila
+								{t("maxLinesPerRowLabel")}
 							</StandardDropdownMenu.Label>
 							<StandardDropdownMenu.Separator />
 							{truncateOptions.map((opt) => (
@@ -537,6 +539,7 @@ const StandardTableCell = <TData extends object, TValue>({
 }: {
 	cell: Cell<TData, TValue>;
 }) => {
+	const t = useTranslations("designSystem.standardTable");
 	const { tokens: designTokens } = useDesignTokens();
 	const meta = cell.column.columnDef.meta;
 	const align = meta?.align || "left";
@@ -742,12 +745,12 @@ const StandardTableCell = <TData extends object, TValue>({
 						},
 					)}
 					title={
-						copyFeedback === "copied" ? "¡Copiado!"
+						copyFeedback === "copied" ? t("copiedTitle")
 						: copyFeedback === "copying" ?
-							"Copiando..."
-						:	"Copiar contenido"
+							t("copyingTitle")
+						:	t("copyContentTitle")
 					}
-					aria-label="Copiar contenido de la celda"
+					aria-label={t("copyCellAriaLabel")}
 					disabled={copyFeedback === "copying"}>
 					<StandardIcon
 						size="xs"

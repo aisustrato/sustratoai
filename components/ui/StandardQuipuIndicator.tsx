@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { StandardTooltip } from "./StandardTooltip";
 import { cn } from "@/lib/utils";
 
@@ -21,57 +22,56 @@ export interface StandardQuipuIndicatorProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-const QUIPU_MAP: Record<QuipuStatus, { 
-  emoji: string; 
-  label: string; 
-  desc: string;
-  color: string;
-}> = {
-  pending: { 
-    emoji: "🥚", 
-    label: "Semilla", 
-    desc: "Estado latente (F0). Esperando proceso.",
+type QuipuTranslator = ReturnType<typeof useTranslations<"designSystem.quipuIndicator">>;
+
+const makeQuipuMap = (
+  t: QuipuTranslator,
+): Record<QuipuStatus, { emoji: string; label: string; desc: string; color: string }> => ({
+  pending: {
+    emoji: "🥚",
+    label: t("pendingLabel"),
+    desc: t("pendingDesc"),
     color: "text-gray-400"
   },
-  review_pending: { 
-    emoji: "⏳", 
-    label: "En Proceso", 
-    desc: "IA ha clasificado. Esperando validación humana.",
+  review_pending: {
+    emoji: "⏳",
+    label: t("reviewPendingLabel"),
+    desc: t("reviewPendingDesc"),
     color: "text-blue-400"
   },
-  validated: { 
-    emoji: "✅", 
-    label: "Validado", 
-    desc: "Sincronización exitosa en Iteración 1.",
+  validated: {
+    emoji: "✅",
+    label: t("validatedLabel"),
+    desc: t("validatedDesc"),
     color: "text-green-500"
   },
-  reconciliation_pending: { 
-    emoji: "🟣", 
-    label: "En Reconciliación", 
-    desc: "Discrepancia detectada. El sistema busca coherencia.",
+  reconciliation_pending: {
+    emoji: "🟣",
+    label: t("reconciliationPendingLabel"),
+    desc: t("reconciliationPendingDesc"),
     color: "text-purple-500"
   },
-  reconciled: { 
-    emoji: "🎯", 
-    label: "Reconciliado", 
-    desc: "Consenso alcanzado tras iteración profunda.",
+  reconciled: {
+    emoji: "🎯",
+    label: t("reconciledLabel"),
+    desc: t("reconciledDesc"),
     color: "text-blue-600"
   },
-  disputed: { 
-    emoji: "⚡", 
-    label: "Disputado", 
-    desc: "Divergencia no resuelta. Requiere arbitraje fractal.",
+  disputed: {
+    emoji: "⚡",
+    label: t("disputedLabel"),
+    desc: t("disputedDesc"),
     color: "text-red-500"
   }
-};
+});
 
 // Override específico para Iteración 2 (Humano rechaza IA, esperando a IA)
-const ITER2_OVERRIDE = {
+const makeIter2Override = (t: QuipuTranslator) => ({
   emoji: "🔄",
-  label: "Divergencia",
-  desc: "Humano ha marcado discrepancia. Esperando respuesta de IA.",
+  label: t("iter2OverrideLabel"),
+  desc: t("iter2OverrideDesc"),
   color: "text-yellow-500"
-};
+});
 
 export function StandardQuipuIndicator({
   status,
@@ -80,13 +80,16 @@ export function StandardQuipuIndicator({
   showTooltip = true,
   size = 'md'
 }: StandardQuipuIndicatorProps) {
-  
-  let config = QUIPU_MAP[status] || QUIPU_MAP.pending;
+  const t = useTranslations("designSystem.quipuIndicator");
+  const quipuMap = useMemo(() => makeQuipuMap(t), [t]);
+  const iter2Override = useMemo(() => makeIter2Override(t), [t]);
+
+  let config = quipuMap[status] || quipuMap.pending;
 
   // Lógica especial del lenguaje Quipu
   if (status === 'reconciliation_pending') {
     if (iteration === 2) {
-      config = ITER2_OVERRIDE;
+      config = iter2Override;
     } else if (iteration >= 3) {
       // Mantiene el mapa original (🟣)
     }
@@ -124,7 +127,7 @@ export function StandardQuipuIndicator({
           <div className="text-xs opacity-80 max-w-[200px]">{config.desc}</div>
           {iteration > 0 && (
             <div className="text-[10px] mt-2 uppercase tracking-wider opacity-50 border-t border-white/20 pt-1">
-              Iteración {iteration}
+              {t("iterationLabel", { iteration })}
             </div>
           )}
         </div>
