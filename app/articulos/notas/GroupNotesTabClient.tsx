@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import {
 	StandardAccordion,
 	StandardAccordionItem,
@@ -32,6 +33,7 @@ export default function GroupNotesTabClient({
 	onNoteDirtyChange,
 	resetSignal = 0,
 }: GroupNotesTabClientProps) {
+	const t = useTranslations("articulos.groupNotesTab");
 	const [selectedTypes, setSelectedTypes] = React.useState<string[]>([
 		"private",
 		"public",
@@ -61,11 +63,11 @@ export default function GroupNotesTabClient({
 	return (
 		<div className="flex flex-col gap-4">
 			<StandardCheckboxGroup
-				label="Tipos de notas a mostrar"
-				description="Selecciona si deseas ver notas privadas, públicas o ambas"
+				label={t("filterLabel")}
+				description={t("filterDescription")}
 				options={[
-					{ value: "private", label: "Privadas" },
-					{ value: "public", label: "Públicas" },
+					{ value: "private", label: t("filterPrivateOption") },
+					{ value: "public", label: t("filterPublicOption") },
 				]}
 				value={selectedTypes}
 				onChange={setSelectedTypes}
@@ -75,8 +77,8 @@ export default function GroupNotesTabClient({
 
 			{filteredGroups.length === 0 ?
 				<StandardEmptyState
-					title="Sin grupos con notas"
-					description="No hay grupos con notas para los filtros seleccionados."
+					title={t("emptyTitle")}
+					description={t("emptyDescription")}
 				/>
 			:	<StandardAccordion
 					type="multiple"

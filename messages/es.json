@@ -1260,6 +1260,38 @@
       "confidenceByDimensionDescription": "Dimensiones que requieren revisión: clasificaciones con confianza media o baja",
       "coverageByDimensionTitle": "Cobertura por Dimensión",
       "otherSerendipityLabel": "🎁 Otros (Serendipia)"
+    },
+    "notasPage": {
+      "pageTitle": "Notas de Artículos",
+      "pageSubtitleDefault": "Gestiona y organiza tus notas por visibilidad",
+      "pageSubtitleActiveProject": "Proyecto activo: {name}",
+      "loginRequiredTitle": "Inicia sesión para ver tus notas",
+      "loginRequiredDescription": "Necesitas estar autenticado para acceder a tus notas privadas y públicas del proyecto.",
+      "selectActiveProjectTitle": "Selecciona un proyecto activo",
+      "selectActiveProjectDescription": "No encontramos un proyecto activo asociado a tu usuario. Selecciona o activa un proyecto para ver sus notas."
+    },
+    "notesTabs": {
+      "tabPrivate": "Privadas",
+      "tabPublic": "Públicas",
+      "tabGroups": "Grupos",
+      "emptyPrivateTitle": "Sin notas privadas",
+      "emptyPrivateDescription": "Crea notas privadas para tus artículos. Solo tú podrás verlas.",
+      "emptyPublicTitle": "Sin notas públicas",
+      "emptyPublicDescription": "Aún no hay notas públicas en este proyecto. Comparte conocimiento con tu equipo creando una.",
+      "emptyGroupsTitle": "Sin grupos con notas",
+      "emptyGroupsDescription": "No hay grupos con notas en este proyecto.",
+      "unsavedChangesTitle": "Hay cambios sin guardar",
+      "unsavedChangesDescription": "Estás cambiando de pestaña. Si continúas, se perderán los cambios de edición en esta pestaña.",
+      "stayOnTabButton": "Permanecer en esta pestaña",
+      "discardAndSwitchButton": "Cambiar y descartar cambios"
+    },
+    "groupNotesTab": {
+      "filterLabel": "Tipos de notas a mostrar",
+      "filterDescription": "Selecciona si deseas ver notas privadas, públicas o ambas",
+      "filterPrivateOption": "Privadas",
+      "filterPublicOption": "Públicas",
+      "emptyTitle": "Sin grupos con notas",
+      "emptyDescription": "No hay grupos con notas para los filtros seleccionados."
     }
   },
   "showroom": {

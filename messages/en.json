@@ -1260,6 +1260,38 @@
       "confidenceByDimensionDescription": "Dimensions that need review: classifications with medium or low confidence",
       "coverageByDimensionTitle": "Coverage by Dimension",
       "otherSerendipityLabel": "🎁 Other (Serendipity)"
+    },
+    "notasPage": {
+      "pageTitle": "Article Notes",
+      "pageSubtitleDefault": "Manage and organize your notes by visibility",
+      "pageSubtitleActiveProject": "Active project: {name}",
+      "loginRequiredTitle": "Log in to see your notes",
+      "loginRequiredDescription": "You need to be authenticated to access the project's private and public notes.",
+      "selectActiveProjectTitle": "Select an active project",
+      "selectActiveProjectDescription": "We couldn't find an active project associated with your user. Select or activate a project to see its notes."
+    },
+    "notesTabs": {
+      "tabPrivate": "Private",
+      "tabPublic": "Public",
+      "tabGroups": "Groups",
+      "emptyPrivateTitle": "No private notes",
+      "emptyPrivateDescription": "Create private notes for your articles. Only you will be able to see them.",
+      "emptyPublicTitle": "No public notes",
+      "emptyPublicDescription": "There are no public notes in this project yet. Share knowledge with your team by creating one.",
+      "emptyGroupsTitle": "No groups with notes",
+      "emptyGroupsDescription": "There are no groups with notes in this project.",
+      "unsavedChangesTitle": "You have unsaved changes",
+      "unsavedChangesDescription": "You're switching tabs. If you continue, the editing changes on this tab will be lost.",
+      "stayOnTabButton": "Stay on this tab",
+      "discardAndSwitchButton": "Switch and discard changes"
+    },
+    "groupNotesTab": {
+      "filterLabel": "Note types to show",
+      "filterDescription": "Choose whether to see private notes, public notes, or both",
+      "filterPrivateOption": "Private",
+      "filterPublicOption": "Public",
+      "emptyTitle": "No groups with notes",
+      "emptyDescription": "There are no groups with notes for the selected filters."
     }
   },
   "showroom": {

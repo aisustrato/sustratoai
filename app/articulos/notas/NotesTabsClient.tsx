@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import {
 	StandardTabs,
 	StandardTabsList,
@@ -38,6 +39,7 @@ export default function NotesTabsClient({
 	autoOpenMode = "preview",
 	autoOpenVisibility,
 }: NotesTabsClientProps) {
+	const t = useTranslations("articulos.notesTabs");
 	const [value, setValue] = React.useState<"privadas" | "publicas" | "grupos">(
 		defaultValue,
 	);
@@ -136,9 +138,9 @@ export default function NotesTabsClient({
 				colorScheme="accent"
 				size="md">
 				<StandardTabsList>
-					<StandardTabsTrigger value="privadas">Privadas</StandardTabsTrigger>
-					<StandardTabsTrigger value="publicas">Públicas</StandardTabsTrigger>
-					<StandardTabsTrigger value="grupos">Grupos</StandardTabsTrigger>
+					<StandardTabsTrigger value="privadas">{t("tabPrivate")}</StandardTabsTrigger>
+					<StandardTabsTrigger value="publicas">{t("tabPublic")}</StandardTabsTrigger>
+					<StandardTabsTrigger value="grupos">{t("tabGroups")}</StandardTabsTrigger>
 				</StandardTabsList>
 
 				<TabsContent
@@ -146,8 +148,8 @@ export default function NotesTabsClient({
 					className="p-4 border rounded-md border-t-0 rounded-t-none">
 					{notasPrivadas.length === 0 ?
 						<StandardEmptyState
-							title="Sin notas privadas"
-							description="Crea notas privadas para tus artículos. Solo tú podrás verlas."
+							title={t("emptyPrivateTitle")}
+							description={t("emptyPrivateDescription")}
 						/>
 					:	<div className="grid grid-cols-1 gap-3">
 							{notasPrivadas.map((n) => (
@@ -188,8 +190,8 @@ export default function NotesTabsClient({
 					className="p-4 border rounded-md border-t-0 rounded-t-none">
 					{notasPublicas.length === 0 ?
 						<StandardEmptyState
-							title="Sin notas públicas"
-							description="Aún no hay notas públicas en este proyecto. Comparte conocimiento con tu equipo creando una."
+							title={t("emptyPublicTitle")}
+							description={t("emptyPublicDescription")}
 						/>
 					:	<div className="grid grid-cols-1 gap-3">
 							{notasPublicas.map((n) => (
@@ -230,8 +232,8 @@ export default function NotesTabsClient({
 					className="p-4 border rounded-md border-t-0 rounded-t-none">
 					{!groups || groups.length === 0 ?
 						<StandardEmptyState
-							title="Sin grupos con notas"
-							description="No hay grupos con notas en este proyecto."
+							title={t("emptyGroupsTitle")}
+							description={t("emptyGroupsDescription")}
 						/>
 					:	<GroupNotesTabClient
 							groups={groups}
@@ -248,10 +250,9 @@ export default function NotesTabsClient({
 				onOpenChange={setShowUnsavedDialog}>
 				<StandardDialog.Content size="sm">
 					<StandardDialog.Header>
-						<StandardDialog.Title>Hay cambios sin guardar</StandardDialog.Title>
+						<StandardDialog.Title>{t("unsavedChangesTitle")}</StandardDialog.Title>
 						<StandardDialog.Description>
-							Estás cambiando de pestaña. Si continúas, se perderán los cambios
-							de edición en esta pestaña.
+							{t("unsavedChangesDescription")}
 						</StandardDialog.Description>
 					</StandardDialog.Header>
 					<StandardDialog.Footer>
@@ -259,13 +260,13 @@ export default function NotesTabsClient({
 							styleType="outline"
 							colorScheme="neutral"
 							onClick={cancelSwitch}>
-							Permanecer en esta pestaña
+							{t("stayOnTabButton")}
 						</StandardButton>
 						<StandardButton
 							styleType="solid"
 							colorScheme="warning"
 							onClick={confirmDiscardAndSwitch}>
-							Cambiar y descartar cambios
+							{t("discardAndSwitchButton")}
 						</StandardButton>
 					</StandardDialog.Footer>
 				</StandardDialog.Content>
