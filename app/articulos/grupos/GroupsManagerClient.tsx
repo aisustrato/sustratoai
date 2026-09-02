@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardButton } from "@/components/ui/StandardButton";
@@ -30,6 +31,7 @@ type GroupsManagerClientProps = {
 };
 
 export default function GroupsManagerClient({ initialGroups, visibilityFilter = "all", focusGroupId }: GroupsManagerClientProps) {
+  const t = useTranslations("articulos.groupsManager");
   const [groups, setGroups] = React.useState<GroupForClient[]>(initialGroups);
   const [editingGroup, setEditingGroup] = React.useState<GroupForClient | null>(null);
   const [formName, setFormName] = React.useState("");
@@ -61,7 +63,7 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
     const nameTrimmed = formName.trim();
     const descTrimmed = formDesc.trim();
     if (!nameTrimmed) {
-      toast.error("El nombre es requerido");
+      toast.error(t("nameRequired"));
       return;
     }
 
@@ -83,19 +85,19 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
         visibility: formVisibility,
       });
       if (result.success) {
-        toast.success("Grupo actualizado correctamente");
+        toast.success(t("groupUpdatedSuccess"));
         setEditingGroup(null);
       } else {
         setGroups(prevGroups);
-        toast.error(`No se pudo actualizar el grupo: ${result.error}`);
+        toast.error(t("groupUpdateError", { message: result.error }));
       }
     } catch {
       setGroups(prevGroups);
-      toast.error("Error inesperado al actualizar el grupo");
+      toast.error(t("groupUpdateUnexpectedError"));
     } finally {
       setIsSaving(false);
     }
-  }, [editingGroup, formName, formDesc, formVisibility, groups]);
+  }, [editingGroup, formName, formDesc, formVisibility, groups, t]);
 
   const visibleGroups = React.useMemo(() => {
     if (!groups) return [] as GroupForClient[];
@@ -113,11 +115,11 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
     const res = await removeArticleFromGroup({ groupId, articleId });
     if (!res.success) {
       setGroups(prev);
-      toast.error(res.error || "No se pudo eliminar el artículo del grupo");
+      toast.error(res.error || t("articleRemoveError"));
     } else {
-      toast.success("Artículo eliminado del grupo");
+      toast.success(t("articleRemovedSuccess"));
     }
-  }, [groups]);
+  }, [groups, t]);
 
   // Abrir editor para crear nota
   const openCreateNote = React.useCallback((groupId: string, articleId: string, articleTitle?: string | null) => {
@@ -131,20 +133,20 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
   const getArticleColumns = React.useCallback((groupId: string): ColumnDef<GroupItemForClient, unknown>[] => ([
     {
       accessorKey: "article_title",
-      header: "Título",
+      header: t("columnTitle"),
       meta: { isTruncatable: true, enableCopyButton: true },
       cell: ({ row }) => {
         const it = row.original as GroupItemForClient;
         const isTranslated = !!rowTranslated[it.article_id];
         const title = isTranslated
-          ? (it.latestTranslationTitle ?? it.article_title ?? "(Sin título)")
-          : (it.article_title ?? "(Sin título)");
+          ? (it.latestTranslationTitle ?? it.article_title ?? t("untitled"))
+          : (it.article_title ?? t("untitled"));
         return <StandardText className="truncate" weight="medium">{title}</StandardText>;
       },
     },
     {
       accessorKey: "description",
-      header: "Descripción",
+      header: t("columnDescription"),
       meta: { isTruncatable: true, tooltipType: "longText" },
       cell: ({ row }) => {
         const it = row.original as GroupItemForClient;
@@ -161,7 +163,7 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
     },
     {
       id: "translate",
-      header: "Traducir",
+      header: t("columnTranslate"),
       enableSorting: false,
       meta: { align: "center", size: 160 },
       cell: ({ row }) => {
@@ -170,20 +172,20 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
         const isTranslated = !!rowTranslated[it.article_id];
         if (!hasTranslation) {
           return (
-            <StandardBadge size="sm" styleType="subtle" colorScheme="neutral">Sin traducción</StandardBadge>
+            <StandardBadge size="sm" styleType="subtle" colorScheme="neutral">{t("noTranslation")}</StandardBadge>
           );
         }
         return (
           <div className="flex items-center justify-end gap-2">
-            <StandardText size="xs" colorScheme="neutral" colorShade="subtle">Original</StandardText>
+            <StandardText size="xs" colorScheme="neutral" colorShade="subtle">{t("originalLabel")}</StandardText>
             <StandardSwitch
               size="sm"
               colorScheme="primary"
               checked={isTranslated}
               onCheckedChange={(checked) => setRowTranslated((prev) => ({ ...prev, [it.article_id]: checked }))}
-              aria-label="Alternar traducción"
+              aria-label={t("toggleTranslationAria")}
             />
-            <StandardText size="xs" colorScheme="neutral" colorShade="subtle">Traducido</StandardText>
+            <StandardText size="xs" colorScheme="neutral" colorShade="subtle">{t("translatedLabel")}</StandardText>
             {it.latestTranslationLanguage && (
               <StandardBadge size="sm" styleType="subtle" colorScheme="secondary">{it.latestTranslationLanguage}</StandardBadge>
             )}
@@ -193,7 +195,7 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
     },
     {
       id: "actions",
-      header: "Acciones",
+      header: t("columnActions"),
       enableSorting: false,
       meta: { align: "right", isSticky: "right", size: 260 },
       cell: ({ row }) => {
@@ -207,7 +209,7 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
                 styleType="solid"
                 colorScheme="primary"
                 leftIcon={StickyNote}
-                tooltip="Ver notas"
+                tooltip={t("viewNotesTooltip")}
                 onClick={() => window.open(`/articulos/notas?articleId=${row.original.article_id}&mode=editor`, "_blank", "noopener,noreferrer")}
               />
             )}
@@ -218,7 +220,7 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
                 styleType="outline"
                 colorScheme="primary"
                 leftIcon={StickyNote}
-                tooltip="Crear nota"
+                tooltip={t("createNoteTooltip")}
                 onClick={() => openCreateNote(groupId, row.original.article_id, row.original.article_title)}
               />
             )}
@@ -232,7 +234,7 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
                 window.location.href = `/articulos/detalle?articleId=${it.article_id}&translated=${isTranslated ? "true" : "false"}`;
               }}
             >
-              Ver detalle
+              {t("viewDetailButton")}
             </StandardButton>
             <StandardButton
               styleType="outline"
@@ -240,19 +242,19 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
               size="sm"
               onClick={() => handleRemoveArticle(groupId, row.original.article_id)}
             >
-              Eliminar
+              {t("removeButton")}
             </StandardButton>
           </div>
         );
       },
     },
-  ]), [handleRemoveArticle, openCreateNote, rowTranslated]);
+  ]), [handleRemoveArticle, openCreateNote, rowTranslated, t]);
 
   if (!visibleGroups || visibleGroups.length === 0) {
     return (
       <StandardEmptyState
-        title="Sin resultados"
-        description="No hay grupos que coincidan con el filtro seleccionado."
+        title={t("emptyResultsTitle")}
+        description={t("emptyResultsDescription")}
       />
     );
   }
@@ -271,13 +273,13 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
               <StandardAccordionTrigger titleAlign="left">
                 <div className="flex w-full items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <StandardText weight="semibold" size="xl" className="truncate">{g.name || "(Sin nombre)"}</StandardText>
+                    <StandardText weight="semibold" size="xl" className="truncate">{g.name || t("unnamedGroup")}</StandardText>
                     <div className="mt-1 flex items-center gap-2 text-xs">
                       <StandardBadge size="sm" styleType="subtle" colorScheme={isPublic ? "success" : "neutral"}>
-                        {isPublic ? "Público" : "Privado"}
+                        {isPublic ? t("publicBadge") : t("privateBadge")}
                       </StandardBadge>
                       <StandardBadge size="sm" styleType="subtle" colorScheme="primary">
-                        {count} artículo{count === 1 ? "" : "s"}
+                        {t("articleCount", { count })}
                       </StandardBadge>
                     </div>
                   </div>
@@ -288,7 +290,7 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
                       size="sm"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(g); }}
                     >
-                      Editar
+                      {t("editButton")}
                     </StandardButton>
                   </div>
                 </div>
@@ -301,8 +303,8 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
                   <div>
                     {items.length === 0 ? (
                       <StandardEmptyState
-                        title="Sin artículos"
-                        description="Este grupo no contiene artículos."
+                        title={t("emptyArticlesTitle")}
+                        description={t("emptyArticlesDescription")}
                       />
                     ) : (
                       <StandardTable
@@ -310,7 +312,7 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
                         columns={getArticleColumns(g.id)}
                         isStickyHeader={false}
                         enableTruncation
-                        filterPlaceholder="Filtrar artículos..."
+                        filterPlaceholder={t("filterArticlesPlaceholder")}
                         // 🎛️ Control de UI del toolbar
                         showToolbar={false}
                         showColumnSelector={false}
@@ -333,14 +335,14 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
       <StandardDialog open={!!editingGroup} onOpenChange={(open) => { if (!open) closeEdit(); }}>
         <StandardDialog.Content size="md" colorScheme="neutral">
           <StandardDialog.Header>
-            <StandardDialog.Title>Editar grupo</StandardDialog.Title>
+            <StandardDialog.Title>{t("editGroupTitle")}</StandardDialog.Title>
             <StandardDialog.Description>
-              Actualiza el nombre, la descripción y la visibilidad del grupo.
+              {t("editGroupDescription")}
             </StandardDialog.Description>
           </StandardDialog.Header>
           <StandardDialog.Body>
             <div className="space-y-4">
-              <StandardFormField label="Nombre" htmlFor="group-name" isRequired>
+              <StandardFormField label={t("nameLabel")} htmlFor="group-name" isRequired>
                 <StandardInput
                   id="group-name"
                   value={formName}
@@ -350,7 +352,7 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
                 />
               </StandardFormField>
 
-              <StandardFormField label="Descripción" htmlFor="group-desc">
+              <StandardFormField label={t("descriptionLabel")} htmlFor="group-desc">
                 <StandardTextarea
                   id="group-desc"
                   value={formDesc}
@@ -362,15 +364,15 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
               </StandardFormField>
 
               <StandardFormField
-                label="Visibilidad"
+                label={t("visibilityLabel")}
                 htmlFor="group-visibility"
-                hint="Público: visible para todos en el proyecto. Privado: solo tú."
+                hint={t("visibilityHint")}
               >
                 <StandardSelect
                   id="group-visibility"
                   options={[
-                    { value: "public", label: "Público" },
-                    { value: "private", label: "Privado" },
+                    { value: "public", label: t("publicBadge") },
+                    { value: "private", label: t("privateBadge") },
                   ]}
                   value={formVisibility}
                   onChange={(v) => setFormVisibility((v as "public" | "private") ?? "private")}
@@ -386,7 +388,7 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
               onClick={closeEdit}
               disabled={isSaving}
             >
-              Cancelar
+              {t("cancelButton")}
             </StandardButton>
             <StandardButton
               styleType="solid"
@@ -394,7 +396,7 @@ export default function GroupsManagerClient({ initialGroups, visibilityFilter = 
               onClick={handleSave}
               loading={isSaving}
             >
-              Guardar cambios
+              {t("saveChangesButton")}
             </StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>
