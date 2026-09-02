@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useDesignTokens } from "@/app/providers/DesignTokensProvider";
 import { SustratoLogoRotating } from "@/components/ui/sustrato-logo-rotating";
 
@@ -19,6 +20,7 @@ export function StandardSustratoLogoWithFixedText({
 	textClassName?: string;
 	variant?: "horizontal" | "vertical";
 }) {
+	const t = useTranslations("common");
 	const { tokens: designTokens } = useDesignTokens();
 
 	const primaryTextColor =
@@ -71,14 +73,14 @@ export function StandardSustratoLogoWithFixedText({
 				{variant === "horizontal" && (
 					<div
 						className={`${getSubtextSize()} text-neutral-500 dark:text-neutral-400 ml-0.5 mt-0.5 italic`}>
-						cultivando sinergias humano·AI
+						{t("tagline")}
 					</div>
 				)}
 
 				{variant === "vertical" && (
 					<div
 						className={`${getSubtextSize()} text-neutral-500 dark:text-neutral-400 italic`}>
-						cultivando sinergias humano·AI
+						{t("tagline")}
 					</div>
 				)}
 			</div>

@@ -164,6 +164,7 @@ interface NavItem {
 export function StandardNavbar() {
 	const pathname = usePathname();
 	const t = useTranslations("nav");
+	const tCommon = useTranslations("common");
 	const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [scrolled, setScrolled] = useState(false);
@@ -631,7 +632,7 @@ export function StandardNavbar() {
 												"mt-0.5"
 											)
 										}>
-										cultivando sinergias humano·AI
+										{tCommon("tagline")}
 									</StandardText>
 								</div>
 							</Link>
