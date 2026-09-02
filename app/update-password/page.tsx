@@ -14,13 +14,23 @@ import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardFormField } from "@/components/ui/StandardFormField";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard } from "@/components/ui/StandardCard";
-import { KeyRound, ArrowLeft, CheckCircle, Loader2 } from "lucide-react";
+import { KeyRound, ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustratoLogoWithFixedText";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 
 export default function UpdatePasswordPage() {
-	const [sessionLoading, setSessionLoading] = useState(true); // Para la verificación inicial de sesión
+	// 🔧 DECISIÓN: el formulario se muestra de inmediato, sin pantalla de
+	// "Verificando tu enlace..." bloqueante. El canje del code PKCE corre en
+	// segundo plano (ver useEffect abajo) sin que el usuario tenga que
+	// esperarlo: si el usuario ve esta página, es porque llegó por un enlace
+	// de recuperación real, y para cuando termine de escribir su nueva
+	// contraseña el canje casi siempre ya habrá terminado. Si el canje
+	// realmente falla, se reemplaza el formulario por un mensaje de error en
+	// cuanto ese resultado llega (nunca antes de mostrar el formulario) — y
+	// si por lo que sea el canje nunca resuelve (deadlock), la contraseña
+	// simplemente fallará al enviarla con un error claro, en vez de dejar al
+	// usuario mirando un spinner que nunca se resuelve.
 	const [success, setSuccess] = useState(false);
 	const [sessionError, setSessionError] = useState<string | null>(null);
 	const router = useRouter();
@@ -44,149 +54,80 @@ export default function UpdatePasswordPage() {
 		},
 	});
 
-	// Evita procesar el enlace dos veces. searchParams.get("code") vuelve a
-	// leerse en cada render, y si el `code` desaparece de la URL en algún
-	// momento (p. ej. por una navegación/re-render posterior), este efecto
-	// re-ejecutaría con code=null — una segunda pasada totalmente redundante
-	// (el canje ya se hizo o está en curso) que puede quedar esperando algo
-	// que nunca va a pasar y trabar la pantalla en "Verificando tu enlace...".
-	// El código PKCE es de un solo uso de todos modos, así que solo tiene
-	// sentido intentarlo una vez por carga de página.
+	// Evita procesar el enlace dos veces dentro de la misma carga de página
+	// (el efecto podría re-dispararse por cambios en las dependencias).
 	const hasProcessedRef = useRef(false);
 
-	// Verificar la sesión al cargar el componente
+	// Canje del code PKCE en segundo plano. A propósito NO bloquea el
+	// renderizado del formulario ni tiene su propio estado de "cargando":
+	// se dispara y, si falla, recién ahí se reemplaza el formulario por un
+	// error (ver JSX abajo). Si nunca resuelve, el formulario simplemente
+	// sigue mostrado y la contraseña fallará al enviarla — nunca queda una
+	// pantalla de espera bloqueada indefinidamente.
 	useEffect(() => {
-		if (hasProcessedRef.current) {
-			console.log(
-				"[DEBUG_UPDATE_PW] useEffect re-disparado, IGNORADO por hasProcessedRef (esto confirma que había una segunda pasada redundante)",
-			);
-			return;
-		}
+		if (hasProcessedRef.current) return;
 		hasProcessedRef.current = true;
 
-		// 🔍 TEMPORAL: diagnóstico del cuelgue tras clickear el enlace de
-		// recuperación — sacar estos logs (y el prefijo DEBUG_UPDATE_PW) una vez
-		// resuelto.
-		const t0 = Date.now();
-		const log = (msg: string, extra?: unknown) =>
-			console.log(`[DEBUG_UPDATE_PW +${Date.now() - t0}ms] ${msg}`, extra ?? "");
-
-		log("useEffect montado", { code, token, type });
-
-		const checkSession = async () => {
+		if (code) {
+			// Un `code` PKCE es de un solo uso: si ya lo canjeamos con éxito
+			// antes en esta misma pestaña (ej. el componente se volvió a montar),
+			// no lo reintentamos — sessionStorage sobrevive un remount dentro de
+			// la misma pestaña, a diferencia de un simple useRef.
+			const exchangedKey = `pkce_exchanged_${code}`;
 			try {
-				// Flujo PKCE (el que realmente emite el cliente de @supabase/ssr):
-				// el enlace del correo trae `?code=...` y hay que canjearlo por una
-				// sesión explícitamente. Antes esta página solo sabía leer el
-				// formato viejo `?token=&type=recovery`, así que un `code` nunca se
-				// canjeaba: getSession() no encontraba sesión y la página quedaba
-				// mostrando "Verificando tu enlace..." para terminar en un error
-				// de enlace inválido / redirect, sin haber intentado nunca el canje.
-				if (code) {
-					// Un `code` PKCE es de un solo uso: si YA lo canjeamos con éxito
-					// antes en esta misma pestaña, cualquier intento posterior de
-					// volver a canjearlo fallará con "código inválido/expirado" aunque
-					// la sesión siga siendo perfectamente válida. `hasProcessedRef` no
-					// alcanza a cubrir esto porque es un `useRef` en memoria: si por
-					// lo que sea el componente se vuelve a montar (o el efecto se
-					// re-dispara desde una instancia nueva), el ref arranca de cero.
-					// `sessionStorage` sí sobrevive un remount dentro de la misma
-					// pestaña, así que lo usamos como memoria de "este code ya está
-					// validado" y saltamos derecho a mostrar el formulario sin volver
-					// a tocar la red.
-					const exchangedKey = `pkce_exchanged_${code}`;
-					let alreadyExchanged = false;
-					try {
-						alreadyExchanged =
-							sessionStorage.getItem(exchangedKey) === "success";
-					} catch {
-						// sessionStorage puede no estar disponible (modo privado, etc.)
-						// — si falla, seguimos con el flujo normal de canje.
-					}
+				if (sessionStorage.getItem(exchangedKey) === "success") return;
+			} catch {
+				// sessionStorage no disponible (modo privado, etc.) — seguimos.
+			}
 
-					if (alreadyExchanged) {
-						log(
-							"code ya fue canjeado con éxito antes en esta pestaña, no se reintenta",
-						);
-						setSessionLoading(false);
-						return;
-					}
-
-					log("hay code, llamando a exchangeCodeForSession...");
-					const { data: exchangeData, error: exchangeError } =
-						await supabase.auth.exchangeCodeForSession(code);
-					log("exchangeCodeForSession resolvió", {
-						error: exchangeError,
-						hasSession: !!exchangeData?.session,
-					});
+			supabase.auth
+				.exchangeCodeForSession(code)
+				.then(({ error: exchangeError }) => {
 					if (exchangeError) {
 						console.error("Error al canjear el código:", exchangeError);
-						toast.error(
+						setSessionError(
 							"Enlace inválido o expirado. Por favor, solicita un nuevo enlace de recuperación.",
 						);
-						setSessionError("Sesión inválida o expirada");
-						setTimeout(() => {
-							router.push("/reset-password");
-						}, 3000);
 						return;
 					}
 					try {
 						sessionStorage.setItem(exchangedKey, "success");
 					} catch {
-						// No crítico si no se puede persistir: en el peor caso, si el
-						// componente se remonta de nuevo, se repite el intento fallido
-						// de antes — no empeora la situación previa.
+						// No crítico: en el peor caso se reintenta si hay remount.
 					}
-					log("seteando sessionLoading=false");
-					setSessionLoading(false);
-					return;
-				}
+				})
+				.catch((err) => {
+					console.error("Excepción al canjear el código:", err);
+					// No mostramos error aquí a propósito: puede ser un problema de
+					// red pasajero. El formulario sigue disponible y, si la sesión
+					// nunca quedó lista, el envío de la nueva contraseña fallará con
+					// un mensaje claro en vez de dejar al usuario sin nada.
+				});
+			return;
+		}
 
-				// Formato legado (`?token=&type=recovery`), por si algún enlace
-				// viejo sigue circulando.
-				if (token && type === "recovery") {
-					log("formato legado token+type=recovery detectado");
-					setSessionLoading(false);
-					return;
-				}
+		if (token && type === "recovery") {
+			// Formato legado (`?token=&type=recovery`); no requiere canje propio.
+			return;
+		}
 
-				// Sin `code` ni `token`: verificar si ya hay una sesión válida
-				// (ej. el usuario recargó la página después de canjear el código).
-				log("sin code ni token, llamando a getSession()...");
-				const {
-					data: { session },
-					error: sessionError,
-				} = await supabase.auth.getSession();
-				log("getSession() resolvió", { hasSession: !!session, sessionError });
-
-				if (sessionError || !session) {
-					toast.error(
+		// Sin `code` ni `token`: no hay nada que canjear. Verificamos en segundo
+		// plano si ya existe una sesión válida (ej. el usuario recargó la
+		// página después de canjear el código); si no la hay, recién ahí se
+		// muestra el error — el formulario no espera por esto.
+		supabase.auth
+			.getSession()
+			.then(({ data: { session }, error: sessionErr }) => {
+				if (sessionErr || !session) {
+					setSessionError(
 						"Enlace inválido o expirado. Por favor, solicita un nuevo enlace de recuperación.",
 					);
-					setSessionError("Sesión inválida o expirada");
-					setTimeout(() => {
-						router.push("/reset-password");
-					}, 3000);
-					return;
 				}
-
-				setSessionLoading(false);
-			} catch (err) {
-				log("EXCEPCIÓN en checkSession", err);
-				console.error("Error al verificar sesión:", err);
-				setSessionError(
-					"Error al verificar la sesión. Por favor, intenta de nuevo.",
-				);
-				setSessionLoading(false);
-			}
-		};
-
-		checkSession();
-
-		return () => {
-			log("useEffect DESMONTADO (cleanup) — si esto se repite en loop, ahí está el problema");
-		};
-	}, [router, token, type, code]);
+			})
+			.catch((err) => {
+				console.error("Excepción al verificar sesión:", err);
+			});
+	}, [code, token, type]);
 
 	// Función para obtener el estado de éxito de un campo
 	const getSuccessState = (
@@ -294,12 +235,7 @@ export default function UpdatePasswordPage() {
 					</StandardCard.Header>
 
 					<StandardCard.Content>
-						{sessionLoading ?
-							<div className="flex flex-col items-center justify-center py-8">
-								<Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-								<StandardText>Verificando tu enlace...</StandardText>
-							</div>
-						: sessionError ?
+						{sessionError ?
 							<div className="text-center py-6 space-y-4">
 								<StandardText colorScheme="destructive" className="mb-4">
 									{sessionError}
