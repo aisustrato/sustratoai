@@ -3,6 +3,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import {
@@ -36,6 +37,7 @@ import { useLoading } from "@/contexts/LoadingContext";
 //#region [main] - 🔧 COMPONENT 🔧
 export default function ModificarDimensionPage() {
 	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HELPER FUNCTIONS 🧰
+  const t = useTranslations("datosMaestrosPages.dimensionesModificarPage");
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -59,15 +61,15 @@ export default function ModificarDimensionPage() {
     // Validaciones tempranas
     if (!proyectoActual?.id || !dimensionId || !activePhaseId) {
       if (!loadingProyectos) { // Solo mostrar error si la carga de proyectos ya terminó
-        setErrorPage(!dimensionId ? "ID de dimensión no especificado." : !activePhaseId ? "Fase no especificada." : "Proyecto no seleccionado.");
+        setErrorPage(!dimensionId ? t("idNotSpecified") : !activePhaseId ? t("phaseNotSpecified") : t("projectNotSelected"));
       }
       setIsPageLoading(false);
       setDimensionActual(null); // Asegurar que se limpie
       return;
     }
      if (!puedeGestionarDimensiones && !loadingProyectos) { // Si ya sabemos que no tiene permiso
-        setErrorPage("No tienes permisos para modificar dimensiones en este proyecto.");
-        sonnerToast.error("Acceso Denegado", { description: "No tienes los permisos necesarios." });
+        setErrorPage(t("noPermissionsError"));
+        sonnerToast.error(t("accessDeniedTitle"), { description: t("accessDeniedDescription") });
         router.replace("/datos-maestros/dimensiones");
         setIsPageLoading(false);
         return;
@@ -85,21 +87,21 @@ export default function ModificarDimensionPage() {
         if (dim) {
           setDimensionActual(dim);
         } else {
-          setErrorPage(`Dimensión con ID "${dimensionId}" no encontrada en la fase activa.`);
+          setErrorPage(t("notFoundInActivePhase", { id: dimensionId }));
           // sonnerToast.error("Error", { description: "Dimensión no encontrada." }); // Podría ser muy ruidoso si el ID es incorrecto en URL
         }
       } else {
-        setErrorPage(resultado.error || "Error al cargar la dimensión.");
+        setErrorPage(resultado.error || t("errorLoadingFallback"));
         // sonnerToast.error("Error al Cargar", { description: resultado.error });
       }
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Error desconocido.";
-      setErrorPage(`Error inesperado al cargar la dimensión: ${errorMsg}`);
+      const errorMsg = err instanceof Error ? err.message : t("unknownError");
+      setErrorPage(t("unexpectedErrorLoading", { message: errorMsg }));
       // sonnerToast.error("Error Inesperado", { description: errorMsg });
     } finally {
       setIsPageLoading(false);
     }
-  }, [proyectoActual?.id, activePhaseId, dimensionId, loadingProyectos, puedeGestionarDimensiones, router]);
+  }, [proyectoActual?.id, activePhaseId, dimensionId, loadingProyectos, puedeGestionarDimensiones, router, t]);
 
   useEffect(() => {
     // Disparar carga solo si tenemos la información necesaria o si la carga de proyectos ha terminado
@@ -111,16 +113,16 @@ export default function ModificarDimensionPage() {
 
   const handleFormSubmit = async (data: DimensionFormValues) => {
     if (!proyectoActual?.id || !dimensionId || !dimensionActual) {
-      sonnerToast.error("Error de Aplicación", { description: "Faltan datos esenciales para la actualización." });
+      sonnerToast.error(t("appErrorTitle"), { description: t("missingDataError") });
       return;
     }
      if (!puedeGestionarDimensiones) {
-      sonnerToast.error("Acceso Denegado", { description: "No tienes permisos para modificar dimensiones." });
+      sonnerToast.error(t("accessDeniedTitle"), { description: t("noPermissionsModifyError") });
       return;
     }
 
     setIsSubmitting(true);
-    if (typeof showLoading === 'function') showLoading("Actualizando dimensión...");
+    if (typeof showLoading === 'function') showLoading(t("updatingLoading"));
 
     const payload: UpdateDimensionPayload = {
       dimensionId,
@@ -168,25 +170,25 @@ export default function ModificarDimensionPage() {
     } catch (err) {
       if (typeof hideLoading === 'function') hideLoading();
       setIsSubmitting(false);
-      sonnerToast.error("Error Inesperado", { description: `Error al procesar la actualización: ${(err as Error).message}` });
+      sonnerToast.error(t("unexpectedErrorTitle"), { description: t("unexpectedErrorProcessing", { message: (err as Error).message }) });
       return;
     }
 
     if (typeof hideLoading === 'function') hideLoading();
 
     if (resultado?.success) {
-      sonnerToast.success("Dimensión Actualizada", {
-        description: `La dimensión "${resultado.data.name}" ha sido actualizada correctamente.`, // Usar nombre del resultado
+      sonnerToast.success(t("updatedSuccessTitle"), {
+        description: t("updatedSuccessDescription", { name: resultado.data.name }), // Usar nombre del resultado
         duration: 4000,
       });
       // Opcional: Recargar datos para reflejar cambios si no se redirige inmediatamente
-      // cargarDimension(); 
+      // cargarDimension();
       // setIsSubmitting(false);
       setTimeout(() => {
         router.push("/datos-maestros/dimensiones");
       }, 1500);
     } else {
-      sonnerToast.error("Error al Actualizar", { description: resultado?.error || "Ocurrió un error desconocido durante la actualización." });
+      sonnerToast.error(t("errorUpdatingTitle"), { description: resultado?.error || t("unexpectedErrorUpdating") });
       setIsSubmitting(false);
     }
   };
@@ -226,7 +228,7 @@ export default function ModificarDimensionPage() {
     return (
       <div>
         <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <SustratoLoadingLogo showText text="Cargando datos de la dimensión..." />
+          <SustratoLoadingLogo showText text={t("loadingData")} />
         </div>
       </div>
     );
@@ -248,13 +250,13 @@ export default function ModificarDimensionPage() {
                 <StandardCard.Header className="items-center flex flex-col text-center">
                     <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
                     <StandardText preset="subheading" weight="bold" colorScheme="danger">
-                      Error
+                      {t("errorTitle")}
                     </StandardText>
                 </StandardCard.Header>
                 <StandardCard.Content className="text-center"><StandardText>{errorPage}</StandardText></StandardCard.Content>
                 <StandardCard.Footer className="flex justify-center">
                      <StandardButton onClick={handleVolver} styleType="outline" colorScheme="danger" leftIcon={ArrowLeft}>
-                        Volver a Dimensiones
+                        {t("backToDimensionsButton")}
                     </StandardButton>
                 </StandardCard.Footer>
             </StandardCard>
@@ -278,10 +280,10 @@ export default function ModificarDimensionPage() {
             styleType="subtle"
             className="text-center p-6"
           >
-            <StandardText preset="subheading">Dimensión no disponible</StandardText>
-            <StandardText colorScheme="neutral" className="mt-2">No se pudo cargar la información de la dimensión. Intenta volver a la lista.</StandardText>
+            <StandardText preset="subheading">{t("notAvailableTitle")}</StandardText>
+            <StandardText colorScheme="neutral" className="mt-2">{t("notAvailableDescription")}</StandardText>
             <StandardButton onClick={handleVolver} styleType="outline" className="mt-4" leftIcon={ArrowLeft}>
-              Volver a Dimensiones
+              {t("backToDimensionsButton")}
             </StandardButton>
           </StandardCard>
         </div>
@@ -294,13 +296,13 @@ export default function ModificarDimensionPage() {
       <div className="container mx-auto py-8">
         <div className="max-w-3xl mx-auto">
           <StandardPageTitle
-            title={`Modificar Dimensión: ${dimensionActual.name}`}
-            subtitle="Actualiza los detalles de esta dimensión de clasificación."
+            title={t("pageTitle", { name: dimensionActual.name })}
+            subtitle={t("pageSubtitle")}
             mainIcon={Edit}
             breadcrumbs={[
-              { label: "Datos Maestros", href: "/datos-maestros" },
-              { label: "Dimensiones", href: "/datos-maestros/dimensiones" },
-              { label: "Modificar" },
+              { label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+              { label: t("breadcrumbDimensiones"), href: "/datos-maestros/dimensiones" },
+              { label: t("breadcrumbModificar") },
             ]}
             showBackButton={{ href: "/datos-maestros/dimensiones" }}
           />

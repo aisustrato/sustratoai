@@ -3,6 +3,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React from "react";
+import { useTranslations } from "next-intl";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import { useTheme } from "@/app/theme-provider";
 import { type FullDimension } from "@/lib/actions/dimension-actions";
@@ -47,8 +48,9 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 	// const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 10 : undefined, opacity: isDragging ? 0.8 : 1 }; // Para dnd-kit
 
 	//#region [sub] - 🧰 HELPER FUNCTIONS 🧰
+	const t = useTranslations("datosMaestrosPages.dimensionCard");
 	const tipoLabel =
-		dimension.type === "finite" ? "Selección Múltiple" : "Respuesta Abierta";
+		dimension.type === "finite" ? t("typeFinite") : t("typeOpen");
 
 	// Determinar variante de color para el borde y badge de tipo
 	// Puedes ajustar esto según tu paleta de colores
@@ -114,7 +116,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 				className="cursor-pointer flex-grow flex flex-col p-4" // onClick removed
 				tabIndex={0} // tabIndex can remain for focusability if needed, though card itself might handle it
 				role="button" // Role might be redundant if StandardCard handles it
-				aria-label={`Ver detalles de ${dimension.name}`} // Aria-label good for accessibility
+				aria-label={t("viewDetailsAriaLabel", { name: dimension.name })} // Aria-label good for accessibility
 			>
 				<StandardCard.Header className="p-0 mb-2">
 					<div className="flex flex-col gap-1">
@@ -139,20 +141,20 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 									styleType="ghost"
 									onClick={(e) => { e.stopPropagation(); onEdit(); }}
 									disabled={isBeingDeleted}
-									tooltip="Editar dimensión"
+									tooltip={t("editTooltip")}
 									leftIcon={PenLine}
 									iconOnly={true}
-									aria-label="Editar dimensión" />
+									aria-label={t("editTooltip")} />
 								<StandardButton
 									size="sm"
 									styleType="ghost"
 									colorScheme="danger"
 									onClick={(e) => { e.stopPropagation(); onDelete(); }}
 									disabled={isBeingDeleted}
-									tooltip="Eliminar dimensión"
+									tooltip={t("deleteTooltip")}
 									leftIcon={Trash2}
 									iconOnly={true}
-									aria-label="Eliminar dimensión" />
+									aria-label={t("deleteTooltip")} />
 							</div>
 						)}
 					</div>
@@ -178,7 +180,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 								weight="medium"
 								colorScheme="secondary"
 								className="mb-1 block">
-								Opciones Principales:
+								{t("mainOptionsLabel")}
 							</StandardText>
 							<div className="flex flex-wrap gap-1">
 								{dimension.options.slice(0, 4).map(
@@ -199,7 +201,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 								)}
 								{dimension.options.length > 4 && (
 									<StandardBadge size="xs" colorScheme="neutral" styleType="subtle">
-										+{dimension.options.length - 4} más
+										{t("moreOptions", { count: dimension.options.length - 4 })}
 									</StandardBadge>
 								)}
 							</div>
@@ -211,10 +213,10 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 							{" "}
 							{/* mt-auto para empujar al fondo si es flex-col */}
 							{dimension.questions.length > 0 && (
-								<div>{dimension.questions.length} Pregunta(s) Guía</div>
+								<div>{t("questionsCount", { count: dimension.questions.length })}</div>
 							)}
 							{dimension.examples.length > 0 && (
-								<div>{dimension.examples.length} Ejemplo(s) Ilustrativo(s)</div>
+								<div>{t("examplesCount", { count: dimension.examples.length })}</div>
 							)}
 						</div>
 					)}
@@ -224,8 +226,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 							<StandardText
 								colorScheme="neutral"
 								className="italic mt-auto pt-2">
-								Esta dimensión abierta no tiene preguntas guía ni ejemplos
-								definidos aún.
+								{t("openNoQuestionsExamples")}
 							</StandardText>
 						)}
 					{dimension.type === "finite" && dimension.options.length === 0 && (
@@ -233,7 +234,7 @@ export const DimensionCard: React.FC<DimensionCardProps> = ({
 							preset="caption"
 							colorScheme="warning"
 							className="italic mt-auto pt-2">
-							Esta dimensión de selección múltiple no tiene opciones definidas.
+							{t("finiteNoOptions")}
 						</StandardText>
 					)}
 				</StandardCard.Content>

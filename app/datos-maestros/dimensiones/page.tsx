@@ -3,6 +3,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import {
@@ -48,6 +49,7 @@ type Phase = {
 };
 
 export default function DimensionesPage() {
+	const t = useTranslations("datosMaestrosPages.dimensionesListPage");
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { proyectoActual, loadingProyectos } = useAuth();
@@ -106,21 +108,21 @@ export default function DimensionesPage() {
 				setPhases([]);
 				setActivePhaseId(null);
 				if (resultado.error) {
-					sonnerToast.error("Error al Cargar Fases", {
+					sonnerToast.error(t("toastErrorLoadingPhasesTitle"), {
 						description: resultado.error.message,
 					});
 				}
 			}
 		} catch (err) {
 			const errorMsg =
-				err instanceof Error ? err.message : "Error desconocido.";
+				err instanceof Error ? err.message : t("unknownError");
 			setPhases([]);
 			setActivePhaseId(null);
-			sonnerToast.error("Error Inesperado", { description: errorMsg });
+			sonnerToast.error(t("toastErrorUnexpectedTitle"), { description: errorMsg });
 		} finally {
 			setLoadingPhases(false);
 		}
-	}, [proyectoActual?.id, loadingProyectos, searchParams]);
+	}, [proyectoActual?.id, loadingProyectos, searchParams, t]);
 
 	// Función para cargar dimensiones de una fase específica
 	const cargarDimensiones = useCallback(async (phaseId: string) => {
@@ -137,20 +139,20 @@ export default function DimensionesPage() {
 			if (resultado.success) {
 				setDimensions(resultado.data);
 			} else {
-				setError(resultado.error || "Error al cargar las dimensiones.");
-				sonnerToast.error("Error al Cargar Dimensiones", {
+				setError(resultado.error || t("errorLoadingDimensionsFallback"));
+				sonnerToast.error(t("toastErrorLoadingDimensionsTitle"), {
 					description: resultado.error,
 				});
 			}
 		} catch (err) {
 			const errorMsg =
-				err instanceof Error ? err.message : "Error desconocido.";
-			setError(`Error inesperado al cargar dimensiones: ${errorMsg}`);
-			sonnerToast.error("Error Inesperado", { description: errorMsg });
+				err instanceof Error ? err.message : t("unknownError");
+			setError(t("errorUnexpectedLoadingDimensions", { message: errorMsg }));
+			sonnerToast.error(t("toastErrorUnexpectedTitle"), { description: errorMsg });
 		} finally {
 			setIsLoading(false);
 		}
-	}, []);
+	}, [t]);
 
 	// Función para manejar el cambio de pestaña
 	const handleTabChange = useCallback((phaseId: string) => {
@@ -192,7 +194,7 @@ export default function DimensionesPage() {
 		reason?: string;
 	}> => {
 		if (!activePhaseId) {
-			return { allowed: false, reason: "No hay una fase activa seleccionada." };
+			return { allowed: false, reason: t("noActivePhaseReason") };
 		}
 		try {
 			const res = await fetch(`/api/phases/${activePhaseId}/can-modify`, {
@@ -201,7 +203,7 @@ export default function DimensionesPage() {
 			if (!res.ok) {
 				return {
 					allowed: false,
-					reason: `Error de verificación (${res.status}).`,
+					reason: t("verificationErrorReason", { status: res.status }),
 				};
 			}
 			const json: {
@@ -213,23 +215,23 @@ export default function DimensionesPage() {
 				return {
 					allowed: false,
 					reason:
-						json.error || "No fue posible verificar el estado de los lotes.",
+						json.error || t("couldNotVerifyBatchesReason"),
 				};
 			}
 			return (
 				json.data ?? {
 					allowed: false,
-					reason: "Respuesta inválida del servidor.",
+					reason: t("invalidServerResponseReason"),
 				}
 			);
 		} catch (e) {
-			const msg = e instanceof Error ? e.message : "Error desconocido";
+			const msg = e instanceof Error ? e.message : t("unknownError");
 			return {
 				allowed: false,
-				reason: `No fue posible verificar el estado de los lotes: ${msg}`,
+				reason: t("couldNotVerifyBatchesWithMessage", { message: msg }),
 			};
 		}
-	}, [activePhaseId]);
+	}, [activePhaseId, t]);
 
 	const handleEditarDimension = async (
 		dimensionId: string,
@@ -240,7 +242,7 @@ export default function DimensionesPage() {
 			setRestrictionDialog({
 				action: "edit",
 				name: dimensionName,
-				reason: check.reason || "Acción no permitida.",
+				reason: check.reason || t("actionNotAllowedReason"),
 			});
 			return;
 		}
@@ -267,8 +269,8 @@ export default function DimensionesPage() {
 		dimensionName: string,
 	) => {
 		if (!proyectoActual?.id || !puedeGestionarDimensiones) {
-			sonnerToast.error("Acción no permitida", {
-				description: "No tienes permisos o falta información del proyecto.",
+			sonnerToast.error(t("toastActionNotAllowedTitle"), {
+				description: t("toastActionNotAllowedDescription"),
 			});
 			return;
 		}
@@ -277,7 +279,7 @@ export default function DimensionesPage() {
 			setRestrictionDialog({
 				action: "delete",
 				name: dimensionName,
-				reason: check.reason || "Acción no permitida.",
+				reason: check.reason || t("actionNotAllowedReason"),
 			});
 			return;
 		}
@@ -299,20 +301,20 @@ export default function DimensionesPage() {
 			const resultado = await hardDeleteDimension(payload);
 
 			if (resultado.success) {
-				sonnerToast.success(`Dimensión "${dimensionName}" eliminada`);
+				sonnerToast.success(t("toastDeletedSuccess", { name: dimensionName }));
 				// Actualización optimista: removemos la dimensión del estado local inmediatamente.
 				setDimensions((dims) => dims.filter((d) => d.id !== dimensionId));
 			} else {
-				sonnerToast.error("Error al eliminar", {
+				sonnerToast.error(t("toastErrorDeletingTitle"), {
 					description: resultado.error,
 				});
 			}
 		} catch (error) {
-			sonnerToast.error("Error inesperado", {
+			sonnerToast.error(t("toastErrorUnexpectedTitle"), {
 				description:
 					error instanceof Error ?
 						error.message
-					:	"Ocurrió un error desconocido.",
+					:	t("unknownErrorLong"),
 			});
 		} finally {
 			setIsDeleting(null);
@@ -337,8 +339,8 @@ export default function DimensionesPage() {
 						showText
 						text={
 							loadingProyectos ?
-								"Cargando datos maestros..."
-							:	"Cargando dimensiones..."
+								t("loadingMasterData")
+							:	t("loadingDimensions")
 						}
 					/>
 				</div>
@@ -350,14 +352,14 @@ export default function DimensionesPage() {
 		<div className="container mx-auto py-8">
 			<div className="flex justify-between items-start mb-6">
 				<StandardPageTitle
-					title="Dimensiones de Clasificación"
-					subtitle="Gestión por Fases"
-					description="Gestiona las dimensiones que guiarán la preclasificación de artículos, organizadas por fases de trabajo."
+					title={t("pageTitle")}
+					subtitle={t("pageSubtitle")}
+					description={t("pageDescription")}
 					mainIcon={LayoutGrid}
 					showBackButton={{ href: "/datos-maestros" }}
 					breadcrumbs={[
-						{ label: "Datos Maestros", href: "/datos-maestros" },
-						{ label: "Dimensiones" },
+						{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+						{ label: t("breadcrumbDimensiones") },
 					]}
 				/>
 				{puedeGestionarDimensiones && proyectoActual?.id && activePhaseId && (
@@ -365,7 +367,7 @@ export default function DimensionesPage() {
 						onClick={handleCrearDimension}
 						colorScheme="primary"
 						leftIcon={Plus}>
-						Crear Dimensión
+						{t("createDimensionButton")}
 					</StandardButton>
 				)}
 			</div>
@@ -393,7 +395,7 @@ export default function DimensionesPage() {
 						</StandardIcon>
 						<div>
 							<StandardText weight="bold" colorScheme="danger">
-								Error al Cargar Datos
+								{t("errorLoadingTitle")}
 							</StandardText>
 							<StandardText size="sm" className="text-danger-fg/90 mt-1">
 								{error}
@@ -414,11 +416,10 @@ export default function DimensionesPage() {
 					styleType="subtle"
 					className="my-6 p-6 text-center">
 					<StandardText preset="subheading" weight="medium" className="mb-2">
-						Proyecto No Seleccionado
+						{t("projectNotSelectedTitle")}
 					</StandardText>
 					<StandardText colorScheme="neutral">
-						Por favor, selecciona un proyecto activo desde el menú superior para
-						gestionar sus dimensiones.
+						{t("projectNotSelectedDescription")}
 					</StandardText>
 				</StandardCard>
 			)}
@@ -430,11 +431,11 @@ export default function DimensionesPage() {
 				!error && (
 					<StandardEmptyState
 						icon={Layers}
-						title="No Hay Fases Creadas"
+						title={t("noPhasesTitle")}
 						description={
 							puedeGestionarDimensiones ?
-								"Antes de crear dimensiones, necesitas definir al menos una fase de preclasificación para organizar el trabajo."
-							:	"Este proyecto aún no tiene fases de preclasificación definidas. Contacta al administrador del proyecto."
+								t("noPhasesDescriptionCanManage")
+							:	t("noPhasesDescriptionCannotManage")
 						}
 						action={
 							puedeGestionarDimensiones ?
@@ -442,7 +443,7 @@ export default function DimensionesPage() {
 									onClick={() => router.push("/datos-maestros/fases/crear")}
 									colorScheme="primary"
 									leftIcon={Plus}>
-									Crear Primera Fase
+									{t("createFirstPhaseButton")}
 								</StandardButton>
 							:	undefined
 						}
@@ -475,9 +476,9 @@ export default function DimensionesPage() {
 									className="flex flex-col gap-1 py-3">
 									<span className="font-medium">{phase.name}</span>
 									<span className="text-xs opacity-70">
-										Fase {phase.phase_number}
+										{t("phaseNumberLabel", { number: phase.phase_number })}
 										{phase.id === activePhaseId &&
-											` • ${dimensionCount} dimensiones`}
+											t("dimensionsCountSuffix", { count: dimensionCount })}
 									</span>
 								</StandardTabsTrigger>
 							);
@@ -501,11 +502,11 @@ export default function DimensionesPage() {
 							{!isLoading && dimensions.length === 0 && (
 								<StandardEmptyState
 									icon={LayoutGrid}
-									title={`No hay Dimensiones en ${phase.name}`}
+									title={t("noDimensionsInPhaseTitle", { phaseName: phase.name })}
 									description={
 										puedeGestionarDimensiones ?
-											`Comienza creando la primera dimensión para la fase "${phase.name}" y guía la clasificación de artículos.`
-										:	`Esta fase aún no tiene dimensiones de clasificación definidas. Contacta al administrador del proyecto.`
+											t("noDimensionsDescriptionCanManage", { phaseName: phase.name })
+										:	t("noDimensionsDescriptionCannotManage")
 									}
 									action={
 										puedeGestionarDimensiones ?
@@ -513,7 +514,7 @@ export default function DimensionesPage() {
 												onClick={handleCrearDimension}
 												colorScheme="primary"
 												leftIcon={Plus}>
-												Crear Primera Dimensión
+												{t("createFirstDimensionButton")}
 											</StandardButton>
 										:	undefined
 									}
@@ -549,12 +550,12 @@ export default function DimensionesPage() {
 				}}>
 				<StandardDialog.Content colorScheme="danger" size="md">
 					<StandardDialog.Header>
-						<StandardDialog.Title>Eliminar dimensión</StandardDialog.Title>
+						<StandardDialog.Title>{t("deleteDialogTitle")}</StandardDialog.Title>
 					</StandardDialog.Header>
 					<StandardDialog.Body>
 						<StandardDialog.Description>
 							{dialogToDelete ?
-								`¿Estás seguro de que deseas eliminar la dimensión "${dialogToDelete.name}"? Esta acción no se puede deshacer y eliminará todas sus opciones, preguntas y ejemplos asociados (si el borrado en cascada está configurado en la base de datos).\n\nNOTA IMPORTANTE: La dimensión no se podrá eliminar si el proyecto tiene lotes de trabajo activos o en progreso.`
+								t("deleteDialogDescription", { name: dialogToDelete.name })
 							:	""}
 						</StandardDialog.Description>
 					</StandardDialog.Body>
@@ -563,7 +564,7 @@ export default function DimensionesPage() {
 							<StandardButton
 								styleType="outline"
 								onClick={() => setDialogToDelete(null)}>
-								Cancelar
+								{t("cancelButton")}
 							</StandardButton>
 						</StandardDialog.Close>
 						<StandardButton
@@ -571,7 +572,7 @@ export default function DimensionesPage() {
 							onClick={handleConfirmDelete}
 							loading={isDeleting === dialogToDelete?.id}
 							leftIcon={Trash2}>
-							Eliminar
+							{t("deleteButton")}
 						</StandardButton>
 					</StandardDialog.Footer>
 				</StandardDialog.Content>
@@ -587,19 +588,19 @@ export default function DimensionesPage() {
 					<StandardDialog.Header>
 						<StandardDialog.Title>
 							{restrictionDialog?.action === "edit" ?
-								"No es posible editar"
-							:	"No es posible eliminar"}
+								t("restrictionCannotEditTitle")
+							:	t("restrictionCannotDeleteTitle")}
 						</StandardDialog.Title>
 					</StandardDialog.Header>
 					<StandardDialog.Body>
 						<StandardDialog.Description>
 							{restrictionDialog?.reason ||
-								"La fase actual tiene lotes en progreso. No se permiten cambios en dimensiones."}
+								t("restrictionDefaultReason")}
 						</StandardDialog.Description>
 					</StandardDialog.Body>
 					<StandardDialog.Footer>
 						<StandardDialog.Close asChild>
-							<StandardButton colorScheme="warning">Entendido</StandardButton>
+							<StandardButton colorScheme="warning">{t("understoodButton")}</StandardButton>
 						</StandardDialog.Close>
 					</StandardDialog.Footer>
 				</StandardDialog.Content>

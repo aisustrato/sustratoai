@@ -3,6 +3,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import {
@@ -32,6 +33,7 @@ import { useLoading } from "@/contexts/LoadingContext"; // Opcional
 
 //#region [main] - 🔧 COMPONENT 🔧
 export default function CrearDimensionPage() {
+  const t = useTranslations("datosMaestrosPages.dimensionesCrearPage");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { proyectoActual, loadingProyectos } = useAuth();
@@ -54,34 +56,34 @@ export default function CrearDimensionPage() {
 
   useEffect(() => {
     if (!loadingProyectos && !proyectoActual?.id) {
-      setErrorPage("No hay un proyecto activo seleccionado. Por favor, selecciona uno para continuar.");
+      setErrorPage(t("noActiveProjectError"));
       // Opcionalmente, redirigir si no hay proyecto y no se puede crear
       // router.replace("/datos-maestros/dimensiones");
     } else if (!loadingProyectos && proyectoActual?.id && !puedeGestionarDimensiones) {
-      setErrorPage("No tienes permisos para crear dimensiones en este proyecto.");
-      sonnerToast.error("Acceso Denegado", { description: "No tienes los permisos necesarios."});
+      setErrorPage(t("noPermissionsError"));
+      sonnerToast.error(t("accessDeniedTitle"), { description: t("accessDeniedDescription")});
       router.replace("/datos-maestros/dimensiones");
     }
      else {
       setErrorPage(null);
     }
     // sonnerToast es un import de módulo, no necesita estar en las dependencias
-  }, [proyectoActual, loadingProyectos, puedeGestionarDimensiones, router]);
+  }, [proyectoActual, loadingProyectos, puedeGestionarDimensiones, router, t]);
 
   const handleFormSubmit = async (data: DimensionFormValues) => {
     if (!proyectoActual?.id) {
-      sonnerToast.error("Error de Aplicación", {
-        description: "No hay un proyecto activo seleccionado.",
+      sonnerToast.error(t("appErrorTitle"), {
+        description: t("noActiveProjectShort"),
       });
       return;
     }
     if (!puedeGestionarDimensiones) {
-      sonnerToast.error("Acceso Denegado", { description: "No tienes permisos para crear dimensiones." });
+      sonnerToast.error(t("accessDeniedTitle"), { description: t("noPermissionsError") });
       return;
     }
 
     setIsSubmitting(true);
-    showLoading?.("Creando dimensión...");
+    showLoading?.(t("creatingDimensionLoading"));
 
     // Necesitamos determinar el 'ordering' para la nueva dimensión.
     // Esto podría venir de una llamada para contar dimensiones existentes o un valor por defecto.
@@ -116,8 +118,8 @@ export default function CrearDimensionPage() {
       console.error("Excepción al llamar a createDimension:", err);
       hideLoading?.();
       setIsSubmitting(false);
-      sonnerToast.error("Error Inesperado", {
-        description: `Ocurrió un error al procesar la solicitud: ${(err as Error).message}`,
+      sonnerToast.error(t("unexpectedErrorTitle"), {
+        description: t("unexpectedErrorDescription", { message: (err as Error).message }),
       });
       return;
     }
@@ -125,8 +127,8 @@ export default function CrearDimensionPage() {
     if (typeof hideLoading === 'function') hideLoading();
 
     if (resultado?.success) {
-      sonnerToast.success("Dimensión Creada", {
-        description: `La dimensión "${data.name}" ha sido creada exitosamente.`,
+      sonnerToast.success(t("createdSuccessTitle"), {
+        description: t("createdSuccessDescription", { name: data.name }),
         duration: 4000,
       });
       // Retrasar la redirección para que el toast sea visible
@@ -134,8 +136,8 @@ export default function CrearDimensionPage() {
         router.push("/datos-maestros/dimensiones"); // Volver a la lista
       }, 1500);
     } else {
-      sonnerToast.error("Error al Crear Dimensión", {
-        description: resultado?.error || "Ocurrió un error desconocido.",
+      sonnerToast.error(t("errorCreatingTitle"), {
+        description: resultado?.error || t("unknownError"),
         // Podríamos mostrar errorCode si existe: resultado?.errorCode
       });
       setIsSubmitting(false); // Permitir reintentar solo si falla
@@ -154,7 +156,7 @@ export default function CrearDimensionPage() {
     return (
       <div>
         <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <SustratoLoadingLogo showText text="Verificando proyecto y permisos..." />
+          <SustratoLoadingLogo showText text={t("verifyingProjectPermissions")} />
         </div>
       </div>
     );
@@ -177,7 +179,7 @@ export default function CrearDimensionPage() {
                 <StandardCard.Header className="items-center flex flex-col text-center">
                     <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
                     <StandardText preset="subheading" weight="bold" colorScheme="danger">
-                        {puedeGestionarDimensiones ? "Error de Configuración" : "Acceso Denegado"}
+                        {puedeGestionarDimensiones ? t("configErrorTitle") : t("accessDeniedTitle")}
                     </StandardText>
                 </StandardCard.Header>
                 <StandardCard.Content className="text-center">
@@ -190,7 +192,7 @@ export default function CrearDimensionPage() {
                         colorScheme="danger"
                         leftIcon={ArrowLeft}
                     >
-                        Volver a Dimensiones
+                        {t("backToDimensionsButton")}
                     </StandardButton>
                 </StandardCard.Footer>
             </StandardCard>
@@ -204,7 +206,7 @@ export default function CrearDimensionPage() {
     return (
          <div>
             <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <StandardText>Cargando o acceso no permitido...</StandardText>
+                <StandardText>{t("loadingOrNotAllowed")}</StandardText>
             </div>
         </div>
     );
@@ -216,14 +218,14 @@ export default function CrearDimensionPage() {
       <div className="container mx-auto py-8">
         <div className="max-w-3xl mx-auto"> {/* Centrar y limitar ancho del contenido del formulario */}
           <StandardPageTitle
-            title="Crear Dimensión"
-            subtitle="Agrega una nueva dimensión para clasificar los artículos"
+            title={t("pageTitle")}
+            subtitle={t("pageSubtitle")}
             mainIcon={PlusCircle} // Icono para creación
             showBackButton={{ href: "/datos-maestros/dimensiones" }}
             breadcrumbs={[
-              { label: "Datos Maestros", href: "/datos-maestros" },
-              { label: "Dimensiones", href: "/datos-maestros/dimensiones" },
-              { label: "Crear Dimensión" },
+              { label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+              { label: t("breadcrumbDimensiones"), href: "/datos-maestros/dimensiones" },
+              { label: t("breadcrumbCrear") },
             ]}
           />
 
