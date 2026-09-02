@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { type ColumnDef, type Row } from "@tanstack/react-table";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
@@ -51,23 +52,24 @@ const finalShowcaseData: Publication[] = [
 
 // --- 2. LÓGICA DE LA PÁGINA ---
 export default function StandardTableFinalShowcasePage() {
+    const t = useTranslations("articulos.standardTableShowcase");
 
     const columns = useMemo<ColumnDef<Publication>[]>(() => [
         { id: 'expander', header: () => null, cell: ({ row }) => row.getCanExpand() ? '' : null, meta: { isSticky: 'left' }, size: 40, enableHiding: false },
-        { accessorKey: 'title', header: 'Título', size: 300, meta: { isTruncatable: true, tooltipType: 'standard' } },
-        { accessorKey: 'abstract', header: 'Abstract', size: 400, meta: { isTruncatable: true, tooltipType: 'longText' } },
-        { accessorKey: 'authors', header: 'Autores', size: 200 },
-        { accessorKey: 'status', header: 'Estado', cell: info => {
+        { accessorKey: 'title', header: t("columnTitle"), size: 300, meta: { isTruncatable: true, tooltipType: 'standard' } },
+        { accessorKey: 'abstract', header: t("columnAbstract"), size: 400, meta: { isTruncatable: true, tooltipType: 'longText' } },
+        { accessorKey: 'authors', header: t("columnAuthors"), size: 200 },
+        { accessorKey: 'status', header: t("columnStatus"), cell: info => {
             const value = info.getValue() as Publication['status'];
             const colorMap: Record<Publication['status'], ColorSchemeVariant> = { 'Published': 'success', 'In Review': 'primary', 'Rejected': 'danger' };
             return <StandardBadge colorScheme={colorMap[value]} styleType="subtle">{value}</StandardBadge>
         }, size: 120 },
-        { accessorKey: 'citations', header: 'Citaciones', size: 100, meta: { align: 'center', cellVariant: (ctx) => (ctx.getValue<number>()) > 150 ? 'highlight' : undefined } },
-        { accessorKey: 'journal', header: 'Journal', size: 250 },
-        { accessorKey: 'year', header: 'Año', size: 80, meta: { align: 'center' } },
-        { accessorKey: 'keywords', header: 'Keywords', cell: info => <div className="flex flex-wrap gap-1">{info.getValue<string[]>().map(k => <StandardBadge key={k} styleType="outline">{k}</StandardBadge>)}</div>, size: 250 },
-        { accessorKey: 'doi', header: 'DOI', meta: { isSticky: 'right' }, cell: info => <a href={`https://doi.org/${info.getValue<string>()}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-primary-pure hover:underline"><LinkIcon size={14} /><span>Ver</span></a>, size: 100, enableHiding: false },
-    ], []);
+        { accessorKey: 'citations', header: t("columnCitations"), size: 100, meta: { align: 'center', cellVariant: (ctx) => (ctx.getValue<number>()) > 150 ? 'highlight' : undefined } },
+        { accessorKey: 'journal', header: t("columnJournal"), size: 250 },
+        { accessorKey: 'year', header: t("columnYear"), size: 80, meta: { align: 'center' } },
+        { accessorKey: 'keywords', header: t("columnKeywords"), cell: info => <div className="flex flex-wrap gap-1">{info.getValue<string[]>().map(k => <StandardBadge key={k} styleType="outline">{k}</StandardBadge>)}</div>, size: 250 },
+        { accessorKey: 'doi', header: t("columnDoi"), meta: { isSticky: 'right' }, cell: info => <a href={`https://doi.org/${info.getValue<string>()}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-primary-pure hover:underline"><LinkIcon size={14} /><span>{t("viewLink")}</span></a>, size: 100, enableHiding: false },
+    ], [t]);
 
     const getRowStatus = (row: Publication): Exclude<ColorSchemeVariant, 'neutral' | 'white' | 'default' | 'info'> | null => {
         const statusMap: Record<Publication['status'], Exclude<ColorSchemeVariant, 'neutral' | 'white' | 'default' | 'info'>> = {
@@ -80,9 +82,9 @@ export default function StandardTableFinalShowcasePage() {
     
     const renderSubComponent = (row: Row<Publication>) => (
         <div className="p-4 bg-primary-bg/20">
-            <StandardText preset="subtitle" className="mb-2 flex items-center gap-2"><FileText size={16}/> Sub-publicaciones para: &quot;{row.original.title}&quot;</StandardText>
+            <StandardText preset="subtitle" className="mb-2 flex items-center gap-2"><FileText size={16}/> {t("subPublicationsFor", { title: row.original.title })}</StandardText>
             <ul className="list-disc pl-6 text-sm text-neutral-text">
-                {row.original.subRows?.map(sub => <li key={sub.id}>{sub.title} ({sub.citations} citaciones)</li>)}
+                {row.original.subRows?.map(sub => <li key={sub.id}>{sub.title} ({sub.citations} {t("citationsSuffix")})</li>)}
             </ul>
         </div>
     );
@@ -93,9 +95,9 @@ export default function StandardTableFinalShowcasePage() {
         <StandardPageBackground variant="default">
             <div className="p-4 sm:p-6">
                 <StandardPageTitle
-                    title="Showroom StandardTable"
+                    title={t("pageTitle")}
                     mainIcon={Table}
-                    subtitle="Demostración de keyword highlighting nativo y sticky header"
+                    subtitle={t("pageSubtitle")}
                     showBackButton={{ href: "/articulos/preclasificacion" }}
                 />
 
@@ -107,12 +109,12 @@ export default function StandardTableFinalShowcasePage() {
                         columns={columns}
                         getRowStatus={getRowStatus}
                         renderSubComponent={renderSubComponent}
-                        filterPlaceholder="Buscar por título, autor, journal..."
+                        filterPlaceholder={t("searchPlaceholder")}
                         enableTruncation={true}
                         isStickyHeader={true}
                         stickyOffset={64}
                         enableKeywordHighlighting={true}
-                        keywordHighlightPlaceholder="Resaltar palabra clave en showroom..."
+                        keywordHighlightPlaceholder={t("keywordHighlightPlaceholder")}
                     >
                         <StandardTable.Table />
                     </StandardTable>
@@ -125,7 +127,7 @@ export default function StandardTableFinalShowcasePage() {
                             leftIcon={FileText}
                             onClick={() => console.log('Botón de prueba clickeado')}
                         >
-                            Botón de Prueba UX
+                            {t("testButton")}
                         </StandardButton>
                     </div>
                 </div>

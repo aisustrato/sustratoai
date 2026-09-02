@@ -1015,6 +1015,25 @@
       "calculatingGeometry": "Calculando geometría...",
       "inputPlaceholder": "Pregunta al Nodo F0..."
     },
+    "standardTableShowcase": {
+      "pageTitle": "Showroom StandardTable",
+      "pageSubtitle": "Demostración de keyword highlighting nativo y sticky header",
+      "columnTitle": "Título",
+      "columnAbstract": "Abstract",
+      "columnAuthors": "Autores",
+      "columnStatus": "Estado",
+      "columnCitations": "Citaciones",
+      "columnJournal": "Journal",
+      "columnYear": "Año",
+      "columnKeywords": "Keywords",
+      "columnDoi": "DOI",
+      "viewLink": "Ver",
+      "searchPlaceholder": "Buscar por título, autor, journal...",
+      "keywordHighlightPlaceholder": "Resaltar palabra clave en showroom...",
+      "subPublicationsFor": "Sub-publicaciones para: \"{title}\"",
+      "citationsSuffix": "citaciones",
+      "testButton": "Botón de Prueba UX"
+    },
     "groupsManager": {
       "nameRequired": "El nombre es requerido",
       "groupUpdatedSuccess": "Grupo actualizado correctamente",
