@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardPopupWindow } from "@/components/ui/StandardPopupWindow";
 import { StandardInput } from "@/components/ui/StandardInput";
@@ -19,6 +20,7 @@ export const KeywordHighlighter: React.FC<KeywordHighlighterProps> = ({
 	open,
 	onClose,
 }) => {
+	const t = useTranslations("articulos.keywordHighlighter");
 	const [isPopupOpen, setIsPopupOpen] = useState(false);
 	const [inputKeyword, setInputKeyword] = useState(currentKeyword || "");
 
@@ -71,10 +73,10 @@ export const KeywordHighlighter: React.FC<KeywordHighlighterProps> = ({
 					styleType="outline"
 					colorScheme="accent"
 					onClick={handleOpenPopup}
-					tooltip="Resaltar palabra clave en valores de dimensión">
+					tooltip={t("highlightTooltip")}>
 					{currentKeyword ?
-						`Resaltando: "${currentKeyword}"`
-					:	"Resaltar Palabra Clave"}
+						t("highlightingLabel", { keyword: currentKeyword })
+					:	t("highlightButtonLabel")}
 				</StandardButton>
 
 				{currentKeyword && (
@@ -84,8 +86,8 @@ export const KeywordHighlighter: React.FC<KeywordHighlighterProps> = ({
 						colorScheme="neutral"
 						size="sm"
 						onClick={() => onKeywordChange(null)}
-						tooltip="Limpiar resaltado">
-						Limpiar
+						tooltip={t("clearTooltip")}>
+						{t("clearButton")}
 					</StandardButton>
 				)}
 			</div>
@@ -93,15 +95,15 @@ export const KeywordHighlighter: React.FC<KeywordHighlighterProps> = ({
 			<StandardPopupWindow open={isOpen} onOpenChange={(open) => !open && handleClosePopup()}>
 				<StandardPopupWindow.Content size="md" colorScheme="accent">
 					<StandardPopupWindow.Header>
-						<StandardPopupWindow.Title>Resaltar Palabra Clave</StandardPopupWindow.Title>
+						<StandardPopupWindow.Title>{t("dialogTitle")}</StandardPopupWindow.Title>
 						<StandardPopupWindow.Description>
-							Ingresa una palabra clave para resaltar en los valores de las dimensiones. La palabra se resaltará con el color accent del tema.
+							{t("dialogDescription")}
 						</StandardPopupWindow.Description>
 					</StandardPopupWindow.Header>
 
 					<StandardPopupWindow.Body className="space-y-4">
 						<StandardInput
-							placeholder="Ej: ayudas técnicas, movilidad, accesibilidad..."
+							placeholder={t("inputPlaceholder")}
 							value={inputKeyword}
 							onChange={(e) => setInputKeyword(e.target.value)}
 							onKeyDown={handleKeyDown}
@@ -112,7 +114,7 @@ export const KeywordHighlighter: React.FC<KeywordHighlighterProps> = ({
 
 					<StandardPopupWindow.Footer>
 						<StandardButton styleType="ghost" onClick={handleClosePopup}>
-							Cancelar
+							{t("cancelButton")}
 						</StandardButton>
 
 						{currentKeyword && (
@@ -120,7 +122,7 @@ export const KeywordHighlighter: React.FC<KeywordHighlighterProps> = ({
 								styleType="outline"
 								colorScheme="danger"
 								onClick={handleClearKeyword}>
-								Limpiar Resaltado
+								{t("clearHighlightButton")}
 							</StandardButton>
 						)}
 
@@ -129,7 +131,7 @@ export const KeywordHighlighter: React.FC<KeywordHighlighterProps> = ({
 							colorScheme="accent"
 							onClick={handleApplyKeyword}
 							disabled={!inputKeyword.trim()}>
-							Aplicar Resaltado
+							{t("applyHighlightButton")}
 						</StandardButton>
 					</StandardPopupWindow.Footer>
 				</StandardPopupWindow.Content>

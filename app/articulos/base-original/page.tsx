@@ -3,6 +3,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardTable } from "@/components/ui/StandardTable";
 import { StandardPagination } from "@/components/ui/StandardPagination";
@@ -22,15 +23,19 @@ import type { Database as DatabaseTypes } from "@/lib/database.types";
 //#region [def] - 📦 TYPES & CONSTANTS 📦
 type ArticleRow = DatabaseTypes['public']['Tables']['articles']['Row'];
 
-const ITEMS_PER_PAGE_OPTIONS = [
-  { value: "10", label: "10 por página" },
-  { value: "25", label: "25 por página" },
-  { value: "50", label: "50 por página" },
+type BaseOriginalTranslator = ReturnType<typeof useTranslations<"articulos.baseOriginalPage">>;
+
+const makeItemsPerPageOptions = (t: BaseOriginalTranslator) => [
+  { value: "10", label: t("itemsPerPage10") },
+  { value: "25", label: t("itemsPerPage25") },
+  { value: "50", label: t("itemsPerPage50") },
 ];
 //#endregion ![def]
 
 //#region [main] - 🔧 COMPONENT 🔧
 export default function BaseOriginalPage() {
+  const t = useTranslations("articulos.baseOriginalPage");
+  const ITEMS_PER_PAGE_OPTIONS = useMemo(() => makeItemsPerPageOptions(t), [t]);
   const { proyectoActual } = useAuth();
 
   // Estado de paginación
@@ -47,32 +52,32 @@ export default function BaseOriginalPage() {
     () => [
       {
         accessorKey: "correlativo",
-        header: "#",
+        header: t("columnCorrelativo"),
         size: 60,
       },
       {
         accessorKey: "title",
-        header: "Título",
+        header: t("columnTitle"),
         cell: ({ row }) => (
           <div className="max-w-md">
             <StandardText size="sm" className="line-clamp-2">
-              {row.original.title || "Sin título"}
+              {row.original.title || t("untitled")}
             </StandardText>
           </div>
         ),
       },
       {
         accessorKey: "authors",
-        header: "Autor(es)",
+        header: t("columnAuthors"),
         cell: ({ row }) => (
           <StandardText size="sm" colorShade="subtle">
-            {row.original.authors || "Sin autores"}
+            {row.original.authors || t("noAuthors")}
           </StandardText>
         ),
       },
       {
         accessorKey: "publication_year",
-        header: "Año",
+        header: t("columnYear"),
         size: 80,
         cell: ({ row }) => (
           <StandardText size="sm">
@@ -82,16 +87,16 @@ export default function BaseOriginalPage() {
       },
       {
         accessorKey: "journal",
-        header: "Revista/Fuente",
+        header: t("columnJournal"),
         cell: ({ row }) => (
           <StandardText size="sm" colorShade="subtle">
-            {row.original.journal || "Sin fuente"}
+            {row.original.journal || t("noSource")}
           </StandardText>
         ),
       },
       {
         accessorKey: "doi",
-        header: "DOI",
+        header: t("columnDoi"),
         size: 100,
         cell: ({ row }) => {
           if (!row.original.doi) {
@@ -123,10 +128,10 @@ export default function BaseOriginalPage() {
               size="sm"
               onClick={() => {
                 const returnHref = encodeURIComponent("/articulos/base-original");
-                const returnLabel = encodeURIComponent("Base Original");
+                const returnLabel = encodeURIComponent(t("pageTitle"));
                 window.location.href = `/articulos/detalle?articleId=${articleId}&returnHref=${returnHref}&returnLabel=${returnLabel}`;
               }}
-              tooltip="Ver detalle del artículo"
+              tooltip={t("viewDetailTooltip")}
             >
               <Search size={16} />
             </StandardButton>
@@ -134,7 +139,7 @@ export default function BaseOriginalPage() {
         },
       },
     ],
-    []
+    [t]
   );
 
   // Cargar artículos paginados
@@ -158,7 +163,7 @@ export default function BaseOriginalPage() {
         setTotalItems(result.data.totalCount);
         setTotalPages(result.data.totalPages);
       } else {
-        toast.error(!result.success ? result.error : "Error al cargar artículos");
+        toast.error(!result.success ? result.error : t("toastErrorLoadingArticles"));
         setArticles([]);
         setTotalItems(0);
         setTotalPages(0);
@@ -168,7 +173,7 @@ export default function BaseOriginalPage() {
     };
 
     loadArticles();
-  }, [proyectoActual?.id, currentPage, itemsPerPage]);
+  }, [proyectoActual?.id, currentPage, itemsPerPage, t]);
 
   // Manejar cambio de página
   const handlePageChange = (newPage: number) => {
@@ -214,7 +219,14 @@ export default function BaseOriginalPage() {
         page++;
       } while (page <= pagesTotal);
 
-      const headers = ["#", "Título", "Autor(es)", "Año", "Revista/Fuente", "DOI"];
+      const headers = [
+        t("columnCorrelativo"),
+        t("columnTitle"),
+        t("columnAuthors"),
+        t("columnYear"),
+        t("columnJournal"),
+        t("columnDoi"),
+      ];
       const rows = allArticles.map((a) => [
         String(a.correlativo ?? ""),
         a.title ?? "",
@@ -239,20 +251,20 @@ export default function BaseOriginalPage() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      toast.success(`${allArticles.length} artículo(s) exportado(s) a CSV.`);
+      toast.success(t("toastExportSuccess", { count: allArticles.length }));
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Error al exportar CSV."
+        error instanceof Error ? error.message : t("toastExportError")
       );
     } finally {
       setIsExportingCsv(false);
     }
-  }, [proyectoActual?.id, totalItems]);
+  }, [proyectoActual?.id, totalItems, t]);
 
   // Breadcrumbs
   const breadcrumbs = [
-    { label: "Artículos", href: "/articulos" },
-    { label: "Base Original" },
+    { label: t("breadcrumbArticulos"), href: "/articulos" },
+    { label: t("pageTitle") },
   ];
 
   // Render loading
@@ -261,7 +273,7 @@ export default function BaseOriginalPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <SustratoLoadingLogo size={64} />
         <StandardText colorShade="subtle">
-          Cargando información del proyecto...
+          {t("loadingProjectInfo")}
         </StandardText>
       </div>
     );
@@ -271,9 +283,9 @@ export default function BaseOriginalPage() {
     <div className="container mx-auto py-6 space-y-6">
       {/* Page Title */}
       <StandardPageTitle
-        title="Base Original"
-        subtitle="Artículos cargados en el proyecto"
-        description="Vista completa de todos los artículos en su estado original, tal como fueron importados a la base de datos."
+        title={t("pageTitle")}
+        subtitle={t("pageSubtitle")}
+        description={t("pageDescription")}
         mainIcon={Database}
         breadcrumbs={breadcrumbs}
       />
@@ -283,7 +295,7 @@ export default function BaseOriginalPage() {
         {/* Control de items por página */}
         <div className="flex items-center justify-between p-4 border-b">
           <StandardText size="sm" colorShade="subtle">
-            Total: {totalItems} artículo{totalItems !== 1 ? "s" : ""}
+            {t("totalArticles", { count: totalItems })}
           </StandardText>
           <div className="flex items-center gap-2">
             <StandardButton
@@ -294,10 +306,10 @@ export default function BaseOriginalPage() {
               loading={isExportingCsv}
               disabled={totalItems === 0}
             >
-              Descargar CSV
+              {t("downloadCsvButton")}
             </StandardButton>
             <StandardText size="sm" colorShade="subtle">
-              Mostrar:
+              {t("showLabel")}
             </StandardText>
             <StandardSelect
               options={ITEMS_PER_PAGE_OPTIONS}
@@ -314,17 +326,17 @@ export default function BaseOriginalPage() {
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <SustratoLoadingLogo size={64} />
             <StandardText colorShade="subtle">
-              Cargando artículos...
+              {t("loadingArticles")}
             </StandardText>
           </div>
         ) : articles.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-2">
             <Database className="h-12 w-12 text-neutral-300" />
             <StandardText size="lg" weight="semibold">
-              No hay artículos
+              {t("noArticlesTitle")}
             </StandardText>
             <StandardText colorShade="subtle">
-              No se encontraron artículos en este proyecto.
+              {t("noArticlesDescription")}
             </StandardText>
           </div>
         ) : (
