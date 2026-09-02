@@ -7,6 +7,7 @@ import React, {
 	useCallback,
 	useRef,
 } from "react";
+import { useTranslations } from "next-intl";
 import { useTheme } from "@/app/theme-provider";
 import { StandardSlider } from "@/components/ui/StandardSlider";
 import { StandardCard } from "@/components/ui/StandardCard";
@@ -71,6 +72,7 @@ interface BatchSimulatorPageProps {
 export default function BatchSimulatorPage({
 	onBatchesCreatedSuccessfully,
 }: BatchSimulatorPageProps) {
+	const t = useTranslations("datosMaestrosPages.batchSimulator");
 	const { proyectoActual } = useAuth();
 	const { appColorTokens, mode } = useTheme();
 
@@ -144,15 +146,15 @@ export default function BatchSimulatorPage({
 						name: activePhaseResult.data.name,
 					});
 				} else {
-					setUiError("No se pudo obtener información de la fase activa.");
+					setUiError(t("errorNoActivePhaseInfo"));
 				}
 			} catch {
-				setUiError("Error al verificar el estado de la fase.");
+				setUiError(t("errorCheckingPhaseStatus"));
 			}
 		};
 
 		checkPhaseAndArticles();
-	}, [proyectoActual]);
+	}, [proyectoActual, t]);
 
 	// Cargar datos iniciales (miembros del proyecto y artículos elegibles)
 	useEffect(() => {
@@ -192,19 +194,19 @@ export default function BatchSimulatorPage({
 					setUiError(
 						!articlesResult.success ?
 							articlesResult.error
-						:	"Error al obtener artículos elegibles.",
+						:	t("errorLoadingEligibleArticles"),
 					);
 				}
 			} catch (error) {
 				console.error("Error cargando datos iniciales:", error);
-				setUiError("Error al cargar los datos del proyecto.");
+				setUiError(t("errorLoadingProjectData"));
 			} finally {
 				setIsLoadingInitialData(false);
 			}
 		};
 
 		loadInitialData();
-	}, [proyectoActual?.id, activePhaseId]);
+	}, [proyectoActual?.id, activePhaseId, t]);
 
 	// ✅ CORRECCIÓN: El useEffect ahora "despierta" cuando cambian los datos de la simulación.
 	useEffect(() => {
@@ -265,12 +267,12 @@ export default function BatchSimulatorPage({
 		);
 
 		if (!proyectoActual?.id || selectedMemberIds.length === 0) {
-			setUiError("Selecciona al menos un miembro para continuar.");
+			setUiError(t("errorSelectMember"));
 			return;
 		}
 
 		if (!activePhaseId) {
-			setUiError("No hay fase activa disponible.");
+			setUiError(t("errorNoActivePhase"));
 			return;
 		}
 
@@ -286,7 +288,7 @@ export default function BatchSimulatorPage({
 			);
 
 			if (cachedEligibleArticles.length === 0) {
-				setUiError("No hay artículos elegibles para crear lotes.");
+				setUiError(t("errorNoEligibleArticles"));
 				return;
 			}
 
@@ -337,7 +339,7 @@ export default function BatchSimulatorPage({
 			}, 300);
 		} catch (err) {
 			setUiError(
-				`Error inesperado al simular: ${err instanceof Error ? err.message : "Error desconocido."}`,
+				t("errorUnexpectedSimulate", { message: err instanceof Error ? err.message : t("unknownError") }),
 			);
 			setSimulationData(null);
 		} finally {
@@ -349,6 +351,7 @@ export default function BatchSimulatorPage({
 		selectedMemberIds,
 		activePhaseId,
 		cachedEligibleArticles,
+		t,
 	]);
 
 	// Único useEffect para manejar simulación - SIMPLIFICADO
@@ -393,12 +396,12 @@ export default function BatchSimulatorPage({
 			!simulationData ||
 			simulationData.totalBatches === 0
 		) {
-			setUiError("No hay datos de simulación válidos para crear lotes.");
+			setUiError(t("errorNoValidSimulationData"));
 			return;
 		}
 
 		setIsCreating(true);
-		setCreationStatusMessage("Iniciando creación de lotes...");
+		setCreationStatusMessage(t("creatingBatchesStarting"));
 		setUiError(null);
 
 		try {
@@ -411,10 +414,10 @@ export default function BatchSimulatorPage({
 			const result = await createBatches(payload);
 			if (result.success) {
 				setCreationStatusMessage(
-					`✅ Lotes creados exitosamente: ${result.data.createdBatchesCount} lotes con ${result.data.totalItemsCreated} artículos.`,
+					t("batchesCreatedStatusMessage", { count: result.data.createdBatchesCount, articles: result.data.totalItemsCreated }),
 				);
 				sonnerToast.success(
-					`Se crearon ${result.data.createdBatchesCount} lotes con ${result.data.totalItemsCreated} artículos.`,
+					t("toastBatchesCreatedSuccess", { count: result.data.createdBatchesCount, articles: result.data.totalItemsCreated }),
 				);
 
 				// Limpiar estado y notificar al componente padre
@@ -422,12 +425,12 @@ export default function BatchSimulatorPage({
 					onBatchesCreatedSuccessfully();
 				}, 2000);
 			} else {
-				setUiError(result.error || "Error al crear los lotes.");
+				setUiError(result.error || t("errorCreatingBatches"));
 				setCreationStatusMessage("");
 			}
 		} catch (err) {
-			const errorMsg = err instanceof Error ? err.message : "Error desconocido";
-			setUiError(`Error inesperado: ${errorMsg}`);
+			const errorMsg = err instanceof Error ? err.message : t("unknownError");
+			setUiError(t("errorUnexpected", { message: errorMsg }));
 			setCreationStatusMessage("");
 		} finally {
 			setIsCreating(false);
@@ -487,7 +490,7 @@ export default function BatchSimulatorPage({
 			const assignedMember = projectMembers.find((m) => m.user_id === memberId);
 			const colorScheme = memberId ? memberColorMap[memberId] : "primary";
 			const memberName =
-				assignedMember?.profile?.public_display_name || "No Asignado";
+				assignedMember?.profile?.public_display_name || t("unassignedMemberName");
 
 			batchesPerMemberArray[memberId].forEach((batchSize) => {
 				spheres.push({
@@ -501,7 +504,7 @@ export default function BatchSimulatorPage({
 		});
 
 		return spheres;
-	}, [simulationData, memberColorMap, projectMembers, selectedMemberIds]);
+	}, [simulationData, memberColorMap, projectMembers, selectedMemberIds, t]);
 
 	const totalBatchesCalculated = simulationData?.totalBatches || 0;
 
@@ -550,8 +553,8 @@ export default function BatchSimulatorPage({
 					<SustratoLoadingLogo
 						showText
 						text={
-							!appColorTokens ? "Cargando tema..." : (
-								"Cargando datos del simulador..."
+							!appColorTokens ? t("loadingTheme") : (
+								t("loadingSimulatorData")
 							)
 						}
 					/>
@@ -585,13 +588,12 @@ export default function BatchSimulatorPage({
 								preset="subheading"
 								weight="bold"
 								colorScheme="warning">
-								Proyecto No Seleccionado
+								{t("noProjectSelectedTitle")}
 							</StandardText>
 						</StandardCard.Header>
 						<StandardCard.Content>
 							<StandardText>
-								Por favor, selecciona un proyecto activo para poder configurar y
-								simular la creación de lotes.
+								{t("noProjectSelectedDescription")}
 							</StandardText>
 						</StandardCard.Content>
 					</StandardCard>
@@ -625,18 +627,16 @@ export default function BatchSimulatorPage({
 								preset="subheading"
 								weight="bold"
 								colorScheme="neutral">
-								No hay artículos cargados
+								{t("noArticlesTitle")}
 							</StandardText>
 						</StandardCard.Header>
 						<StandardCard.Content>
 							<StandardText className="mb-4">
-								Antes de crear lotes, es necesario cargar artículos al proyecto.
-								Dirígete a la sección de &ldquo;Cargar Artículos&rdquo; para
-								subir los artículos que deseas incluir en los lotes.
+								{t("noArticlesDescription")}
 							</StandardText>
 							<StandardButton asChild colorScheme="primary" className="mt-4">
 								<Link href="/datos-maestros/cargar-articulos">
-									Ir a Cargar Artículos
+									{t("goToUploadArticlesButton")}
 								</Link>
 							</StandardButton>
 						</StandardCard.Content>
@@ -671,14 +671,12 @@ export default function BatchSimulatorPage({
 								preset="subheading"
 								weight="bold"
 								colorScheme="neutral">
-								Sin Miembros en el Proyecto
+								{t("noMembersTitle")}
 							</StandardText>
 						</StandardCard.Header>
 						<StandardCard.Content>
 							<StandardText>
-								Este proyecto no tiene miembros asignados. Dirígete a la sección
-								de gestión de miembros para agregar participantes antes de crear
-								lotes.
+								{t("noMembersDescription")}
 							</StandardText>
 						</StandardCard.Content>
 					</StandardCard>
@@ -693,15 +691,15 @@ export default function BatchSimulatorPage({
 				<StandardPageTitle
 					title={
 						activePhaseInfo ?
-							`Simulador de Creación de Lotes fase ${activePhaseInfo.phase_number}: ${activePhaseInfo.name}`
-						:	"Simulador de Creación de Lotes"
+							t("pageTitleWithPhase", { number: activePhaseInfo.phase_number, name: activePhaseInfo.name })
+						:	t("pageTitleNoPhase")
 					}
-					subtitle={`Define los parámetros para distribuir los artículos del proyecto "${proyectoActual.name}" en lotes de trabajo.`}
+					subtitle={t("pageSubtitle", { name: proyectoActual.name })}
 					mainIcon={Boxes}
 					showBackButton={{ href: "/datos-maestros/lote" }}
 					breadcrumbs={[
-						{ label: "Datos maestros", href: "/datos-maestros" },
-						{ label: "Lotes", href: "/datos-maestros/lote" },
+						{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+						{ label: t("breadcrumbLotes"), href: "/datos-maestros/lote" },
 					]}
 				/>
 
@@ -719,7 +717,7 @@ export default function BatchSimulatorPage({
 							preset="subheading"
 							weight="medium"
 							colorScheme="primary">
-							Configuración de Lotes
+							{t("configTitle")}
 						</StandardText>
 					</StandardCard.Header>
 					<StandardCard.Content
@@ -733,17 +731,17 @@ export default function BatchSimulatorPage({
 							styleType="subtle"
 							accentPlacement="none">
 							<StandardText weight="semibold" className="mb-1 block">
-								1. Definir Tamaño por Lote
+								{t("step1Title")}
 							</StandardText>
 							<div className="flex justify-between items-baseline my-3">
 								<StandardText size="sm">
-									Artículos/Lote:{" "}
+									{t("articlesPerBatchLabel")}{" "}
 									<span className="text-2xl font-bold text-primary-text">
 										{batchSize}
 									</span>
 								</StandardText>
 								<StandardText size="sm">
-									Lotes a generar:{" "}
+									{t("batchesToGenerateLabel")}{" "}
 									<span className="text-2xl font-bold text-primary-text">
 										{(isSimulating || isCreating) && !simulationData ?
 											"..."
@@ -764,13 +762,13 @@ export default function BatchSimulatorPage({
 								className="my-4"
 							/>
 							<div className="flex justify-between text-xs text-muted-foreground">
-								<span>Lotes pequeños (muchos)</span>
-								<span>Lotes grandes (pocos)</span>
+								<span>{t("smallBatchesLabel")}</span>
+								<span>{t("largeBatchesLabel")}</span>
 							</div>
 							<StandardText size="xs" className="text-muted-foreground mt-3">
-								Artículos elegibles en proyecto:{" "}
+								{t("eligibleArticlesLabel")}{" "}
 								{(isSimulating || isCreating) && !simulationData ?
-									"Calculando..."
+									t("calculatingLabel")
 								:	totalEligibleArticles}
 							</StandardText>
 						</StandardCard>
@@ -784,7 +782,7 @@ export default function BatchSimulatorPage({
 							styleType="subtle"
 							accentPlacement="none">
 							<StandardText weight="semibold" className="mb-3 block">
-								2. Asignar a Miembros
+								{t("step2Title")}
 							</StandardText>
 							<div className="flex gap-2 flex-wrap min-h-[40px]">
 								{projectMembers.map((member) => {
@@ -795,7 +793,7 @@ export default function BatchSimulatorPage({
 									const memberName =
 										member.profile?.public_display_name ||
 										member.profile?.first_name ||
-										`ID: ${member.user_id.substring(0, 6)}`;
+										t("memberIdFallback", { id: member.user_id.substring(0, 6) });
 
 									return (
 										<StandardButton
@@ -828,7 +826,7 @@ export default function BatchSimulatorPage({
 										colorScheme="warning"
 										size="xs"
 										className="mt-2">
-										Por favor, selecciona al menos un miembro.
+										{t("selectMemberWarning")}
 									</StandardText>
 								)}
 						</StandardCard>
@@ -848,7 +846,7 @@ export default function BatchSimulatorPage({
 							<AlertTriangle className="h-5 w-5 mt-0.5 text-danger-fg" />
 							<div>
 								<StandardText weight="bold" colorScheme="danger">
-									Problema en la Simulación/Creación
+									{t("problemTitle")}
 								</StandardText>
 								<StandardText size="sm" className="text-danger-fg/90">
 									{uiError}
@@ -862,7 +860,7 @@ export default function BatchSimulatorPage({
 										isSimulating || isCreating || selectedMemberIds.length === 0
 									}
 									leftIcon={Settings}>
-									Reintentar Simulación
+									{t("retrySimulationButton")}
 								</StandardButton>
 							</div>
 						</div>
@@ -911,12 +909,12 @@ export default function BatchSimulatorPage({
 									<StandardText
 										weight="medium"
 										className="mb-2 mt-3 text-primary-text">
-										{creationStatusMessage || "Procesando lotes..."}
+										{creationStatusMessage || t("processingBatches")}
 									</StandardText>
 									<StandardText
 										size="xs"
 										className="text-muted-foreground mt-2">
-										(Esto puede tardar unos segundos)
+										{t("mayTakeSeconds")}
 									</StandardText>
 								</div>
 							)}
@@ -926,7 +924,7 @@ export default function BatchSimulatorPage({
 									preset="subheading"
 									weight="medium"
 									colorScheme="secondary">
-									Previsualización de la Distribución
+									{t("previewTitle")}
 								</StandardText>
 							</StandardCard.Header>
 							<StandardCard.Content
@@ -935,14 +933,14 @@ export default function BatchSimulatorPage({
 									ref={gridContainerRef}
 									className="md:col-span-2 relative min-h-[400px]">
 									<StandardText weight="semibold" className="mb-1 block">
-										Lotes Generados
+										{t("generatedBatchesLabel")}
 									</StandardText>
 									<StandardText
 										size="sm"
 										className="text-muted-foreground mb-3">
 										{(isSimulating || isCreating) && !simulationData ?
-											"Calculando distribución..."
-										:	`${totalBatchesCalculated} lotes de ~${batchSize} artículos (Total elegibles: ${totalEligibleArticles})`
+											t("calculatingDistribution")
+										:	t("batchesSummary", { count: totalBatchesCalculated, size: batchSize, total: totalEligibleArticles })
 										}
 									</StandardText>
 
@@ -957,12 +955,12 @@ export default function BatchSimulatorPage({
 											isSliderMoving
 										}
 										loadingMessage={
-											isSimulating ? "Simulando..."
+											isSimulating ? t("simulatingSpheres")
 											: isRenderingSpheres ?
-												"Renderizando esferas..."
-											:	"Midiendo contenedor..."
+												t("renderingSpheres")
+											:	t("measuringContainer")
 										}
-										emptyStateText="No se generarán lotes con los parámetros actuales."
+										emptyStateText={t("emptySphereState")}
 										sortBy="keyGroup"
 										groupByKeyGroup={true}
 									/>
@@ -972,7 +970,7 @@ export default function BatchSimulatorPage({
 									<StandardText
 										weight="semibold"
 										className="mb-3 block text-center md:text-left">
-										Peso Visual del Lote
+										{t("visualWeightTitle")}
 									</StandardText>
 									<div className="flex flex-col h-full justify-center items-center gap-4 pt-4 md:pt-0">
 										<div
@@ -1022,7 +1020,7 @@ export default function BatchSimulatorPage({
 												size="sm"
 												colorScheme="neutral"
 												styleType="body">
-												artículos por lote
+												{t("articlesPerBatchSuffix")}
 											</StandardText>
 										</div>
 									</div>
@@ -1047,29 +1045,29 @@ export default function BatchSimulatorPage({
 									preset="subheading"
 									weight="medium"
 									colorScheme="success">
-									Confirmar y Crear Lotes
+									{t("confirmCreateTitle")}
 								</StandardText>
 							</StandardCard.Header>
 							<StandardCard.Content className="flex flex-col md:flex-row items-center justify-between gap-4">
 								<div className="flex-grow">
 									<StandardText size="sm" className="text-muted-foreground">
-										Se generarán{" "}
+										{t("summaryWillGenerate")}{" "}
 										<strong className="text-foreground">
 											{totalBatchesCalculated}
 										</strong>{" "}
-										lotes con un tamaño aproximado de{" "}
+										{t("summarySizeApprox")}{" "}
 										<strong className="text-foreground">{batchSize}</strong>{" "}
-										artículos cada uno, distribuidos entre{" "}
+										{t("summaryArticlesDistributed")}{" "}
 										<strong className="text-foreground">
 											{selectedMemberIds.length}
 										</strong>{" "}
-										miembro(s) seleccionado(s).
+										{t("summarySelectedMembers")}
 									</StandardText>
 									{simulationData.articlesPerMember &&
 										Object.keys(simulationData.articlesPerMember).length >
 											0 && (
 											<div className="mt-2 text-xs text-muted-foreground">
-												<strong>Distribución de artículos por miembro:</strong>
+												<strong>{t("distributionByMemberLabel")}</strong>
 												<ul className="list-disc list-inside pl-4">
 													{projectMembers
 														.filter(
@@ -1087,7 +1085,7 @@ export default function BatchSimulatorPage({
 																{simulationData.articlesPerMember?.[
 																	m.user_id
 																] || 0}{" "}
-																artículos
+																{t("articlesSuffix")}
 															</li>
 														))}
 												</ul>
@@ -1110,8 +1108,8 @@ export default function BatchSimulatorPage({
 									leftIcon={CheckCircle}
 									className="w-full md:w-auto">
 									{isCreating ?
-										"Creando Lotes..."
-									:	`Crear ${totalBatchesCalculated} Lotes`}
+										t("creatingBatchesButton")
+									:	t("createBatchesButton", { count: totalBatchesCalculated })}
 								</StandardButton>
 							</StandardCard.Content>
 						</StandardCard>

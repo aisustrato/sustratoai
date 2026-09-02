@@ -3,6 +3,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import BatchSimulatorPage from "./components/BatchSimulatorPage";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
@@ -82,32 +83,26 @@ interface PhaseInfo {
 // Fuente de verdad para los estados de los ARTÍCULOS (alineado con preclasificación)
 const ARTICLE_STATUS_VISUALS = {
 	pendientesRevision: {
-		label: "Pend. Revisión",
 		emoticon: "�",
 		colorScheme: "accent" as ColorSchemeVariant,
 	},
 	pendientesRevisionTraducido: {
-		label: "Traducido",
 		emoticon: "�",
 		colorScheme: "secondary" as ColorSchemeVariant,
 	},
 	pendientesReconciliacion: {
-		label: "Pend. Reconciliación",
 		emoticon: "�",
 		colorScheme: "warning" as ColorSchemeVariant,
 	},
 	validados: {
-		label: "Validados",
 		emoticon: "✅",
 		colorScheme: "success" as ColorSchemeVariant,
 	},
 	reconciliados: {
-		label: "Reconciliados",
 		emoticon: "🎯",
 		colorScheme: "primary" as ColorSchemeVariant,
 	},
 	enDisputa: {
-		label: "En Disputa",
 		emoticon: "⚡",
 		colorScheme: "danger" as ColorSchemeVariant,
 	},
@@ -236,6 +231,7 @@ const normalizeCounts = (
 
 //#region [main] - 🔧 COMPONENT 🔧
 export default function LotesOrquestadorPage() {
+	const t = useTranslations("datosMaestrosPages.lotePage");
 	const { proyectoActual, user } = useAuth();
 
 	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HANDLERS 🧰
@@ -284,7 +280,7 @@ export default function LotesOrquestadorPage() {
 	const cargarEstadoLoteo = useCallback(async () => {
 		if (!proyectoActual?.id) {
 			setViewState("error");
-			setError("No hay proyecto activo.");
+			setError(t("errorNoActiveProject"));
 			return;
 		}
 
@@ -359,7 +355,7 @@ export default function LotesOrquestadorPage() {
 				setViewState("error");
 				setError(
 					statusResult.error ||
-						"Error al obtener el estado del proceso de loteo.",
+						t("errorGettingLoteoStatus"),
 				);
 				return;
 			}
@@ -383,23 +379,23 @@ export default function LotesOrquestadorPage() {
 					// no los trajo arriba (desync) — mensaje específico, no genérico.
 					setViewState("error");
 					setError(
-						"Se detectaron lotes existentes para esta fase, pero no se pudieron cargar sus datos. Probá recargar la página.",
+						t("errorBatchesDesync"),
 					);
 					break;
 				default:
 					setViewState("error");
 					setError(
-						`Estado desconocido recibido del servidor: "${status.status}".`,
+						t("errorUnknownStatus", { status: status.status }),
 					);
 			}
 		} catch (error) {
 			console.error("❌ Excepción al cargar estado de loteo:", error);
 			setViewState("error");
 			setError(
-				`Error interno: ${error instanceof Error ? error.message : "Error desconocido"}`,
+				t("errorInternal", { message: error instanceof Error ? error.message : t("unknownError") }),
 			);
 		}
-	}, [proyectoActual?.id]);
+	}, [proyectoActual?.id, t]);
 
 	useEffect(() => {
 		cargarEstadoLoteo();
@@ -416,12 +412,12 @@ export default function LotesOrquestadorPage() {
 		error?: string;
 	}> => {
 		if (!proyectoActual?.id || !batchingStatus?.activePhase?.id) {
-			return { success: false, error: "No hay proyecto activo o fase activa." };
+			return { success: false, error: t("errorNoActiveProjectOrPhase") };
 		}
 		if (!permisoGestionGeneral) {
 			return {
 				success: false,
-				error: "No tienes permisos para resetear lotes.",
+				error: t("errorNoResetPermission"),
 			};
 		}
 
@@ -436,7 +432,7 @@ export default function LotesOrquestadorPage() {
 				cargarEstadoLoteo(); // Recargar estado
 				return {
 					success: true,
-					message: `Se eliminaron ${result.data.deletedBatches} lotes y ${result.data.deletedItems} elementos.`,
+					message: t("resetSuccessMessage", { batches: result.data.deletedBatches, items: result.data.deletedItems }),
 				};
 			} else {
 				return { success: false, error: result.error };
@@ -444,7 +440,7 @@ export default function LotesOrquestadorPage() {
 		} catch (error) {
 			return {
 				success: false,
-				error: `Error interno: ${error instanceof Error ? error.message : "Error desconocido"}`,
+				error: t("errorInternal", { message: error instanceof Error ? error.message : t("unknownError") }),
 			};
 		} finally {
 			setIsResetting(false);
@@ -458,7 +454,7 @@ export default function LotesOrquestadorPage() {
 	if (viewState === "loading") {
 		return (
 			<div className="flex items-center justify-center min-h-[70vh]">
-				<SustratoLoadingLogo text="Cargando estado del proceso de loteo..." />
+				<SustratoLoadingLogo text={t("loadingLoteoStatus")} />
 			</div>
 		);
 	}
@@ -481,12 +477,12 @@ export default function LotesOrquestadorPage() {
 							</StandardIcon>
 						</div>
 						<StandardText size="lg" weight="bold" colorScheme="warning">
-							Proyecto No Seleccionado
+							{t("noProjectSelectedTitle")}
 						</StandardText>
 					</StandardCard.Header>
 					<StandardCard.Content>
 						<StandardText>
-							Por favor, selecciona un proyecto activo para gestionar los lotes.
+							{t("noProjectSelectedDescription")}
 						</StandardText>
 					</StandardCard.Content>
 				</StandardCard>
@@ -501,24 +497,24 @@ export default function LotesOrquestadorPage() {
 				<StandardPageTitle
 					title={
 						activePhaseInfo ?
-							`Gestión de Lotes fase ${activePhaseInfo.phase_number}: ${activePhaseInfo.name}`
-						:	"Gestión de Lotes por Fases"
+							t("pageTitleWithPhase", { number: activePhaseInfo.phase_number, name: activePhaseInfo.name })
+						:	t("pageTitleNoPhase")
 					}
 					subtitle={
-						viewState === "no_active_phase" ? "Sin fase activa"
+						viewState === "no_active_phase" ? t("subtitleNoActivePhase")
 						: viewState === "universe_not_defined" ?
-							"Configuración requerida"
+							t("subtitleUniverseNotDefined")
 						: viewState === "batches_created" ?
-							"Lotes creados"
+							t("subtitleBatchesCreated")
 						: viewState === "error" ?
-							"Error en el proceso"
-						:	"Cargando..."
+							t("subtitleError")
+						:	t("subtitleLoading")
 					}
-					description="Sistema de loteo inteligente basado en fases del proyecto"
+					description={t("pageDescription")}
 					showBackButton={{ href: "/datos-maestros" }}
 					breadcrumbs={[
-						{ label: "Datos maestros", href: "/datos-maestros" },
-						{ label: "Lotes", href: "/datos-maestros/lote" },
+						{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+						{ label: t("breadcrumbLotes"), href: "/datos-maestros/lote" },
 					]}
 				/>
 			)}
@@ -541,13 +537,12 @@ export default function LotesOrquestadorPage() {
 								preset="subheading"
 								weight="medium"
 								colorScheme="warning">
-								No hay fase activa
+								{t("noActivePhaseTitle")}
 							</StandardText>
 						</StandardCard.Header>
 						<StandardCard.Content className="space-y-4">
 							<StandardText>
-								Para crear lotes de artículos, primero necesitas tener una fase
-								de preclasificación activa.
+								{t("noActivePhaseDescription")}
 							</StandardText>
 							<div className="flex justify-center">
 								<Link href="/datos-maestros/fases-preclasificacion">
@@ -555,7 +550,7 @@ export default function LotesOrquestadorPage() {
 										colorScheme="warning"
 										styleType="solid"
 										rightIcon={ArrowRight}>
-										Ir a Gestión de Fases
+										{t("goToPhasesManagementButton")}
 									</StandardButton>
 								</Link>
 							</div>
@@ -583,14 +578,12 @@ export default function LotesOrquestadorPage() {
 								preset="subheading"
 								weight="medium"
 								colorScheme="accent">
-								Universo de artículos no definido
+								{t("universeNotDefinedTitle")}
 							</StandardText>
 						</StandardCard.Header>
 						<StandardCard.Content className="space-y-4">
 							<StandardText>
-								La fase {batchingStatus.activePhase.phase_number} está activa,
-								pero no tiene artículos elegibles definidos. Necesitas
-								configurar el universo de artículos antes de crear lotes.
+								{t("universeNotDefinedDescription", { number: batchingStatus.activePhase.phase_number })}
 							</StandardText>
 							<div className="flex justify-center">
 								<Link
@@ -599,7 +592,7 @@ export default function LotesOrquestadorPage() {
 										colorScheme="accent"
 										styleType="solid"
 										rightIcon={ArrowRight}>
-										Configurar Artículos Elegibles
+										{t("configureEligibleArticlesButton")}
 									</StandardButton>
 								</Link>
 							</div>
@@ -637,12 +630,12 @@ export default function LotesOrquestadorPage() {
 										weight="medium"
 										colorScheme="success">
 										{selectedPhaseId ?
-											`Lotes - Fase ${allPhases.find((p) => p.id === selectedPhaseId)?.phase_number}`
-										:	`Todos los Lotes - ${batchesData.length} lotes en ${allPhases.length} fase(s)`
+											t("batchesInPhaseTitle", { number: allPhases.find((p) => p.id === selectedPhaseId)?.phase_number ?? 0 })
+										:	t("allBatchesTitle", { count: batchesData.length, phases: allPhases.length })
 										}
 									</StandardText>
 									<StandardText size="sm" className="text-muted-foreground">
-										{filteredBatches.length} lotes mostrados
+										{t("batchesShownCount", { count: filteredBatches.length })}
 									</StandardText>
 								</div>
 							</div>
@@ -658,12 +651,12 @@ export default function LotesOrquestadorPage() {
 													Array.isArray(value) ? value[0] : value;
 												setSelectedPhaseId(newValue || null);
 											}}
-											placeholder="Todas las fases"
+											placeholder={t("allPhasesPlaceholder")}
 											options={[
-												{ value: "", label: "📋 Todas las fases" },
+												{ value: "", label: t("allPhasesOption") },
 												...allPhases.map((phase) => ({
 													value: phase.id,
-													label: `Fase ${phase.phase_number}: ${phase.name}${phase.status === "active" ? " (Activa)" : ""}`,
+													label: `${t("phaseOptionLabel", { number: phase.phase_number, name: phase.name })}${phase.status === "active" ? t("activePhaseSuffix") : ""}`,
 												})),
 											]}
 										/>
@@ -678,7 +671,7 @@ export default function LotesOrquestadorPage() {
 										onClick={handleResetBatches}
 										loading={isResetting}
 										disabled={isResetting}>
-										{isResetting ? "Reseteando..." : "Resetear"}
+										{isResetting ? t("resettingButton") : t("resetButton")}
 									</StandardButton>
 								)}
 							</div>
@@ -700,7 +693,7 @@ export default function LotesOrquestadorPage() {
 										batch.is_closed || false,
 									);
 									const assignedMember =
-										batch.assigned_member_name || "Sin asignar";
+										batch.assigned_member_name || t("unassignedMember");
 
 									return {
 										id: batch.id,
@@ -716,18 +709,18 @@ export default function LotesOrquestadorPage() {
 												batch.id === selectedSphereId ? null : batch.id,
 											),
 										tooltip: [
-											`*Lote:* ${batch.batch_number}${batch.is_closed ? " 🔒 CERRADO" : ""}`,
-											`*Fase:* ${batch.phase_name} (${batch.phase_number})`,
-											`*Investigador:* ${assignedMember}`,
-											`*Total Artículos:* ${total}`,
+											`${t("tooltipBatch", { number: batch.batch_number })}${batch.is_closed ? t("tooltipClosedSuffix") : ""}`,
+											t("tooltipPhase", { name: batch.phase_name ?? "", number: batch.phase_number ?? 0 }),
+											t("tooltipResearcher", { name: assignedMember }),
+											t("tooltipTotalArticles", { total }),
 											"---",
-											`⏳ *Pendientes:* ${counts.pending}`,
-											`${ARTICLE_STATUS_VISUALS.pendientesRevisionTraducido.emoticon} *Traducido:* ${counts.translated}`,
-											`${ARTICLE_STATUS_VISUALS.pendientesRevision.emoticon} *Pend. Revisión:* ${counts.pending_review}`,
-											`${ARTICLE_STATUS_VISUALS.pendientesReconciliacion.emoticon} *Pend. Reconciliación:* ${counts.reconciliation_pending}`,
-											`${ARTICLE_STATUS_VISUALS.validados.emoticon} *Validados:* ${counts.validated}`,
-											`${ARTICLE_STATUS_VISUALS.reconciliados.emoticon} *Reconciliados:* ${counts.reconciled}`,
-											`${ARTICLE_STATUS_VISUALS.enDisputa.emoticon} *En Disputa:* ${counts.disputed}`,
+											t("tooltipPending", { count: counts.pending }),
+											`${ARTICLE_STATUS_VISUALS.pendientesRevisionTraducido.emoticon} ${t("tooltipTranslated", { count: counts.translated })}`,
+											`${ARTICLE_STATUS_VISUALS.pendientesRevision.emoticon} ${t("tooltipPendingReview", { count: counts.pending_review })}`,
+											`${ARTICLE_STATUS_VISUALS.pendientesReconciliacion.emoticon} ${t("tooltipPendingReconciliation", { count: counts.reconciliation_pending })}`,
+											`${ARTICLE_STATUS_VISUALS.validados.emoticon} ${t("tooltipValidated", { count: counts.validated })}`,
+											`${ARTICLE_STATUS_VISUALS.reconciliados.emoticon} ${t("tooltipReconciled", { count: counts.reconciled })}`,
+											`${ARTICLE_STATUS_VISUALS.enDisputa.emoticon} ${t("tooltipDisputed", { count: counts.disputed })}`,
 										]
 											.filter(Boolean)
 											.join("\n"),
@@ -739,7 +732,7 @@ export default function LotesOrquestadorPage() {
 												{
 													text: batch.assigned_member_initials,
 													colorScheme: "primary" as const,
-													tooltip: `Asignado a: ${assignedMember}`,
+													tooltip: t("assignedToTooltip", { name: assignedMember }),
 												}
 											:	undefined,
 									};
@@ -750,15 +743,15 @@ export default function LotesOrquestadorPage() {
 								forceBadge={true}
 								title={
 									selectedPhaseId ?
-										`Lotes - Fase ${allPhases.find((p) => p.id === selectedPhaseId)?.phase_number}`
-									:	"Todos los Lotes"
+										t("batchesInPhaseTitle", { number: allPhases.find((p) => p.id === selectedPhaseId)?.phase_number ?? 0 })
+									:	t("allBatchesSphereTitle")
 								}
 								isLoading={false}
-								loadingMessage="Cargando lotes..."
+								loadingMessage={t("loadingBatches")}
 								emptyStateText={
 									selectedPhaseId ?
-										"Sin lotes en esta fase"
-									:	"No hay lotes para mostrar."
+										t("noBatchesInPhase")
+									:	t("noBatchesToShow")
 								}
 							/>
 						)}
@@ -766,15 +759,24 @@ export default function LotesOrquestadorPage() {
 
 					{/* Leyenda de estados - alineada con preclasificación */}
 					<StandardCard
-						title="Estados de Artículos"
+						title={t("statusesLegendTitle")}
 						colorScheme="primary"
 						styleType="subtle"
 						hasOutline={false}
 						shadow="md">
 						<StandardCard.Content>
 							<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-								{Object.entries(ARTICLE_STATUS_VISUALS).map(
-									([key, { label, emoticon, colorScheme }]) => (
+								{Object.entries({
+									pendientesRevision: t("statusPendingReviewLabel"),
+									pendientesRevisionTraducido: t("statusTranslatedLabel"),
+									pendientesReconciliacion: t("statusPendingReconciliationLabel"),
+									validados: t("statusValidatedLabel"),
+									reconciliados: t("statusReconciledLabel"),
+									enDisputa: t("statusDisputedLabel"),
+								}).map(([key, label]) => {
+									const { emoticon, colorScheme } =
+										ARTICLE_STATUS_VISUALS[key as keyof typeof ARTICLE_STATUS_VISUALS];
+									return (
 										<div key={key} className="flex items-center gap-2">
 											<div
 												className={`w-4 h-4 rounded-full bg-${colorScheme}-500`}
@@ -782,13 +784,13 @@ export default function LotesOrquestadorPage() {
 											<span>{emoticon}</span>
 											<StandardText size="sm">{label}</StandardText>
 										</div>
-									),
-								)}
+									);
+								})}
 							</div>
 							<div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
 								<StandardText size="xs" className="text-muted-foreground">
-									💡 El color de cada esfera representa el{" "}
-									<strong>peor estado</strong> presente en el lote.
+									{t("legendFooterBefore")}{" "}
+									<strong>{t("legendFooterBold")}</strong> {t("legendFooterAfter")}
 								</StandardText>
 							</div>
 						</StandardCard.Content>
@@ -814,19 +816,19 @@ export default function LotesOrquestadorPage() {
 							preset="subheading"
 							weight="medium"
 							colorScheme="danger">
-							Error en el Sistema de Lotes
+							{t("errorTitle")}
 						</StandardText>
 					</StandardCard.Header>
 					<StandardCard.Content className="space-y-4">
 						<StandardText>
-							{error || "Ha ocurrido un error inesperado."}
+							{error || t("errorUnexpectedGeneric")}
 						</StandardText>
 						<div className="flex justify-center">
 							<StandardButton
 								colorScheme="danger"
 								styleType="outline"
 								onClick={cargarEstadoLoteo}>
-								Reintentar
+								{t("retryButton")}
 							</StandardButton>
 						</div>
 					</StandardCard.Content>
