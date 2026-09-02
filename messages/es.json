@@ -889,6 +889,32 @@
       "issueIter1Pending": "{count} dimensión(es) en iteración 1 sin aprobar (deben estar en 'validated')",
       "issueIter2Incomplete": "{count} dimensión(es) en iteración 2 (estado incompleto, falta reconciliación)",
       "issueIter3Pending": "{count} dimensión(es) en iteración 3 sin decisión (deben estar en 'reconciled' o 'disputed')"
+    },
+    "universeVisualization": {
+      "noArticlesToVisualize": "No hay artículos para visualizar",
+      "globalStatsTitle": "Estadísticas Globales del Universo",
+      "totalArticlesLabel": "Artículos Totales",
+      "globalCoverageLabel": "Cobertura Global",
+      "totalClassificationsLabel": "Total Clasificaciones",
+      "avgPerArticleLabel": "Promedio por Artículo",
+      "distributionByDimensionTitle": "Distribución de Clasificaciones por Dimensión",
+      "hideButton": "Ocultar",
+      "showButton": "Mostrar",
+      "allDimensionsOption": "Todas las dimensiones",
+      "barChartTooltip": "Gráfico de barras",
+      "pieChartTooltip": "Gráfico circular",
+      "confidenceAllHigh": "Todas Altas",
+      "confidenceAtLeastOneMedium": "Al menos 1 Media",
+      "confidenceAtLeastOneLow": "Al menos 1 Baja",
+      "confidenceLow": "Baja",
+      "confidenceMedium": "Media",
+      "globalConfidenceDistributionTitle": "Distribución Global de Confianza",
+      "globalConfidenceDistributionDescription": "Análisis del nivel de confianza de las clasificaciones por artículo",
+      "noConfidenceDataAvailable": "No hay datos de confianza disponibles",
+      "confidenceByDimensionTitle": "Análisis de Confianza por Dimensión",
+      "confidenceByDimensionDescription": "Dimensiones que requieren revisión: clasificaciones con confianza media o baja",
+      "coverageByDimensionTitle": "Cobertura por Dimensión",
+      "otherSerendipityLabel": "🎁 Otros (Serendipia)"
     }
   },
   "showroom": {

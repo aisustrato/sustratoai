@@ -889,6 +889,32 @@
       "issueIter1Pending": "{count} dimension(s) in iteration 1 not approved (must be 'validated')",
       "issueIter2Incomplete": "{count} dimension(s) in iteration 2 (incomplete state, missing reconciliation)",
       "issueIter3Pending": "{count} dimension(s) in iteration 3 without a decision (must be 'reconciled' or 'disputed')"
+    },
+    "universeVisualization": {
+      "noArticlesToVisualize": "No articles to visualize",
+      "globalStatsTitle": "Universe Global Statistics",
+      "totalArticlesLabel": "Total Articles",
+      "globalCoverageLabel": "Global Coverage",
+      "totalClassificationsLabel": "Total Classifications",
+      "avgPerArticleLabel": "Average per Article",
+      "distributionByDimensionTitle": "Classification Distribution by Dimension",
+      "hideButton": "Hide",
+      "showButton": "Show",
+      "allDimensionsOption": "All dimensions",
+      "barChartTooltip": "Bar chart",
+      "pieChartTooltip": "Pie chart",
+      "confidenceAllHigh": "All High",
+      "confidenceAtLeastOneMedium": "At least 1 Medium",
+      "confidenceAtLeastOneLow": "At least 1 Low",
+      "confidenceLow": "Low",
+      "confidenceMedium": "Medium",
+      "globalConfidenceDistributionTitle": "Global Confidence Distribution",
+      "globalConfidenceDistributionDescription": "Analysis of the confidence level of classifications per article",
+      "noConfidenceDataAvailable": "No confidence data available",
+      "confidenceByDimensionTitle": "Confidence Analysis by Dimension",
+      "confidenceByDimensionDescription": "Dimensions that need review: classifications with medium or low confidence",
+      "coverageByDimensionTitle": "Coverage by Dimension",
+      "otherSerendipityLabel": "🎁 Other (Serendipity)"
     }
   },
   "showroom": {
