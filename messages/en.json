@@ -420,6 +420,23 @@
     }
   },
   "articulos": {
+    "virtualizedArticleRow": {
+      "missingDimensionsTooltip": "⚠️ {count} dimensions still need classification. Click to reprocess.",
+      "missingDimensionsBadge": "⚠️ {count} unclassified",
+      "readyBadge": "Ready",
+      "viewEditNotesTooltip": "View/edit notes",
+      "createNoteTooltip": "Create note",
+      "reprocessTooltip": "Reprocess classifications with AI",
+      "batchLabelPrefix": "Batch #{number}",
+      "viewArticleDetailTooltip": "View article detail",
+      "approveAllTooltip": "Approve all dimensions",
+      "viewHistoryTooltip": "View classification history",
+      "removeApprovalTooltip": "Remove approval",
+      "approveTooltip": "Approve",
+      "arbitrationTooltip": "Arbitration (reject reconciliation)",
+      "editDisagreementTooltip": "Edit disagreement",
+      "disagreementTooltip": "Disagreement"
+    },
     "analisisMultinivel": {
       "pageTitle": "Multilevel Analysis",
       "pageSubtitle": "Hierarchical analysis of classifications between parent-child phases",

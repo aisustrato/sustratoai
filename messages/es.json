@@ -420,6 +420,23 @@
     }
   },
   "articulos": {
+    "virtualizedArticleRow": {
+      "missingDimensionsTooltip": "⚠️ Faltan {count} dimensiones por clasificar. Haz clic para reprocesar.",
+      "missingDimensionsBadge": "⚠️ {count} sin clasificar",
+      "readyBadge": "Listo",
+      "viewEditNotesTooltip": "Ver/editar notas",
+      "createNoteTooltip": "Crear nota",
+      "reprocessTooltip": "Reprocesar clasificaciones con IA",
+      "batchLabelPrefix": "Lote #{number}",
+      "viewArticleDetailTooltip": "Ver detalle del artículo",
+      "approveAllTooltip": "Aprobar todas las dimensiones",
+      "viewHistoryTooltip": "Ver historial de clasificaciones",
+      "removeApprovalTooltip": "Quitar aprobación",
+      "approveTooltip": "Aprobar",
+      "arbitrationTooltip": "Arbitraje (rechazar reconciliación)",
+      "editDisagreementTooltip": "Editar desacuerdo",
+      "disagreementTooltip": "Desacuerdo"
+    },
     "analisisMultinivel": {
       "pageTitle": "Análisis Multinivel",
       "pageSubtitle": "Análisis jerárquico de clasificaciones entre fases padre-hijo",
