@@ -1,5 +1,4 @@
 // Importar dinámicamente los clientes para evitar problemas con Server Components
-import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 import { supabase } from '@/app/auth/client'
 
@@ -23,42 +22,20 @@ const getDomain = () => {
 
 const domain = getDomain();
 
-// ⚠️ DEPRECADO: Este cliente causaba conflictos de cookies con @/app/auth/client.ts
-// ✅ USAR EN SU LUGAR: import { supabase } from '@/app/auth/client'
-// 
-// Cliente para el navegador (DEPRECADO - mantener solo para compatibilidad temporal)
-// Este cliente NO debe usarse en nuevo código
-export const supabase_DEPRECATED = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-    storage: {
-      getItem: (key: string) => {
-        if (typeof document === 'undefined') return null;
-        const value = document.cookie
-          .split('; ')
-          .find(row => row.startsWith(`${key}=`))
-          ?.split('=')[1];
-        return value ? decodeURIComponent(value) : null;
-      },
-      setItem: (key: string, value: string) => {
-        if (typeof document === 'undefined') return;
-        let cookieString = `${key}=${encodeURIComponent(value)}; path=/; samesite=lax`;
-        if (domain) cookieString += `; domain=${domain}`;
-        if (isProduction) cookieString += '; secure';
-        document.cookie = cookieString;
-      },
-      removeItem: (key: string) => {
-        if (typeof document === 'undefined') return;
-        let cookieString = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-        if (domain) cookieString += `; domain=${domain}`;
-        document.cookie = cookieString;
-      }
-    }
-  }
-})
+// ⚠️ ELIMINADO: este archivo tenía un segundo cliente de Supabase
+// (`supabase_DEPRECATED`, vía `createClient` de `@supabase/supabase-js` con
+// `detectSessionInUrl: true`) que nadie importaba explícitamente en ningún
+// otro lugar del código — pero al ser un `export const` a nivel de módulo,
+// se CREABA de todos modos con solo importar este archivo. Un GoTrueClient
+// con `detectSessionInUrl: true` escanea la URL apenas se inicializa y
+// procesa cualquier `?code=` que encuentre automáticamente, sin que nadie
+// lo invoque. En `/update-password` (que importa `supabase` desde aquí),
+// esto creaba un segundo consumidor silencioso del code PKCE de un solo
+// uso, compitiendo en secreto contra el canje explícito que hace la propia
+// página — la causa real, reportada 3 días seguidos, del "enlace expirado"
+// apareciendo después de que la sesión ya se había validado correctamente.
+// Se elimina por completo: no se usaba en ningún otro lugar (confirmado con
+// grep antes de borrar).
 
 // ✅ Re-exportar el cliente oficial de @/app/auth/client.ts
 // Esto asegura compatibilidad con código existente que importa desde aquí
