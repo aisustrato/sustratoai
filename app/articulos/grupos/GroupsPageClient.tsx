@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardSelect } from "@/components/ui/StandardSelect";
 import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
@@ -16,6 +17,7 @@ type GroupsPageClientProps = {
 };
 
 export default function GroupsPageClient({ initialGroups, projectName, focusGroupId }: GroupsPageClientProps) {
+  const t = useTranslations("articulos.groupsPageClient");
   const [visibilityFilter, setVisibilityFilter] = React.useState<VisibilityFilter>("all");
 
   const hasGroups = initialGroups && initialGroups.length > 0;
@@ -23,17 +25,17 @@ export default function GroupsPageClient({ initialGroups, projectName, focusGrou
   return (
     <div className="p-4 sm:p-6">
       <StandardPageTitle
-        title="Grupos de Artículos"
-        subtitle={`Proyecto activo: ${projectName}`}
-        showBackButton={{ href: "/articulos", label: "Volver" }}
+        title={t("pageTitle")}
+        subtitle={t("activeProjectSubtitle", { name: projectName })}
+        showBackButton={{ href: "/articulos", label: t("backButtonLabel") }}
         actions={
           <div className="flex items-center gap-2">
             <StandardSelect
               id="visibility-filter"
               options={[
-                { value: "all", label: "Todos" },
-                { value: "public", label: "Públicos" },
-                { value: "private", label: "Privados" },
+                { value: "all", label: t("filterAll") },
+                { value: "public", label: t("filterPublic") },
+                { value: "private", label: t("filterPrivate") },
               ]}
               value={visibilityFilter}
               onChange={(v) => setVisibilityFilter((v as VisibilityFilter) ?? "all")}
@@ -44,8 +46,8 @@ export default function GroupsPageClient({ initialGroups, projectName, focusGrou
 
       {!hasGroups ? (
         <StandardEmptyState
-          title="Sin grupos"
-          description="No hay grupos para este proyecto. Puedes crear uno desde otras vistas o pronto desde aquí."
+          title={t("emptyTitle")}
+          description={t("emptyDescription")}
         />
       ) : (
         <div className="mt-2">
