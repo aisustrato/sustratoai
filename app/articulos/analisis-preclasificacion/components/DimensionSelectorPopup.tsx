@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { StandardDialog } from "@/components/ui/StandardDialog";
 import { StandardCheckbox } from "@/components/ui/StandardCheckbox";
 import { StandardText } from "@/components/ui/StandardText";
@@ -43,6 +44,7 @@ export function DimensionSelectorPopup({
 	selectedDimensionIds,
 	onApply,
 }: DimensionSelectorPopupProps) {
+	const t = useTranslations("articulos.dimensionSelectorPopup");
 	const [localSelection, setLocalSelection] =
 		useState<string[]>(selectedDimensionIds);
 
@@ -127,9 +129,9 @@ export function DimensionSelectorPopup({
 			onOpenChange={(open) => !open && handleCancel()}>
 			<StandardDialog.Content size="2xl">
 				<StandardDialog.Header>
-					<StandardDialog.Title>Seleccionar Dimensiones</StandardDialog.Title>
+					<StandardDialog.Title>{t("dialogTitle")}</StandardDialog.Title>
 					<StandardText size="sm" colorShade="subtle">
-						{localSelection.length} de {dimensions.length} seleccionadas
+						{t("selectionCount", { selected: localSelection.length, total: dimensions.length })}
 					</StandardText>
 				</StandardDialog.Header>
 
@@ -140,14 +142,14 @@ export function DimensionSelectorPopup({
 						styleType="outline"
 						onClick={handleSelectAll}
 						disabled={localSelection.length === dimensions.length}>
-						Todas
+						{t("allButton")}
 					</StandardButton>
 					<StandardButton
 						size="sm"
 						styleType="outline"
 						onClick={handleDeselectAll}
 						disabled={localSelection.length === 0}>
-						Ninguna
+						{t("noneButton")}
 					</StandardButton>
 				</div>
 
@@ -165,7 +167,7 @@ export function DimensionSelectorPopup({
 								{/* Header de fase */}
 								<div className="flex items-center justify-between">
 									<StandardText weight="semibold" size="sm">
-										Fase {phase.phase_number}: {phase.name}
+										{t("phaseHeader", { number: phase.phase_number, name: phase.name })}
 									</StandardText>
 									<StandardBadge
 										size="sm"
@@ -230,14 +232,14 @@ export function DimensionSelectorPopup({
 						styleType="outline"
 						onClick={handleCancel}
 						leftIcon={X}>
-						Cancelar
+						{t("cancelButton")}
 					</StandardButton>
 					<StandardButton
 						colorScheme="primary"
 						onClick={handleApply}
 						leftIcon={Check}
 						disabled={localSelection.length === 0}>
-						Aplicar ({localSelection.length})
+						{t("applyButton", { count: localSelection.length })}
 					</StandardButton>
 				</StandardDialog.Footer>
 			</StandardDialog.Content>

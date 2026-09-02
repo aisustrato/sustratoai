@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { StandardDialog } from "@/components/ui/StandardDialog";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardText } from "@/components/ui/StandardText";
@@ -46,6 +47,7 @@ export function CreateFilteredPhaseDialog({
 	estimatedCount,
 	onPhaseCreated,
 }: CreateFilteredPhaseDialogProps) {
+	const t = useTranslations("articulos.createFilteredPhaseDialog");
 	const router = useRouter();
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
@@ -55,7 +57,7 @@ export function CreateFilteredPhaseDialog({
 	const filterSummary = Object.entries(activeFilters).map(
 		([dimId, filterMap]) => {
 			const dim = dimensions.find((d) => d.id === dimId);
-			const dimName = dim?.name || "Dimensión desconocida";
+			const dimName = dim?.name || t("unknownDimension");
 
 			const includes = Object.entries(filterMap)
 				.filter(([, mode]) => mode === "include")
@@ -69,9 +71,9 @@ export function CreateFilteredPhaseDialog({
 	);
 
 	const confidenceLabels: Record<number, string> = {
-		1: "Baja",
-		2: "Media",
-		3: "Alta",
+		1: t("confidenceLow"),
+		2: t("confidenceMedium"),
+		3: t("confidenceHigh"),
 	};
 
 	// Generar nombre sugerido automáticamente
@@ -82,26 +84,26 @@ export function CreateFilteredPhaseDialog({
 				parts.push(f.includes.join(" + "));
 			}
 		});
-		if (parts.length > 0) return `Fase filtrada: ${parts.join(", ")}`;
-		return `Fase filtrada desde ${sourcePhaseName}`;
+		if (parts.length > 0) return `${t("suggestedNamePrefix")}${parts.join(", ")}`;
+		return t("suggestedNameFromSource", { sourceName: sourcePhaseName });
 	})();
 
 	// Generar descripción automática de los filtros aplicados
 	const autoDescription = (() => {
 		const lines: string[] = [
-			`Fase derivada de "${sourcePhaseName}" con filtros aplicados:`,
+			t("autoDescriptionHeader", { sourceName: sourcePhaseName }),
 		];
 		filterSummary.forEach((f) => {
 			if (f.includes.length > 0) {
-				lines.push(`  ✅ ${f.dimName}: ${f.includes.join(", ")}`);
+				lines.push(t("autoDescriptionInclude", { dimName: f.dimName, values: f.includes.join(", ") }));
 			}
 			if (f.excludes.length > 0) {
-				lines.push(`  ❌ ${f.dimName} (excluidos): ${f.excludes.join(", ")}`);
+				lines.push(t("autoDescriptionExclude", { dimName: f.dimName, values: f.excludes.join(", ") }));
 			}
 		});
 		if (confidenceFilter.length > 0) {
 			lines.push(
-				`  🎯 Confianza: ${confidenceFilter.map((c) => confidenceLabels[c] || c).join(", ")}`,
+				t("autoDescriptionConfidence", { values: confidenceFilter.map((c) => confidenceLabels[c] || c).join(", ") }),
 			);
 		}
 		return lines.join("\n");
@@ -112,7 +114,7 @@ export function CreateFilteredPhaseDialog({
 		const finalDescription = description.trim() || autoDescription;
 
 		if (!finalName) {
-			toast.error("El nombre de la fase es requerido");
+			toast.error(t("toastNameRequired"));
 			return;
 		}
 
@@ -149,14 +151,14 @@ export function CreateFilteredPhaseDialog({
 
 			if (!result.success) {
 				console.error("❌ [UI] Error del servidor:", result.error);
-				toast.error(result.error || "Error al crear fase filtrada");
+				toast.error(result.error || t("toastErrorCreating"));
 				return;
 			}
 
 			console.log("✅ [UI] Fase filtrada creada:", result.data);
 
 			toast.success(
-				`Fase "${finalName}" creada con ${result.data.articlesCount} artículos`,
+				t("toastPhaseCreated", { name: finalName, count: result.data.articlesCount }),
 			);
 
 			// Cerrar dialog
@@ -167,7 +169,7 @@ export function CreateFilteredPhaseDialog({
 			setDescription("");
 
 			// Redirigir a configuración de dimensiones de la nueva fase
-			toast.info("Ahora puedes configurar las dimensiones de la nueva fase");
+			toast.info(t("toastConfigureNewPhase"));
 
 			// Recargar página para ver nueva fase
 			router.refresh();
@@ -176,7 +178,7 @@ export function CreateFilteredPhaseDialog({
 			onPhaseCreated?.();
 		} catch (error) {
 			console.error("❌ [UI] Error al crear fase filtrada:", error);
-			toast.error("Error inesperado al crear fase");
+			toast.error(t("toastUnexpectedError"));
 		} finally {
 			setIsCreating(false);
 		}
@@ -192,11 +194,10 @@ export function CreateFilteredPhaseDialog({
 			<StandardDialog.Content>
 				<StandardDialog.Header>
 					<StandardDialog.Title>
-						Crear Fase desde Selección
+						{t("dialogTitle")}
 					</StandardDialog.Title>
 					<StandardDialog.Description>
-						Se creará una nueva fase con el subconjunto de artículos que cumplen
-						los filtros activos.
+						{t("dialogDescription")}
 					</StandardDialog.Description>
 				</StandardDialog.Header>
 
@@ -207,14 +208,14 @@ export function CreateFilteredPhaseDialog({
 							<div className="flex items-center gap-2">
 								<Layers className="h-4 w-4 text-primary-500" />
 								<StandardText size="sm" weight="semibold">
-									Linaje de Fases
+									{t("lineageTitle")}
 								</StandardText>
 							</div>
 
 							<div className="space-y-2">
 								<div className="flex items-center justify-between">
 									<StandardText size="sm" colorShade="subtle">
-										Fase origen:
+										{t("sourcePhaseLabel")}
 									</StandardText>
 									<StandardBadge size="sm" colorScheme="primary">
 										{sourcePhaseName}
@@ -223,19 +224,17 @@ export function CreateFilteredPhaseDialog({
 
 								<div className="flex items-center justify-between">
 									<StandardText size="sm" colorShade="subtle">
-										Artículos estimados:
+										{t("estimatedArticlesLabel")}
 									</StandardText>
 									<StandardBadge size="sm" colorScheme="accent">
-										{estimatedCount || "Calculando..."} artículos
+										{estimatedCount || t("calculating")} {t("articlesSuffix")}
 									</StandardBadge>
 								</div>
 							</div>
 
 							<div className="pt-2 border-t border-neutral-200 dark:border-neutral-800">
 								<StandardText size="xs" colorShade="subtle">
-									🔍 La nueva fase heredará solo los artículos que cumplen los
-									filtros seleccionados. El linaje quedará registrado
-									automáticamente.
+									{t("lineageHint")}
 								</StandardText>
 							</div>
 						</div>
@@ -245,7 +244,7 @@ export function CreateFilteredPhaseDialog({
 							<div className="flex items-center gap-2">
 								<Filter className="h-4 w-4 text-accent-500" />
 								<StandardText size="sm" weight="semibold">
-									Filtros Aplicados
+									{t("appliedFiltersTitle")}
 								</StandardText>
 							</div>
 
@@ -280,7 +279,7 @@ export function CreateFilteredPhaseDialog({
 							{confidenceFilter.length > 0 && (
 								<div className="space-y-2">
 									<StandardText size="xs" weight="medium" colorShade="subtle">
-										Nivel de Confianza
+										{t("confidenceLevelLabel")}
 									</StandardText>
 									<div className="flex flex-wrap gap-1">
 										{confidenceFilter.map((level) => (
@@ -301,7 +300,7 @@ export function CreateFilteredPhaseDialog({
 						<div className="space-y-4">
 							<div>
 								<label className="block text-sm font-medium mb-2">
-									Nombre de la nueva fase{" "}
+									{t("newPhaseNameLabel")}{" "}
 									<span className="text-danger-500">*</span>
 								</label>
 								<input
@@ -312,13 +311,13 @@ export function CreateFilteredPhaseDialog({
 									onChange={(e) => setName(e.target.value)}
 								/>
 								<StandardText size="xs" colorShade="subtle">
-									Dejar vacío para usar el nombre sugerido automáticamente
+									{t("nameEmptyHint")}
 								</StandardText>
 							</div>
 
 							<div>
 								<label className="block text-sm font-medium mb-2">
-									Descripción (opcional)
+									{t("descriptionOptionalLabel")}
 								</label>
 								<textarea
 									className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
@@ -328,8 +327,7 @@ export function CreateFilteredPhaseDialog({
 									rows={3}
 								/>
 								<StandardText size="xs" colorShade="subtle">
-									Se incluirán automáticamente los filtros aplicados en la
-									descripción
+									{t("descriptionAutoHint")}
 								</StandardText>
 							</div>
 						</div>
@@ -339,10 +337,7 @@ export function CreateFilteredPhaseDialog({
 							<div className="flex items-start gap-2">
 								<AlertTriangle className="h-4 w-4 text-warning-500 mt-0.5 flex-shrink-0" />
 								<StandardText size="xs" colorShade="subtle">
-									💡 <strong>Siguiente paso:</strong> Después de crear la fase,
-									podrás configurar las dimensiones específicas para esta fase.
-									Los artículos filtrados heredarán las clasificaciones
-									existentes.
+									💡 <strong>{t("nextStepBold")}</strong> {t("nextStepRest")}
 								</StandardText>
 							</div>
 						</div>
@@ -351,14 +346,14 @@ export function CreateFilteredPhaseDialog({
 
 				<StandardDialog.Footer>
 					<StandardDialog.Close asChild>
-						<StandardButton styleType="outline">Cancelar</StandardButton>
+						<StandardButton styleType="outline">{t("cancelButton")}</StandardButton>
 					</StandardDialog.Close>
 					<StandardButton
 						colorScheme="accent"
 						onClick={handleCreate}
 						loading={isCreating}
 						leftIcon={Filter}>
-						Crear Fase Filtrada
+						{t("createFilteredPhaseButton")}
 					</StandardButton>
 				</StandardDialog.Footer>
 			</StandardDialog.Content>

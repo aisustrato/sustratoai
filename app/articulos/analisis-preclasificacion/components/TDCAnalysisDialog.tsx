@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { StandardDialog } from "@/components/ui/StandardDialog";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardInput } from "@/components/ui/StandardInput";
@@ -29,7 +30,8 @@ export function TDCAnalysisDialog({
   articleId, 
   articleTitle 
 }: TDCAnalysisDialogProps) {
-  const [query, setQuery] = useState("¿Qué patrón ves aquí?");
+  const t = useTranslations("articulos.tdcAnalysisDialog");
+  const [query, setQuery] = useState(t("defaultQuery"));
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -45,9 +47,9 @@ export function TDCAnalysisDialog({
   useEffect(() => {
     if (!open) {
       setMessages([]);
-      setQuery("¿Qué patrón ves aquí?");
+      setQuery(t("defaultQuery"));
     }
-  }, [open]);
+  }, [open, t]);
 
   const handleRunAnalysis = async () => {
     if (!query.trim()) return;
@@ -66,11 +68,11 @@ export function TDCAnalysisDialog({
         const aiMsg: Message = { role: "assistant", content: result.data };
         setMessages(prev => [...prev, aiMsg]);
       } else {
-        toast.error(result.error || "Error en el análisis F0");
+        toast.error(result.error || t("toastErrorAnalysis"));
       }
     } catch (error) {
       console.error(error);
-      toast.error("Error de conexión con el Nodo F0");
+      toast.error(t("toastConnectionError"));
     } finally {
       setIsLoading(false);
     }
@@ -88,10 +90,10 @@ export function TDCAnalysisDialog({
       <StandardDialog.Content size="lg" className="max-w-3xl h-[80vh]">
         <StandardDialog.Header>
           <StandardDialog.Title>
-            Nodo F0: Análisis de Viabilidad
+            {t("dialogTitle")}
           </StandardDialog.Title>
           <StandardDialog.Description>
-            Analizando patrón TDC para: <span className="font-medium text-primary-600">{articleTitle}</span>
+            {t("dialogDescriptionPrefix")} <span className="font-medium text-primary-600">{articleTitle}</span>
           </StandardDialog.Description>
         </StandardDialog.Header>
 
@@ -105,9 +107,9 @@ export function TDCAnalysisDialog({
               <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-60 py-10">
                 <Sparkles className="w-16 h-16 text-primary-400" />
                 <div className="max-w-sm space-y-2">
-                  <StandardText size="lg" weight="medium">Memoria Lista 💾</StandardText>
+                  <StandardText size="lg" weight="medium">{t("readyTitle")}</StandardText>
                   <StandardText colorShade="subtle">
-                    La Verdad de Campo (Artículo) ha sido cargada. El Nodo F0 espera instrucciones.
+                    {t("readyDescription")}
                   </StandardText>
                 </div>
               </div>
@@ -150,7 +152,7 @@ export function TDCAnalysisDialog({
                     <StandardCard.Content>
                         <div className="flex items-center gap-3">
                             <SustratoLoadingLogo size={18} />
-                            <StandardText size="sm" className="italic text-neutral-500">Calculando geometría...</StandardText>
+                            <StandardText size="sm" className="italic text-neutral-500">{t("calculatingGeometry")}</StandardText>
                         </div>
                     </StandardCard.Content>
                 </StandardCard>
@@ -166,7 +168,7 @@ export function TDCAnalysisDialog({
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Pregunta al Nodo F0..."
+                  placeholder={t("inputPlaceholder")}
                   disabled={isLoading}
                   autoFocus
                 />

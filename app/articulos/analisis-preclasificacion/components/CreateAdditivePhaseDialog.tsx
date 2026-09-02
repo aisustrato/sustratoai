@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { StandardDialog } from "@/components/ui/StandardDialog";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardText } from "@/components/ui/StandardText";
@@ -26,6 +27,7 @@ export function CreateAdditivePhaseDialog({
   sourcePhaseName,
   totalArticles
 }: CreateAdditivePhaseDialogProps) {
+  const t = useTranslations("articulos.createAdditivePhaseDialog");
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -33,7 +35,7 @@ export function CreateAdditivePhaseDialog({
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      toast.error("El nombre de la fase es requerido");
+      toast.error(t("toastNameRequired"));
       return;
     }
 
@@ -62,30 +64,30 @@ export function CreateAdditivePhaseDialog({
 
       if (!result.success) {
         console.error('❌ [UI] Error del servidor:', result.error);
-        toast.error(result.error || 'Error al crear fase aditiva');
+        toast.error(result.error || t("toastErrorCreating"));
         return;
       }
 
       console.log('✅ [UI] Fase aditiva creada:', result.data);
 
-      toast.success(`Fase "${name}" creada con ${result.data.articlesCount} artículos`);
-      
+      toast.success(t("toastPhaseCreated", { name, count: result.data.articlesCount }));
+
       // Cerrar dialog
       onOpenChange(false);
-      
+
       // Resetear form
       setName("");
       setDescription("");
 
       // Redirigir a configuración de dimensiones de la nueva fase
-      toast.info("Ahora puedes configurar las dimensiones de la nueva fase");
-      
+      toast.info(t("toastConfigureNewPhase"));
+
       // Recargar página para ver nueva fase
       router.refresh();
 
     } catch (error) {
       console.error('❌ [UI] Error al crear fase aditiva:', error);
-      toast.error('Error inesperado al crear fase');
+      toast.error(t("toastUnexpectedError"));
     } finally {
       setIsCreating(false);
     }
@@ -95,9 +97,9 @@ export function CreateAdditivePhaseDialog({
     <StandardDialog open={open} onOpenChange={onOpenChange}>
       <StandardDialog.Content>
         <StandardDialog.Header>
-          <StandardDialog.Title>Crear Fase Aditiva</StandardDialog.Title>
+          <StandardDialog.Title>{t("dialogTitle")}</StandardDialog.Title>
           <StandardDialog.Description>
-            Crea una nueva fase que reutiliza el mismo universo de artículos para agregar dimensiones adicionales
+            {t("dialogDescription")}
           </StandardDialog.Description>
         </StandardDialog.Header>
 
@@ -108,34 +110,33 @@ export function CreateAdditivePhaseDialog({
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary-500" />
                 <StandardText size="sm" weight="semibold">
-                  Universo Origen
+                  {t("sourceUniverseTitle")}
                 </StandardText>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <StandardText size="sm" colorShade="subtle">
-                    Fase origen:
+                    {t("sourcePhaseLabel")}
                   </StandardText>
                   <StandardBadge size="sm" colorScheme="tertiary">
                     {sourcePhaseName}
                   </StandardBadge>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <StandardText size="sm" colorShade="subtle">
-                    Artículos a copiar:
+                    {t("articlesToCopyLabel")}
                   </StandardText>
                   <StandardBadge size="sm" colorScheme="primary">
-                    {totalArticles} artículos
+                    {totalArticles} {t("articlesSuffix")}
                   </StandardBadge>
                 </div>
               </div>
 
               <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800">
                 <StandardText size="xs" colorShade="subtle">
-                  ℹ️ La nueva fase tendrá los mismos {totalArticles} artículos que la fase &quot;{sourcePhaseName}&quot;. 
-                  Las clasificaciones existentes se mantienen intactas.
+                  {t("sourceUniverseHint", { count: totalArticles, sourceName: sourcePhaseName })}
                 </StandardText>
               </div>
             </div>
@@ -144,12 +145,12 @@ export function CreateAdditivePhaseDialog({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Nombre de la nueva fase <span className="text-danger-500">*</span>
+                  {t("newPhaseNameLabel")} <span className="text-danger-500">*</span>
                 </label>
                 <input
                   type="text"
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
-                  placeholder="Ej: Fase 2 - Consideraciones Éticas"
+                  placeholder={t("newPhaseNamePlaceholder")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -158,11 +159,11 @@ export function CreateAdditivePhaseDialog({
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Descripción (opcional)
+                  {t("descriptionOptionalLabel")}
                 </label>
                 <textarea
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
-                  placeholder="Describe el propósito de esta fase y las dimensiones que agregarás..."
+                  placeholder={t("descriptionPlaceholder")}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
@@ -173,8 +174,7 @@ export function CreateAdditivePhaseDialog({
             {/* Advertencia */}
             <div className="rounded-lg border border-accent-200 dark:border-accent-800 p-3 bg-accent-50 dark:bg-accent-900/20">
               <StandardText size="xs" colorShade="subtle">
-                💡 <strong>Siguiente paso:</strong> Después de crear la fase, podrás agregar nuevas dimensiones 
-                específicas para esta fase. Los artículos ya tendrán sus clasificaciones de la fase anterior.
+                💡 <strong>{t("nextStepBold")}</strong> {t("nextStepRest")}
               </StandardText>
             </div>
           </div>
@@ -183,15 +183,15 @@ export function CreateAdditivePhaseDialog({
         <StandardDialog.Footer>
           <StandardDialog.Close asChild>
             <StandardButton styleType="outline">
-              Cancelar
+              {t("cancelButton")}
             </StandardButton>
           </StandardDialog.Close>
-          <StandardButton 
-            colorScheme="primary" 
+          <StandardButton
+            colorScheme="primary"
             onClick={handleCreate}
             loading={isCreating}
           >
-            Crear Fase
+            {t("createPhaseButton")}
           </StandardButton>
         </StandardDialog.Footer>
       </StandardDialog.Content>
