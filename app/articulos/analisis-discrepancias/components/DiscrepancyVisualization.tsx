@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
@@ -23,6 +24,7 @@ export function DiscrepancyVisualization({
 	summary,
 	byDimension,
 }: DiscrepancyVisualizationProps) {
+	const t = useTranslations("articulos.discrepancyVisualization");
 	const [showAgreementChart, setShowAgreementChart] = useState(true);
 	const [showDimBreakdown, setShowDimBreakdown] = useState(true);
 	const [showConfusionMatrix, setShowConfusionMatrix] = useState(false);
@@ -34,36 +36,36 @@ export function DiscrepancyVisualization({
 	// Datos para gráfico de acuerdos vs discrepancias global
 	const globalPieData = useMemo(() => {
 		return [
-			{ id: "Acuerdos", label: "Acuerdos", value: summary.agreements },
+			{ id: "Acuerdos", label: t("agreementsLabel"), value: summary.agreements },
 			{
 				id: "Discrepancias",
-				label: "Discrepancias",
+				label: t("discrepanciesLabel"),
 				value: summary.discrepancies,
 			},
 			{
 				id: "Solo IA",
-				label: "Solo IA (sin revisión)",
+				label: t("onlyAILabel"),
 				value: summary.onlyIter1,
 			},
 		].filter((d) => d.value > 0);
-	}, [summary]);
+	}, [summary, t]);
 
 	// Datos para gráfico de estado de reconciliación
 	const reconciliationPieData = useMemo(() => {
 		return [
 			{
 				id: "Reconciliados",
-				label: "Reconciliados",
+				label: t("reconciledLabel"),
 				value: summary.reconciled,
 			},
-			{ id: "En Disputa", label: "En Disputa", value: summary.disputed },
+			{ id: "En Disputa", label: t("disputedLabel"), value: summary.disputed },
 			{
 				id: "Pend. Reconciliación",
-				label: "Pend. Reconciliación",
+				label: t("pendingReconciliationLabel"),
 				value: summary.pendingReconciliation,
 			},
 		].filter((d) => d.value > 0);
-	}, [summary]);
+	}, [summary, t]);
 
 	// Datos para barras por dimensión (solo dimensiones con valores > 0)
 	const dimensionBarData = useMemo<BarChartDimension[]>(() => {
@@ -73,11 +75,11 @@ export function DiscrepancyVisualization({
 				id: dim.dimensionId,
 				name: dim.dimensionName,
 				values: [
-					{ value: "Acuerdos", count: dim.agreements },
-					{ value: "Discrepancias", count: dim.discrepancies },
+					{ value: t("agreementsLabel"), count: dim.agreements },
+					{ value: t("discrepanciesLabel"), count: dim.discrepancies },
 				],
 			}));
-	}, [byDimension]);
+	}, [byDimension, t]);
 
 	// Tasa de acuerdo por dimensión para barras
 	const agreementRateBarData = useMemo<BarChartDimension[]>(() => {
@@ -88,10 +90,10 @@ export function DiscrepancyVisualization({
 				return {
 					id: dim.dimensionId,
 					name: dim.dimensionName,
-					values: [{ value: "% Acuerdo", count: rate }],
+					values: [{ value: t("agreementRateValueLabel"), count: rate }],
 				};
 			});
-	}, [byDimension]);
+	}, [byDimension, t]);
 
 	// Matriz de confusión para la dimensión seleccionada
 	const selectedDimMatrix = useMemo(() => {
@@ -127,7 +129,7 @@ export function DiscrepancyVisualization({
 							onClick={() => setShowAgreementChart(!showAgreementChart)}
 							leftIcon={showAgreementChart ? ChevronUp : ChevronDown}>
 							<StandardText size="sm" weight="semibold">
-								Distribución Global IA vs Humano
+								{t("globalDistributionTitle")}
 							</StandardText>
 						</StandardButton>
 					</div>
@@ -141,18 +143,18 @@ export function DiscrepancyVisualization({
 									weight="medium"
 									colorShade="subtle"
 									className="mb-2 block">
-									Comparación IA vs Humano
+									{t("iaVsHumanComparisonLabel")}
 								</StandardText>
 								{globalPieData.length > 0 ?
 									<div className="h-64">
 										<StandardPieChart
 											data={globalPieData}
-											title="Comparación IA vs Humano"
+											title={t("iaVsHumanComparisonLabel")}
 											enableExport={false}
 										/>
 									</div>
 								:	<StandardText size="sm" colorShade="subtle">
-										Sin datos suficientes
+										{t("insufficientDataLabel")}
 									</StandardText>
 								}
 							</div>
@@ -164,18 +166,18 @@ export function DiscrepancyVisualization({
 									weight="medium"
 									colorShade="subtle"
 									className="mb-2 block">
-									Estado de Reconciliación
+									{t("reconciliationStatusLabel")}
 								</StandardText>
 								{reconciliationPieData.length > 0 ?
 									<div className="h-64">
 										<StandardPieChart
 											data={reconciliationPieData}
-											title="Estado de Reconciliación"
+											title={t("reconciliationStatusLabel")}
 											enableExport={false}
 										/>
 									</div>
 								:	<StandardText size="sm" colorShade="subtle">
-										Sin reconciliaciones aún
+										{t("noReconciliationsYet")}
 									</StandardText>
 								}
 							</div>
@@ -194,7 +196,7 @@ export function DiscrepancyVisualization({
 							onClick={() => setShowDimBreakdown(!showDimBreakdown)}
 							leftIcon={showDimBreakdown ? ChevronUp : ChevronDown}>
 							<StandardText size="sm" weight="semibold">
-								Desglose por Dimensión
+								{t("dimensionBreakdownTitle")}
 							</StandardText>
 						</StandardButton>
 						<div className="flex items-center gap-2">
@@ -203,7 +205,7 @@ export function DiscrepancyVisualization({
 								size="sm"
 								iconOnly
 								onClick={() => setChartType("bar")}
-								tooltip="Gráfico de barras">
+								tooltip={t("barChartTooltip")}>
 								<BarChart3 size={14} />
 							</StandardButton>
 							<StandardButton
@@ -211,7 +213,7 @@ export function DiscrepancyVisualization({
 								size="sm"
 								iconOnly
 								onClick={() => setChartType("pie")}
-								tooltip="Gráfico circular">
+								tooltip={t("pieChartTooltip")}>
 								<PieChart size={14} />
 							</StandardButton>
 						</div>
@@ -227,7 +229,7 @@ export function DiscrepancyVisualization({
 										weight="medium"
 										colorShade="subtle"
 										className="mb-2 block">
-										Acuerdos vs Discrepancias
+										{t("agreementsVsDiscrepanciesLabel")}
 									</StandardText>
 									{dimensionBarData.length > 0 ?
 										<StandardBarChart
@@ -236,7 +238,7 @@ export function DiscrepancyVisualization({
 											layout="vertical"
 										/>
 									:	<StandardText size="sm" colorShade="subtle">
-											Sin datos
+											{t("noDataLabel")}
 										</StandardText>
 									}
 								</div>
@@ -247,12 +249,12 @@ export function DiscrepancyVisualization({
 											const pieData = [
 												{
 													id: "Acuerdos",
-													label: "Acuerdos",
+													label: t("agreementsLabel"),
 													value: dim.agreements,
 												},
 												{
 													id: "Discrepancias",
-													label: "Discrepancias",
+													label: t("discrepanciesLabel"),
 													value: dim.discrepancies,
 												},
 											].filter((d) => d.value > 0);
@@ -273,7 +275,7 @@ export function DiscrepancyVisualization({
 															/>
 														</div>
 													:	<StandardText size="sm" colorShade="subtle">
-															Sin datos
+															{t("noDataLabel")}
 														</StandardText>
 													}
 												</div>
@@ -289,7 +291,7 @@ export function DiscrepancyVisualization({
 									weight="medium"
 									colorShade="subtle"
 									className="mb-2 block">
-									Tasa de Acuerdo por Dimensión (%)
+									{t("agreementRateTitle")}
 								</StandardText>
 								{agreementRateBarData.length > 0 ?
 									<StandardBarChart
@@ -299,7 +301,7 @@ export function DiscrepancyVisualization({
 										maxValue={100}
 									/>
 								:	<StandardText size="sm" colorShade="subtle">
-										Sin datos
+										{t("noDataLabel")}
 									</StandardText>
 								}
 							</div>
@@ -319,7 +321,7 @@ export function DiscrepancyVisualization({
 								onClick={() => setShowConfusionMatrix(!showConfusionMatrix)}
 								leftIcon={showConfusionMatrix ? ChevronUp : ChevronDown}>
 								<StandardText size="sm" weight="semibold">
-									Matriz de Confusión (IA vs Humano)
+									{t("confusionMatrixTitle")}
 								</StandardText>
 							</StandardButton>
 							{showConfusionMatrix && (
@@ -338,7 +340,7 @@ export function DiscrepancyVisualization({
 												label: d.dimensionName,
 											}))}
 										size="sm"
-										placeholder="Seleccionar dimensión"
+										placeholder={t("selectDimensionPlaceholder")}
 									/>
 								</div>
 							)}
@@ -350,15 +352,14 @@ export function DiscrepancyVisualization({
 									size="xs"
 									colorShade="subtle"
 									className="mb-3 block">
-									Filas = Clasificación IA (Iter 1) | Columnas = Clasificación
-									Humano (Iter 2)
+									{t("confusionMatrixLegend")}
 								</StandardText>
 								<table className="min-w-full text-sm border-collapse">
 									<thead>
 										<tr>
 											<th className="border border-neutral-300 p-2 bg-neutral-100 text-left">
 												<StandardText size="xs" weight="semibold">
-													IA \ Humano
+													{t("iaVsHumanHeader")}
 												</StandardText>
 											</th>
 											{selectedDimMatrix.values.map((val) => (

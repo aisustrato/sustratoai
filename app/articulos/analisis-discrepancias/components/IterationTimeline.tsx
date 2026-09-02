@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardBadge } from "@/components/ui/StandardBadge";
@@ -13,11 +14,18 @@ interface IterationTimelineProps {
 	onNavigateToArticle?: (articleId: string) => void;
 }
 
-function getConfidenceLabel(score: number | null): string {
-	if (score === 3) return "Alta";
-	if (score === 2) return "Media";
-	if (score === 1) return "Baja";
-	return "—";
+type IterationTimelineTranslator = ReturnType<
+	typeof useTranslations<"articulos.iterationTimeline">
+>;
+
+function getConfidenceLabel(
+	score: number | null,
+	t: IterationTimelineTranslator,
+): string {
+	if (score === 3) return t("confidenceHigh");
+	if (score === 2) return t("confidenceMedium");
+	if (score === 1) return t("confidenceLow");
+	return t("confidenceNone");
 }
 
 function getConfidenceColor(
@@ -28,18 +36,18 @@ function getConfidenceColor(
 	return "neutral";
 }
 
-function getStatusBadge(status: string | null) {
+function getStatusBadge(status: string | null, t: IterationTimelineTranslator) {
 	switch (status) {
 		case "reconciled":
-			return { label: "Reconciliado", color: "primary" as const };
+			return { label: t("statusReconciled"), color: "primary" as const };
 		case "disputed":
-			return { label: "En Disputa", color: "danger" as const };
+			return { label: t("statusDisputed"), color: "danger" as const };
 		case "reconciliation_pending":
-			return { label: "Pend. Reconciliación", color: "warning" as const };
+			return { label: t("statusReconciliationPending"), color: "warning" as const };
 		case "validated":
-			return { label: "Validado", color: "success" as const };
+			return { label: t("statusValidated"), color: "success" as const };
 		default:
-			return { label: status || "—", color: "neutral" as const };
+			return { label: status || t("confidenceNone"), color: "neutral" as const };
 	}
 }
 
@@ -47,6 +55,7 @@ export function IterationTimeline({
 	detail,
 	onNavigateToArticle,
 }: IterationTimelineProps) {
+	const t = useTranslations("articulos.iterationTimeline");
 	const [showRationale, setShowRationale] = useState(false);
 
 	const title = detail.translatedTitle || detail.articleTitle;
@@ -67,7 +76,7 @@ export function IterationTimeline({
 						</StandardBadge>
 						{detail.batchNumber && (
 							<StandardBadge size="sm" colorScheme="neutral" styleType="outline">
-								Lote {detail.batchNumber}
+								{t("batchLabel", { number: detail.batchNumber })}
 							</StandardBadge>
 						)}
 					</div>
@@ -81,7 +90,7 @@ export function IterationTimeline({
 						size="sm"
 						iconOnly
 						onClick={() => onNavigateToArticle(detail.articleId)}
-						tooltip="Ver detalle del artículo"
+						tooltip={t("viewArticleDetailTooltip")}
 					>
 						<ExternalLink size={14} />
 					</StandardButton>
@@ -101,7 +110,7 @@ export function IterationTimeline({
 						</div>
 						<div className="flex items-center gap-2 flex-wrap">
 							<StandardText size="xs" colorShade="subtle" weight="medium">
-								Iter 1 (IA)
+								{t("iter1AI")}
 							</StandardText>
 							<StandardBadge size="sm" colorScheme="accent">
 								{detail.iter1.value}
@@ -111,7 +120,7 @@ export function IterationTimeline({
 								colorScheme={getConfidenceColor(detail.iter1.confidence)}
 								styleType="outline"
 							>
-								{getConfidenceLabel(detail.iter1.confidence)}
+								{getConfidenceLabel(detail.iter1.confidence, t)}
 							</StandardBadge>
 						</div>
 					</div>
@@ -128,7 +137,7 @@ export function IterationTimeline({
 							)}
 						</div>
 						<StandardText size="xs" colorShade="subtle">
-							{detail.isAgreement ? "Acuerdo" : "Discrepancia"}
+							{detail.isAgreement ? t("agreementLabel") : t("discrepancyLabel")}
 						</StandardText>
 					</div>
 				)}
@@ -141,7 +150,7 @@ export function IterationTimeline({
 						</div>
 						<div className="flex items-center gap-2 flex-wrap">
 							<StandardText size="xs" colorShade="subtle" weight="medium">
-								Iter 2 (Humano)
+								{t("iter2Human")}
 							</StandardText>
 							<StandardBadge size="sm" colorScheme="primary">
 								{detail.iter2.value}
@@ -151,7 +160,7 @@ export function IterationTimeline({
 								colorScheme={getConfidenceColor(detail.iter2.confidence)}
 								styleType="outline"
 							>
-								{getConfidenceLabel(detail.iter2.confidence)}
+								{getConfidenceLabel(detail.iter2.confidence, t)}
 							</StandardBadge>
 						</div>
 					</div>
@@ -165,7 +174,7 @@ export function IterationTimeline({
 						</div>
 						<div className="flex items-center gap-2 flex-wrap">
 							<StandardText size="xs" colorShade="subtle" weight="medium">
-								Iter 3 (Reconciliación)
+								{t("iter3Reconciliation")}
 							</StandardText>
 							<StandardBadge size="sm" colorScheme="success">
 								{detail.iter3.value}
@@ -175,14 +184,14 @@ export function IterationTimeline({
 								colorScheme={getConfidenceColor(detail.iter3.confidence)}
 								styleType="outline"
 							>
-								{getConfidenceLabel(detail.iter3.confidence)}
+								{getConfidenceLabel(detail.iter3.confidence, t)}
 							</StandardBadge>
 							{detail.iter3.status && (
 								<StandardBadge
 									size="sm"
-									colorScheme={getStatusBadge(detail.iter3.status).color}
+									colorScheme={getStatusBadge(detail.iter3.status, t).color}
 								>
-									{getStatusBadge(detail.iter3.status).label}
+									{getStatusBadge(detail.iter3.status, t).label}
 								</StandardBadge>
 							)}
 						</div>
@@ -196,7 +205,7 @@ export function IterationTimeline({
 							<User size={10} className="text-neutral-400" />
 						</div>
 						<StandardText size="xs" colorShade="subtle">
-							Sin revisión humana
+							{t("noHumanReview")}
 						</StandardText>
 					</div>
 				)}
@@ -210,7 +219,7 @@ export function IterationTimeline({
 					onClick={() => setShowRationale(!showRationale)}
 					leftIcon={showRationale ? ChevronUp : ChevronDown}
 				>
-					{showRationale ? "Ocultar justificaciones" : "Ver justificaciones"}
+					{showRationale ? t("hideRationales") : t("showRationales")}
 				</StandardButton>
 
 				{showRationale && (
@@ -218,7 +227,7 @@ export function IterationTimeline({
 						{detail.iter1?.rationale && (
 							<div>
 								<StandardText size="xs" weight="semibold" colorShade="subtle">
-									IA (Iter 1):
+									{t("iter1RationaleLabel")}
 								</StandardText>
 								<StandardText size="xs" className="mt-1">
 									{detail.iter1.rationale}
@@ -228,7 +237,7 @@ export function IterationTimeline({
 						{detail.iter2?.rationale && (
 							<div>
 								<StandardText size="xs" weight="semibold" colorShade="subtle">
-									Humano (Iter 2):
+									{t("iter2RationaleLabel")}
 								</StandardText>
 								<StandardText size="xs" className="mt-1">
 									{detail.iter2.rationale}
@@ -238,7 +247,7 @@ export function IterationTimeline({
 						{detail.iter3?.rationale && (
 							<div>
 								<StandardText size="xs" weight="semibold" colorScheme="success">
-									Reconciliación (Iter 3):
+									{t("iter3RationaleLabel")}
 								</StandardText>
 								<StandardText size="xs" className="mt-1">
 									{detail.iter3.rationale}
