@@ -11,6 +11,7 @@ import * as React from "react";
 import { useId, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Check, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import {
 	useDesignTokens,
@@ -152,7 +153,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 			colorScheme = "default",
 			size = "md",
 			error: errorProp,
-			placeholder = "Seleccione una opción",
+			placeholder,
 			leadingIcon,
 			clearable = false,
 			multiple = false,
@@ -182,6 +183,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 		forwardedRef,
 	) => {
 		// 💎 CORE: Tokens precalculados - NO recalcula en cada render
+		const t = useTranslations("designSystem.standardSelect");
 		const { tokens } = useDesignTokens();
 		const triggerRipple = useRipple();
 		const selectId = useId().replace(/:/g, "");
@@ -826,7 +828,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 								))
 							:	<StandardText truncate>{selectedOptions[0].label}</StandardText>
 						:	<StandardText colorScheme="neutral" colorShade="textShade">
-								{placeholder}
+								{placeholder ?? t("placeholderDefault")}
 							</StandardText>
 						}
 					</div>
@@ -836,7 +838,7 @@ const StandardSelect = React.forwardRef<HTMLDivElement, StandardSelectProps>(
 								type="button"
 								onClick={handleClear}
 								className="rounded-full p-0.5 hover:bg-[rgba(0,0,0,0.05)] transition-colors flex items-center justify-center mr-0.5"
-								aria-label="Limpiar selección">
+								aria-label={t("clearSelection")}>
 								<StandardIcon
 									styleType="outline"
 									size={iconInternalSize}

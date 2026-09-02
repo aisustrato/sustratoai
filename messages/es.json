@@ -2385,6 +2385,31 @@
       "toastKeyDeleted": "Tu API key personal fue eliminada. Se usará la key global del proyecto."
     }
   },
+  "designSystem": {
+    "standardButton": {
+      "loadingDefault": "Cargando..."
+    },
+    "standardCard": {
+      "selectCard": "Seleccionar tarjeta",
+      "deselectCard": "Deseleccionar tarjeta"
+    },
+    "standardSelect": {
+      "placeholderDefault": "Seleccione una opción",
+      "clearSelection": "Limpiar selección"
+    },
+    "standardInput": {
+      "loadingDefault": "Cargando..."
+    },
+    "standardTextarea": {
+      "loadingDefault": "Cargando..."
+    },
+    "loadingLogo": {
+      "loadingDefault": "Cargando..."
+    },
+    "pageTitle": {
+      "backDefault": "Volver"
+    }
+  },
   "navChrome": {
     "colorSchemeSwitcher": {
       "ariaLabel": "Seleccionar tema de color",
@@ -2448,6 +2473,72 @@
       "fontLabel": "Fuente",
       "themeLabel": "Tema",
       "logoutButton": "Cerrar sesión"
+    }
+  },
+  "designSystem": {
+    "quipuIndicator": {
+      "pendingLabel": "Semilla",
+      "pendingDesc": "Estado latente (F0). Esperando proceso.",
+      "reviewPendingLabel": "En Proceso",
+      "reviewPendingDesc": "IA ha clasificado. Esperando validación humana.",
+      "validatedLabel": "Validado",
+      "validatedDesc": "Sincronización exitosa en Iteración 1.",
+      "reconciliationPendingLabel": "En Reconciliación",
+      "reconciliationPendingDesc": "Discrepancia detectada. El sistema busca coherencia.",
+      "reconciledLabel": "Reconciliado",
+      "reconciledDesc": "Consenso alcanzado tras iteración profunda.",
+      "disputedLabel": "Disputado",
+      "disputedDesc": "Divergencia no resuelta. Requiere arbitraje fractal.",
+      "iter2OverrideLabel": "Divergencia",
+      "iter2OverrideDesc": "Humano ha marcado discrepancia. Esperando respuesta de IA.",
+      "iterationLabel": "Iteración {iteration}"
+    },
+    "sphereGrid": {
+      "loadingMessage": "Calculando la distribución...",
+      "emptyStateText": "No hay ítems para mostrar."
+    },
+    "standardNote": {
+      "placeholder": "Escribe tu nota aquí...",
+      "structureGroupLabel": "Estructura:",
+      "organizationGroupLabel": "Organización:",
+      "actionsGroupLabel": "Acciones:",
+      "viewGroupLabel": "Vista:",
+      "dividedLabel": "Dividido",
+      "editorLabel": "Editor",
+      "previewLabel": "Preview",
+      "boldTooltip": "Aplicar formato de negrita al texto seleccionado",
+      "boldLabel": "Negrita",
+      "italicTooltip": "Aplicar formato de cursiva al texto seleccionado",
+      "italicLabel": "Cursiva",
+      "highlightTooltip": "Resaltar texto importante",
+      "highlightLabel": "Resaltado",
+      "h1Tooltip": "Crear título principal de sección",
+      "h1Label": "Título",
+      "h2Tooltip": "Crear subtítulo de sección",
+      "h2Label": "Subtítulo",
+      "h3Tooltip": "Crear sección menor",
+      "h3Label": "Sección",
+      "bulletListTooltip": "Crear lista con viñetas",
+      "bulletListLabel": "Lista",
+      "orderedListTooltip": "Crear lista numerada",
+      "orderedListLabel": "Numerada",
+      "linkTooltip": "Insertar enlace a referencia o recurso",
+      "linkLabel": "Enlace",
+      "copyTooltip": "Copiar contenido al portapapeles",
+      "copyLabel": "Copiar",
+      "downloadTooltip": "Descargar como archivo .md",
+      "downloadLabel": "Descargar",
+      "dividedTooltip": "Vista dividida: editor y preview lado a lado",
+      "editorTooltip": "Solo editor: enfoque completo en la escritura",
+      "previewTooltip": "Solo preview: revisión del documento final",
+      "modeDividedShort": "Vista dividida",
+      "modeEditorShort": "Solo editor",
+      "modePreviewShort": "Solo preview",
+      "activeModeTooltip": "Modo activo: {mode}",
+      "insertBoldText": "texto en negrita",
+      "insertItalicText": "texto en itálica",
+      "insertHighlightText": "texto resaltado",
+      "insertLinkText": "texto del enlace"
     }
   },
   "showroom": {

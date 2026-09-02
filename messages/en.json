@@ -2385,6 +2385,31 @@
       "toastKeyDeleted": "Your personal API key was deleted. The project's global key will be used."
     }
   },
+  "designSystem": {
+    "standardButton": {
+      "loadingDefault": "Loading..."
+    },
+    "standardCard": {
+      "selectCard": "Select card",
+      "deselectCard": "Deselect card"
+    },
+    "standardSelect": {
+      "placeholderDefault": "Select an option",
+      "clearSelection": "Clear selection"
+    },
+    "standardInput": {
+      "loadingDefault": "Loading..."
+    },
+    "standardTextarea": {
+      "loadingDefault": "Loading..."
+    },
+    "loadingLogo": {
+      "loadingDefault": "Loading..."
+    },
+    "pageTitle": {
+      "backDefault": "Back"
+    }
+  },
   "navChrome": {
     "colorSchemeSwitcher": {
       "ariaLabel": "Select color theme",
@@ -2448,6 +2473,72 @@
       "fontLabel": "Font",
       "themeLabel": "Theme",
       "logoutButton": "Log out"
+    }
+  },
+  "designSystem": {
+    "quipuIndicator": {
+      "pendingLabel": "Seed",
+      "pendingDesc": "Latent state (F0). Waiting for processing.",
+      "reviewPendingLabel": "In Progress",
+      "reviewPendingDesc": "AI has classified. Waiting for human validation.",
+      "validatedLabel": "Validated",
+      "validatedDesc": "Successful sync at Iteration 1.",
+      "reconciliationPendingLabel": "In Reconciliation",
+      "reconciliationPendingDesc": "Discrepancy detected. The system is seeking coherence.",
+      "reconciledLabel": "Reconciled",
+      "reconciledDesc": "Consensus reached after deep iteration.",
+      "disputedLabel": "Disputed",
+      "disputedDesc": "Unresolved divergence. Requires fractal arbitration.",
+      "iter2OverrideLabel": "Divergence",
+      "iter2OverrideDesc": "Human has flagged a discrepancy. Waiting for AI's response.",
+      "iterationLabel": "Iteration {iteration}"
+    },
+    "sphereGrid": {
+      "loadingMessage": "Calculating distribution...",
+      "emptyStateText": "No items to display."
+    },
+    "standardNote": {
+      "placeholder": "Write your note here...",
+      "structureGroupLabel": "Structure:",
+      "organizationGroupLabel": "Organization:",
+      "actionsGroupLabel": "Actions:",
+      "viewGroupLabel": "View:",
+      "dividedLabel": "Split",
+      "editorLabel": "Editor",
+      "previewLabel": "Preview",
+      "boldTooltip": "Apply bold formatting to the selected text",
+      "boldLabel": "Bold",
+      "italicTooltip": "Apply italic formatting to the selected text",
+      "italicLabel": "Italic",
+      "highlightTooltip": "Highlight important text",
+      "highlightLabel": "Highlight",
+      "h1Tooltip": "Create a main section heading",
+      "h1Label": "Heading",
+      "h2Tooltip": "Create a section subheading",
+      "h2Label": "Subheading",
+      "h3Tooltip": "Create a minor section",
+      "h3Label": "Section",
+      "bulletListTooltip": "Create a bulleted list",
+      "bulletListLabel": "List",
+      "orderedListTooltip": "Create a numbered list",
+      "orderedListLabel": "Numbered",
+      "linkTooltip": "Insert a link to a reference or resource",
+      "linkLabel": "Link",
+      "copyTooltip": "Copy content to clipboard",
+      "copyLabel": "Copy",
+      "downloadTooltip": "Download as a .md file",
+      "downloadLabel": "Download",
+      "dividedTooltip": "Split view: editor and preview side by side",
+      "editorTooltip": "Editor only: full focus on writing",
+      "previewTooltip": "Preview only: review the final document",
+      "modeDividedShort": "Split view",
+      "modeEditorShort": "Editor only",
+      "modePreviewShort": "Preview only",
+      "activeModeTooltip": "Active mode: {mode}",
+      "insertBoldText": "bold text",
+      "insertItalicText": "italic text",
+      "insertHighlightText": "highlighted text",
+      "insertLinkText": "link text"
     }
   },
   "showroom": {

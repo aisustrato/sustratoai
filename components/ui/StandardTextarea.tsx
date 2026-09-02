@@ -16,6 +16,7 @@
 
 import * as React from "react";
 import { useId, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useDesignTokens } from "@/app/providers/DesignTokensProvider";
 import { StandardText } from "./StandardText";
@@ -57,6 +58,7 @@ const StandardTextarea = React.forwardRef<HTMLTextAreaElement, StandardTextareaP
 		ref
 	) => {
 		// 💎 CORE: Tokens precalculados
+		const t = useTranslations("designSystem.standardTextarea");
 		const { tokens } = useDesignTokens();
 		const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 		const textareaId = useId().replace(/:/g, "");
@@ -225,7 +227,7 @@ const StandardTextarea = React.forwardRef<HTMLTextAreaElement, StandardTextareaP
 						className="w-full rounded-md border border-neutral-300 bg-neutral-50 p-3 text-sm animate-pulse"
 						disabled
 						rows={rows}
-						placeholder="Cargando..."
+						placeholder={t("loadingDefault")}
 					/>
 				</div>
 			);
