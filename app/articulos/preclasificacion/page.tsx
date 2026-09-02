@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { supabase } from "@/app/auth/client";
 import { useAuth } from "@/app/auth-provider";
@@ -40,32 +41,26 @@ import { useLayout } from "@/app/contexts/layout-context";
 // 🎨 ESQUEMA ACTUALIZADO: Evita conflictos visuales (amarillo en warning, verde en success)
 const ARTICLE_STATUS_VISUALS = {
 	pendientesRevision: {
-		label: "Pend. Revisión",
 		emoticon: "🔔",
 		colorScheme: "accent",
 	},
 	pendientesRevisionTraducido: {
-		label: "Traducido",
 		emoticon: "🌐",
 		colorScheme: "secondary",
 	},
 	pendientesReconciliacion: {
-		label: "Pend. Reconciliación",
 		emoticon: "🔄",
 		colorScheme: "warning",
 	},
 	validados: {
-		label: "Validados",
 		emoticon: "✅",
 		colorScheme: "success",
 	},
 	reconciliados: {
-		label: "Reconciliados",
 		emoticon: "🎯",
 		colorScheme: "primary",
 	},
 	enDisputa: {
-		label: "En Disputa",
 		emoticon: "⚡",
 		colorScheme: "danger",
 	},
@@ -241,6 +236,7 @@ const getSphereVisualsFromCounts = (
 };
 
 const PreclassificationPage = () => {
+	const t = useTranslations("articulos.preclasificacionLista");
 	const auth = useAuth();
 	const router = useRouter();
 	const { profile: userProfile } = useUserProfile();
@@ -306,34 +302,34 @@ const PreclassificationPage = () => {
 			string,
 			{ label: string; emoticon: string; value: number }
 		> = {
-			pending: { label: "Pendientes", emoticon: "⏳", value: 0 },
+			pending: { label: t("statusPending"), emoticon: "⏳", value: 0 },
 			translated: {
-				label: ARTICLE_STATUS_VISUALS.pendientesRevisionTraducido.label,
+				label: t("statusTranslated"),
 				emoticon: ARTICLE_STATUS_VISUALS.pendientesRevisionTraducido.emoticon,
 				value: 0,
 			},
 			pending_review: {
-				label: ARTICLE_STATUS_VISUALS.pendientesRevision.label,
+				label: t("statusPendingReview"),
 				emoticon: ARTICLE_STATUS_VISUALS.pendientesRevision.emoticon,
 				value: 0,
 			},
 			reconciliation_pending: {
-				label: ARTICLE_STATUS_VISUALS.pendientesReconciliacion.label,
+				label: t("statusReconciliationPending"),
 				emoticon: ARTICLE_STATUS_VISUALS.pendientesReconciliacion.emoticon,
 				value: 0,
 			},
 			validated: {
-				label: ARTICLE_STATUS_VISUALS.validados.label,
+				label: t("statusValidated"),
 				emoticon: ARTICLE_STATUS_VISUALS.validados.emoticon,
 				value: 0,
 			},
 			reconciled: {
-				label: ARTICLE_STATUS_VISUALS.reconciliados.label,
+				label: t("statusReconciled"),
 				emoticon: ARTICLE_STATUS_VISUALS.reconciliados.emoticon,
 				value: 0,
 			},
 			disputed: {
-				label: ARTICLE_STATUS_VISUALS.enDisputa.label,
+				label: t("statusDisputed"),
 				emoticon: ARTICLE_STATUS_VISUALS.enDisputa.emoticon,
 				value: 0,
 			},
@@ -357,7 +353,7 @@ const PreclassificationPage = () => {
 
 		console.log("🔍 [DEBUG] Resumen final para gráfico:", agg);
 		return agg;
-	}, [filteredBatches]);
+	}, [filteredBatches, t]);
 
 	const totalValue = useMemo(() => {
 		return Object.values(resumenPorEstadoDeArticulo).reduce(
@@ -367,12 +363,12 @@ const PreclassificationPage = () => {
 	}, [resumenPorEstadoDeArticulo]);
 
 	const sphereGridTitle = useMemo(() => {
-		const userName = auth.user?.user_metadata?.full_name || "Investigador";
-		if (isLoading) return "Cargando lotes...";
+		const userName = auth.user?.user_metadata?.full_name || t("defaultUserName");
+		if (isLoading) return t("loadingBatches");
 		if (filteredBatches.length > 0)
-			return `${filteredBatches.length} lotes asignados a ${userName}`;
-		return "Lotes Asignados";
-	}, [auth.user, filteredBatches, isLoading]);
+			return t("batchesAssignedTo", { count: filteredBatches.length, userName });
+		return t("assignedBatchesTitle");
+	}, [auth.user, filteredBatches, isLoading, t]);
 
 	const pieChartData: PieChartData[] = useMemo(() => {
 		// Construir el pie por ESTADOS DE ARTÍCULO agregados
@@ -481,13 +477,13 @@ const PreclassificationPage = () => {
 			}
 		} catch (err) {
 			console.error("Error al cargar datos:", err);
-			setError("Error inesperado al cargar los datos");
+			setError(t("unexpectedLoadError"));
 			setBatches([]);
 			setActivePhase(null);
 		} finally {
 			setIsLoading(false);
 		}
-	}, [auth.proyectoActual?.id, auth.user?.id]);
+	}, [auth.proyectoActual?.id, auth.user?.id, t]);
 
 	// Efecto para la carga inicial
 	useEffect(() => {
@@ -562,18 +558,17 @@ const PreclassificationPage = () => {
 				// ✅ PENDING → Iniciar Traducción
 				console.log(`Activando flujo de traducción para el lote: ${batch.id}`);
 				showDialog({
-					title: "Confirmar Traducción",
-					content: `¿Deseas enviar a traducir el Lote #${batch.batch_number}?`,
-					confirmText: "Sí, Iniciar Traducción",
-					cancelText: "No, cancelar",
+					title: t("confirmTranslationTitle"),
+					content: t("confirmTranslationContent", { number: batch.batch_number }),
+					confirmText: t("confirmTranslationYes"),
+					cancelText: t("confirmCancel"),
 					colorScheme: "primary",
 					onConfirm: () => {
 						if (!auth.proyectoActual?.id) {
 							showDialog({
-								title: "Error: Proyecto No Seleccionado",
-								content:
-									"No se puede iniciar un trabajo sin un proyecto activo. Por favor, asegúrate de tener un proyecto seleccionado.",
-								confirmText: "Entendido",
+								title: t("errorNoProjectTitle"),
+								content: t("errorNoProjectContent"),
+								confirmText: t("understoodButton"),
 								colorScheme: "danger",
 								onConfirm: () => {},
 							});
@@ -581,7 +576,7 @@ const PreclassificationPage = () => {
 						}
 						startJob({
 							type: "TRANSLATE_BATCH",
-							title: `Traduciendo Lote #${batch.batch_number}`,
+							title: t("translatingBatchJobTitle", { number: batch.batch_number }),
 							payload: {
 								batchId: batch.id,
 								userId: auth.user?.id || "unknown_user",
@@ -596,18 +591,17 @@ const PreclassificationPage = () => {
 					`Activando flujo de preclasificación para el lote: ${batch.id}`,
 				);
 				showDialog({
-					title: "Confirmar Preclasificación",
-					content: `El Lote #${batch.batch_number} ya está traducido. ¿Deseas iniciar la preclasificación automática?`,
-					confirmText: "Sí, Iniciar Preclasificación",
-					cancelText: "No, Ver Detalle",
+					title: t("confirmPreclassificationTitle"),
+					content: t("confirmPreclassificationContent", { number: batch.batch_number }),
+					confirmText: t("confirmPreclassificationYes"),
+					cancelText: t("confirmViewDetail"),
 					colorScheme: "secondary",
 					onConfirm: () => {
 						if (!auth.proyectoActual?.id) {
 							showDialog({
-								title: "Error: Proyecto No Seleccionado",
-								content:
-									"No se puede iniciar un trabajo sin un proyecto activo. Por favor, asegúrate de tener un proyecto seleccionado.",
-								confirmText: "Entendido",
+								title: t("errorNoProjectTitle"),
+								content: t("errorNoProjectContent"),
+								confirmText: t("understoodButton"),
 								colorScheme: "danger",
 								onConfirm: () => {},
 							});
@@ -615,7 +609,7 @@ const PreclassificationPage = () => {
 						}
 						startJob({
 							type: "PRECLASSIFY_BATCH",
-							title: `Preclasificando Lote #${batch.batch_number}`,
+							title: t("preclassifyingBatchJobTitle", { number: batch.batch_number }),
 							payload: {
 								batchId: batch.id,
 								userId: auth.user?.id || "unknown_user",
@@ -635,7 +629,7 @@ const PreclassificationPage = () => {
 				router.push(`/articulos/preclasificacion/${batch.id}`);
 			}
 		},
-		[auth.proyectoActual?.id, auth.user?.id, router, showDialog, startJob],
+		[auth.proyectoActual?.id, auth.user?.id, router, showDialog, startJob, t],
 	);
 
 	const sphereData: SphereItemData[] = useMemo(() => {
@@ -671,18 +665,41 @@ const PreclassificationPage = () => {
 				onClick: () => handleSphereClick(batch),
 				// Tooltip completo con todos los estados disponibles y emoticonos alineados
 				tooltip: [
-					`*Lote:* ${batch.batch_number} - *Total:* ${totalArticles}${isClosed ? " 🔒 CERRADO" : ""}`,
+					t("tooltipBatchTotal", { number: batch.batch_number, total: totalArticles }) +
+						(isClosed ? t("tooltipClosedSuffix") : ""),
 					isClosed && batch.closure_stats ?
-						`*Finalización:* ${batch.closure_stats.finalized_dimensions}/${batch.closure_stats.total_dimensions} dimensiones (${batch.closure_stats.percent_finalized.toFixed(0)}%)`
+						t("tooltipFinalization", {
+							finalized: batch.closure_stats.finalized_dimensions,
+							total: batch.closure_stats.total_dimensions,
+							percent: batch.closure_stats.percent_finalized.toFixed(0),
+						})
 					:	"",
 					"---",
-					`⏳ *Pendientes:* ${counts.pending}`,
-					`${ARTICLE_STATUS_VISUALS.pendientesRevisionTraducido.emoticon} *Traducido:* ${counts.translated}`,
-					`${ARTICLE_STATUS_VISUALS.pendientesRevision.emoticon} *Pend. Revisión:* ${counts.pending_review}`,
-					`${ARTICLE_STATUS_VISUALS.pendientesReconciliacion.emoticon} *Pend. Reconciliación:* ${counts.reconciliation_pending}`,
-					`${ARTICLE_STATUS_VISUALS.validados.emoticon} *Validados:* ${counts.validated}`,
-					`${ARTICLE_STATUS_VISUALS.reconciliados.emoticon} *Reconciliados:* ${counts.reconciled}`,
-					`${ARTICLE_STATUS_VISUALS.enDisputa.emoticon} *En Disputa:* ${counts.disputed}`,
+					t("tooltipPending", { count: counts.pending }),
+					t("tooltipTranslated", {
+						emoji: ARTICLE_STATUS_VISUALS.pendientesRevisionTraducido.emoticon,
+						count: counts.translated,
+					}),
+					t("tooltipPendingReview", {
+						emoji: ARTICLE_STATUS_VISUALS.pendientesRevision.emoticon,
+						count: counts.pending_review,
+					}),
+					t("tooltipReconciliationPending", {
+						emoji: ARTICLE_STATUS_VISUALS.pendientesReconciliacion.emoticon,
+						count: counts.reconciliation_pending,
+					}),
+					t("tooltipValidated", {
+						emoji: ARTICLE_STATUS_VISUALS.validados.emoticon,
+						count: counts.validated,
+					}),
+					t("tooltipReconciled", {
+						emoji: ARTICLE_STATUS_VISUALS.reconciliados.emoticon,
+						count: counts.reconciled,
+					}),
+					t("tooltipDisputed", {
+						emoji: ARTICLE_STATUS_VISUALS.enDisputa.emoticon,
+						count: counts.disputed,
+					}),
 				]
 					.filter((line) => line !== "")
 					.join("\n"),
@@ -694,33 +711,37 @@ const PreclassificationPage = () => {
 		selectedSphereId,
 		isBatchClosed,
 		spheresWithShimmer,
+		t,
 	]);
 
 	// Título condicional basado en la existencia de lotes y la fase activa
 	const pageSubtitle = useMemo(() => {
 		const userName = getUserDisplayName(auth.user, userProfile);
 		if (!activePhase) {
-			return `${userName}, no hay una fase activa configurada`;
+			return t("noPhaseSubtitle", { userName });
 		}
 
-		const phaseInfo = `Fase ${activePhase.phase_number}: ${activePhase.name}`;
+		const phaseInfo = t("phaseInfoLabel", {
+			number: activePhase.phase_number,
+			name: activePhase.name,
+		});
 		if (batches.length === 0 && !isLoading) {
-			return `${userName}, aún no se asignan lotes para la ${phaseInfo}`;
+			return t("noBatchesYetSubtitle", { userName, phaseInfo });
 		} else {
-			return `${userName}, estos son tus lotes asignados para la ${phaseInfo}`;
+			return t("batchesAssignedSubtitle", { userName, phaseInfo });
 		}
-	}, [auth.user, userProfile, activePhase, batches.length, isLoading]);
+	}, [auth.user, userProfile, activePhase, batches.length, isLoading, t]);
 
 	return (
 		<div className="w-full h-full p-4 sm:p-6 flex flex-col">
 			<StandardPageTitle
-				title="Preclasificación de Artículos"
+				title={t("pageTitle")}
 				mainIcon={Filter}
 				subtitle={pageSubtitle}
 				showBackButton={{ href: "/articulos" }}
 				breadcrumbs={[
-					{ label: "Artículos", href: "/articulos" },
-					{ label: "Preclasificación" },
+					{ label: t("breadcrumbArticulos"), href: "/articulos" },
+					{ label: t("breadcrumbPreclasificacion") },
 				]}
 			/>
 
@@ -728,7 +749,7 @@ const PreclassificationPage = () => {
 			{allPhases.length > 1 && (
 				<div className="mt-4 flex items-center gap-3">
 					<StandardText size="sm" weight="medium">
-						Filtrar por fase:
+						{t("filterByPhaseLabel")}
 					</StandardText>
 					<div className="w-64">
 						<StandardSelect
@@ -739,10 +760,11 @@ const PreclassificationPage = () => {
 									newValue === activePhase?.id ? null : newValue || null,
 								);
 							}}
-							placeholder="Seleccionar fase"
+							placeholder={t("selectPhasePlaceholder")}
 							options={allPhases.map((phase) => ({
 								value: phase.id,
-								label: `Fase ${phase.phase_number}: ${phase.name}${phase.id === activePhase?.id ? " (Activa)" : ""}`,
+								label: t("phaseOptionLabel", { number: phase.phase_number, name: phase.name }) +
+									(phase.id === activePhase?.id ? t("activePhaseSuffix") : ""),
 							}))}
 						/>
 					</div>
@@ -751,7 +773,7 @@ const PreclassificationPage = () => {
 							size="sm"
 							styleType="ghost"
 							onClick={() => setSelectedPhaseId(null)}>
-							Ver fase activa
+							{t("viewActivePhaseButton")}
 						</StandardButton>
 					)}
 				</div>
@@ -771,7 +793,7 @@ const PreclassificationPage = () => {
 						hasOutline={false}>
 						<StandardCard.Header>
 							<StandardText size="lg" weight="semibold">
-								Lotes Asignados
+								{t("assignedBatchesTitle")}
 							</StandardText>
 						</StandardCard.Header>
 						<StandardCard.Content className="p-8 flex-1 flex items-center justify-center">
@@ -779,13 +801,16 @@ const PreclassificationPage = () => {
 								icon={Boxes}
 								title={
 									activePhase ?
-										`Aún no tienes lotes asignados`
-									:	`No hay una fase activa configurada`
+										t("noBatchesYetTitle")
+									:	t("noActivePhaseTitle")
 								}
 								description={
 									activePhase ?
-										`Para comenzar con la preclasificación de artículos en la Fase ${activePhase.phase_number}: ${activePhase.name}, primero necesitas crear y asignar lotes. Los lotes organizan los artículos en grupos manejables para su revisión.`
-									:	`Antes de poder crear lotes y comenzar la preclasificación, necesitas configurar y activar una fase en la gestión de fases del proyecto.`
+										t("noBatchesYetDescription", {
+											number: activePhase.phase_number,
+											name: activePhase.name,
+										})
+									:	t("noActivePhaseDescription")
 								}
 								action={
 									<StandardButton
@@ -801,8 +826,8 @@ const PreclassificationPage = () => {
 										}
 										leftIcon={Boxes}>
 										{activePhase ?
-											"Ir a Gestión de Lotes"
-										:	"Ir a Gestión de Fases"}
+											t("goToBatchManagement")
+										:	t("goToPhaseManagement")}
 									</StandardButton>
 								}
 							/>
@@ -813,7 +838,7 @@ const PreclassificationPage = () => {
 						{/* Toggle de agrupación por estatus */}
 						<div className="flex items-center justify-end mb-2">
 							<StandardText size="sm" className="mr-2">
-								Agrupar por estatus
+								{t("groupByStatusLabel")}
 							</StandardText>
 							<StandardSwitch
 								checked={groupByStatus}
@@ -833,9 +858,9 @@ const PreclassificationPage = () => {
 									forceBadge={false}
 									title={sphereGridTitle}
 									isLoading={isLoading}
-									loadingMessage="Cargando lotes..."
+									loadingMessage={t("loadingBatches")}
 									emptyStateText={
-										error ? `Error: ${error}` : "No hay lotes disponibles."
+										error ? t("errorPrefix", { message: error }) : t("noBatchesAvailable")
 									}
 								/>
 							)}
@@ -846,13 +871,13 @@ const PreclassificationPage = () => {
 				{pieChartData.length > 0 && (
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 						<StandardCard
-							title="Resumen de Artículos"
+							title={t("summaryOfArticlesTitle")}
 							className="md:col-span-2">
 							<StandardCard.Content>
 								<StandardPieChart data={pieChartData} totalValue={totalValue} />
 							</StandardCard.Content>
 						</StandardCard>
-						<StandardCard title="Leyenda">
+						<StandardCard title={t("legendTitle")}>
 							<StandardCard.Content>
 								<div className="flex flex-col space-y-3">
 									{Object.entries(resumenPorEstadoDeArticulo).map(
