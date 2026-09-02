@@ -1452,6 +1452,61 @@
       "emptyDescription": "No hay grupos con notas para los filtros seleccionados."
     }
   },
+  "personal": {
+    "indexPage": {
+      "redirecting": "Redirigiendo..."
+    },
+    "layout": {
+      "sidebarTitle": "Personal",
+      "navHistorialIa": "Historial IA",
+      "navPublicaciones": "Publicaciones",
+      "navConfiguracion": "Configuración"
+    },
+    "historialAi": {
+      "pageTitle": "Historial de IA",
+      "pageDescription": "Revisa tu consumo y historial de trabajos de inteligencia artificial",
+      "columnJobType": "Tipo de Trabajo",
+      "jobTypeTranslation": "Traducción",
+      "columnDescription": "Descripción",
+      "noDescription": "Sin descripción",
+      "columnAiModel": "Modelo IA",
+      "columnStatus": "Estado",
+      "statusCompleted": "Completado",
+      "statusRunning": "En proceso",
+      "statusFailed": "Fallido",
+      "statusPending": "Pendiente",
+      "columnInputTokens": "Tokens Entrada",
+      "columnOutputTokens": "Tokens Salida",
+      "columnStartDate": "Fecha Inicio",
+      "columnEndDate": "Fecha Fin",
+      "loadingHistory": "Cargando historial...",
+      "errorLoadingTitle": "Error al cargar el historial",
+      "emptyTitle": "No hay historial disponible",
+      "emptyDescription": "Aún no has realizado trabajos de IA en este proyecto.",
+      "showingCount": "Mostrando {shown} de {total} trabajos",
+      "searchPlaceholder": "Buscar en el historial...",
+      "errorUserOrProjectUnavailable": "Usuario o proyecto no disponible",
+      "errorUnknown": "Error desconocido"
+    },
+    "configuracion": {
+      "pageTitle": "Configuración",
+      "pageSubtitle": "Gestiona tus preferencias personales.",
+      "cardTitle": "API Key de DeepSeek (BYOK)",
+      "statusConfigured": "Configurada",
+      "statusNotConfigured": "No configurada",
+      "cardDescription": "Si configuras tu propia key, la preclasificación de artículos la usará en vez de la key compartida del proyecto. Si no configuras ninguna, se sigue usando la key global sin problema.",
+      "currentKeyEndsIn": "Key actual termina en",
+      "replaceKeyLabel": "Reemplazar API key",
+      "keyLabel": "API key",
+      "keyHint": "Se guarda encriptada. Nunca se muestra completa una vez guardada.",
+      "keyPlaceholder": "sk-...",
+      "deleteKeyButton": "Eliminar mi key",
+      "saveButton": "Guardar",
+      "toastKeyRequired": "Ingresa una API key antes de guardar.",
+      "toastKeySaved": "Tu API key de DeepSeek fue guardada.",
+      "toastKeyDeleted": "Tu API key personal fue eliminada. Se usará la key global del proyecto."
+    }
+  },
   "showroom": {
     "standardButton": {
       "title": "StandardButton Showroom v4.1 🌸",

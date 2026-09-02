@@ -1452,6 +1452,61 @@
       "emptyDescription": "There are no groups with notes for the selected filters."
     }
   },
+  "personal": {
+    "indexPage": {
+      "redirecting": "Redirecting..."
+    },
+    "layout": {
+      "sidebarTitle": "Personal",
+      "navHistorialIa": "AI History",
+      "navPublicaciones": "Publications",
+      "navConfiguracion": "Settings"
+    },
+    "historialAi": {
+      "pageTitle": "AI History",
+      "pageDescription": "Review your AI job usage and history",
+      "columnJobType": "Job Type",
+      "jobTypeTranslation": "Translation",
+      "columnDescription": "Description",
+      "noDescription": "No description",
+      "columnAiModel": "AI Model",
+      "columnStatus": "Status",
+      "statusCompleted": "Completed",
+      "statusRunning": "Running",
+      "statusFailed": "Failed",
+      "statusPending": "Pending",
+      "columnInputTokens": "Input Tokens",
+      "columnOutputTokens": "Output Tokens",
+      "columnStartDate": "Start Date",
+      "columnEndDate": "End Date",
+      "loadingHistory": "Loading history...",
+      "errorLoadingTitle": "Error loading history",
+      "emptyTitle": "No history available",
+      "emptyDescription": "You haven't run any AI jobs on this project yet.",
+      "showingCount": "Showing {shown} of {total} jobs",
+      "searchPlaceholder": "Search history...",
+      "errorUserOrProjectUnavailable": "User or project unavailable",
+      "errorUnknown": "Unknown error"
+    },
+    "configuracion": {
+      "pageTitle": "Settings",
+      "pageSubtitle": "Manage your personal preferences.",
+      "cardTitle": "DeepSeek API Key (BYOK)",
+      "statusConfigured": "Configured",
+      "statusNotConfigured": "Not configured",
+      "cardDescription": "If you set your own key, article pre-classification will use it instead of the project's shared key. If you don't set one, the global key keeps being used without issue.",
+      "currentKeyEndsIn": "Current key ends in",
+      "replaceKeyLabel": "Replace API key",
+      "keyLabel": "API key",
+      "keyHint": "Stored encrypted. Never shown in full once saved.",
+      "keyPlaceholder": "sk-...",
+      "deleteKeyButton": "Delete my key",
+      "saveButton": "Save",
+      "toastKeyRequired": "Enter an API key before saving.",
+      "toastKeySaved": "Your DeepSeek API key was saved.",
+      "toastKeyDeleted": "Your personal API key was deleted. The project's global key will be used."
+    }
+  },
   "showroom": {
     "standardButton": {
       "title": "StandardButton Showroom v4.1 🌸",

@@ -11,6 +11,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { KeyRound, Save, Trash2 } from "lucide-react";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
@@ -31,6 +32,7 @@ import {
 
 //#region [main] - 🔧 COMPONENT 🔧
 export default function ConfiguracionPersonalPage() {
+	const t = useTranslations("personal.configuracion");
 	const [status, setStatus] = useState<DeepSeekKeyStatus | null>(null);
 	const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 	const [keyInput, setKeyInput] = useState("");
@@ -54,13 +56,13 @@ export default function ConfiguracionPersonalPage() {
 
 	const handleSave = async () => {
 		if (!keyInput.trim()) {
-			toast.error("Ingresa una API key antes de guardar.");
+			toast.error(t("toastKeyRequired"));
 			return;
 		}
 		setIsSaving(true);
 		const result = await saveUserDeepSeekKey(keyInput);
 		if (result.success) {
-			toast.success("Tu API key de DeepSeek fue guardada.");
+			toast.success(t("toastKeySaved"));
 			setKeyInput("");
 			await refreshStatus();
 		} else {
@@ -73,7 +75,7 @@ export default function ConfiguracionPersonalPage() {
 		setIsDeleting(true);
 		const result = await deleteUserDeepSeekKey();
 		if (result.success) {
-			toast.success("Tu API key personal fue eliminada. Se usará la key global del proyecto.");
+			toast.success(t("toastKeyDeleted"));
 			await refreshStatus();
 		} else {
 			toast.error(result.error);
@@ -84,8 +86,8 @@ export default function ConfiguracionPersonalPage() {
 	return (
 		<div className="max-w-2xl mx-auto space-y-6">
 			<StandardPageTitle
-				title="Configuración"
-				subtitle="Gestiona tus preferencias personales."
+				title={t("pageTitle")}
+				subtitle={t("pageSubtitle")}
 				mainIcon={KeyRound}
 			/>
 
@@ -93,7 +95,7 @@ export default function ConfiguracionPersonalPage() {
 				<StandardCard.Header>
 					<div className="flex items-center justify-between">
 						<StandardCard.Title className="flex items-center gap-2">
-							API Key de DeepSeek (BYOK)
+							{t("cardTitle")}
 						</StandardCard.Title>
 						{!isLoadingStatus && (
 							<StandardBadge
@@ -101,15 +103,13 @@ export default function ConfiguracionPersonalPage() {
 								styleType="subtle"
 								size="md"
 							>
-								{status?.configured ? "Configurada" : "No configurada"}
+								{status?.configured ? t("statusConfigured") : t("statusNotConfigured")}
 							</StandardBadge>
 						)}
 					</div>
 					<StandardCard.Subtitle>
 						<StandardText size="sm" colorScheme="secondary">
-							Si configuras tu propia key, la preclasificación de artículos la
-							usará en vez de la key compartida del proyecto. Si no configuras
-							ninguna, se sigue usando la key global sin problema.
+							{t("cardDescription")}
 						</StandardText>
 					</StandardCard.Subtitle>
 				</StandardCard.Header>
@@ -123,20 +123,20 @@ export default function ConfiguracionPersonalPage() {
 						<div className="space-y-4">
 							{status?.configured && (
 								<StandardText size="sm" colorScheme="neutral">
-									Key actual termina en{" "}
+									{t("currentKeyEndsIn")}{" "}
 									<span className="font-mono">...{status.last4}</span>
 								</StandardText>
 							)}
 
 							<StandardFormField
-								label={status?.configured ? "Reemplazar API key" : "API key"}
+								label={status?.configured ? t("replaceKeyLabel") : t("keyLabel")}
 								htmlFor="deepseek-api-key"
-								hint="Se guarda encriptada. Nunca se muestra completa una vez guardada."
+								hint={t("keyHint")}
 							>
 								<StandardInput
 									id="deepseek-api-key"
 									type="password"
-									placeholder="sk-..."
+									placeholder={t("keyPlaceholder")}
 									value={keyInput}
 									onChange={(e) => setKeyInput(e.target.value)}
 									disabled={isSaving}
@@ -155,7 +155,7 @@ export default function ConfiguracionPersonalPage() {
 						loading={isDeleting}
 						disabled={isLoadingStatus || !status?.configured}
 					>
-						Eliminar mi key
+						{t("deleteKeyButton")}
 					</StandardButton>
 					<StandardButton
 						leftIcon={Save}
@@ -163,7 +163,7 @@ export default function ConfiguracionPersonalPage() {
 						loading={isSaving}
 						disabled={isLoadingStatus}
 					>
-						Guardar
+						{t("saveButton")}
 					</StandardButton>
 				</StandardCard.Actions>
 			</StandardCard>
