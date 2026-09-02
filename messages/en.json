@@ -991,6 +991,33 @@
       "reviewerHuman": "Human",
       "iterationSuffix": " • Iteration {n}"
     },
+    "articlePreclassificationSection": {
+      "title": "Pre-classification",
+      "errorLoadingData": "Error loading data: {message}",
+      "noDataYet": "No pre-classification data yet for this article.",
+      "subtitle": "Classifications by dimension and reviewer, grouped by phase."
+    },
+    "detallePage": {
+      "breadcrumbArticulos": "Articles",
+      "breadcrumbBatchDefault": "Batch Detail",
+      "breadcrumbArticleDetail": "Article Detail",
+      "backButtonDefault": "Back",
+      "backButtonTo": "Back to {label}",
+      "pageTitle": "Article Detail",
+      "pageDescription": "View the article's data and its translations.",
+      "missingArticleIdTitle": "Missing articleId parameter",
+      "missingArticleIdDescription": "Provide a valid article ID to view its detail.",
+      "errorLoadingArticleTitle": "Error loading the article",
+      "errorLoadingArticleDefaultDescription": "Please try again later.",
+      "articleNotFoundTitle": "Article not found",
+      "articleNotFoundDescription": "There is no article with the provided ID.",
+      "untitledArticle": "(Untitled)",
+      "pageDescriptionMain": "View the article's data and toggle between original and translated version.",
+      "preclassificationSectionTitle": "Pre-classification",
+      "relatedGroupsTitle": "Related Groups",
+      "unnamedGroup": "(Unnamed)",
+      "articleCount": "{count, plural, one {# article} other {# articles}}"
+    },
     "detailClient": {
       "viewOriginal": "View original",
       "viewTranslated": "View translated",

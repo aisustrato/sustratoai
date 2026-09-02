@@ -1,5 +1,6 @@
 // app/articulos/detalle/page.tsx
 
+import { getTranslations } from "next-intl/server";
 import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
 import {
 	StandardCard,
@@ -38,6 +39,7 @@ export default async function ArticleDetailPage({
 }: {
 	searchParams?: { [key: string]: string | string[] | undefined };
 }) {
+	const t = await getTranslations("articulos.detallePage");
 	const articleId = (searchParams?.articleId as string) || "";
 	const translatedParam = (searchParams?.translated as string) || "false";
 	// Navegación contextual: breadcrumb y botón volver inteligentes
@@ -46,29 +48,29 @@ export default async function ArticleDetailPage({
 	const prevHref = prevHrefParam ? decodeURIComponent(prevHrefParam) : null;
 	const prevLabel = prevLabelParam ? decodeURIComponent(prevLabelParam) : null;
 	const breadcrumbs = [
-		{ label: "Artículos", href: "/articulos" },
+		{ label: t("breadcrumbArticulos"), href: "/articulos" },
 		...(prevHref ?
-			[{ label: prevLabel || "Detalle del lote", href: prevHref }]
+			[{ label: prevLabel || t("breadcrumbBatchDefault"), href: prevHref }]
 		:	[]),
-		{ label: "Detalle del artículo" },
+		{ label: t("breadcrumbArticleDetail") },
 	];
 	const backButton = {
 		href: prevHref || "/articulos",
-		label: prevLabel ? `Volver a ${prevLabel}` : "Volver",
+		label: prevLabel ? t("backButtonTo", { label: prevLabel }) : t("backButtonDefault"),
 	} as const;
 
 	if (!articleId) {
 		return (
 			<div className="p-4 sm:p-6">
 				<StandardPageTitle
-					title="Detalle de Artículo"
-					description="Consulta los datos del artículo y sus traducciones."
+					title={t("pageTitle")}
+					description={t("pageDescription")}
 					breadcrumbs={breadcrumbs}
 					showBackButton={backButton}
 				/>
 				<StandardEmptyState
-					title="Falta el parámetro articleId"
-					description="Proporciona un ID de artículo válido para ver su detalle."
+					title={t("missingArticleIdTitle")}
+					description={t("missingArticleIdDescription")}
 				/>
 			</div>
 		);
@@ -79,14 +81,14 @@ export default async function ArticleDetailPage({
 		return (
 			<div className="p-4 sm:p-6">
 				<StandardPageTitle
-					title="Detalle de Artículo"
-					description="Consulta los datos del artículo y sus traducciones."
+					title={t("pageTitle")}
+					description={t("pageDescription")}
 					breadcrumbs={breadcrumbs}
 					showBackButton={backButton}
 				/>
 				<StandardEmptyState
-					title="Error al cargar el artículo"
-					description={res.error || "Intenta nuevamente más tarde."}
+					title={t("errorLoadingArticleTitle")}
+					description={res.error || t("errorLoadingArticleDefaultDescription")}
 				/>
 			</div>
 		);
@@ -102,14 +104,14 @@ export default async function ArticleDetailPage({
 		return (
 			<div className="p-4 sm:p-6">
 				<StandardPageTitle
-					title="Detalle de Artículo"
-					description="Consulta los datos del artículo y sus traducciones."
+					title={t("pageTitle")}
+					description={t("pageDescription")}
 					breadcrumbs={breadcrumbs}
 					showBackButton={backButton}
 				/>
 				<StandardEmptyState
-					title="Artículo no encontrado"
-					description="No existe un artículo con el ID proporcionado."
+					title={t("articleNotFoundTitle")}
+					description={t("articleNotFoundDescription")}
 				/>
 			</div>
 		);
@@ -124,7 +126,7 @@ export default async function ArticleDetailPage({
 	const shownTitle =
 		initialTranslated && lastTranslation ?
 			lastTranslation.title
-		:	(article.title ?? "(Sin título)");
+		:	(article.title ?? t("untitledArticle"));
 	const metaSubtitle =
 		article.journal || article.publication_year ?
 			`${article.journal || ""}${article.journal && article.publication_year ? " • " : ""}${article.publication_year || ""}`
@@ -153,7 +155,7 @@ export default async function ArticleDetailPage({
 			<StandardPageTitle
 				title={shownTitle}
 				subtitle={metaSubtitle}
-				description="Consulta los datos del artículo y alterna entre versión original y traducida."
+				description={t("pageDescriptionMain")}
 				breadcrumbs={breadcrumbs}
 				showBackButton={backButton}
 				actions={
@@ -186,7 +188,7 @@ export default async function ArticleDetailPage({
 					<StandardAccordionTrigger titleAlign="left">
 						<span className="flex items-center gap-2">
 							<Filter className="h-4 w-4" />
-							<span>Preclasificación</span>
+							<span>{t("preclassificationSectionTitle")}</span>
 						</span>
 					</StandardAccordionTrigger>
 					<StandardAccordionContent>
@@ -206,7 +208,7 @@ export default async function ArticleDetailPage({
 						<StandardAccordionTrigger titleAlign="left">
 							<span className="flex items-center gap-2">
 								<MapPin className="h-4 w-4" />
-								<span>Grupos relacionados</span>
+								<span>{t("relatedGroupsTitle")}</span>
 							</span>
 						</StandardAccordionTrigger>
 						<StandardAccordionContent>
@@ -226,7 +228,7 @@ export default async function ArticleDetailPage({
 														size="md"
 														weight="semibold"
 														className="truncate">
-														{g.name || "(Sin nombre)"}
+														{g.name || t("unnamedGroup")}
 													</StandardText>
 												</StandardCardTitle>
 												<StandardCardSubtitle>
@@ -234,8 +236,7 @@ export default async function ArticleDetailPage({
 														size="sm"
 														colorScheme="neutral"
 														colorShade="subtle">
-														{g.article_count ?? 0} artículo
-														{(g.article_count ?? 0) === 1 ? "" : "s"}
+														{t("articleCount", { count: g.article_count ?? 0 })}
 													</StandardText>
 												</StandardCardSubtitle>
 											</StandardCardHeader>

@@ -991,6 +991,33 @@
       "reviewerHuman": "Humano",
       "iterationSuffix": " • Iteración {n}"
     },
+    "articlePreclassificationSection": {
+      "title": "Preclasificación",
+      "errorLoadingData": "Error al cargar datos: {message}",
+      "noDataYet": "No hay datos de preclasificación aún para este artículo.",
+      "subtitle": "Clasificaciones por dimensiones y revisores, agrupadas por fase."
+    },
+    "detallePage": {
+      "breadcrumbArticulos": "Artículos",
+      "breadcrumbBatchDefault": "Detalle del lote",
+      "breadcrumbArticleDetail": "Detalle del artículo",
+      "backButtonDefault": "Volver",
+      "backButtonTo": "Volver a {label}",
+      "pageTitle": "Detalle de Artículo",
+      "pageDescription": "Consulta los datos del artículo y sus traducciones.",
+      "missingArticleIdTitle": "Falta el parámetro articleId",
+      "missingArticleIdDescription": "Proporciona un ID de artículo válido para ver su detalle.",
+      "errorLoadingArticleTitle": "Error al cargar el artículo",
+      "errorLoadingArticleDefaultDescription": "Intenta nuevamente más tarde.",
+      "articleNotFoundTitle": "Artículo no encontrado",
+      "articleNotFoundDescription": "No existe un artículo con el ID proporcionado.",
+      "untitledArticle": "(Sin título)",
+      "pageDescriptionMain": "Consulta los datos del artículo y alterna entre versión original y traducida.",
+      "preclassificationSectionTitle": "Preclasificación",
+      "relatedGroupsTitle": "Grupos relacionados",
+      "unnamedGroup": "(Sin nombre)",
+      "articleCount": "{count, plural, one {# artículo} other {# artículos}}"
+    },
     "detailClient": {
       "viewOriginal": "Ver original",
       "viewTranslated": "Ver traducido",
