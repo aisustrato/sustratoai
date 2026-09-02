@@ -3,6 +3,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
 	Check,
@@ -35,6 +36,7 @@ interface StagingTriageViewProps {
 
 //#region [main] - 🔧 COMPONENT 🔧
 export function StagingTriageView({ projectId, refreshKey }: StagingTriageViewProps) {
+	const t = useTranslations("datosMaestrosPages.stagingTriageView");
 	const [rows, setRows] = useState<StagingArticleRow[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -75,14 +77,14 @@ export function StagingTriageView({ projectId, refreshKey }: StagingTriageViewPr
 			setIsProcessing(true);
 			const result = await promoteStagingArticles(projectId, ids);
 			if (result.success) {
-				toast.success(`${result.data.promotedCount} artículo(s) promovido(s) a la base.`);
+				toast.success(t("toastPromoteSuccess", { count: result.data.promotedCount }));
 				await loadPending();
 			} else {
 				toast.error(result.error);
 			}
 			setIsProcessing(false);
 		},
-		[projectId, loadPending],
+		[projectId, loadPending, t],
 	);
 
 	const discardIds = useCallback(
@@ -91,14 +93,14 @@ export function StagingTriageView({ projectId, refreshKey }: StagingTriageViewPr
 			setIsProcessing(true);
 			const result = await discardStagingArticles(projectId, ids);
 			if (result.success) {
-				toast.success(`${result.data.discardedCount} artículo(s) descartado(s).`);
+				toast.success(t("toastDiscardSuccess", { count: result.data.discardedCount }));
 				await loadPending();
 			} else {
 				toast.error(result.error);
 			}
 			setIsProcessing(false);
 		},
-		[projectId, loadPending],
+		[projectId, loadPending, t],
 	);
 
 	// Atajos de teclado: A promueve el foco actual, X lo descarta, S/↓
@@ -133,7 +135,7 @@ export function StagingTriageView({ projectId, refreshKey }: StagingTriageViewPr
 	if (isLoading) {
 		return (
 			<div className="flex justify-center py-16">
-				<SustratoLoadingLogo showText text="Cargando staging..." />
+				<SustratoLoadingLogo showText text={t("loadingStaging")} />
 			</div>
 		);
 	}
@@ -144,10 +146,10 @@ export function StagingTriageView({ projectId, refreshKey }: StagingTriageViewPr
 				<StandardCard.Content>
 					<div className="py-12 text-center space-y-2">
 						<StandardText size="lg" weight="medium">
-							No hay artículos pendientes en staging.
+							{t("noPendingArticles")}
 						</StandardText>
 						<StandardText size="sm" colorScheme="secondary">
-							Corré una búsqueda para traer resultados a la mesa de triaje.
+							{t("runSearchHint")}
 						</StandardText>
 					</div>
 				</StandardCard.Content>
@@ -159,8 +161,8 @@ export function StagingTriageView({ projectId, refreshKey }: StagingTriageViewPr
 		<div className="space-y-4">
 			<div className="flex items-center justify-between flex-wrap gap-2">
 				<StandardText size="sm" colorScheme="secondary">
-					{rows.length} pendiente(s) · Atajos: <b>A</b> promover foco, <b>X</b>{" "}
-					descartar foco, <b>S</b>/↓ siguiente, ↑ anterior.
+					{t("pendingCountPrefix", { count: rows.length })} <b>A</b> {t("shortcutPromote")} <b>X</b>{" "}
+					{t("shortcutDiscard")} <b>S</b>/↓ {t("shortcutNext")} ↑ {t("shortcutPrev")}
 				</StandardText>
 				<div className="flex items-center gap-2">
 					<StandardButton
@@ -170,7 +172,7 @@ export function StagingTriageView({ projectId, refreshKey }: StagingTriageViewPr
 						onClick={loadPending}
 						disabled={isProcessing}
 					>
-						Refrescar
+						{t("refreshButton")}
 					</StandardButton>
 					<StandardButton
 						size="sm"
@@ -180,7 +182,7 @@ export function StagingTriageView({ projectId, refreshKey }: StagingTriageViewPr
 						onClick={() => discardIds(selectedIdsArray)}
 						disabled={isProcessing || selectedIdsArray.length === 0}
 					>
-						Descartar seleccionados ({selectedIdsArray.length})
+						{t("discardSelectedButton", { count: selectedIdsArray.length })}
 					</StandardButton>
 					<StandardButton
 						size="sm"
@@ -188,7 +190,7 @@ export function StagingTriageView({ projectId, refreshKey }: StagingTriageViewPr
 						onClick={() => promoteIds(selectedIdsArray)}
 						disabled={isProcessing || selectedIdsArray.length === 0}
 					>
-						Promover seleccionados ({selectedIdsArray.length})
+						{t("promoteSelectedButton", { count: selectedIdsArray.length })}
 					</StandardButton>
 				</div>
 			</div>
@@ -218,26 +220,26 @@ export function StagingTriageView({ projectId, refreshKey }: StagingTriageViewPr
 									<div className="flex-1 min-w-0 space-y-1">
 										<div className="flex items-center gap-2 flex-wrap">
 											<StandardText weight="medium" className="line-clamp-2">
-												{row.title || "(sin título)"}
+												{row.title || t("untitled")}
 											</StandardText>
 											{row.is_oa && (
 												<StandardBadge colorScheme="success" styleType="subtle" size="sm">
-													<Unlock className="h-3 w-3 mr-1" /> OA
+													<Unlock className="h-3 w-3 mr-1" /> {t("openAccessBadge")}
 												</StandardBadge>
 											)}
 											{row.is_oa === false && (
 												<StandardBadge colorScheme="neutral" styleType="subtle" size="sm">
-													<Lock className="h-3 w-3 mr-1" /> Cerrado
+													<Lock className="h-3 w-3 mr-1" /> {t("closedBadge")}
 												</StandardBadge>
 											)}
 										</div>
 										<StandardText size="sm" colorScheme="secondary" className="line-clamp-1">
-											{(row.authors ?? []).join(", ") || "Autores desconocidos"}
+											{(row.authors ?? []).join(", ") || t("unknownAuthors")}
 											{row.publication_year ? ` · ${row.publication_year}` : ""}
 											{row.journal ? ` · ${row.journal}` : ""}
 										</StandardText>
 										<StandardText size="xs" colorScheme="neutral" className="line-clamp-2">
-											{row.abstract || "Sin abstract disponible."}
+											{row.abstract || t("noAbstractAvailable")}
 										</StandardText>
 										<div className="flex items-center gap-3 pt-1">
 											{row.doi && (
@@ -248,11 +250,11 @@ export function StagingTriageView({ projectId, refreshKey }: StagingTriageViewPr
 													onClick={(e) => e.stopPropagation()}
 													className="inline-flex items-center gap-1 text-xs text-primary-pure hover:underline"
 												>
-													<LinkIcon className="h-3 w-3" /> DOI
+													<LinkIcon className="h-3 w-3" /> {t("doiLink")}
 												</a>
 											)}
 											<StandardText size="xs" colorScheme="neutral">
-												{row.cited_by_count ?? 0} citas
+												{t("citationsCount", { count: row.cited_by_count ?? 0 })}
 											</StandardText>
 										</div>
 									</div>

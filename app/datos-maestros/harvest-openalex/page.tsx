@@ -10,6 +10,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Microscope } from "lucide-react";
 import { useAuth } from "@/app/auth-provider";
@@ -28,6 +29,8 @@ import type { OpenAlexSearchFilters, SeedDirection } from "@/lib/types/openalex-
 
 //#region [main] - 🔧 COMPONENT 🔧
 export default function HarvestOpenAlexPage() {
+	const t = useTranslations("datosMaestrosPages.harvestOpenAlexPage");
+	const tNav = useTranslations("nav");
 	const { proyectoActual } = useAuth();
 	const [activeTab, setActiveTab] = useState("buscar");
 	const [isSearching, setIsSearching] = useState(false);
@@ -40,7 +43,7 @@ export default function HarvestOpenAlexPage() {
 		if (result.success) {
 			const { fetchedCount, insertedCount, skippedDuplicates } = result.data;
 			toast.success(
-				`OpenAlex trajo ${fetchedCount} resultado(s): ${insertedCount} nuevo(s) en staging, ${skippedDuplicates} duplicado(s) omitido(s).`,
+				t("toastSearchSuccess", { fetched: fetchedCount, inserted: insertedCount, skipped: skippedDuplicates }),
 			);
 			setTriageRefreshKey((k) => k + 1);
 			setActiveTab("triaje");
@@ -57,7 +60,7 @@ export default function HarvestOpenAlexPage() {
 		if (result.success) {
 			const { fetchedCount, insertedCount, skippedDuplicates } = result.data;
 			toast.success(
-				`Semilla trajo ${fetchedCount} resultado(s): ${insertedCount} nuevo(s) en staging, ${skippedDuplicates} duplicado(s) omitido(s).`,
+				t("toastSeedSuccess", { fetched: fetchedCount, inserted: insertedCount, skipped: skippedDuplicates }),
 			);
 			setTriageRefreshKey((k) => k + 1);
 			setActiveTab("triaje");
@@ -74,20 +77,20 @@ export default function HarvestOpenAlexPage() {
 	return (
 		<div className="max-w-5xl mx-auto space-y-6">
 			<StandardPageTitle
-				title="Pesca OpenAlex"
-				subtitle="Busca literatura en OpenAlex y triála antes de sumarla a tus artículos."
+				title={t("pageTitle")}
+				subtitle={t("pageSubtitle")}
 				mainIcon={Microscope}
 				breadcrumbs={[
-					{ label: "Datos Maestros", href: "/datos-maestros" },
-					{ label: "Pesca OpenAlex", href: "/datos-maestros/harvest-openalex" },
+					{ label: tNav("datosMaestros"), href: "/datos-maestros" },
+					{ label: t("breadcrumbLabel"), href: "/datos-maestros/harvest-openalex" },
 				]}
 				showBackButton={{ href: "/datos-maestros" }}
 			/>
 
 			<StandardTabs value={activeTab} onValueChange={setActiveTab}>
 				<StandardTabsList className="grid w-full grid-cols-2">
-					<StandardTabsTrigger value="buscar">Buscar</StandardTabsTrigger>
-					<StandardTabsTrigger value="triaje">Triaje</StandardTabsTrigger>
+					<StandardTabsTrigger value="buscar">{t("tabSearch")}</StandardTabsTrigger>
+					<StandardTabsTrigger value="triaje">{t("tabTriage")}</StandardTabsTrigger>
 				</StandardTabsList>
 
 				<StandardTabsContent value="buscar" className="pt-4">
