@@ -39,6 +39,7 @@ export default function UpdatePasswordPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const token = searchParams.get("token");
+	const tokenHash = searchParams.get("token_hash");
 	const type = searchParams.get("type");
 	const code = searchParams.get("code");
 
@@ -70,6 +71,43 @@ export default function UpdatePasswordPage() {
 	useEffect(() => {
 		if (hasProcessedRef.current) return;
 		hasProcessedRef.current = true;
+
+		if (tokenHash && type) {
+			// Camino recomendado por Supabase para links de recuperación por
+			// correo: `verifyOtp` con `token_hash` no depende de nada guardado
+			// en el navegador (a diferencia del `code` PKCE, que requiere el
+			// "code verifier" que Supabase guardó en el localStorage del
+			// navegador que pidió el correo — si el link se abre en otro
+			// navegador, otra pestaña de incógnito, o ese storage se perdió,
+			// el canje PKCE falla con "code verifier vacío" aunque el link sea
+			// válido). `token_hash` viaja completo en la URL y Supabase lo
+			// valida contra su propio servidor, sin ese requisito.
+			const exchangedKey = `otp_verified_${tokenHash}`;
+			try {
+				if (sessionStorage.getItem(exchangedKey) === "success") return;
+			} catch {
+				// sessionStorage no disponible (modo privado, etc.) — seguimos.
+			}
+
+			supabase.auth
+				.verifyOtp({ token_hash: tokenHash, type: type as "recovery" })
+				.then(({ error: verifyError }) => {
+					if (verifyError) {
+						console.error("Error al verificar el token:", verifyError);
+						setSessionError(t("invalidLinkError"));
+						return;
+					}
+					try {
+						sessionStorage.setItem(exchangedKey, "success");
+					} catch {
+						// No crítico: en el peor caso se reintenta si hay remount.
+					}
+				})
+				.catch((err) => {
+					console.error("Excepción al verificar el token:", err);
+				});
+			return;
+		}
 
 		if (code) {
 			// Un `code` PKCE es de un solo uso: si ya lo canjeamos con éxito
@@ -126,7 +164,7 @@ export default function UpdatePasswordPage() {
 			.catch((err) => {
 				console.error("Excepción al verificar sesión:", err);
 			});
-	}, [code, token, type, t]);
+	}, [code, token, tokenHash, type, t]);
 
 	// Función para obtener el estado de éxito de un campo
 	const getSuccessState = (

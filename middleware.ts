@@ -70,6 +70,7 @@ export async function middleware(request: NextRequest) {
 		search.includes("type=recovery") ||
 		hash.includes("access_token") ||
 		search.includes("access_token") ||
+		search.includes("token_hash=") ||
 		(search.includes("code=") && !search.includes("error"));
 
 	if (isValidRecoveryFlow && pathname !== "/update-password") {
@@ -78,7 +79,7 @@ export async function middleware(request: NextRequest) {
 				`${LOG_PREFIX_MW}:${requestId} Recovery flow → /update-password`,
 			);
 		const updatePasswordUrl = new URL("/update-password", request.url);
-		if (search.includes("code=")) {
+		if (search.includes("code=") || search.includes("token_hash=")) {
 			updatePasswordUrl.search = search;
 		}
 		return NextResponse.redirect(updatePasswordUrl);
