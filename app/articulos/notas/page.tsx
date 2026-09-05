@@ -14,6 +14,12 @@ import type { Database } from "@/lib/database.types";
 import type { DetailedNote } from "@/lib/actions/article-notes-actions";
 import ArticleNotesTitleClient from "./ArticleNotesTitleClient";
 
+// Depende de datos por-sesión (usuario, proyecto activo) — nunca fue candidata
+// a prerender estático. Sin esto, `getTranslations()` falla en build intentando
+// pre-renderizarla estáticamente (i18n/request.ts llama a cookies(), que no
+// existe fuera de un request real).
+export const dynamic = "force-dynamic";
+
 type PageProps = {
 	searchParams?: Record<string, string | string[] | undefined>;
 };

@@ -18,6 +18,12 @@ import { getLatestTranslationsForArticles } from "@/lib/actions/article-actions"
 import type { Database } from "@/lib/database.types";
 import GroupsPageClient from "./GroupsPageClient";
 
+// Depende de datos por-sesión (usuario, proyecto activo) — nunca fue candidata
+// a prerender estático. Sin esto, `getTranslations()` falla en build intentando
+// pre-renderizarla estáticamente (i18n/request.ts llama a cookies(), que no
+// existe fuera de un request real).
+export const dynamic = "force-dynamic";
+
 export type GroupItemForClient = {
 	article_id: string;
 	article_title: string | null;

@@ -9,6 +9,12 @@ import { obtenerProyectosConSettingsUsuario } from "@/lib/actions/project-dashbo
 import { createSupabaseServerClient } from "@/lib/server";
 import { StandardAlert } from "@/components/ui/StandardAlert";
 
+// Depende de datos por-sesión (usuario, proyecto activo) — nunca fue candidata
+// a prerender estático. Sin esto, `getTranslations()` falla en build intentando
+// pre-renderizarla estáticamente (i18n/request.ts llama a cookies(), que no
+// existe fuera de un request real).
+export const dynamic = "force-dynamic";
+
 // 📚 DOCUMENTACIÓN 📚
 /**
  * @description Página para editar los datos maestros del proyecto.
