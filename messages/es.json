@@ -881,7 +881,12 @@
       "pageDescription": "Revisa la información detallada de esta fase del proceso de preclasificación.",
       "breadcrumbDatosMaestros": "Datos Maestros",
       "breadcrumbFases": "Fases de Preclasificación",
-      "editButton": "Editar Fase"
+      "editButton": "Editar Fase",
+      "downloadAuditButton": "Descargar Auditoría",
+      "downloadAuditButtonLoading": "Generando auditoría...",
+      "downloadAuditToastTitle": "Auditoría descargada",
+      "downloadAuditToastDescription": "{reviewCount} revisiones, {dimensionCount} dimensiones. Hash: {hashPrefix}...",
+      "downloadAuditErrorToastTitle": "Error al generar la auditoría"
     },
     "fasesEditarPage": {
       "errorNoProject": "No se ha seleccionado un proyecto",

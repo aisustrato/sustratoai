@@ -73,6 +73,62 @@ export type Database = {
           },
         ]
       }
+      ai_prompt_interactions: {
+        Row: {
+          ai_model: string
+          created_at: string
+          error_message: string | null
+          id: string
+          input_tokens: number | null
+          job_id: string
+          output_tokens: number | null
+          prompt_sent: string
+          prompt_sha256: string
+          response_received: string | null
+          response_sha256: string | null
+          step: string
+          success: boolean
+        }
+        Insert: {
+          ai_model: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_tokens?: number | null
+          job_id: string
+          output_tokens?: number | null
+          prompt_sent: string
+          prompt_sha256: string
+          response_received?: string | null
+          response_sha256?: string | null
+          step: string
+          success?: boolean
+        }
+        Update: {
+          ai_model?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_tokens?: number | null
+          job_id?: string
+          output_tokens?: number | null
+          prompt_sent?: string
+          prompt_sha256?: string
+          response_received?: string | null
+          response_sha256?: string | null
+          step?: string
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_prompt_interactions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "ai_job_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_abstract_highlights: {
         Row: {
           article_id: string
@@ -243,12 +299,14 @@ export type Database = {
       }
       article_dimension_reviews: {
         Row: {
+          ai_interaction_id: string | null
           article_batch_item_id: string
           article_id: string
           classification_value: string | null
           confidence_score: number | null
           created_at: string | null
           dimension_id: string
+          dimension_version_id: string | null
           id: string
           is_final: boolean | null
           iteration: number | null
@@ -260,12 +318,14 @@ export type Database = {
           status: Database["public"]["Enums"]["batch_preclass_status"] | null
         }
         Insert: {
+          ai_interaction_id?: string | null
           article_batch_item_id: string
           article_id: string
           classification_value?: string | null
           confidence_score?: number | null
           created_at?: string | null
           dimension_id: string
+          dimension_version_id?: string | null
           id?: string
           is_final?: boolean | null
           iteration?: number | null
@@ -277,12 +337,14 @@ export type Database = {
           status?: Database["public"]["Enums"]["batch_preclass_status"] | null
         }
         Update: {
+          ai_interaction_id?: string | null
           article_batch_item_id?: string
           article_id?: string
           classification_value?: string | null
           confidence_score?: number | null
           created_at?: string | null
           dimension_id?: string
+          dimension_version_id?: string | null
           id?: string
           is_final?: boolean | null
           iteration?: number | null
@@ -295,6 +357,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "article_dimension_reviews_ai_interaction_id_fkey"
+            columns: ["ai_interaction_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_interactions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "article_dimension_reviews_article_id_fkey"
             columns: ["article_id"]
             isOneToOne: false
@@ -306,6 +375,13 @@ export type Database = {
             columns: ["dimension_id"]
             isOneToOne: false
             referencedRelation: "preclass_dimensions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_dimension_reviews_dimension_version_id_fkey"
+            columns: ["dimension_version_id"]
+            isOneToOne: false
+            referencedRelation: "preclass_dimension_versions"
             referencedColumns: ["id"]
           },
           {
@@ -400,6 +476,47 @@ export type Database = {
           },
         ]
       }
+      article_ingestion_log: {
+        Row: {
+          abstract_sha256: string | null
+          article_id: string
+          created_at: string
+          id: string
+          ingested_by: string | null
+          raw_snapshot: Json | null
+          source: string
+          title_sha256: string | null
+        }
+        Insert: {
+          abstract_sha256?: string | null
+          article_id: string
+          created_at?: string
+          id?: string
+          ingested_by?: string | null
+          raw_snapshot?: Json | null
+          source: string
+          title_sha256?: string | null
+        }
+        Update: {
+          abstract_sha256?: string | null
+          article_id?: string
+          created_at?: string
+          id?: string
+          ingested_by?: string | null
+          raw_snapshot?: Json | null
+          source?: string
+          title_sha256?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_ingestion_log_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_notes: {
         Row: {
           article_id: string
@@ -454,6 +571,7 @@ export type Database = {
       article_translations: {
         Row: {
           abstract: string | null
+          ai_interaction_id: string | null
           article_id: string
           created_at: string | null
           id: string
@@ -466,6 +584,7 @@ export type Database = {
         }
         Insert: {
           abstract?: string | null
+          ai_interaction_id?: string | null
           article_id: string
           created_at?: string | null
           id?: string
@@ -478,6 +597,7 @@ export type Database = {
         }
         Update: {
           abstract?: string | null
+          ai_interaction_id?: string | null
           article_id?: string
           created_at?: string | null
           id?: string
@@ -489,6 +609,13 @@ export type Database = {
           translator_system?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "article_translations_ai_interaction_id_fkey"
+            columns: ["ai_interaction_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_interactions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "article_translations_article_id_fkey"
             columns: ["article_id"]
@@ -6168,6 +6295,69 @@ export type Database = {
           },
         ]
       }
+      preclass_dimension_versions: {
+        Row: {
+          content_sha256: string
+          description: string | null
+          dimension_id: string
+          examples_snapshot: Json
+          id: string
+          name: string
+          options_snapshot: Json
+          project_id: string
+          questions_snapshot: Json
+          sealed_at: string
+          sealed_by: string | null
+          type: string
+          version_number: number
+        }
+        Insert: {
+          content_sha256: string
+          description?: string | null
+          dimension_id: string
+          examples_snapshot?: Json
+          id?: string
+          name: string
+          options_snapshot?: Json
+          project_id: string
+          questions_snapshot?: Json
+          sealed_at?: string
+          sealed_by?: string | null
+          type: string
+          version_number: number
+        }
+        Update: {
+          content_sha256?: string
+          description?: string | null
+          dimension_id?: string
+          examples_snapshot?: Json
+          id?: string
+          name?: string
+          options_snapshot?: Json
+          project_id?: string
+          questions_snapshot?: Json
+          sealed_at?: string
+          sealed_by?: string | null
+          type?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preclass_dimension_versions_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "preclass_dimensions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preclass_dimension_versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       preclass_dimensions: {
         Row: {
           created_at: string | null
@@ -7981,12 +8171,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8010,11 +8200,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8035,11 +8225,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8060,11 +8250,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8077,11 +8267,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

@@ -881,7 +881,12 @@
       "pageDescription": "Review the detailed information of this phase of the pre-classification process.",
       "breadcrumbDatosMaestros": "Master Data",
       "breadcrumbFases": "Pre-classification Phases",
-      "editButton": "Edit Phase"
+      "editButton": "Edit Phase",
+      "downloadAuditButton": "Download Audit",
+      "downloadAuditButtonLoading": "Generating audit...",
+      "downloadAuditToastTitle": "Audit downloaded",
+      "downloadAuditToastDescription": "{reviewCount} reviews, {dimensionCount} dimensions. Hash: {hashPrefix}...",
+      "downloadAuditErrorToastTitle": "Error generating the audit"
     },
     "fasesEditarPage": {
       "errorNoProject": "No project selected",

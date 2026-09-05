@@ -114,6 +114,10 @@ export interface TranslatedArticlePayload {
 	summary?: string;
 	translated_by?: string;
 	translator_system?: string;
+	// Fase 2 de la auditoría append-only: liga la traducción guardada a la
+	// fila de ai_prompt_interactions que registró el prompt + respuesta cruda
+	// que la produjo.
+	aiInteractionId?: string | null;
 }
 
 // Constantes de permisos
