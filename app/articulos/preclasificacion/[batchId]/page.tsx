@@ -134,11 +134,6 @@ const BatchDetailPage = () => {
 		setNotesPresenceByItemId(map);
 	}, [batchDetails?.rows]);
 
-	// Callback para notificar cambios optimistas desde TableLikeView
-	const handleOptimisticChange = useCallback(() => {
-		setOptimisticChangesCounter((prev) => prev + 1);
-	}, []);
-
 	const loadGroupsPresence = useCallback(
 		async (articles: ArticleForReview[]) => {
 			try {
@@ -177,31 +172,74 @@ const BatchDetailPage = () => {
 		[],
 	);
 
-	const loadBatchDetails = useCallback(async () => {
-		if (!batchId) return;
-		setArticlesLoading(true);
-		setError(null);
-		try {
-			const resp = await fetch("/api/preclassification/batch-details", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ batchId }),
-			});
-			if (!resp.ok) {
-				const { error: apiError } = (await resp
-					.json()
-					.catch(() => ({ error: t("unknownError") }))) as { error?: string };
-				throw new Error(apiError || `HTTP ${resp.status}`);
+	const loadBatchDetails = useCallback(
+		async (opts?: { silent?: boolean }) => {
+			if (!batchId) return;
+			if (!opts?.silent) setArticlesLoading(true);
+			setError(null);
+			try {
+				const resp = await fetch("/api/preclassification/batch-details", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ batchId }),
+				});
+				if (!resp.ok) {
+					const { error: apiError } = (await resp
+						.json()
+						.catch(() => ({ error: t("unknownError") }))) as { error?: string };
+					throw new Error(apiError || `HTTP ${resp.status}`);
+				}
+				const { data } = (await resp.json()) as { data: BatchDetails };
+				setBatchDetails(data);
+				loadGroupsPresence(data.rows);
+			} catch (err) {
+				// Un refetch silencioso que falla no debe tapar la vista con un
+				// error — el usuario sigue viendo sus datos, solo no se actualizó
+				// el cálculo de "Reconciliar"/"Cerrar Lote" esta vez.
+				if (!opts?.silent) {
+					setError(err instanceof Error ? err.message : t("unknownError"));
+				} else {
+					console.error("[loadBatchDetails] Error en refetch silencioso:", err);
+				}
+			} finally {
+				if (!opts?.silent) setArticlesLoading(false);
 			}
-			const { data } = (await resp.json()) as { data: BatchDetails };
-			setBatchDetails(data);
-			loadGroupsPresence(data.rows);
-		} catch (err) {
-			setError(err instanceof Error ? err.message : t("unknownError"));
-		} finally {
-			setArticlesLoading(false);
+		},
+		[batchId, loadGroupsPresence, t],
+	);
+
+	// 🔧 FIX: "Reconciliar"/"Cerrar Lote" se calculan (discrepancies,
+	// batchFinalizationValidation) a partir de `batchDetails.rows`, que es un
+	// snapshot traído una sola vez al cargar la página — aprobar/rechazar solo
+	// actualiza un estado visual optimista local en TableLikeView, nunca vuelve
+	// a pedir `batchDetails`. Por eso esos botones quedaban desactualizados
+	// hasta recargar la página entera. Con debounce para no disparar un
+	// refetch por cada click durante una aprobación masiva.
+	const optimisticRefetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
+	const scheduleSilentRefetch = useCallback(() => {
+		if (optimisticRefetchTimeoutRef.current) {
+			clearTimeout(optimisticRefetchTimeoutRef.current);
 		}
-	}, [batchId, loadGroupsPresence, t]);
+		optimisticRefetchTimeoutRef.current = setTimeout(() => {
+			optimisticRefetchTimeoutRef.current = null;
+			void loadBatchDetails({ silent: true });
+		}, 700);
+	}, [loadBatchDetails]);
+	useEffect(() => {
+		return () => {
+			if (optimisticRefetchTimeoutRef.current) {
+				clearTimeout(optimisticRefetchTimeoutRef.current);
+			}
+		};
+	}, []);
+
+	// Callback para notificar cambios optimistas desde TableLikeView
+	const handleOptimisticChange = useCallback(() => {
+		setOptimisticChangesCounter((prev) => prev + 1);
+		scheduleSilentRefetch();
+	}, [scheduleSilentRefetch]);
 
 	const refreshNotesPresence = useCallback(async () => {
 		await loadBatchDetails();
@@ -405,9 +443,12 @@ const BatchDetailPage = () => {
 			setIsBulkPersisting(false);
 			if (ok) {
 				setAllMarked(prevalidated);
+				// Aprobar/reiniciar todo no pasa por onOptimisticChange (actualiza
+				// el estado local directo) — hay que disparar el refetch acá también.
+				scheduleSilentRefetch();
 			}
 		},
-		[],
+		[scheduleSilentRefetch],
 	);
 
 	// Mapas derivados desde columns: nombre, icono, y emoticonos por opción
