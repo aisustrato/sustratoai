@@ -13,6 +13,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { createSupabaseServerClient } from "@/lib/server";
 import type { Database, Json } from "@/lib/database.types";
+import { sha256Hex } from "@/lib/cognetica-forense/hash";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
 	searchOpenAlexWorks,
@@ -369,6 +370,41 @@ export async function promoteStagingArticles(
 			if (updateError) {
 				throw new Error(
 					`Artículos promovidos pero no se pudo actualizar staging: ${updateError.message}`,
+				);
+			}
+		}
+
+		// 🔧 Fase 3 (auditoría append-only): hash del titulo/abstract tal como
+		// entraron a `articles`, para poder detectar despues si fueron
+		// modificados. No bloquea la promoción si falla.
+		const pendingByOpenAlexId = new Map(
+			pendingRows.map((row) => [row.openalex_id, row]),
+		);
+		const ingestionRows = await Promise.all(
+			(newArticles ?? [])
+				.filter((a): a is typeof a & { openalex_id: string } => !!a.openalex_id)
+				.map((a) => ({ articleId: a.id, staging: pendingByOpenAlexId.get(a.openalex_id) }))
+				.filter(
+					(x): x is { articleId: string; staging: (typeof pendingRows)[number] } =>
+						!!x.staging,
+				)
+				.map(async ({ articleId, staging }) => ({
+					article_id: articleId,
+					source: "openalex" as const,
+					abstract_sha256:
+						staging.abstract ? await sha256Hex(staging.abstract) : null,
+					title_sha256: staging.title ? await sha256Hex(staging.title) : null,
+					ingested_by: auth.data.userId,
+				})),
+		);
+		if (ingestionRows.length > 0) {
+			const { error: logError } = await supabase
+				.from("article_ingestion_log")
+				.insert(ingestionRows);
+			if (logError) {
+				console.error(
+					"[promoteStagingArticles] Error registrando log de ingesta:",
+					logError,
 				);
 			}
 		}

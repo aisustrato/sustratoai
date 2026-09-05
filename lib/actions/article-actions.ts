@@ -4,6 +4,7 @@
 
 import { createSupabaseServerClient } from "@/lib/server";
 import type { Database } from "@/lib/database.types";
+import { sha256Hex } from "@/lib/cognetica-forense/hash";
 
 // ... (Interfaces y Tipos sin cambios)
 export type ResultadoOperacion<T> = | { success: true; data: T } | { success: false; error: string; errorCode?: string };
@@ -68,10 +69,38 @@ export async function uploadAndProcessArticles(
       };
     });
 
-    const { error: insertError, count: insertedCount } = await supabase.from("articles").insert(articlesToInsert, { count: 'exact' });
+    const { data: insertedArticles, error: insertError } = await supabase
+      .from("articles")
+      .insert(articlesToInsert)
+      .select("id, title, abstract");
     if (insertError) throw new Error(`Error al guardar los artículos: ${insertError.message}`);
 
-    return { success: true, data: { insertedCount: insertedCount || 0 } };
+    // 🔧 Fase 3 (auditoría append-only): hash del titulo/abstract tal como
+    // entraron a la BD, para poder detectar despues si fueron modificados.
+    // No bloquea la carga si falla -- los articulos ya se guardaron, esto es
+    // el rastro de auditoria, no el dato principal.
+    if (insertedArticles && insertedArticles.length > 0) {
+      const ingestionRows = await Promise.all(
+        insertedArticles.map(async (article) => ({
+          article_id: article.id,
+          source: "csv" as const,
+          abstract_sha256: article.abstract ? await sha256Hex(article.abstract) : null,
+          title_sha256: article.title ? await sha256Hex(article.title) : null,
+          ingested_by: currentUser.id,
+        })),
+      );
+      const { error: logError } = await supabase
+        .from("article_ingestion_log")
+        .insert(ingestionRows);
+      if (logError) {
+        console.error(
+          "[uploadAndProcessArticles] Error registrando log de ingesta:",
+          logError,
+        );
+      }
+    }
+
+    return { success: true, data: { insertedCount: insertedArticles?.length || 0 } };
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Error desconocido.";

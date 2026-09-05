@@ -476,6 +476,47 @@ export type Database = {
           },
         ]
       }
+      article_ingestion_log: {
+        Row: {
+          abstract_sha256: string | null
+          article_id: string
+          created_at: string
+          id: string
+          ingested_by: string | null
+          raw_snapshot: Json | null
+          source: string
+          title_sha256: string | null
+        }
+        Insert: {
+          abstract_sha256?: string | null
+          article_id: string
+          created_at?: string
+          id?: string
+          ingested_by?: string | null
+          raw_snapshot?: Json | null
+          source: string
+          title_sha256?: string | null
+        }
+        Update: {
+          abstract_sha256?: string | null
+          article_id?: string
+          created_at?: string
+          id?: string
+          ingested_by?: string | null
+          raw_snapshot?: Json | null
+          source?: string
+          title_sha256?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_ingestion_log_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_notes: {
         Row: {
           article_id: string
