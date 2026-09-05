@@ -6,6 +6,7 @@
 // ✅ Ya está optimizado por composición.
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { ArrowLeft } from "lucide-react";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
@@ -52,9 +53,10 @@ export function StandardPageTitle({
   actions,
   actionsPosition = 'right',
 }: StandardPageTitleProps) {
+  const t = useTranslations("designSystem.pageTitle");
   // Determinar si mostrar el botón de regreso y sus propiedades
-  const backButton = typeof showBackButton === "boolean" 
-    ? showBackButton ? { href: "#", label: "Volver" } : undefined
+  const backButton = typeof showBackButton === "boolean"
+    ? showBackButton ? { href: "#", label: t("backDefault") } : undefined
     : showBackButton;
 
   return (
@@ -84,7 +86,7 @@ export function StandardPageTitle({
             className="px-2 h-8"
             onClick={() => window.location.href = backButton.href}
           >
-            {backButton.label || "Volver"}
+            {backButton.label || t("backDefault")}
           </StandardButton>
         </div>
       )}

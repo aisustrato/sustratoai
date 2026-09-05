@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { StandardPopupWindow } from "@/components/ui/StandardPopupWindow";
 import { StandardNote } from "@/components/ui/StandardNote";
 import { StandardInput } from "@/components/ui/StandardInput";
@@ -21,6 +22,7 @@ interface GroupNoteEditorProps {
 }
 
 export default function GroupNoteEditor({ open, onClose, articleId, articleTitle, onCreated }: GroupNoteEditorProps) {
+  const t = useTranslations("articulos.groupNoteEditor");
   const { user, proyectoActual } = useAuth();
 
   const [currentNote, setCurrentNote] = useState("");
@@ -57,23 +59,23 @@ export default function GroupNoteEditor({ open, onClose, articleId, articleTitle
 
   const handleSave = async () => {
     if (!user) {
-      toast.error("Debes iniciar sesión para crear notas");
+      toast.error(t("toastMustLogin"));
       return;
     }
     const projectId = proyectoActual?.id;
     if (!projectId) {
-      toast.error("No hay proyecto activo");
+      toast.error(t("toastNoActiveProject"));
       return;
     }
     if (!articleId) {
-      toast.error("No se pudo identificar el artículo");
+      toast.error(t("toastArticleNotIdentified"));
       return;
     }
 
     setIsSaving(true);
     try {
       const result = await createArticleNote({
-        title: currentNoteTitle || "sin título",
+        title: currentNoteTitle || t("untitledDefaultValue"),
         noteContent: currentNote,
         visibility: currentNoteVisibility,
         projectId,
@@ -83,19 +85,19 @@ export default function GroupNoteEditor({ open, onClose, articleId, articleTitle
 
       if (result.success) {
         if (result.data) {
-          toast.success("Nota creada correctamente");
+          toast.success(t("toastNoteCreated"));
           setHasUnsavedChanges(false);
           onCreated?.(result.data);
           onClose();
         } else {
-          toast.error("No se pudo obtener la nota creada");
+          toast.error(t("toastCouldNotGetCreatedNote"));
         }
       } else {
-        toast.error(result.error ?? "Error al crear la nota");
+        toast.error(result.error ?? t("toastErrorCreatingNote"));
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Error desconocido";
-      toast.error(`Error inesperado: ${msg}`);
+      const msg = e instanceof Error ? e.message : t("toastUnknownError");
+      toast.error(t("toastUnexpectedError", { message: msg }));
     } finally {
       setIsSaving(false);
     }
@@ -120,7 +122,7 @@ export default function GroupNoteEditor({ open, onClose, articleId, articleTitle
         <StandardPopupWindow.Content size="lg" colorScheme="primary">
           <StandardPopupWindow.Header>
             <StandardPopupWindow.Title>
-              Crear nota del artículo
+              {t("dialogTitle")}
             </StandardPopupWindow.Title>
             {articleTitle && (
               <StandardPopupWindow.Description>
@@ -132,17 +134,17 @@ export default function GroupNoteEditor({ open, onClose, articleId, articleTitle
           <StandardPopupWindow.Body className="flex-grow flex flex-col gap-4 overflow-y-auto">
             <div className="space-y-4">
               <div>
-                <StandardText size="sm" className="mb-2 font-medium">Título (opcional)</StandardText>
+                <StandardText size="sm" className="mb-2 font-medium">{t("titleLabel")}</StandardText>
                 <StandardInput
                   value={currentNoteTitle}
                   onChange={handleNoteTitleChange}
-                  placeholder="Título de la nota"
+                  placeholder={t("titlePlaceholder")}
                   colorScheme="primary"
                   size="md"
                 />
               </div>
               <div>
-                <StandardText size="sm" className="mb-2 font-medium">Visibilidad</StandardText>
+                <StandardText size="sm" className="mb-2 font-medium">{t("visibilityLabel")}</StandardText>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <StandardCheckbox
                     id="note-public-checkbox"
@@ -150,12 +152,12 @@ export default function GroupNoteEditor({ open, onClose, articleId, articleTitle
                     onChange={(e) => handleNoteVisibilityChange(e.target.checked)}
                     colorScheme="primary"
                     size="md"
-                    label="🌐 Hacer nota pública (visible para el equipo)"
+                    label={t("publicCheckboxLabel")}
                     labelClassName="text-sm font-medium text-gray-900 dark:text-gray-300 cursor-pointer"
                   />
                   {currentNoteVisibility === "private" && (
                     <StandardText size="xs" className="text-gray-500 ml-6">
-                      🔒 Actualmente privada (solo tú)
+                      {t("privateHint")}
                     </StandardText>
                   )}
                 </div>
@@ -166,7 +168,7 @@ export default function GroupNoteEditor({ open, onClose, articleId, articleTitle
               <StandardNote
                 value={currentNote}
                 onChange={handleNoteContentChange}
-                placeholder="Escribe tus notas sobre este artículo..."
+                placeholder={t("notePlaceholder")}
                 colorScheme="primary"
                 size="lg"
                 minimalToolbar={true}
@@ -184,10 +186,10 @@ export default function GroupNoteEditor({ open, onClose, articleId, articleTitle
               <div />
               <div className="flex gap-2">
                 <StandardButton styleType="outline" onClick={handleClose}>
-                  Cerrar
+                  {t("closeButton")}
                 </StandardButton>
                 <StandardButton styleType="solid" colorScheme="primary" onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? "Guardando..." : "Guardar nota"}
+                  {isSaving ? t("savingButton") : t("saveButton")}
                 </StandardButton>
               </div>
             </div>
@@ -199,17 +201,17 @@ export default function GroupNoteEditor({ open, onClose, articleId, articleTitle
       <StandardDialog open={showPublicWarning} onOpenChange={setShowPublicWarning}>
         <StandardDialog.Content size="sm" colorScheme="warning">
           <StandardDialog.Header>
-            <StandardDialog.Title>⚠️ Confirmar visibilidad pública</StandardDialog.Title>
+            <StandardDialog.Title>{t("publicWarningTitle")}</StandardDialog.Title>
             <StandardDialog.Description>
-              Estás a punto de hacer esta nota visible para todo el equipo del proyecto.
+              {t("publicWarningDescription")}
             </StandardDialog.Description>
           </StandardDialog.Header>
           <StandardDialog.Footer>
             <StandardButton styleType="outline" colorScheme="neutral" onClick={() => setShowPublicWarning(false)}>
-              Cancelar
+              {t("cancelButton")}
             </StandardButton>
             <StandardButton styleType="solid" colorScheme="warning" onClick={confirmPublicVisibility}>
-              Sí, hacer pública
+              {t("confirmPublicButton")}
             </StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>
@@ -219,17 +221,17 @@ export default function GroupNoteEditor({ open, onClose, articleId, articleTitle
       <StandardDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
         <StandardDialog.Content size="md">
           <StandardDialog.Header>
-            <StandardDialog.Title>Cambios sin guardar</StandardDialog.Title>
+            <StandardDialog.Title>{t("unsavedChangesTitle")}</StandardDialog.Title>
             <StandardDialog.Description>
-              Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar?
+              {t("unsavedChangesDescription")}
             </StandardDialog.Description>
           </StandardDialog.Header>
           <StandardDialog.Footer>
             <StandardButton styleType="outline" onClick={() => setShowCloseConfirm(false)}>
-              Cancelar
+              {t("cancelButton")}
             </StandardButton>
             <StandardButton styleType="solid" colorScheme="primary" onClick={confirmClose}>
-              Cerrar sin guardar
+              {t("closeWithoutSavingButton")}
             </StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>

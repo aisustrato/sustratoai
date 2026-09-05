@@ -11,6 +11,7 @@ import * as React from "react";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { AlertCircle, X, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useDesignTokens } from "@/app/providers/DesignTokensProvider";
 import { StandardIcon, type StandardIconProps } from "./StandardIcon";
 import { StandardText } from "./StandardText";
@@ -90,6 +91,7 @@ const StandardInput = React.forwardRef<HTMLInputElement, StandardInputProps>(
 		ref,
 	) => {
 		// 💎 CORE: Tokens precalculados - NO recalcula en cada render
+		const t = useTranslations("designSystem.standardInput");
 		const { tokens } = useDesignTokens();
 		const inputRef = React.useRef<HTMLInputElement>(null);
 		React.useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
@@ -360,7 +362,7 @@ const StandardInput = React.forwardRef<HTMLInputElement, StandardInputProps>(
 					ref={ref}
 					disabled
 					className="opacity-50 border rounded px-3 py-2 w-full"
-					placeholder="Cargando..."
+					placeholder={t("loadingDefault")}
 				/>
 			);
 		}

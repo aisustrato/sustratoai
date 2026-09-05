@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardBadge } from "@/components/ui/StandardBadge";
@@ -35,6 +36,7 @@ export function UniverseVisualization({
 	dimensions,
 	totalUniverseArticles,
 }: UniverseVisualizationProps) {
+	const t = useTranslations("articulos.universeVisualization");
 	// 🎯 Estados para controlar visibilidad de secciones
 	const [showDistribution, setShowDistribution] = useState(true);
 	const [showConfidence, setShowConfidence] = useState(false);
@@ -128,7 +130,7 @@ export function UniverseVisualization({
 							:	"0";
 
 						return {
-							value: value === "Otros" ? "🎁 Otros (Serendipia)" : value,
+							value: value === "Otros" ? t("otherSerendipityLabel") : value,
 							count,
 							emoticon: option?.emoticon || (value === "Otros" ? "🎁" : null),
 							percentage: `${percentage}%`,
@@ -150,6 +152,7 @@ export function UniverseVisualization({
 		groupOtherValues,
 		isOtherValue,
 		totalUniverseArticles,
+		t,
 	]);
 
 	// Calcular estadísticas globales
@@ -292,11 +295,11 @@ export function UniverseVisualization({
 		}).length;
 
 		return [
-			{ id: "alta", label: "Todas Altas", value: allHigh },
-			{ id: "media", label: "Al menos 1 Media", value: atLeastOneMedium },
-			{ id: "baja", label: "Al menos 1 Baja", value: atLeastOneLow },
+			{ id: "alta", label: t("confidenceAllHigh"), value: allHigh },
+			{ id: "media", label: t("confidenceAtLeastOneMedium"), value: atLeastOneMedium },
+			{ id: "baja", label: t("confidenceAtLeastOneLow"), value: atLeastOneLow },
 		];
-	}, [articles]);
+	}, [articles, t]);
 
 	// 📊 GRÁFICO 2: Dimensiones con Confianza Media/Baja
 	const dimensionConfidenceIssues = useMemo<BarChartDimension[]>(() => {
@@ -318,8 +321,8 @@ export function UniverseVisualization({
 					name: dim.name,
 					icon: dim.icon,
 					values: [
-						{ value: "Baja", count: lowCount },
-						{ value: "Media", count: mediumCount },
+						{ value: t("confidenceLow"), count: lowCount },
+						{ value: t("confidenceMedium"), count: mediumCount },
 					],
 				};
 			})
@@ -327,7 +330,7 @@ export function UniverseVisualization({
 				// Solo incluir dimensiones que tengan al menos una confianza media o baja
 				return dim.values.some((v) => v.count > 0);
 			});
-	}, [articles, dimensions]);
+	}, [articles, dimensions, t]);
 
 	// 🎯 Verificar si hay datos (artículos O estadísticas pre-calculadas)
 	const hasData = articles.length > 0 || dimensions.some((d) => d.statistics);
@@ -337,7 +340,7 @@ export function UniverseVisualization({
 			<StandardCard>
 				<div className="p-8 text-center">
 					<StandardText colorShade="subtle">
-						No hay artículos para visualizar
+						{t("noArticlesToVisualize")}
 					</StandardText>
 				</div>
 			</StandardCard>
@@ -350,7 +353,7 @@ export function UniverseVisualization({
 			<StandardCard>
 				<div className="p-6">
 					<StandardText size="lg" weight="semibold" className="mb-4">
-						Estadísticas Globales del Universo
+						{t("globalStatsTitle")}
 					</StandardText>
 					<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 						<div className="text-center p-4 bg-neutral-50 rounded-lg">
@@ -358,7 +361,7 @@ export function UniverseVisualization({
 								{stats.totalArticles}
 							</StandardText>
 							<StandardText size="sm" colorShade="subtle">
-								Artículos Totales
+								{t("totalArticlesLabel")}
 							</StandardText>
 						</div>
 						<div className="text-center p-4 bg-neutral-50 rounded-lg">
@@ -366,7 +369,7 @@ export function UniverseVisualization({
 								{stats.coveragePercentage}%
 							</StandardText>
 							<StandardText size="sm" colorShade="subtle">
-								Cobertura Global
+								{t("globalCoverageLabel")}
 							</StandardText>
 						</div>
 						<div className="text-center p-4 bg-neutral-50 rounded-lg">
@@ -374,7 +377,7 @@ export function UniverseVisualization({
 								{stats.totalClassifications}
 							</StandardText>
 							<StandardText size="sm" colorShade="subtle">
-								Total Clasificaciones
+								{t("totalClassificationsLabel")}
 							</StandardText>
 						</div>
 						<div className="text-center p-4 bg-neutral-50 rounded-lg">
@@ -382,7 +385,7 @@ export function UniverseVisualization({
 								{stats.avgClassificationsPerArticle}
 							</StandardText>
 							<StandardText size="sm" colorShade="subtle">
-								Promedio por Artículo
+								{t("avgPerArticleLabel")}
 							</StandardText>
 						</div>
 					</div>
@@ -395,14 +398,14 @@ export function UniverseVisualization({
 					<div className="p-6">
 						<div className="flex items-center justify-between mb-4">
 							<StandardText size="lg" weight="semibold">
-								Distribución de Clasificaciones por Dimensión
+								{t("distributionByDimensionTitle")}
 							</StandardText>
 							<StandardButton
 								styleType="ghost"
 								size="sm"
 								onClick={() => setShowDistribution(!showDistribution)}
 								leftIcon={showDistribution ? ChevronUp : ChevronDown}>
-								{showDistribution ? "Ocultar" : "Mostrar"}
+								{showDistribution ? t("hideButton") : t("showButton")}
 							</StandardButton>
 						</div>
 
@@ -413,7 +416,7 @@ export function UniverseVisualization({
 									<div className="flex-1">
 										<StandardSelect
 											options={[
-												{ value: "all", label: "Todas las dimensiones" },
+												{ value: "all", label: t("allDimensionsOption") },
 												...chartDimensions.map((dim) => ({
 													value: dim.id,
 													label: dim.name,
@@ -437,7 +440,7 @@ export function UniverseVisualization({
 												size="sm"
 												iconOnly
 												onClick={() => setChartType("bar")}
-												tooltip="Gráfico de barras">
+												tooltip={t("barChartTooltip")}>
 												<BarChart3 size={16} />
 											</StandardButton>
 											<StandardButton
@@ -445,7 +448,7 @@ export function UniverseVisualization({
 												size="sm"
 												iconOnly
 												onClick={() => setChartType("pie")}
-												tooltip="Gráfico circular">
+												tooltip={t("pieChartTooltip")}>
 												<PieChart size={16} />
 											</StandardButton>
 										</div>
@@ -543,22 +546,21 @@ export function UniverseVisualization({
 				<div className="p-6">
 					<div className="flex items-center justify-between mb-2">
 						<StandardText size="lg" weight="semibold">
-							Distribución Global de Confianza
+							{t("globalConfidenceDistributionTitle")}
 						</StandardText>
 						<StandardButton
 							styleType="ghost"
 							size="sm"
 							onClick={() => setShowConfidence(!showConfidence)}
 							leftIcon={showConfidence ? ChevronUp : ChevronDown}>
-							{showConfidence ? "Ocultar" : "Mostrar"}
+							{showConfidence ? t("hideButton") : t("showButton")}
 						</StandardButton>
 					</div>
 
 					{showConfidence && (
 						<>
 							<StandardText size="sm" colorShade="subtle" className="mb-4">
-								Análisis del nivel de confianza de las clasificaciones por
-								artículo
+								{t("globalConfidenceDistributionDescription")}
 							</StandardText>
 							{confidenceDistribution.some((d) => d.value > 0) ?
 								<StandardPieChart
@@ -569,7 +571,7 @@ export function UniverseVisualization({
 								/>
 							:	<div className="py-8 text-center">
 									<StandardText colorShade="subtle">
-										No hay datos de confianza disponibles
+										{t("noConfidenceDataAvailable")}
 									</StandardText>
 								</div>
 							}
@@ -584,22 +586,21 @@ export function UniverseVisualization({
 					<div className="p-6">
 						<div className="flex items-center justify-between mb-2">
 							<StandardText size="lg" weight="semibold">
-								Análisis de Confianza por Dimensión
+								{t("confidenceByDimensionTitle")}
 							</StandardText>
 							<StandardButton
 								styleType="ghost"
 								size="sm"
 								onClick={() => setShowConfidenceByDim(!showConfidenceByDim)}
 								leftIcon={showConfidenceByDim ? ChevronUp : ChevronDown}>
-								{showConfidenceByDim ? "Ocultar" : "Mostrar"}
+								{showConfidenceByDim ? t("hideButton") : t("showButton")}
 							</StandardButton>
 						</div>
 
 						{showConfidenceByDim && (
 							<>
 								<StandardText size="sm" colorShade="subtle" className="mb-4">
-									Dimensiones que requieren revisión: clasificaciones con
-									confianza media o baja
+									{t("confidenceByDimensionDescription")}
 								</StandardText>
 								<StandardBarChart
 									dimensions={dimensionConfidenceIssues}
@@ -619,14 +620,14 @@ export function UniverseVisualization({
 				<div className="p-6">
 					<div className="flex items-center justify-between mb-4">
 						<StandardText size="lg" weight="semibold">
-							Cobertura por Dimensión
+							{t("coverageByDimensionTitle")}
 						</StandardText>
 						<StandardButton
 							styleType="ghost"
 							size="sm"
 							onClick={() => setShowCoverage(!showCoverage)}
 							leftIcon={showCoverage ? ChevronUp : ChevronDown}>
-							{showCoverage ? "Ocultar" : "Mostrar"}
+							{showCoverage ? t("hideButton") : t("showButton")}
 						</StandardButton>
 					</div>
 

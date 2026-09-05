@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation"; // Solo useRouter, no useParams
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import {
   obtenerRolesDisponiblesProyecto,
@@ -38,6 +39,7 @@ export type SelectOption = { value: string; label: string };
 //#region [main] - 🔧 COMPONENT 🔧
 export default function CrearMiembroPage() {
   //#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
+  const t = useTranslations("datosMaestrosPages.miembrosCrearPage");
   const router = useRouter();
   const { proyectoActual } = useAuth();
   const { showLoading, hideLoading } = useLoading(); // Opcional
@@ -60,7 +62,7 @@ export default function CrearMiembroPage() {
     setRolesDisponibles([]);
 
     if (!proyectoActual?.id) {
-      setErrorPage("No hay un proyecto seleccionado para agregar el miembro.");
+      setErrorPage(t("errorNoProjectForAdd"));
       setIsPageLoading(false);
       return;
     }
@@ -79,39 +81,39 @@ export default function CrearMiembroPage() {
         setRolesDisponibles(opcionesRoles);
       } else {
         setErrorPage(
-         "Error al cargar los roles disponibles."
+         t("errorLoadingRoles")
         );
       }
     } catch (err) {
       console.error("Error al cargar roles:", err);
       setErrorPage(
-        `Error inesperado al cargar roles: ${(err as Error).message}`
+        t("errorUnexpectedLoadingRoles", { message: (err as Error).message })
       );
     } finally {
       setIsPageLoading(false);
     }
-  }, [proyectoActual?.id]);
+  }, [proyectoActual?.id, t]);
 
   useEffect(() => {
     if (proyectoActual?.id) {
       cargarRoles();
     } else {
       // Si no hay proyecto, no podemos cargar roles ni crear miembro.
-      setErrorPage("Seleccione un proyecto para continuar.");
+      setErrorPage(t("errorSelectProjectToContinue"));
       setIsPageLoading(false); // Asegura que no se quede cargando indefinidamente
     }
-  }, [proyectoActual?.id, cargarRoles]);
+  }, [proyectoActual?.id, cargarRoles, t]);
 
   const handleFormSubmit = async (data: MiembroFormValues) => {
     if (!proyectoActual?.id) {
-      toast.error("Error de aplicación", {
-        description: "No hay un proyecto activo seleccionado.",
+      toast.error(t("toastAppErrorTitle"), {
+        description: t("toastNoActiveProject"),
       });
       return;
     }
 
     setIsSubmitting(true);
-    if (typeof showLoading === 'function') showLoading("Agregando miembro..."); // Opcional: si usas useLoading
+    if (typeof showLoading === 'function') showLoading(t("loadingLabel")); // Opcional: si usas useLoading
 
     const payload = {
       proyectoId: proyectoActual.id,
@@ -142,8 +144,8 @@ export default function CrearMiembroPage() {
       console.error("Excepción al llamar a agregarMiembroAProyecto:", err);
       if (typeof hideLoading === 'function') hideLoading();
       setIsSubmitting(false);
-      toast.error("Error Inesperado en Comunicación", {
-        description: `Ocurrió un error al procesar la solicitud: ${(err as Error).message}`,
+      toast.error(t("toastUnexpectedCommTitle"), {
+        description: t("toastUnexpectedCommDescription", { message: (err as Error).message }),
       });
       return;
     }
@@ -160,8 +162,8 @@ export default function CrearMiembroPage() {
           password: resultado.data.temporary_password,
         });
       } else {
-        toast.success("Miembro Agregado", {
-          description: `El miembro ${data.emailUsuario} ha sido agregado exitosamente. Perfil: ${resultado.data.profile_action}.`,
+        toast.success(t("toastMemberAddedTitle"), {
+          description: t("toastMemberAddedDescription", { email: data.emailUsuario, profileAction: resultado.data.profile_action }),
           duration: 4000,
         });
         // Retrasar la redirección para que el toast sea visible
@@ -170,8 +172,8 @@ export default function CrearMiembroPage() {
         }, 1500);
       }
     } else {
-      toast.error("Error al Agregar Miembro", {
-        description: resultado?.error || "Ocurrió un error desconocido.",
+      toast.error(t("toastErrorAddingTitle"), {
+        description: resultado?.error || t("toastErrorUnknown"),
       });
     }
     setIsSubmitting(false);
@@ -196,15 +198,15 @@ export default function CrearMiembroPage() {
         <div className="container mx-auto py-6">
           <div className="space-y-6 max-w-xl mx-auto">
             <StandardPageTitle
-              title="Cuenta creada"
-              subtitle="Copiá la contraseña provisoria antes de salir de esta página — no se vuelve a mostrar."
+              title={t("accountCreatedTitle")}
+              subtitle={t("accountCreatedSubtitle")}
               mainIcon={UserPlus}
             />
             <StandardCard styleType="filled" colorScheme="success" accentPlacement="top">
               <div className="space-y-4 p-2">
                 <div>
                   <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
-                    Email
+                    {t("emailLabel")}
                   </StandardText>
                   <StandardText size="md" weight="medium">
                     {credencialesCreadas.email}
@@ -212,7 +214,7 @@ export default function CrearMiembroPage() {
                 </div>
                 <div>
                   <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
-                    Contraseña provisoria
+                    {t("provisionalPasswordLabel")}
                   </StandardText>
                   <div className="flex items-center gap-3">
                     <StandardText size="lg" weight="bold" className="font-mono">
@@ -223,20 +225,19 @@ export default function CrearMiembroPage() {
                       size="sm"
                       onClick={handleCopiarPassword}
                     >
-                      {passwordCopiada ? "¡Copiada!" : "Copiar"}
+                      {passwordCopiada ? t("copiedButton") : t("copyButton")}
                     </StandardButton>
                   </div>
                 </div>
                 <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
-                  Pasásela directamente a la persona (no queda guardada en ningún
-                  lado en texto plano). Puede cambiarla después por su cuenta.
+                  {t("passwordHandoffNote")}
                 </StandardText>
                 <div className="flex justify-end pt-2">
                   <StandardButton
                     colorScheme="primary"
                     onClick={() => router.push("/datos-maestros/miembros")}
                   >
-                    Listo, ir a Miembros
+                    {t("goToMembersButton")}
                   </StandardButton>
                 </div>
               </div>
@@ -254,7 +255,7 @@ export default function CrearMiembroPage() {
           size={50}
           variant="spin-pulse"
           showText
-          text="Cargando configuración..."
+          text={t("loadingConfig")}
         />
       </div>
     );
@@ -266,16 +267,16 @@ export default function CrearMiembroPage() {
         <div className="container mx-auto py-6">
           <div className="space-y-6">
             <PageHeader
-              title="Error de Configuración"
+              title={t("configErrorTitle")}
               description={errorPage}
               actions={
                 <StandardButton
                   onClick={handleVolver}
-                  
+
                   styleType="outline"
                 >
                   <StandardIcon><ArrowLeft /></StandardIcon>
-                  Volver a Miembros
+                  {t("backToMembersButton")}
                 </StandardButton>
               }
             />
@@ -292,14 +293,14 @@ export default function CrearMiembroPage() {
     <StandardPageBackground variant="gradient">
       <div className="container mx-auto py-6">
         <div className="space-y-6">
-          <StandardPageTitle 
-            title="Agregar Nuevo Miembro"
-            subtitle="Complete la información para invitar y asignar un rol a un nuevo miembro en el proyecto"
+          <StandardPageTitle
+            title={t("pageTitle")}
+            subtitle={t("pageSubtitle")}
             mainIcon={UserPlus}
             breadcrumbs={[
-              { label: "Datos Maestros", href: "/datos-maestros" },
-              { label: "Miembros ", href: "/datos-maestros/miembros" },
-              { label: "Crear Miembro" }
+              { label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+              { label: t("breadcrumbMiembros"), href: "/datos-maestros/miembros" },
+              { label: t("breadcrumbCrear") }
             ]}
             showBackButton={{ href: "/datos-maestros/miembros" }}
          />

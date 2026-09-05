@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
 import { StandardPopupWindow } from "@/components/ui/StandardPopupWindow";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardDialog } from "@/components/ui/StandardDialog";
@@ -22,6 +23,7 @@ interface CreateGroupPopupProps {
 }
 
 export default function CreateGroupPopup({ open, onClose, articleId, articleTitle, onCreated }: CreateGroupPopupProps) {
+  const t = useTranslations("articulos.createGroupPopup");
   const { proyectoActual } = useAuth();
 
   const [newGroupName, setNewGroupName] = useState("");
@@ -71,7 +73,7 @@ export default function CreateGroupPopup({ open, onClose, articleId, articleTitl
   const executeCreate = async () => {
     const projectId = proyectoActual?.id;
     if (!projectId) {
-      toast.error("No hay proyecto activo");
+      toast.error(t("toastNoActiveProject"));
       return;
     }
 
@@ -89,16 +91,16 @@ export default function CreateGroupPopup({ open, onClose, articleId, articleTitl
 
       const result = await createGroupWithArticles(payload);
       if (result.success) {
-        toast.success(`Grupo "${newGroupName}" creado`);
+        toast.success(t("toastGroupCreated", { name: newGroupName }));
         onCreated?.(String(result.data.id));
         resetForm();
         onClose();
       } else {
-        toast.error(result.error || "Error al crear grupo");
+        toast.error(result.error || t("toastErrorCreating"));
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Error desconocido";
-      toast.error(`Error inesperado: ${msg}`);
+      const msg = e instanceof Error ? e.message : t("toastUnknownError");
+      toast.error(t("toastUnexpectedError", { message: msg }));
     } finally {
       setIsCreating(false);
     }
@@ -134,34 +136,34 @@ export default function CreateGroupPopup({ open, onClose, articleId, articleTitl
       <StandardPopupWindow open={open} onOpenChange={handleClose}>
         <StandardPopupWindow.Content size="md">
           <StandardPopupWindow.Header>
-            <StandardPopupWindow.Title>Crear Nuevo Grupo</StandardPopupWindow.Title>
+            <StandardPopupWindow.Title>{t("dialogTitle")}</StandardPopupWindow.Title>
             <StandardPopupWindow.Description>
               {articleTitle ? (
                 <StandardText size="sm" colorShade="subtle">
-                  El artículo &quot;{articleTitle}&quot; se agregará automáticamente.
+                  {t("articleWillBeAddedNamed", { title: articleTitle })}
                 </StandardText>
               ) : (
                 <StandardText size="sm" colorShade="subtle">
-                  Crea un nuevo grupo y agrega este artículo automáticamente
+                  {t("createAndAddDescription")}
                 </StandardText>
               )}
             </StandardPopupWindow.Description>
           </StandardPopupWindow.Header>
 
           <StandardPopupWindow.Body className="space-y-4">
-            <StandardFormField label="Nombre del grupo" htmlFor="group-name" isRequired>
+            <StandardFormField label={t("nameLabel")} htmlFor="group-name" isRequired>
               <StandardInput
                 id="group-name"
-                placeholder="Ej: Artículos sobre metodología cualitativa"
+                placeholder={t("namePlaceholder")}
                 value={newGroupName}
                 onChange={handleNameChange}
               />
             </StandardFormField>
 
-            <StandardFormField label="Descripción (opcional)" htmlFor="group-description">
+            <StandardFormField label={t("descriptionLabel")} htmlFor="group-description">
               <StandardTextarea
                 id="group-description"
-                placeholder="Describe el propósito o criterios de este grupo..."
+                placeholder={t("descriptionPlaceholder")}
                 value={newGroupDescription}
                 onChange={handleDescriptionChange}
                 rows={3}
@@ -170,8 +172,8 @@ export default function CreateGroupPopup({ open, onClose, articleId, articleTitl
 
             <div>
               <StandardCheckbox
-                label="Hacer este grupo público"
-                description="Los grupos públicos son visibles para todo el equipo del proyecto"
+                label={t("publicCheckboxLabel")}
+                description={t("publicCheckboxDescription")}
                 checked={newGroupIsPublic}
                 onChange={(e) => handleVisibilityChange(e.target.checked)}
               />
@@ -181,11 +183,11 @@ export default function CreateGroupPopup({ open, onClose, articleId, articleTitl
           <StandardPopupWindow.Footer>
             <div className="flex justify-between items-center w-full">
               <StandardText size="sm" colorShade="subtle">
-                El artículo actual se agregará automáticamente
+                {t("articleWillBeAddedFooter")}
               </StandardText>
               <div className="flex gap-2">
                 <StandardButton styleType="outline" onClick={handleClose} disabled={isCreating}>
-                  Cancelar
+                  {t("cancelButton")}
                 </StandardButton>
                 <StandardButton
                   styleType="solid"
@@ -193,7 +195,7 @@ export default function CreateGroupPopup({ open, onClose, articleId, articleTitl
                   onClick={handleCreate}
                   disabled={!newGroupName.trim() || isCreating}
                 >
-                  {isCreating ? "Creando..." : "Crear Grupo"}
+                  {isCreating ? t("creatingButton") : t("createButton")}
                 </StandardButton>
               </div>
             </div>
@@ -204,17 +206,17 @@ export default function CreateGroupPopup({ open, onClose, articleId, articleTitl
       <StandardDialog open={showPublicWarning} onOpenChange={setShowPublicWarning}>
         <StandardDialog.Content size="sm" colorScheme="warning">
           <StandardDialog.Header>
-            <StandardDialog.Title>⚠️ Confirmar Grupo Público</StandardDialog.Title>
+            <StandardDialog.Title>{t("publicWarningTitle")}</StandardDialog.Title>
             <StandardDialog.Description>
-              Estás a punto de crear un grupo público visible para todo el equipo.
+              {t("publicWarningDescription")}
             </StandardDialog.Description>
           </StandardDialog.Header>
           <StandardDialog.Footer>
             <StandardButton styleType="outline" colorScheme="neutral" onClick={cancelPublicGroup} disabled={isCreating}>
-              Cancelar
+              {t("cancelButton")}
             </StandardButton>
             <StandardButton styleType="solid" colorScheme="warning" onClick={confirmPublicGroup} disabled={isCreating}>
-              {isCreating ? "Creando..." : "Sí, crear grupo público"}
+              {isCreating ? t("creatingButton") : t("confirmPublicButton")}
             </StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>
@@ -223,17 +225,17 @@ export default function CreateGroupPopup({ open, onClose, articleId, articleTitl
       <StandardDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
         <StandardDialog.Content size="sm">
           <StandardDialog.Header>
-            <StandardDialog.Title>Cambios sin Guardar</StandardDialog.Title>
+            <StandardDialog.Title>{t("unsavedChangesTitle")}</StandardDialog.Title>
             <StandardDialog.Description>
-              Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar?
+              {t("unsavedChangesDescription")}
             </StandardDialog.Description>
           </StandardDialog.Header>
           <StandardDialog.Footer>
             <StandardButton styleType="outline" onClick={() => setShowCloseConfirm(false)}>
-              Cancelar
+              {t("cancelButton")}
             </StandardButton>
             <StandardButton styleType="solid" colorScheme="primary" onClick={confirmClose}>
-              Cerrar sin Guardar
+              {t("closeWithoutSavingButton")}
             </StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>

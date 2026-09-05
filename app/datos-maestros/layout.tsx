@@ -5,7 +5,8 @@
 'use client';
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
@@ -33,44 +34,46 @@ import { cn } from "@/lib/utils";
 //#endregion ![def]
 
 //#region [main] - 🔧 COMPONENT 🔧
-const sidebarNavItems = [
+const makeSidebarNavItems = (
+	t: ReturnType<typeof useTranslations<"datosMaestrosPages.layout">>,
+) => [
 	{
-		title: "Proyecto",
+		title: t("navProyecto"),
 		href: "/datos-maestros/proyecto",
 		icon: ClipboardList,
 	},
 	{
-		title: "Roles",
+		title: t("navRoles"),
 		href: "/datos-maestros/roles",
 		icon: Shield,
 	},
 	{
-		title: "Miembros",
+		title: t("navMiembros"),
 		href: "/datos-maestros/miembros",
 		icon: User,
 	},
 	{
-		title: "Cargar Artículos",
+		title: t("navCargarArticulos"),
 		href: "/datos-maestros/cargar-articulos",
 		icon: FileUp,
 	},
 	{
-		title: "Pesca OpenAlex",
+		title: t("navHarvestOpenAlex"),
 		href: "/datos-maestros/harvest-openalex",
 		icon: Microscope,
 	},
 	{
-		title: "Fases",
+		title: t("navFases"),
 		href: "/datos-maestros/fases-preclasificacion",
 		icon: Network,
 	},
 	{
-		title: "Dimensiones",
+		title: t("navDimensiones"),
 		href: "/datos-maestros/dimensiones",
 		icon: LayoutGrid,
 	},
 	{
-		title: "Lotes",
+		title: t("navLotes"),
 		href: "/datos-maestros/lote",
 		icon: Boxes,
 	},
@@ -81,6 +84,8 @@ export default function DatosMaestrosLayout({
 }: {
 	children: React.ReactNode;
 }) {
+	const t = useTranslations("datosMaestrosPages.layout");
+	const sidebarNavItems = useMemo(() => makeSidebarNavItems(t), [t]);
 	const [isCollapsed, setIsCollapsed] = useState(false);
 	const [isDesktop, setIsDesktop] = useState(true);
 	const [layoutGap, setLayoutGap] = useState(40); // Default to large gap
@@ -186,7 +191,7 @@ export default function DatosMaestrosLayout({
                         colorShade="pure"
                         className="whitespace-nowrap"
                       >
-                        Datos Maestros
+                        {t("sidebarTitle")}
                       </StandardText>
                     </motion.div>
                   )}

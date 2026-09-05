@@ -11,6 +11,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import { toast } from "sonner";
@@ -41,6 +42,7 @@ interface ProjectEditFormProps {
  * @returns {JSX.Element} Componente con el formulario.
  */
 export function ProjectEditForm({ initialProjectData, isReadOnly = false }: ProjectEditFormProps) {
+  const t = useTranslations("datosMaestrosPages.projectEditForm");
   const { proyectoActual, authLoading } = useAuth();
   const router = useRouter();
 
@@ -96,8 +98,8 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
       const result = await updateProjectDetails(payload);
 
       if (result && result.success) {
-        toast.success("Proyecto Actualizado", {
-          description: "Los datos del proyecto se han guardado correctamente.",
+        toast.success(t("toastUpdatedTitle"), {
+          description: t("toastUpdatedDescription"),
         });
         
         const newProjectData = {
@@ -114,13 +116,13 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
 
         router.refresh();
       } else {
-        toast.error("Error al actualizar", {
-          description: result.error || "No se pudo guardar el proyecto.",
+        toast.error(t("toastErrorUpdatingTitle"), {
+          description: result.error || t("toastErrorUpdatingDefault"),
         });
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error en el servidor. Inténtalo de nuevo más tarde.';
-      toast.error("Error inesperado", {
+      const errorMessage = error instanceof Error ? error.message : t("toastUnexpectedErrorDefault");
+      toast.error(t("toastUnexpectedErrorTitle"), {
         description: errorMessage,
       });
     } finally {
@@ -144,11 +146,11 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
       styleType="subtle"
     >
       <StandardCard.Header>
-        <StandardCard.Title>Información General</StandardCard.Title>
+        <StandardCard.Title>{t("cardTitle")}</StandardCard.Title>
         <StandardCard.Subtitle>
-          {isReadOnly 
-            ? "Visualización de los datos principales del proyecto."
-            : "Modifica los datos principales del proyecto."
+          {isReadOnly
+            ? t("cardSubtitleView")
+            : t("cardSubtitleEdit")
           }
         </StandardCard.Subtitle>
       </StandardCard.Header>
@@ -156,58 +158,58 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <StandardFormField
-              label="Nombre del Proyecto"
-              hint="El nombre principal que identifica al proyecto."
+              label={t("nameLabel")}
+              hint={t("nameHint")}
               htmlFor="name"
             >
               <StandardInput
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Ej: Investigación sobre IA en Educación"
+                placeholder={t("namePlaceholder")}
                 disabled={isReadOnly}
               />
             </StandardFormField>
 
             <StandardFormField
-              label="Código del Proyecto"
-              hint="Un identificador único o código interno."
+              label={t("codeLabel")}
+              hint={t("codeHint")}
               htmlFor="code"
             >
               <StandardInput
                 name="code"
                 value={formData.code}
                 onChange={handleInputChange}
-                placeholder="Ej: PROJ-IA-EDU-001"
+                placeholder={t("codePlaceholder")}
                 disabled={isReadOnly}
               />
             </StandardFormField>
           </div>
 
           <StandardFormField
-            label="Nombre de la Institución"
-            hint="La institución principal que respalda el proyecto."
+            label={t("institutionLabel")}
+            hint={t("institutionHint")}
             htmlFor="institution_name"
           >
             <StandardInput
               name="institution_name"
               value={formData.institution_name}
               onChange={handleInputChange}
-              placeholder="Ej: Universidad de la Innovación"
+              placeholder={t("institutionPlaceholder")}
               disabled={isReadOnly}
             />
           </StandardFormField>
 
           <StandardFormField
-            label="Descripción General"
-            hint="Un resumen conciso del propósito y alcance del proyecto."
+            label={t("descriptionLabel")}
+            hint={t("descriptionHint")}
             htmlFor="description"
           >
             <StandardTextarea
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              placeholder="Describe brevemente el proyecto..."
+              placeholder={t("descriptionPlaceholder")}
               rows={4}
               disabled={isReadOnly}
             />
@@ -215,18 +217,18 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
 
           <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-              Detalles de la Propuesta
+              {t("proposalDetailsTitle")}
             </h3>
 
             <StandardFormField
-              label="Propuesta General"
-              hint="La propuesta central o el marco teórico de la investigación."
+              label={t("proposalLabel")}
+              hint={t("proposalHint")}
               htmlFor="proposal"
             >
               <StandardNote
                 value={formData.proposal}
                 onChange={(value) => handleNoteChange('proposal', value)}
-                placeholder="Detalla la propuesta general..."
+                placeholder={t("proposalPlaceholder")}
                 colorScheme="primary"
                 size="lg"
                 minimalToolbar={true}
@@ -241,14 +243,14 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
 
             {proyectoActual?.module_bibliography && (
               <StandardFormField
-                label="Propuesta Bibliográfica"
-                hint="El enfoque y las fuentes principales para la revisión de literatura."
+                label={t("proposalBibliographyLabel")}
+                hint={t("proposalBibliographyHint")}
                 htmlFor="proposal_bibliography"
               >
                 <StandardNote
                   value={formData.proposal_bibliography}
                   onChange={(value) => handleNoteChange('proposal_bibliography', value)}
-                  placeholder="Detalla la propuesta bibliográfica..."
+                  placeholder={t("proposalBibliographyPlaceholder")}
                   colorScheme="primary"
                   size="lg"
                   minimalToolbar={true}
@@ -264,14 +266,14 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
 
             {proyectoActual?.module_interviews && (
               <StandardFormField
-                label="Propuesta de Entrevistas"
-                hint="La metodología y los objetivos para las entrevistas a realizar."
+                label={t("proposalInterviewsLabel")}
+                hint={t("proposalInterviewsHint")}
                 htmlFor="proposal_interviews"
               >
                 <StandardNote
                   value={formData.proposal_interviews}
                   onChange={(value) => handleNoteChange('proposal_interviews', value)}
-                  placeholder="Detalla la propuesta de entrevistas..."
+                  placeholder={t("proposalInterviewsPlaceholder")}
                   colorScheme="primary"
                   size="lg"
                   minimalToolbar={true}
@@ -295,7 +297,7 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
                 loading={isSaving}
                 leftIcon={Save}
               >
-                {isSaving ? "Guardando..." : "Guardar Cambios"}
+                {isSaving ? t("submitSaving") : t("submitSave")}
               </StandardButton>
             </div>
           )}

@@ -10,6 +10,7 @@ import React, {
 	useLayoutEffect,
 	type ComponentType,
 } from "react";
+import { useTranslations } from "next-intl";
 import { List, useDynamicRowHeight } from "react-window";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
@@ -188,6 +189,7 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 	articlesWithoutAI,
 	onReprocessArticle,
 }) => {
+	const t = useTranslations("articulos.tableLikeView");
 	// Estado del Modal de Desacuerdo
 	const [disagreementOpen, setDisagreementOpen] = useState(false);
 	const [selectedArticle, setSelectedArticle] =
@@ -342,11 +344,11 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 			} catch (err) {
 				return {
 					ok: false,
-					error: err instanceof Error ? err.message : "Error desconocido",
+					error: err instanceof Error ? err.message : t("toastGenericError"),
 				};
 			}
 		},
-		[],
+		[t],
 	);
 
 	// Wrapper: set + persist, con revert en caso de error
@@ -383,22 +385,22 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 
 			if (!result.ok) {
 				setDimensionStatus(articleId, dimId, prev);
-				toast.error(`Error al guardar: ${result.error || "Error desconocido"}`);
+				toast.error(t("toastSaveError", { message: result.error || t("toastGenericError") }));
 			} else {
 				// Mensajes específicos según iteración y acción
-				let message = "Dimensión actualizada";
+				let message = t("toastDimensionUpdated");
 				if (status === "approved") {
 					message =
 						maxIteration >= 3 ?
-							"Dimensión reconciliada (iteración 3)"
-						:	"Dimensión aprobada (iteración 1)";
+							t("toastDimensionReconciled")
+						:	t("toastDimensionApproved");
 				} else if (status === "rejected") {
 					message =
 						maxIteration >= 3 ?
-							"Dimensión enviada a arbitraje (disputada)"
-						:	"Dimensión rechazada";
+							t("toastDimensionSentToArbitration")
+						:	t("toastDimensionRejected");
 				} else {
-					message = "Dimensión reseteada";
+					message = t("toastDimensionReset");
 				}
 				toast.success(message);
 
@@ -407,7 +409,7 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 				// Solo se limpia si el usuario recarga la página manualmente
 			}
 		},
-		[persistDimensionStatus, setDimensionStatus],
+		[persistDimensionStatus, setDimensionStatus, t],
 	);
 
 	// 🎯 Callback para modal de desacuerdo (después de setAndPersistDimensionStatus)
@@ -605,13 +607,11 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 					}
 				}
 				await Promise.all(tasks);
-				toast.success(
-					"Se marcaron como OK todas las dimensiones (excluyendo divergencias)",
-				);
+				toast.success(t("toastApproveAllSuccess"));
 				onGlobalBulkPersistResult?.(true, true);
 			} catch (error) {
 				setDimensionStatusByArticle(snapshot);
-				toast.error("No se pudo marcar OK todo el lote");
+				toast.error(t("toastApproveAllError"));
 				// eslint-disable-next-line no-console
 				console.error("[prevalidate] Error en approve-all de lote", error);
 				onGlobalBulkPersistResult?.(false, true);
@@ -625,6 +625,7 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 		persistDimensionStatus,
 		onGlobalBulkPersistResult,
 		setDimensionStatus,
+		t,
 	]);
 
 	// Señal global: desmarcar (poner en 'none') todas las dimensiones de todos los artículos con persistencia bulk=false
@@ -685,13 +686,11 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 					}
 				}
 				await Promise.all(tasks);
-				toast.success(
-					"Se desmarcaron todas las dimensiones aprobadas (se mantuvieron las divergencias)",
-				);
+				toast.success(t("toastResetAllSuccess"));
 				onGlobalBulkPersistResult?.(true, false);
 			} catch (error) {
 				setDimensionStatusByArticle(snapshot);
-				toast.error("No se pudo desmarcar el lote");
+				toast.error(t("toastResetAllError"));
 				// eslint-disable-next-line no-console
 				console.error("[prevalidate] Error en reset-all de lote", error);
 				onGlobalBulkPersistResult?.(false, false);
@@ -705,6 +704,7 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 		persistDimensionStatus,
 		onGlobalBulkPersistResult,
 		setDimensionStatus,
+		t,
 	]);
 
 	// Pre-calcular latestReview, maxIteration y colorScheme una sola vez por artículo×dimensión
@@ -901,8 +901,7 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 			{cardData.length > 0 && (
 				<div className="text-center mt-4 mb-4 py-2">
 					<StandardText size="sm" colorScheme="secondary">
-						{cardData.length} artículo{cardData.length !== 1 ? "s" : ""} en el
-						lote
+						{t("articlesInBatch", { count: cardData.length })}
 					</StandardText>
 				</div>
 			)}
@@ -917,10 +916,10 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 					<StandardDialog.Content size="lg">
 						<StandardDialog.Header>
 							<StandardDialog.Title>
-								Historial de Clasificaciones · {historyDimensionName}
+								{t("historyDialogTitle", { dimensionName: historyDimensionName })}
 							</StandardDialog.Title>
 							<StandardDialog.Description>
-								Todas las iteraciones de clasificación para esta dimensión
+								{t("historyDialogDescription")}
 							</StandardDialog.Description>
 						</StandardDialog.Header>
 						<StandardDialog.Body>
@@ -928,16 +927,16 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 								{historyReviews.length === 0 ?
 									<div className="text-center py-8 text-muted-foreground">
 										<Eye className="mx-auto mb-2 h-8 w-8 opacity-50" />
-										<p>No hay clasificaciones registradas</p>
+										<p>{t("noClassificationsRegistered")}</p>
 									</div>
 								:	historyReviews
 										.sort((a, b) => (a.iteration ?? 0) - (b.iteration ?? 0))
 										.map((review, idx) => {
 											const isAI = review.reviewer_type === "ai";
 											const iterLabel =
-												review.iteration === 1 ? "Clasificación Inicial (IA)"
-												: review.iteration === 2 ? "Revisión Humana"
-												: "Reconciliación (IA)";
+												review.iteration === 1 ? t("iterationInitialAI")
+												: review.iteration === 2 ? t("iterationHumanReview")
+												: t("iterationReconciliationAI");
 											const bgColor = isAI ? "bg-accent/10" : "bg-primary/10";
 											const borderColor =
 												isAI ? "border-accent/30" : "border-primary/30";
@@ -953,14 +952,14 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 														<StandardBadge
 															colorScheme={isAI ? "accent" : "primary"}
 															size="sm">
-															Iteración {review.iteration}
+															{t("iterationBadge", { n: review.iteration })}
 														</StandardBadge>
 													</div>
 
 													<div className="space-y-2 text-sm">
 														<div className="flex items-start gap-2">
 															<span className="font-medium min-w-[80px]">
-																Valor:
+																{t("valueLabel")}
 															</span>
 															<span className="flex-1">
 																{review.value ?? "—"}
@@ -970,7 +969,7 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 														{typeof review.confidence === "number" && (
 															<div className="flex items-start gap-2">
 																<span className="font-medium min-w-[80px]">
-																	Confianza:
+																	{t("confidenceLabel")}
 																</span>
 																<StandardBadge
 																	colorScheme={
@@ -981,10 +980,10 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 																	}
 																	size="sm">
 																	{review.confidence === 3 ?
-																		"Alta"
+																		t("confidenceHigh")
 																	: review.confidence === 2 ?
-																		"Media"
-																	:	"Baja"}
+																		t("confidenceMedium")
+																	:	t("confidenceLow")}
 																</StandardBadge>
 															</div>
 														)}
@@ -992,7 +991,7 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 														{review.status && (
 															<div className="flex items-start gap-2">
 																<span className="font-medium min-w-[80px]">
-																	Estado:
+																	{t("statusLabel")}
 																</span>
 																<StandardBadge
 																	colorScheme={
@@ -1017,7 +1016,7 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 														{review.rationale && (
 															<div className="flex flex-col gap-1">
 																<span className="font-medium">
-																	Justificación:
+																	{t("rationaleLabel")}
 																</span>
 																<p className="text-xs italic opacity-80 pl-2 border-l-2 border-current">
 																	{review.rationale}
@@ -1068,10 +1067,12 @@ interface HumanDisagreementModalProps {
 	onSubmitted: (ok: boolean) => void;
 }
 
-const confidenceOptions = [
-	{ value: "3", label: "🟢 Alta" },
-	{ value: "2", label: "🟡 Media" },
-	{ value: "1", label: "🔴 Baja" },
+const makeConfidenceOptions = (
+	t: ReturnType<typeof useTranslations<"articulos.tableLikeView">>,
+) => [
+	{ value: "3", label: t("confidenceHighEmoji") },
+	{ value: "2", label: t("confidenceMediumEmoji") },
+	{ value: "1", label: t("confidenceLowEmoji") },
 ];
 
 // 🎯 Componentes memoizados para evitar re-renders del select
@@ -1081,9 +1082,10 @@ const DimensionValueField = memo<{
 	enrichedOptions: SelectOption[];
 	previousValue: string | null;
 }>(({ value, onChange, enrichedOptions, previousValue }) => {
+	const t = useTranslations("articulos.tableLikeView");
 	return (
 		<StandardFormField
-			label="Nueva clasificación"
+			label={t("newClassificationLabel")}
 			htmlFor="dimension-value-select">
 			<StandardSelect
 				id="dimension-value-select"
@@ -1092,12 +1094,12 @@ const DimensionValueField = memo<{
 				onChange={(v) => {
 					onChange(typeof v === "string" ? v : undefined);
 				}}
-				placeholder="Selecciona un valor"
+				placeholder={t("selectValuePlaceholder")}
 				stableOptions={true}
 			/>
 			{previousValue && (
 				<StandardText size="xs" className="text-gray-500 mt-1">
-					Valor anterior: <span className="italic">{previousValue}</span>
+					{t("previousValueLabel")} <span className="italic">{previousValue}</span>
 				</StandardText>
 			)}
 		</StandardFormField>
@@ -1109,8 +1111,10 @@ const ConfidenceField = memo<{
 	value: string | undefined;
 	onChange: (v: string | undefined) => void;
 }>(({ value, onChange }) => {
+	const t = useTranslations("articulos.tableLikeView");
+	const confidenceOptions = useMemo(() => makeConfidenceOptions(t), [t]);
 	return (
-		<StandardFormField label="Nivel de confianza" htmlFor="confidence-select">
+		<StandardFormField label={t("confidenceLevelLabel")} htmlFor="confidence-select">
 			<StandardSelect
 				id="confidence-select"
 				options={confidenceOptions}
@@ -1118,7 +1122,7 @@ const ConfidenceField = memo<{
 				onChange={(v) => {
 					onChange(typeof v === "string" ? v : undefined);
 				}}
-				placeholder="Selecciona confianza"
+				placeholder={t("selectConfidencePlaceholder")}
 				stableOptions={true}
 			/>
 		</StandardFormField>
@@ -1138,6 +1142,7 @@ const HumanDisagreementModal: React.FC<HumanDisagreementModalProps> = memo(
 		optionEmoticonsMap,
 		onSubmitted,
 	}) => {
+		const t = useTranslations("articulos.tableLikeView");
 		const [saving, setSaving] = useState(false);
 		const [value, setValue] = useState<string | undefined>(undefined);
 		const [confidence, setConfidence] = useState<string | undefined>(undefined);
@@ -1237,7 +1242,7 @@ const HumanDisagreementModal: React.FC<HumanDisagreementModalProps> = memo(
 					};
 					throw new Error(data.error || `HTTP ${resp.status}`);
 				}
-				toast.success("Revisión guardada correctamente");
+				toast.success(t("toastReviewSaved"));
 				onSubmitted(true);
 				onClose();
 			} catch (e) {
@@ -1264,13 +1269,13 @@ const HumanDisagreementModal: React.FC<HumanDisagreementModalProps> = memo(
 					<StandardDialog.Header>
 						<StandardDialog.Title>
 							{isArbitration ?
-								`⚖️ Arbitraje Requerido · ${dimensionName}`
-							:	`Desacuerdo del Investigador · ${dimensionName}`}
+								t("arbitrationRequiredTitle", { dimensionName })
+							:	t("disagreementTitle", { dimensionName })}
 						</StandardDialog.Title>
 						<StandardDialog.Description>
 							{isArbitration ?
-								"La IA reconcilió pero no estás de acuerdo. Indica tu clasificación final que será enviada a arbitraje superior."
-							:	"Indica tu clasificación humana, nivel de confianza y una breve justificación."
+								t("arbitrationDescription")
+							:	t("disagreementDescription")
 							}
 						</StandardDialog.Description>
 					</StandardDialog.Header>
@@ -1283,17 +1288,17 @@ const HumanDisagreementModal: React.FC<HumanDisagreementModalProps> = memo(
 								previousValue={previousValue}
 							/>
 						:	<StandardFormField
-								label="Nueva clasificación (texto)"
+								label={t("newClassificationTextLabel")}
 								htmlFor="dimension-value-input">
 								<StandardInput
 									id="dimension-value-input"
 									value={value ?? ""}
 									onChange={(e) => setValue(e.target.value)}
-									placeholder="Escribe tu clasificación"
+									placeholder={t("writeClassificationPlaceholder")}
 								/>
 								{previousValue && (
 									<StandardText size="xs" className="text-gray-500 mt-1">
-										Valor anterior:{" "}
+										{t("previousValueLabel")}{" "}
 										<span className="italic">{previousValue}</span>
 									</StandardText>
 								)}
@@ -1303,14 +1308,14 @@ const HumanDisagreementModal: React.FC<HumanDisagreementModalProps> = memo(
 						<ConfidenceField value={confidence} onChange={setConfidence} />
 
 						<StandardFormField
-							label="Justificación"
+							label={t("rationaleFieldLabel")}
 							htmlFor="rationale-textarea">
 							<StandardTextarea
 								id="rationale-textarea"
 								rows={4}
 								value={rationale}
 								onChange={(e) => setRationale(e.target.value)}
-								placeholder="Explica brevemente tu decisión"
+								placeholder={t("explainDecisionPlaceholder")}
 							/>
 						</StandardFormField>
 					</StandardDialog.Body>
@@ -1319,13 +1324,13 @@ const HumanDisagreementModal: React.FC<HumanDisagreementModalProps> = memo(
 							styleType="subtle"
 							onClick={onClose}
 							disabled={saving}>
-							Cancelar
+							{t("cancelButton")}
 						</StandardButton>
 						<StandardButton
 							onClick={handleSubmit}
 							colorScheme={isArbitration ? "danger" : "primary"}
 							disabled={saving || !value || !confidence}>
-							{saving ? "Guardando..." : "Enviar revisión"}
+							{saving ? t("savingButton") : t("submitReviewButton")}
 						</StandardButton>
 					</StandardDialog.Footer>
 				</StandardDialog.Content>

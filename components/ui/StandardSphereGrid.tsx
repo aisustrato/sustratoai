@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, memo } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { type ColorSchemeVariant } from "@/lib/theme/ColorToken";
 import { StandardSphere, type SphereItemData } from "./StandardSphere";
@@ -166,15 +167,18 @@ export const StandardSphereGrid = memo(
 		fixedSize,
 		forceBadge = false,
 		isLoading: externalIsLoading = false,
-		loadingMessage = "Calculando la distribución...",
+		loadingMessage,
 		className,
 		cardColorScheme = "primary",
 		title,
 		subtitle,
-		emptyStateText = "No hay ítems para mostrar.",
+		emptyStateText,
 		horizontalSafetyMargin,
 		verticalSafetyMargin,
 	}: StandardSphereGridProps) => {
+		const t = useTranslations("designSystem.sphereGrid");
+		const finalLoadingMessage = loadingMessage ?? t("loadingMessage");
+		const finalEmptyStateText = emptyStateText ?? t("emptyStateText");
 		const [calculatedSpherePx, setCalculatedSpherePx] = useState<number>(
 			MINIMUM_SPHERE_DIAMETER,
 		);
@@ -350,7 +354,7 @@ export const StandardSphereGrid = memo(
 				return (
 					<div className="flex flex-col items-center justify-center h-full text-center">
 						<StandardText preset="body" size="md">
-							{emptyStateText}
+							{finalEmptyStateText}
 						</StandardText>
 						{keyGroupVisibility && (
 							<StandardText
@@ -401,7 +405,7 @@ export const StandardSphereGrid = memo(
 			);
 		}, [
 			processedItems,
-			emptyStateText,
+			finalEmptyStateText,
 			isLoading,
 			containerWidth,
 			calculatedCols,
@@ -447,7 +451,7 @@ export const StandardSphereGrid = memo(
 				<StandardCard.Content className="p-4">
 					{isLoading ?
 						<div className="flex h-full w-full items-center justify-center">
-							<SustratoLoadingLogo size={48} text={loadingMessage} showText />
+							<SustratoLoadingLogo size={48} text={finalLoadingMessage} showText />
 						</div>
 					:	renderGridContent}
 				</StandardCard.Content>

@@ -10,10 +10,12 @@ import { useAuth } from "@/app/auth-provider";
 import { actualizarPreferenciasUI } from "@/lib/actions/project-dashboard-actions";
 import { toast } from "sonner";
 import { StandardIcon } from "@/components/ui/StandardIcon";
+import { useTranslations } from "next-intl";
 
 // --- 🧠 Hook de Lógica ---
 // Encapsula toda la complejidad del manejo del estado y la persistencia.
 function useDarkMode() {
+	const t = useTranslations("navChrome.darkModeSwitcher");
 	const { mode, setMode } = useTheme();
 	const auth = useAuth();
 
@@ -45,8 +47,7 @@ function useDarkMode() {
 				auth.setUiIsDarkModeLocal(newIsDarkMode); // Actualiza el AuthProvider
 			} else {
 				toast.error(
-					result.error ||
-						"No se pudo guardar tu preferencia de modo oscuro/claro.",
+					result.error || t("toastErrorSaving"),
 				);
 				// Opcional: Revertir el cambio visual si la persistencia es crítica
 				// setMode(mode);
@@ -56,7 +57,7 @@ function useDarkMode() {
 			const errorMessage =
 				error instanceof Error ?
 					error.message
-				:	"Error inesperado al guardar tu preferencia de modo.";
+				:	t("toastErrorUnexpected");
 			toast.error(errorMessage);
 			// Opcional: Revertir el cambio visual
 			// setMode(mode);
@@ -72,6 +73,7 @@ function useDarkMode() {
 // --- 🖼️ Componente de Presentación ---
 // Ahora es un componente simple, legible y sin lógica de negocio.
 export function StandardDarkModeSwitcher() {
+	const t = useTranslations("navChrome.darkModeSwitcher");
 	const { mode, toggleMode } = useDarkMode();
 
 	return (
@@ -90,7 +92,7 @@ export function StandardDarkModeSwitcher() {
 					onCheckedChange={toggleMode}
 					size="sm" // Un tamaño explícito es más predecible
 					aria-label={
-						mode === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"
+						mode === "dark" ? t("ariaLabelToLight") : t("ariaLabelToDark")
 					}
 				/>
 			</motion.div>

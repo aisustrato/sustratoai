@@ -2,7 +2,8 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
@@ -19,19 +20,21 @@ import { cn } from "@/lib/utils";
 //#endregion ![def]
 
 //#region [main] - 🔧 COMPONENT 🔧
-const sidebarNavItems = [
+const makeSidebarNavItems = (
+	t: ReturnType<typeof useTranslations<"personal.layout">>,
+) => [
 	{
-		title: "Historial IA",
+		title: t("navHistorialIa"),
 		href: "/personal/historial_ai",
 		icon: History,
 	},
 	{
-		title: "Publicaciones",
+		title: t("navPublicaciones"),
 		href: "/personal/papers",
 		icon: FileText,
 	},
 	{
-		title: "Configuración",
+		title: t("navConfiguracion"),
 		href: "/personal/configuracion",
 		icon: Settings,
 	},
@@ -42,6 +45,8 @@ export default function PersonalLayout({
 }: {
 	children: React.ReactNode;
 }) {
+	const t = useTranslations("personal.layout");
+	const sidebarNavItems = useMemo(() => makeSidebarNavItems(t), [t]);
 	const [isCollapsed, setIsCollapsed] = useState(false);
 	const [isDesktop, setIsDesktop] = useState(true);
 	const [layoutGap, setLayoutGap] = useState(40); // Default to large gap
@@ -153,7 +158,7 @@ export default function PersonalLayout({
 												colorScheme="secondary"
 												colorShade="pure"
 												className="whitespace-nowrap">
-												Personal
+												{t("sidebarTitle")}
 											</StandardText>
 										</motion.div>
 									)}

@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,8 +19,10 @@ import { KeyRound, ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustratoLogoWithFixedText";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 
 export default function UpdatePasswordPage() {
+	const t = useTranslations("auth.updatePassword");
 	// 🔧 DECISIÓN: el formulario se muestra de inmediato, sin pantalla de
 	// "Verificando tu enlace..." bloqueante. El canje del code PKCE corre en
 	// segundo plano (ver useEffect abajo) sin que el usuario tenga que
@@ -91,9 +94,7 @@ export default function UpdatePasswordPage() {
 				.then(({ error: verifyError }) => {
 					if (verifyError) {
 						console.error("Error al verificar el token:", verifyError);
-						setSessionError(
-							"Enlace inválido o expirado. Por favor, solicita un nuevo enlace de recuperación.",
-						);
+						setSessionError(t("invalidLinkError"));
 						return;
 					}
 					try {
@@ -125,9 +126,7 @@ export default function UpdatePasswordPage() {
 				.then(({ error: exchangeError }) => {
 					if (exchangeError) {
 						console.error("Error al canjear el código:", exchangeError);
-						setSessionError(
-							"Enlace inválido o expirado. Por favor, solicita un nuevo enlace de recuperación.",
-						);
+						setSessionError(t("invalidLinkError"));
 						return;
 					}
 					try {
@@ -159,15 +158,13 @@ export default function UpdatePasswordPage() {
 			.getSession()
 			.then(({ data: { session }, error: sessionErr }) => {
 				if (sessionErr || !session) {
-					setSessionError(
-						"Enlace inválido o expirado. Por favor, solicita un nuevo enlace de recuperación.",
-					);
+					setSessionError(t("invalidLinkError"));
 				}
 			})
 			.catch((err) => {
 				console.error("Excepción al verificar sesión:", err);
 			});
-	}, [code, token, tokenHash, type]);
+	}, [code, token, tokenHash, type, t]);
 
 	// Función para obtener el estado de éxito de un campo
 	const getSuccessState = (
@@ -187,8 +184,8 @@ export default function UpdatePasswordPage() {
 		data,
 	) => {
 		console.log("UpdatePassword_OnSubmit (Válido):", { password: "[HIDDEN]" });
-		toast.success("Actualizando contraseña...", {
-			description: "Validaciones exitosas.",
+		toast.success(t("updatingToast"), {
+			description: t("validationsOkToast"),
 		});
 
 		try {
@@ -201,16 +198,16 @@ export default function UpdatePasswordPage() {
 				// Si hay error de servidor, mostrarlo en el campo de contraseña
 				setError("password", {
 					type: "server",
-					message: updateError.message || "Error al actualizar la contraseña",
+					message: updateError.message || t("passwordUpdateError"),
 				});
-				toast.error("Error del servidor", { description: updateError.message });
+				toast.error(t("serverErrorToast"), { description: updateError.message });
 				return;
 			}
 
 			// Éxito: mostrar mensaje y preparar redirección
 			setSuccess(true);
-			toast.success("¡Contraseña actualizada con éxito!", {
-				description: "Redirigiendo al inicio de sesión...",
+			toast.success(t("successToast"), {
+				description: t("redirectingToast"),
 			});
 
 			// Cerrar sesión después de actualizar la contraseña
@@ -223,9 +220,9 @@ export default function UpdatePasswordPage() {
 		} catch (err: unknown) {
 			console.error("Error al actualizar la contraseña:", err);
 			const errorMessage =
-				err instanceof Error ? err.message : "Ocurrió un error inesperado.";
+				err instanceof Error ? err.message : t("unexpectedError");
 			setError("password", { type: "server", message: errorMessage });
-			toast.error("Error inesperado", { description: errorMessage });
+			toast.error(t("unexpectedErrorToast"), { description: errorMessage });
 		}
 		// Nota: No agregamos finally aquí porque queremos mantener isSubmitting=true
 		// hasta que se complete la redirección para evitar que el usuario haga clic nuevamente
@@ -234,13 +231,16 @@ export default function UpdatePasswordPage() {
 	// Handler para envío inválido del formulario
 	const onInvalidSubmit = () => {
 		console.log("UpdatePassword_OnSubmit (Inválido):", errors);
-		toast.error("El formulario tiene errores.", {
-			description: "Por favor, revisa los campos marcados.",
+		toast.error(t("formErrorToast"), {
+			description: t("formErrorDescription"),
 		});
 	};
 
 	return (
 		<StandardPageBackground variant="subtle" bubbles={true}>
+			<div className="fixed top-4 right-4 z-50">
+				<LocaleSwitcher />
+			</div>
 			<div className="flex items-center justify-center min-h-screen p-4">
 				<StandardCard
 					className="max-w-md w-full"
@@ -262,15 +262,13 @@ export default function UpdatePasswordPage() {
 							weight="bold"
 							colorScheme="primary"
 							className="text-center mt-4">
-							Crear nueva contraseña
+							{t("title")}
 						</StandardText>
 						<StandardText
 							asElement="p"
 							colorScheme="neutral"
 							className="text-center text-muted-foreground">
-							{!success ?
-								"Ingresa tu nueva contraseña. Debe cumplir con los requisitos de seguridad."
-							:	"Contraseña actualizada. Serás redirigido al inicio de sesión."}
+							{!success ? t("instructions") : t("successMessage")}
 						</StandardText>
 					</StandardCard.Header>
 
@@ -284,7 +282,7 @@ export default function UpdatePasswordPage() {
 									onClick={() => (window.location.href = "/reset-password")}
 									leftIcon={ArrowLeft}
 									colorScheme="primary">
-									Volver a recuperar contraseña
+									{t("backToResetPassword")}
 								</StandardButton>
 							</div>
 						: !success ?
@@ -292,9 +290,9 @@ export default function UpdatePasswordPage() {
 								onSubmit={handleSubmit(onValidSubmit, onInvalidSubmit)}
 								className="space-y-4">
 								<StandardFormField
-									label="Nueva contraseña"
+									label={t("newPasswordLabel")}
 									htmlFor="password"
-									hint="Mínimo 8 caracteres, una mayúscula, un número y un símbolo"
+									hint={t("newPasswordHint")}
 									error={errors.password?.message}
 									isRequired>
 									<Controller
@@ -316,9 +314,9 @@ export default function UpdatePasswordPage() {
 								</StandardFormField>
 
 								<StandardFormField
-									label="Confirmar nueva contraseña"
+									label={t("confirmPasswordLabel")}
 									htmlFor="confirmPassword"
-									hint="Vuelve a escribir la misma contraseña"
+									hint={t("confirmPasswordHint")}
 									error={errors.confirmPassword?.message}
 									isRequired>
 									<Controller
@@ -343,12 +341,12 @@ export default function UpdatePasswordPage() {
 									type="submit"
 									fullWidth
 									loading={isSubmitting}
-									loadingText="Actualizando..."
+									loadingText={t("submittingButton")}
 									colorScheme="primary"
 									leftIcon={KeyRound}
 									className="mt-6"
 									disabled={isSubmitting}>
-									Actualizar contraseña
+									{t("submitButton")}
 								</StandardButton>
 							</form>
 						:	<div className="text-center py-4 flex flex-col items-center">
@@ -357,8 +355,7 @@ export default function UpdatePasswordPage() {
 									colorScheme="positive"
 									size="sm"
 									className="text-sm">
-									¡Todo listo! Tu acceso ha sido restaurado. En breves momentos
-									te llevaremos al inicio de sesión.
+									{t("successReady")}
 								</StandardText>
 							</div>
 						}
@@ -371,7 +368,7 @@ export default function UpdatePasswordPage() {
 								leftIcon={ArrowLeft}
 								size="sm"
 								disabled={isSubmitting}>
-								Volver a inicio de sesión
+								{t("backToLogin")}
 							</StandardButton>
 						</Link>
 					</StandardCard.Footer>

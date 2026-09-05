@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardTable } from "@/components/ui/StandardTable";
 import { StandardPagination } from "@/components/ui/StandardPagination";
@@ -60,15 +61,21 @@ type ArticleForNoteEditor = {
 	};
 };
 
-const ITEMS_PER_PAGE_OPTIONS = [
-	{ value: "10", label: "10 por página" },
-	{ value: "25", label: "25 por página" },
-	{ value: "50", label: "50 por página" },
+type AnalisisPreclasificacionTranslator = ReturnType<
+	typeof useTranslations<"articulos.analisisPreclasificacion">
+>;
+
+const makeItemsPerPageOptions = (t: AnalisisPreclasificacionTranslator) => [
+	{ value: "10", label: t("itemsPerPage10") },
+	{ value: "25", label: t("itemsPerPage25") },
+	{ value: "50", label: t("itemsPerPage50") },
 ];
 
 import { TDCAnalysisDialog } from "./components/TDCAnalysisDialog";
 
 export default function AnalisisPreclasificacionPage() {
+	const t = useTranslations("articulos.analisisPreclasificacion");
+	const ITEMS_PER_PAGE_OPTIONS = useMemo(() => makeItemsPerPageOptions(t), [t]);
 	const { proyectoActual } = useAuth();
 	const [activePhase, setActivePhase] = useState<Phase | null>(null);
 	const [isLoadingPhase, setIsLoadingPhase] = useState(true);
@@ -166,11 +173,11 @@ export default function AnalisisPreclasificacionPage() {
 			setCurrentArticleForTDC({
 				id: article.article_id,
 				title:
-					article.translated_title || article.title || "Artículo sin título",
+					article.translated_title || article.title || t("untitledArticle"),
 			});
 			setTdcDialogOpen(true);
 		},
-		[],
+		[t],
 	);
 
 	// Función para abrir el editor de notas
@@ -411,7 +418,7 @@ export default function AnalisisPreclasificacionPage() {
 				"❌ [loadDimensionStatistics] Error:",
 				"error" in result ? result.error : "Error desconocido",
 			);
-			toast.error("Error al cargar estadísticas");
+			toast.error(t("toastErrorLoadingStats"));
 		}
 
 		setIsLoadingAllArticles(false);
@@ -424,6 +431,7 @@ export default function AnalisisPreclasificacionPage() {
 		confidenceFilter,
 		showTable,
 		allArticles.length,
+		t,
 		// loadArticles se omite intencionalmente para evitar dependencia circular
 	]);
 
@@ -493,7 +501,7 @@ export default function AnalisisPreclasificacionPage() {
 			toast.error(
 				"error" in result && result.error ?
 					result.error
-				:	"Error al cargar artículos",
+				:	t("toastErrorLoadingArticles"),
 			);
 			setArticles([]);
 			setTotalItems(0);
@@ -511,6 +519,7 @@ export default function AnalisisPreclasificacionPage() {
 		activeFilters,
 		confidenceFilter,
 		loadPresenceData,
+		t,
 	]);
 
 	useEffect(() => {
@@ -798,17 +807,17 @@ export default function AnalisisPreclasificacionPage() {
 	// Función para descargar CSV
 	const handleDownloadCSV = useCallback(async () => {
 		if (!proyectoActual?.id || selectedPhaseIds.length === 0) {
-			toast.error("No hay datos para exportar");
+			toast.error(t("toastNoDataToExport"));
 			return;
 		}
 
 		// Usar la fase seleccionada en la UI, no la fase activa
 		const exportPhaseId = selectedPhaseIds[0];
 		const exportPhase = allPhases.find((p) => p.id === exportPhaseId);
-		const exportPhaseName = exportPhase?.name || "fase";
+		const exportPhaseName = exportPhase?.name || t("defaultPhaseName");
 
 		setIsDownloadingCSV(true);
-		toast.info("Preparando exportación certificada...");
+		toast.info(t("toastPreparingExport"));
 
 		try {
 			// Obtener TODOS los artículos de la fase seleccionada (sin paginación)
@@ -818,7 +827,7 @@ export default function AnalisisPreclasificacionPage() {
 			);
 
 			if (!result.success || !result.data) {
-				toast.error("Error al obtener datos para exportación");
+				toast.error(t("toastErrorFetchingExportData"));
 				return;
 			}
 
@@ -869,9 +878,7 @@ export default function AnalisisPreclasificacionPage() {
 					});
 
 			if (articlesToExport.length === 0) {
-				toast.warning(
-					"No hay artículos para exportar con los filtros actuales",
-				);
+				toast.warning(t("toastNoArticlesForExportFilters"));
 				setIsDownloadingCSV(false);
 				return;
 			}
@@ -899,9 +906,9 @@ export default function AnalisisPreclasificacionPage() {
 					classifications[dim.name] = {
 						value: (c?.value || "").trim(),
 						confidence:
-							c?.confidence === 3 ? "Alta"
-							: c?.confidence === 2 ? "Media"
-							: c?.confidence === 1 ? "Baja"
+							c?.confidence === 3 ? t("confidenceHigh")
+							: c?.confidence === 2 ? t("confidenceMedium")
+							: c?.confidence === 1 ? t("confidenceLow")
 							: "",
 						rationale: c?.rationale || "",
 					};
@@ -957,17 +964,17 @@ export default function AnalisisPreclasificacionPage() {
 			// ============================================================
 
 			const csvHeaders = [
-				"#",
-				"Título",
-				"Título Traducido",
-				"Abstract Traducido",
-				"Resumen en Español",
-				"Autores",
-				"Año",
-				"Revista",
+				t("csvHeaderIndex"),
+				t("csvHeaderTitle"),
+				t("csvHeaderTranslatedTitle"),
+				t("csvHeaderTranslatedAbstract"),
+				t("csvHeaderSpanishSummary"),
+				t("csvHeaderAuthors"),
+				t("csvHeaderYear"),
+				t("csvHeaderJournal"),
 				...allDimensions.map((dim) => dim.name),
-				...allDimensions.map((dim) => `${dim.name} - Confianza`),
-				...allDimensions.map((dim) => `${dim.name} - Justificación`),
+				...allDimensions.map((dim) => `${dim.name} - ${t("csvHeaderConfidenceSuffix")}`),
+				...allDimensions.map((dim) => `${dim.name} - ${t("csvHeaderRationaleSuffix")}`),
 			];
 
 			const csvRows = canonicalArticles.map((article) => {
@@ -1082,12 +1089,12 @@ export default function AnalisisPreclasificacionPage() {
 			URL.revokeObjectURL(jsonUrl);
 
 			toast.success(
-				`${articlesToExport.length} artículos exportados con certificado de integridad (SHA-256: ${hashShort}...)`,
+				t("toastExportSuccess", { count: articlesToExport.length, hash: hashShort }),
 				{ duration: 6000 },
 			);
 		} catch (error) {
 			console.error("[handleDownloadCSV] Error:", error);
-			toast.error("Error al generar los archivos de exportación");
+			toast.error(t("toastErrorGeneratingExport"));
 		} finally {
 			setIsDownloadingCSV(false);
 		}
@@ -1099,6 +1106,7 @@ export default function AnalisisPreclasificacionPage() {
 		activeFiltersCount,
 		isOtherValue,
 		dimensions,
+		t,
 	]);
 
 	// Función para obtener color de badge según confianza
@@ -1112,19 +1120,19 @@ export default function AnalisisPreclasificacionPage() {
 	};
 
 	// Función para obtener texto de confianza
-	const getConfidenceText = (confidence: number | null): string => {
+	const getConfidenceText = useCallback((confidence: number | null): string => {
 		if (confidence === null) return "—";
-		if (confidence === 3) return "Alta";
-		if (confidence === 2) return "Media";
-		return "Baja";
-	};
+		if (confidence === 3) return t("confidenceHigh");
+		if (confidence === 2) return t("confidenceMedium");
+		return t("confidenceLow");
+	}, [t]);
 
 	// Definición de columnas dinámicas
 	const columns = useMemo<ColumnDef<PreclassifiedArticleForAnalysis>[]>(() => {
 		const baseColumns: ColumnDef<PreclassifiedArticleForAnalysis>[] = [
 			{
 				accessorKey: "correlativo",
-				header: "#",
+				header: t("columnCorrelativo"),
 				size: 60,
 				cell: ({ row }) => (
 					<StandardText size="sm" weight="semibold">
@@ -1134,14 +1142,14 @@ export default function AnalisisPreclasificacionPage() {
 			},
 			{
 				accessorKey: "title",
-				header: "Título",
+				header: t("columnTitle"),
 				size: 300,
 				cell: ({ row }) => (
 					<div className="max-w-md">
 						<StandardText size="sm" className="line-clamp-2">
 							{row.original.translated_title ||
 								row.original.title ||
-								"Sin título"}
+								t("untitled")}
 						</StandardText>
 					</div>
 				),
@@ -1152,12 +1160,12 @@ export default function AnalisisPreclasificacionPage() {
 			},
 			{
 				accessorKey: "authors",
-				header: "Autor(es)",
+				header: t("columnAuthors"),
 				size: 200,
 				cell: ({ row }) => {
 					const authors = row.original.authors;
 					const authorsText =
-						Array.isArray(authors) ? authors.join(", ") : "Sin autores";
+						Array.isArray(authors) ? authors.join(", ") : t("noAuthors");
 					return (
 						<StandardText size="sm" colorShade="subtle">
 							{authorsText}
@@ -1167,7 +1175,7 @@ export default function AnalisisPreclasificacionPage() {
 			},
 			{
 				accessorKey: "publication_year",
-				header: "Año",
+				header: t("columnYear"),
 				size: 80,
 				cell: ({ row }) => (
 					<StandardText size="sm">
@@ -1177,17 +1185,17 @@ export default function AnalisisPreclasificacionPage() {
 			},
 			{
 				accessorKey: "journal",
-				header: "Revista",
+				header: t("columnJournal"),
 				size: 200,
 				cell: ({ row }) => (
 					<StandardText size="sm" colorShade="subtle">
-						{row.original.journal || "Sin fuente"}
+						{row.original.journal || t("noSource")}
 					</StandardText>
 				),
 			},
 			{
 				accessorKey: "translated_abstract",
-				header: "Abstract (Español)",
+				header: t("columnAbstractEs"),
 				size: 400,
 				meta: {
 					isTruncatable: true,
@@ -1196,7 +1204,7 @@ export default function AnalisisPreclasificacionPage() {
 			},
 			{
 				accessorKey: "translation_summary",
-				header: "Resumen en Español",
+				header: t("columnSpanishSummary"),
 				size: 400,
 				meta: {
 					isTruncatable: true,
@@ -1205,7 +1213,7 @@ export default function AnalisisPreclasificacionPage() {
 			},
 			{
 				accessorKey: "classifications",
-				header: "Clasificaciones",
+				header: t("columnClassifications"),
 				size: 200,
 				cell: ({ row }) => (
 					<div className="flex flex-wrap gap-2">
@@ -1246,7 +1254,7 @@ export default function AnalisisPreclasificacionPage() {
 					if (!classification || !classification.value) {
 						return (
 							<StandardText size="sm" colorShade="subtle">
-								Sin clasificar
+								{t("notClassified")}
 							</StandardText>
 						);
 					}
@@ -1289,7 +1297,7 @@ export default function AnalisisPreclasificacionPage() {
 		// Columna de acciones (fijada a la derecha, botones apilados)
 		const actionsColumn: ColumnDef<PreclassifiedArticleForAnalysis> = {
 			id: "actions",
-			header: "Acciones",
+			header: t("columnActions"),
 			size: 60,
 			cell: ({ row }) => {
 				const hasNotes =
@@ -1319,11 +1327,11 @@ export default function AnalisisPreclasificacionPage() {
 									"/articulos/analisis-preclasificacion",
 								);
 								const returnLabel = encodeURIComponent(
-									"Análisis de Preclasificación",
+									t("pageTitle"),
 								);
 								window.location.href = `/articulos/detalle?articleId=${row.original.article_id}&translated=${translatedParam}&returnHref=${returnHref}&returnLabel=${returnLabel}`;
 							}}
-							tooltip="Ver detalle del artículo">
+							tooltip={t("viewArticleDetailTooltip")}>
 							<ExternalLink size={16} />
 						</StandardButton>
 
@@ -1333,7 +1341,7 @@ export default function AnalisisPreclasificacionPage() {
 							iconOnly={true}
 							size="sm"
 							onClick={() => handleOpenNotes(row.original)}
-							tooltip={hasNotes ? "Ver/editar notas" : "Crear nota"}>
+							tooltip={hasNotes ? t("viewEditNotesTooltip") : t("createNoteTooltip")}>
 							<StickyNote size={16} />
 						</StandardButton>
 
@@ -1353,7 +1361,7 @@ export default function AnalisisPreclasificacionPage() {
 							iconOnly={true}
 							size="sm"
 							onClick={() => handleOpenTDC(row.original)}
-							tooltip="Nodo F0: Análisis de Viabilidad (TDC)">
+							tooltip={t("tdcTooltip")}>
 							<Sparkles size={16} />
 						</StandardButton>
 					</div>
@@ -1373,6 +1381,8 @@ export default function AnalisisPreclasificacionPage() {
 		handleGroupsChanged,
 		getDimensionIcon,
 		handleOpenTDC,
+		getConfidenceText,
+		t,
 	]);
 
 	// Manejar cambio de página
@@ -1390,8 +1400,8 @@ export default function AnalisisPreclasificacionPage() {
 
 	// Breadcrumbs
 	const breadcrumbs = [
-		{ label: "Artículos", href: "/articulos" },
-		{ label: "Análisis de Preclasificación" },
+		{ label: t("breadcrumbArticulos"), href: "/articulos" },
+		{ label: t("pageTitle") },
 	];
 
 	// Render loading
@@ -1400,7 +1410,7 @@ export default function AnalisisPreclasificacionPage() {
 			<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
 				<SustratoLoadingLogo size={64} />
 				<StandardText colorShade="subtle">
-					Cargando información del proyecto...
+					{t("loadingProjectInfo")}
 				</StandardText>
 			</div>
 		);
@@ -1410,7 +1420,7 @@ export default function AnalisisPreclasificacionPage() {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
 				<SustratoLoadingLogo size={64} />
-				<StandardText colorShade="subtle">Cargando fase activa...</StandardText>
+				<StandardText colorShade="subtle">{t("loadingActivePhase")}</StandardText>
 			</div>
 		);
 	}
@@ -1420,10 +1430,10 @@ export default function AnalisisPreclasificacionPage() {
 			<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
 				<Brain className="h-12 w-12 text-neutral-300" />
 				<StandardText size="lg" weight="semibold">
-					No hay fases disponibles
+					{t("noPhasesAvailableTitle")}
 				</StandardText>
 				<StandardText colorShade="subtle">
-					Crea una fase desde la gestión de fases para comenzar el análisis.
+					{t("noPhasesAvailableDescription")}
 				</StandardText>
 			</div>
 		);
@@ -1435,7 +1445,7 @@ export default function AnalisisPreclasificacionPage() {
 			{allPhases.length > 1 && (
 				<div className="flex items-center gap-3">
 					<StandardText size="sm" weight="medium">
-						Analizar fases:
+						{t("analyzePhasesLabel")}
 					</StandardText>
 					<div className="w-80">
 						<StandardSelect
@@ -1455,24 +1465,24 @@ export default function AnalisisPreclasificacionPage() {
 								setSelectedDimensionIds([]);
 								setCurrentPage(1);
 							}}
-							placeholder="Seleccionar fase(s)"
+							placeholder={t("selectPhasesPlaceholder")}
 							options={[
 								...allPhases.map((phase) => ({
 									value: phase.id,
-									label: `Fase ${phase.phase_number}: ${phase.name}${
-										phase.id === activePhase?.id ? " (Activa)" : ""
+									label: `${t("phaseOptionLabel", { number: phase.phase_number, name: phase.name })}${
+										phase.id === activePhase?.id ? t("activePhaseSuffix") : ""
 									}`,
 								})),
 								{
 									value: "multiple",
-									label: `Todas las Fases (${allPhases?.length || 0})`,
+									label: t("allPhasesOption", { count: allPhases?.length || 0 }),
 								},
 							]}
 						/>
 					</div>
 					{selectedPhaseIds.length > 1 && (
 						<StandardBadge size="sm" colorScheme="primary">
-							{dimensions.length} dimensiones
+							{t("dimensionsCountBadge", { count: dimensions.length })}
 						</StandardBadge>
 					)}
 				</div>
@@ -1480,13 +1490,13 @@ export default function AnalisisPreclasificacionPage() {
 
 			{/* Page Title */}
 			<StandardPageTitle
-				title="Análisis de Preclasificación"
+				title={t("pageTitle")}
 				subtitle={
 					selectedPhaseIds.length === 1 ?
-						`Fase: ${allPhases.find((p) => p.id === selectedPhaseIds[0])?.name || activePhase?.name || "Sin nombre"}`
-					:	`Análisis Multifase (${selectedPhaseIds.length} fases)`
+						t("phaseSubtitle", { name: allPhases.find((p) => p.id === selectedPhaseIds[0])?.name || activePhase?.name || t("unnamedPhase") })
+					:	t("multiphaseSubtitle", { count: selectedPhaseIds.length })
 				}
-				description="Vista analítica de todos los artículos con datos de preclasificación. Consulta resultados, agrega notas y organiza en grupos."
+				description={t("pageDescription")}
 				mainIcon={Brain}
 				breadcrumbs={breadcrumbs}
 			/>
@@ -1502,7 +1512,7 @@ export default function AnalisisPreclasificacionPage() {
 							size="sm"
 							onClick={() => setShowFilters(!showFilters)}
 							leftIcon={Filter}>
-							Filtros
+							{t("filtersButton")}
 							{activeFiltersCount > 0 && (
 								<StandardBadge size="sm" colorScheme="accent">
 									{activeFiltersCount}
@@ -1516,7 +1526,7 @@ export default function AnalisisPreclasificacionPage() {
 								size="sm"
 								onClick={clearAllFilters}
 								leftIcon={X}>
-								Limpiar filtros
+								{t("clearFiltersButton")}
 							</StandardButton>
 						)}
 
@@ -1539,7 +1549,7 @@ export default function AnalisisPreclasificacionPage() {
 									setShowDimensionSelector(true);
 								}}
 								leftIcon={Brain}>
-								Dimensiones ({selectedDimensionIds.length}/{dimensions.length})
+								{t("dimensionsButton", { selected: selectedDimensionIds.length, total: dimensions.length })}
 							</StandardButton>
 						)}
 
@@ -1549,7 +1559,7 @@ export default function AnalisisPreclasificacionPage() {
 							size="sm"
 							onClick={() => setCreatePhaseDialogOpen(true)}
 							leftIcon={Copy}>
-							Crear Fase Aditiva
+							{t("createAdditivePhaseButton")}
 						</StandardButton>
 
 						{/* Botón Crear Fase Filtrada - solo visible con filtros activos */}
@@ -1560,7 +1570,7 @@ export default function AnalisisPreclasificacionPage() {
 								size="sm"
 								onClick={() => setCreateFilteredPhaseDialogOpen(true)}
 								leftIcon={Filter}>
-								Crear Fase desde Selección
+								{t("createFilteredPhaseButton")}
 								<StandardBadge size="sm" colorScheme="accent" className="ml-1">
 									{activeFiltersCount}
 								</StandardBadge>
@@ -1576,7 +1586,7 @@ export default function AnalisisPreclasificacionPage() {
 							size="sm"
 							onClick={() => setShowTable(!showTable)}
 							leftIcon={showTable ? X : BarChart3}>
-							{showTable ? "Ocultar Tabla" : "Mostrar Tabla"}
+							{showTable ? t("hideTableButton") : t("showTableButton")}
 						</StandardButton>
 
 						<StandardButton
@@ -1586,10 +1596,10 @@ export default function AnalisisPreclasificacionPage() {
 							onClick={handleDownloadCSV}
 							disabled={isDownloadingCSV || totalItems === 0}
 							leftIcon={Download}>
-							{isDownloadingCSV ? "Certificando..." : "Exportar Certificado"}
+							{isDownloadingCSV ? t("certifyingButton") : t("exportCertifiedButton")}
 							{activeFiltersCount > 0 && !isDownloadingCSV && (
 								<StandardBadge size="sm" colorScheme="success">
-									Filtrado
+									{t("filteredBadge")}
 								</StandardBadge>
 							)}
 						</StandardButton>
@@ -1600,7 +1610,7 @@ export default function AnalisisPreclasificacionPage() {
 							size="sm"
 							onClick={() => setShowVisualization(!showVisualization)}
 							leftIcon={BarChart3}>
-							{showVisualization ? "Ocultar" : "Ver"} gráficos
+							{showVisualization ? t("hideChartsButton") : t("showChartsButton")}
 						</StandardButton>
 					</div>
 				</div>
@@ -1615,7 +1625,7 @@ export default function AnalisisPreclasificacionPage() {
 							<div className="flex items-center gap-2 mb-3">
 								<TrendingUp className="w-4 h-4" />
 								<StandardText size="sm" weight="semibold">
-									Nivel de Confianza
+									{t("confidenceLevelTitle")}
 								</StandardText>
 							</div>
 							<div className="flex flex-wrap gap-2">
@@ -1626,7 +1636,7 @@ export default function AnalisisPreclasificacionPage() {
 									}
 									className="cursor-pointer"
 									onClick={() => toggleConfidenceFilter(3)}>
-									Alta
+									{t("confidenceHigh")}
 								</StandardBadge>
 								<StandardBadge
 									styleType={confidenceFilter.includes(2) ? "solid" : "outline"}
@@ -1635,7 +1645,7 @@ export default function AnalisisPreclasificacionPage() {
 									}
 									className="cursor-pointer"
 									onClick={() => toggleConfidenceFilter(2)}>
-									Media
+									{t("confidenceMedium")}
 								</StandardBadge>
 								<StandardBadge
 									styleType={confidenceFilter.includes(1) ? "solid" : "outline"}
@@ -1644,12 +1654,11 @@ export default function AnalisisPreclasificacionPage() {
 									}
 									className="cursor-pointer"
 									onClick={() => toggleConfidenceFilter(1)}>
-									Baja
+									{t("confidenceLow")}
 								</StandardBadge>
 							</div>
 							<StandardText size="xs" colorShade="subtle" className="mt-2">
-								Filtra artículos donde al menos una dimensión tenga el nivel de
-								confianza seleccionado
+								{t("confidenceFilterHint")}
 							</StandardText>
 						</div>
 
@@ -1751,7 +1760,7 @@ export default function AnalisisPreclasificacionPage() {
 												}
 												className="cursor-pointer"
 												onClick={() => toggleFilter(dim.id, "Otros")}>
-												🎁 Otros ({optionCounts["Otros"]})
+												🎁 {t("otherLabel")} ({optionCounts["Otros"]})
 											</StandardBadge>
 										)}
 									</div>
@@ -1769,7 +1778,7 @@ export default function AnalisisPreclasificacionPage() {
 						<div className="flex flex-col items-center justify-center py-16 gap-4">
 							<SustratoLoadingLogo size={64} />
 							<StandardText colorShade="subtle">
-								Cargando datos completos para visualización...
+								{t("loadingFullVisualizationData")}
 							</StandardText>
 						</div>
 					</StandardCard>
@@ -1787,26 +1796,24 @@ export default function AnalisisPreclasificacionPage() {
 						<div className="flex items-center gap-4">
 							<div className="flex items-center gap-2">
 								<StandardText size="sm" colorShade="subtle">
-									Total: {totalItems} artículo{totalItems !== 1 ? "s" : ""}
+									{t("totalArticlesLabel", { count: totalItems })}
 								</StandardText>
 								{activeFiltersCount > 0 &&
 									filteredArticles.length !== articles.length && (
 										<StandardBadge size="sm" colorScheme="accent">
-											{filteredArticles.length} filtrado
-											{filteredArticles.length !== 1 ? "s" : ""}
+											{t("filteredCountBadge", { count: filteredArticles.length })}
 										</StandardBadge>
 									)}
 							</div>
 							{dimensions.length > 0 && (
 								<StandardBadge colorScheme="primary" size="sm">
-									{dimensions.length} dimensión
-									{dimensions.length !== 1 ? "es" : ""}
+									{t("dimensionsCountBadge", { count: dimensions.length })}
 								</StandardBadge>
 							)}
 						</div>
 						<div className="flex items-center gap-2">
 							<StandardText size="sm" colorShade="subtle">
-								Mostrar:
+								{t("showLabel")}
 							</StandardText>
 							<StandardSelect
 								options={ITEMS_PER_PAGE_OPTIONS}
@@ -1823,18 +1830,17 @@ export default function AnalisisPreclasificacionPage() {
 						<div className="flex flex-col items-center justify-center py-16 gap-4">
 							<SustratoLoadingLogo size={64} />
 							<StandardText colorShade="subtle">
-								Cargando análisis de preclasificación...
+								{t("loadingAnalysis")}
 							</StandardText>
 						</div>
 					: articles.length === 0 ?
 						<div className="flex flex-col items-center justify-center py-16 gap-2">
 							<Brain className="h-12 w-12 text-neutral-300" />
 							<StandardText size="lg" weight="semibold">
-								No hay artículos preclasificados
+								{t("noArticlesTitle")}
 							</StandardText>
 							<StandardText colorShade="subtle">
-								No se encontraron artículos con datos de preclasificación en
-								esta fase.
+								{t("noArticlesDescription")}
 							</StandardText>
 						</div>
 					:	<StandardTable
@@ -1843,7 +1849,7 @@ export default function AnalisisPreclasificacionPage() {
 							enableTruncation={true}
 							colorScheme="neutral"
 							enableKeywordHighlighting={true}
-							keywordHighlightPlaceholder="Buscar en tabla...">
+							keywordHighlightPlaceholder={t("searchInTablePlaceholder")}>
 							<StandardTable.Table />
 						</StandardTable>
 					}

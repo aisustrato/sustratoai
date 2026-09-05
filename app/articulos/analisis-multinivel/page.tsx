@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardSelect } from "@/components/ui/StandardSelect";
@@ -25,6 +26,7 @@ import type { Database } from "@/lib/database.types";
 type Phase = Database["public"]["Tables"]["preclassification_phases"]["Row"];
 
 export default function AnalisisMultinivelPage() {
+	const t = useTranslations("articulos.analisisMultinivel");
 	const { proyectoActual } = useAuth();
 
 	// Estados de fases
@@ -65,11 +67,11 @@ export default function AnalisisMultinivelPage() {
 			}
 		} catch (error) {
 			console.error("Error cargando fases:", error);
-			toast.error("Error al cargar fases");
+			toast.error(t("toastErrorLoadingPhases"));
 		} finally {
 			setIsLoadingPhases(false);
 		}
-	}, [proyectoActual?.id]);
+	}, [proyectoActual?.id, t]);
 
 	useEffect(() => {
 		loadPhases();
@@ -77,8 +79,8 @@ export default function AnalisisMultinivelPage() {
 
 	// Breadcrumbs
 	const breadcrumbs = [
-		{ label: "Artículos", href: "/articulos" },
-		{ label: "Análisis Multinivel" },
+		{ label: t("breadcrumbArticulos"), href: "/articulos" },
+		{ label: t("pageTitle") },
 	];
 
 	// Loading
@@ -87,7 +89,7 @@ export default function AnalisisMultinivelPage() {
 			<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
 				<SustratoLoadingLogo size={64} />
 				<StandardText colorShade="subtle">
-					Cargando información del proyecto...
+					{t("loadingProjectInfo")}
 				</StandardText>
 			</div>
 		);
@@ -97,7 +99,7 @@ export default function AnalisisMultinivelPage() {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
 				<SustratoLoadingLogo size={64} />
-				<StandardText colorShade="subtle">Cargando fases...</StandardText>
+				<StandardText colorShade="subtle">{t("loadingPhases")}</StandardText>
 			</div>
 		);
 	}
@@ -107,11 +109,10 @@ export default function AnalisisMultinivelPage() {
 			<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
 				<Network className="h-12 w-12 text-neutral-300" />
 				<StandardText size="lg" weight="semibold">
-					No hay fases disponibles
+					{t("noPhasesTitle")}
 				</StandardText>
 				<StandardText colorShade="subtle">
-					Crea fases desde la gestión de fases para comenzar el análisis
-					multinivel.
+					{t("noPhasesDescription")}
 				</StandardText>
 			</div>
 		);
@@ -121,9 +122,9 @@ export default function AnalisisMultinivelPage() {
 		<div className="container mx-auto py-6 space-y-6">
 			{/* Título */}
 			<StandardPageTitle
-				title="Análisis Multinivel"
-				subtitle="Análisis jerárquico de clasificaciones entre fases padre-hijo"
-				description="Define un universo base filtrando por una fase/dimensión, y analiza la distribución de otra dimensión dentro de ese subconjunto."
+				title={t("pageTitle")}
+				subtitle={t("pageSubtitle")}
+				description={t("pageDescription")}
 				mainIcon={Network}
 				breadcrumbs={breadcrumbs}
 			/>
@@ -136,19 +137,18 @@ export default function AnalisisMultinivelPage() {
 						<div className="flex items-center gap-2 mb-4">
 							<Filter className="h-5 w-5 text-primary-500" />
 							<StandardText size="lg" weight="semibold">
-								1️⃣ Filtro Base (Universo)
+								{t("baseFilterTitle")}
 							</StandardText>
 						</div>
 
 						<StandardText size="sm" colorShade="subtle" className="mb-4">
-							Define el subconjunto de artículos que será tu universo de
-							análisis
+							{t("baseFilterDescription")}
 						</StandardText>
 
 						<div className="space-y-3">
 							<div>
 								<StandardText size="sm" weight="medium" className="mb-2">
-									Fase Base
+									{t("basePhaseLabel")}
 								</StandardText>
 								<StandardSelect
 									value={basePhaseId}
@@ -159,17 +159,17 @@ export default function AnalisisMultinivelPage() {
 											setBaseValue("");
 										}
 									}}
-									placeholder="Seleccionar fase"
+									placeholder={t("selectPhasePlaceholder")}
 									options={allPhases.map((phase) => ({
 										value: phase.id,
-										label: `Fase ${phase.phase_number}: ${phase.name}`,
+										label: t("phaseOptionLabel", { number: phase.phase_number, name: phase.name }),
 									}))}
 								/>
 							</div>
 
 							<div>
 								<StandardText size="sm" weight="medium" className="mb-2">
-									Dimensión Base
+									{t("baseDimensionLabel")}
 								</StandardText>
 								<StandardSelect
 									value={baseDimensionId}
@@ -179,10 +179,10 @@ export default function AnalisisMultinivelPage() {
 											setBaseValue("");
 										}
 									}}
-									placeholder="Seleccionar dimensión"
+									placeholder={t("selectDimensionPlaceholder")}
 									options={[
-										{ value: "dim1", label: "Profundidad Ética" },
-										{ value: "dim2", label: "Tipo de Estudio" },
+										{ value: "dim1", label: t("dimEthicalDepth") },
+										{ value: "dim2", label: t("dimStudyType") },
 									]}
 									disabled={!basePhaseId}
 								/>
@@ -190,7 +190,7 @@ export default function AnalisisMultinivelPage() {
 
 							<div>
 								<StandardText size="sm" weight="medium" className="mb-2">
-									Valor a Filtrar
+									{t("valueToFilterLabel")}
 								</StandardText>
 								<StandardSelect
 									value={baseValue}
@@ -199,10 +199,10 @@ export default function AnalisisMultinivelPage() {
 											setBaseValue(value);
 										}
 									}}
-									placeholder="Seleccionar valor"
+									placeholder={t("selectValuePlaceholder")}
 									options={[
-										{ value: "si", label: "Sí" },
-										{ value: "no", label: "No" },
+										{ value: "si", label: t("yesLabel") },
+										{ value: "no", label: t("noLabel") },
 									]}
 									disabled={!baseDimensionId}
 								/>
@@ -215,18 +215,18 @@ export default function AnalisisMultinivelPage() {
 								colorScheme="primary"
 								className="mt-4 p-3">
 								<StandardText size="sm" weight="medium">
-									📊 Universo Filtrado
+									{t("filteredUniverseTitle")}
 								</StandardText>
 								<StandardText size="xs" colorShade="subtle">
-									Fase{" "}
-									{allPhases.find((p) => p.id === basePhaseId)?.phase_number} →
-									Profundidad Ética = Sí
+									{t("filteredUniverseSummary", {
+										number: allPhases.find((p) => p.id === basePhaseId)?.phase_number ?? 0,
+									})}
 								</StandardText>
 								<StandardText size="xl" weight="bold" className="mt-2">
-									64 artículos
+									{t("mockFilteredCount")}
 								</StandardText>
 								<StandardBadge size="sm" colorScheme="primary" className="mt-1">
-									64% del total
+									{t("mockPercentOfTotal")}
 								</StandardBadge>
 							</StandardCard>
 						)}
@@ -239,18 +239,18 @@ export default function AnalisisMultinivelPage() {
 						<div className="flex items-center gap-2 mb-4">
 							<Layers className="h-5 w-5 text-accent-500" />
 							<StandardText size="lg" weight="semibold">
-								2️⃣ Análisis Detallado
+								{t("detailedAnalysisTitle")}
 							</StandardText>
 						</div>
 
 						<StandardText size="sm" colorShade="subtle" className="mb-4">
-							Selecciona qué dimensión analizar dentro del universo filtrado
+							{t("detailedAnalysisDescription")}
 						</StandardText>
 
 						<div className="space-y-3">
 							<div>
 								<StandardText size="sm" weight="medium" className="mb-2">
-									Fase a Analizar
+									{t("phaseToAnalyzeLabel")}
 								</StandardText>
 								<StandardSelect
 									value={detailPhaseId}
@@ -260,12 +260,12 @@ export default function AnalisisMultinivelPage() {
 											setDetailDimensionId("");
 										}
 									}}
-									placeholder="Seleccionar fase"
+									placeholder={t("selectPhasePlaceholder")}
 									options={allPhases
 										.filter((p) => p.id !== basePhaseId)
 										.map((phase) => ({
 											value: phase.id,
-											label: `Fase ${phase.phase_number}: ${phase.name}`,
+											label: t("phaseOptionLabel", { number: phase.phase_number, name: phase.name }),
 										}))}
 									disabled={!baseValue}
 								/>
@@ -273,7 +273,7 @@ export default function AnalisisMultinivelPage() {
 
 							<div>
 								<StandardText size="sm" weight="medium" className="mb-2">
-									Dimensión a Analizar
+									{t("dimensionToAnalyzeLabel")}
 								</StandardText>
 								<StandardSelect
 									value={detailDimensionId}
@@ -282,13 +282,13 @@ export default function AnalisisMultinivelPage() {
 											setDetailDimensionId(value);
 										}
 									}}
-									placeholder="Seleccionar dimensión"
+									placeholder={t("selectDimensionPlaceholder")}
 									options={[
 										{
 											value: "dim3",
-											label: "Considera Implicaciones Éticas",
+											label: t("dimEthicalImplications"),
 										},
-										{ value: "dim4", label: "Metodología Aplicada" },
+										{ value: "dim4", label: t("dimMethodology") },
 									]}
 									disabled={!detailPhaseId}
 								/>
@@ -301,11 +301,10 @@ export default function AnalisisMultinivelPage() {
 								colorScheme="accent"
 								className="mt-4 p-3">
 								<StandardText size="sm" weight="medium">
-									🔍 Análisis Configurado
+									{t("configuredAnalysisTitle")}
 								</StandardText>
 								<StandardText size="xs" colorShade="subtle">
-									Distribución de &quot;Considera Implicaciones Éticas&quot;
-									dentro del universo de 64 artículos
+									{t("configuredAnalysisDescription")}
 								</StandardText>
 							</StandardCard>
 						)}
@@ -323,13 +322,13 @@ export default function AnalisisMultinivelPage() {
 							hasOutline
 							className="p-4 text-center">
 							<StandardText size="xs" colorShade="subtle" className="block">
-								Universo Total
+								{t("kpiTotalUniverseLabel")}
 							</StandardText>
 							<StandardText size="2xl" weight="bold">
 								100
 							</StandardText>
 							<StandardText size="xs" colorShade="subtle">
-								artículos
+								{t("articlesUnit")}
 							</StandardText>
 						</StandardCard>
 
@@ -338,7 +337,7 @@ export default function AnalisisMultinivelPage() {
 							hasOutline
 							className="p-4 text-center">
 							<StandardText size="xs" colorShade="subtle" className="block">
-								Universo Filtrado
+								{t("kpiFilteredUniverseLabel")}
 							</StandardText>
 							<StandardText size="2xl" weight="bold" colorScheme="primary">
 								64
@@ -353,13 +352,13 @@ export default function AnalisisMultinivelPage() {
 							hasOutline
 							className="p-4 text-center">
 							<StandardText size="xs" colorShade="subtle" className="block">
-								Sí (en detalle)
+								{t("kpiYesDetailLabel")}
 							</StandardText>
 							<StandardText size="2xl" weight="bold" colorScheme="success">
 								45
 							</StandardText>
 							<StandardBadge size="sm" colorScheme="success">
-								70% del filtrado
+								{t("mockPercentFiltered70")}
 							</StandardBadge>
 						</StandardCard>
 
@@ -368,13 +367,13 @@ export default function AnalisisMultinivelPage() {
 							hasOutline
 							className="p-4 text-center">
 							<StandardText size="xs" colorShade="subtle" className="block">
-								No (en detalle)
+								{t("kpiNoDetailLabel")}
 							</StandardText>
 							<StandardText size="2xl" weight="bold" colorScheme="danger">
 								19
 							</StandardText>
 							<StandardBadge size="sm" colorScheme="danger">
-								30% del filtrado
+								{t("mockPercentFiltered30")}
 							</StandardBadge>
 						</StandardCard>
 					</div>
@@ -387,12 +386,12 @@ export default function AnalisisMultinivelPage() {
 								<div className="flex items-center gap-2 mb-4">
 									<PieChart className="h-5 w-5 text-primary-500" />
 									<StandardText size="lg" weight="semibold">
-										Distribución en Universo Filtrado
+										{t("pieChartTitle")}
 									</StandardText>
 								</div>
 
 								<StandardText size="sm" colorShade="subtle" className="mb-4">
-									Universo: 64 artículos (Fase 4: Profundidad Ética = Sí)
+									{t("pieChartSubtitle")}
 								</StandardText>
 
 								<div className="h-80">
@@ -400,13 +399,13 @@ export default function AnalisisMultinivelPage() {
 										data={[
 											{
 												id: "si",
-												label: "Sí",
+												label: t("yesLabel"),
 												value: 45,
 												emoticon: "✅",
 											},
 											{
 												id: "no",
-												label: "No",
+												label: t("noLabel"),
 												value: 19,
 												emoticon: "❌",
 											},
@@ -421,19 +420,19 @@ export default function AnalisisMultinivelPage() {
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-2">
 											<div className="w-3 h-3 rounded-full bg-success-500" />
-											<StandardText size="sm">Sí</StandardText>
+											<StandardText size="sm">{t("yesLabel")}</StandardText>
 										</div>
 										<StandardText size="sm" weight="semibold">
-											45 (70%)
+											{t("countPercentLabel", { count: 45, percent: 70 })}
 										</StandardText>
 									</div>
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-2">
 											<div className="w-3 h-3 rounded-full bg-danger-500" />
-											<StandardText size="sm">No</StandardText>
+											<StandardText size="sm">{t("noLabel")}</StandardText>
 										</div>
 										<StandardText size="sm" weight="semibold">
-											19 (30%)
+											{t("countPercentLabel", { count: 19, percent: 30 })}
 										</StandardText>
 									</div>
 								</div>
@@ -446,12 +445,12 @@ export default function AnalisisMultinivelPage() {
 								<div className="flex items-center gap-2 mb-4">
 									<BarChart3 className="h-5 w-5 text-accent-500" />
 									<StandardText size="lg" weight="semibold">
-										Comparación: Total vs Filtrado
+										{t("barChartTitle")}
 									</StandardText>
 								</div>
 
 								<StandardText size="sm" colorShade="subtle" className="mb-4">
-									Compara la distribución en el universo total vs el filtrado
+									{t("barChartSubtitle")}
 								</StandardText>
 
 								<div className="h-80">
@@ -459,18 +458,18 @@ export default function AnalisisMultinivelPage() {
 										dimensions={[
 											{
 												id: "universo-total",
-												name: "Universo Total",
+												name: t("kpiTotalUniverseLabel"),
 												values: [
-													{ value: "Sí", count: 58, emoticon: "✅" },
-													{ value: "No", count: 42, emoticon: "❌" },
+													{ value: t("yesLabel"), count: 58, emoticon: "✅" },
+													{ value: t("noLabel"), count: 42, emoticon: "❌" },
 												],
 											},
 											{
 												id: "universo-filtrado",
-												name: "Universo Filtrado",
+												name: t("kpiFilteredUniverseLabel"),
 												values: [
-													{ value: "Sí", count: 70, emoticon: "✅" },
-													{ value: "No", count: 30, emoticon: "❌" },
+													{ value: t("yesLabel"), count: 70, emoticon: "✅" },
+													{ value: t("noLabel"), count: 30, emoticon: "❌" },
 												],
 											},
 										]}
@@ -484,11 +483,10 @@ export default function AnalisisMultinivelPage() {
 
 								<div className="mt-4 p-3 bg-accent-50 dark:bg-accent-950 rounded-lg">
 									<StandardText size="sm" weight="medium">
-										💡 Insight
+										{t("insightTitle")}
 									</StandardText>
 									<StandardText size="xs" colorShade="subtle">
-										En el universo filtrado (artículos con profundidad ética),
-										el 70% considera implicaciones éticas, vs 58% en el total.
+										{t("insightText")}
 									</StandardText>
 								</div>
 							</div>
@@ -501,24 +499,24 @@ export default function AnalisisMultinivelPage() {
 							<div className="flex items-center gap-2 mb-4">
 								<TrendingUp className="h-5 w-5 text-success-500" />
 								<StandardText size="lg" weight="semibold">
-									Flujo Jerárquico: Fase 4 → Fase 6
+									{t("flowTitle")}
 								</StandardText>
 							</div>
 
 							<StandardText size="sm" colorShade="subtle" className="mb-6">
-								Visualización del filtrado en cascada
+								{t("flowSubtitle")}
 							</StandardText>
 
 							<div className="space-y-6">
 								{/* Nivel 1: Total */}
 								<div>
 									<StandardText size="sm" weight="medium" className="mb-2">
-										Total de Artículos
+										{t("totalArticlesLabel")}
 									</StandardText>
 									<div className="relative">
 										<div className="h-12 bg-neutral-200 dark:bg-neutral-800 rounded-lg flex items-center px-4">
 											<StandardText size="sm" weight="semibold">
-												100 artículos
+												{t("mockTotalArticlesCount")}
 											</StandardText>
 										</div>
 									</div>
@@ -527,12 +525,12 @@ export default function AnalisisMultinivelPage() {
 								{/* Nivel 2: Filtro Base */}
 								<div>
 									<StandardText size="sm" weight="medium" className="mb-2">
-										Fase 4: Profundidad Ética = Sí
+										{t("phase4Label")}
 									</StandardText>
 									<div className="relative">
 										<div className="h-12 bg-primary-200 dark:bg-primary-900 rounded-lg flex items-center px-4 w-[64%]">
 											<StandardText size="sm" weight="semibold">
-												64 artículos (64%)
+												{t("mockFilteredCountPercent")}
 											</StandardText>
 										</div>
 									</div>
@@ -541,7 +539,7 @@ export default function AnalisisMultinivelPage() {
 								{/* Nivel 3: Análisis Detallado */}
 								<div className="pl-8 space-y-3">
 									<StandardText size="sm" weight="medium" className="mb-2">
-										Fase 6: Considera Implicaciones Éticas
+										{t("phase6Label")}
 									</StandardText>
 
 									<div>
@@ -549,11 +547,11 @@ export default function AnalisisMultinivelPage() {
 											size="xs"
 											colorShade="subtle"
 											className="mb-1">
-											Sí
+											{t("yesLabel")}
 										</StandardText>
 										<div className="h-10 bg-success-200 dark:bg-success-900 rounded-lg flex items-center px-4 w-[45%]">
 											<StandardText size="sm" weight="semibold">
-												45 artículos (70% del filtrado)
+												{t("mockYesDetailCount")}
 											</StandardText>
 										</div>
 									</div>
@@ -563,11 +561,11 @@ export default function AnalisisMultinivelPage() {
 											size="xs"
 											colorShade="subtle"
 											className="mb-1">
-											No
+											{t("noLabel")}
 										</StandardText>
 										<div className="h-10 bg-danger-200 dark:bg-danger-900 rounded-lg flex items-center px-4 w-[19%]">
 											<StandardText size="sm" weight="semibold">
-												19 artículos (30% del filtrado)
+												{t("mockNoDetailCount")}
 											</StandardText>
 										</div>
 									</div>
@@ -584,11 +582,10 @@ export default function AnalisisMultinivelPage() {
 					<div className="p-12 text-center">
 						<Network className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
 						<StandardText size="lg" weight="semibold">
-							Configura los filtros para ver el análisis
+							{t("emptyStateTitle")}
 						</StandardText>
 						<StandardText colorShade="subtle" className="mt-2">
-							Selecciona un filtro base y una dimensión a analizar para generar
-							las visualizaciones
+							{t("emptyStateDescription")}
 						</StandardText>
 					</div>
 				</StandardCard>

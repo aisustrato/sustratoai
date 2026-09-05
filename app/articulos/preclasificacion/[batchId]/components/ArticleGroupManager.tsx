@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { StandardDropdownMenu } from '@/components/ui/StandardDropdownMenu';
 import { StandardButton } from '@/components/ui/StandardButton';
 import { StandardDialog } from '@/components/ui/StandardDialog';
@@ -36,6 +37,7 @@ interface GroupArticleData {
 }
 
 export default function ArticleGroupManager({ articleId, hasGroups = false, isLoadingPresence = false, onGroupsChanged }: ArticleGroupManagerProps) {
+  const t = useTranslations('articulos.articleGroupManager');
   const [menuData, setMenuData] = useState<{
     articleId: string;
     allGroups: GroupWithArticleCount[];
@@ -61,36 +63,36 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
   
   const loadMenuData = useCallback(async () => {
     if (!articleId) {
-      toast.error('Artículo no válido');
+      toast.error(t('invalidArticle'));
       return;
     }
-    
+
     setIsLoadingMenu(true);
     try {
       const allGroupsResult = await getGroups({ articleId });
 
       if (!allGroupsResult.success) {
-        toast.error('Error al cargar grupos');
+        toast.error(t('errorLoadingGroups'));
         return;
       }
-      
+
       const allGroupsData = allGroupsResult.data || [];
       const articleGroupsData = allGroupsData.filter(g => g.article_count > 0);
       const availableGroupsData = allGroupsData.filter(g => g.article_count === 0);
-      
+
       setMenuData({
         articleId,
         allGroups: allGroupsData,
         articleGroups: articleGroupsData,
         availableGroups: availableGroupsData
       });
-      
+
     } catch {
-      toast.error('Error inesperado al cargar datos');
+      toast.error(t('errorUnexpectedLoading'));
     } finally {
       setIsLoadingMenu(false);
     }
-  }, [articleId]);
+  }, [articleId, t]);
   
   const handleMenuOpenChange = (open: boolean) => {
     // Abrir/cerrar menú inmediatamente para feedback instantáneo
@@ -124,19 +126,19 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
       });
       
       if (result.success) {
-        toast.success(`Artículo agregado al grupo "${selectedGroupForAdd.name}"`);
+        toast.success(t('toastArticleAddedToGroup', { groupName: selectedGroupForAdd.name }));
         setShowAddConfirm(false);
         setSelectedGroupForAdd(null);
         setMenuOpen(false);
         setIsDropdownOpen(false); // Resetear estado visual
-        
+
         // 🔄 CRÍTICO: Notificar al componente padre que ahora tiene grupos
         onGroupsChanged?.(true);
       } else {
-        toast.error(`Error al agregar artículo: ${result.error}`);
+        toast.error(t('toastErrorAdding', { message: result.error }));
       }
     } catch {
-      toast.error('Error inesperado al agregar artículo');
+      toast.error(t('toastUnexpectedAdding'));
     } finally {
       setIsAdding(false);
     }
@@ -153,11 +155,11 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
       if (result.success) {
         setGroupDetails(result.data);
       } else {
-        toast.error(`Error al cargar detalles del grupo: ${result.error}`);
+        toast.error(t('toastErrorLoadingDetails', { message: result.error }));
         setGroupDetails(null);
       }
     } catch {
-      toast.error('Error inesperado al cargar detalles del grupo');
+      toast.error(t('toastUnexpectedLoadingDetails'));
       setGroupDetails(null);
     } finally {
       setIsLoadingDetails(false);
@@ -170,14 +172,14 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
     {
       id: "title",
       accessorKey: "title",
-      header: "Título del Artículo",
+      header: t('columnArticleTitle'),
       size: 300,
       meta: { isTruncatable: true },
     },
     {
       id: "description",
       accessorKey: "description",
-      header: "Descripción",
+      header: t('columnDescription'),
       size: 200,
       meta: { isTruncatable: true },
       cell: ({ row }) => {
@@ -188,7 +190,7 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
           </StandardText>
         ) : (
           <StandardText size="sm" colorShade="subtle" className="italic">
-            Sin descripción
+            {t('noDescription')}
           </StandardText>
         );
       },
@@ -197,7 +199,7 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
 
   const groupArticlesData: GroupArticleData[] = groupDetails?.items.map((item) => ({
     id: item.article_id,
-    title: item.article_title || "Sin título",
+    title: item.article_title || t('untitled'),
     description: item.description || undefined,
   })) || [];
 
@@ -209,7 +211,7 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
             styleType={isDropdownOpen ? "subtle" : (hasGroups ? "solid" : "outline")}
             colorScheme={hasGroups ? "accent" : undefined}
             iconOnly={true}
-            tooltip={hasGroups ? "Ver/gestionar grupos" : "Asignar a grupos"}
+            tooltip={hasGroups ? t('tooltipManageGroups') : t('tooltipAssignGroups')}
             disabled={isLoadingMenu || isLoadingPresence}
           >
             {isLoadingPresence ? (
@@ -228,7 +230,7 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
                 variant="spin" 
                 speed="normal" 
                 showText={true}
-                text="Cargando grupos..."
+                text={t('loadingGroups')}
               />
             </div>
           ) : menuData ? (
@@ -249,19 +251,19 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
                         </StandardDropdownMenu.Item>
                       ))
                     ) : (
-                      <StandardDropdownMenu.Item disabled>Ya está en todos los grupos</StandardDropdownMenu.Item>
+                      <StandardDropdownMenu.Item disabled>{t('alreadyInAllGroups')}</StandardDropdownMenu.Item>
                     )}
                     <StandardDropdownMenu.Separator />
                     <StandardDropdownMenu.Item onSelect={() => setShowCreateGroup(true)} className="flex items-center gap-2">
                       <StandardIcon size="xs" styleType="outline" colorScheme="primary"><Plus /></StandardIcon>
-                      Crear nuevo grupo
+                      {t('createNewGroup')}
                     </StandardDropdownMenu.Item>
                   </>
                 }
               >
                 <span className="flex items-center gap-2">
                   <StandardIcon size="xs" styleType="outline" colorScheme="primary"><FolderPlus /></StandardIcon>
-                  Asignar a grupos
+                  {t('tooltipAssignGroups')}
                 </span>
               </StandardDropdownMenu.SubMenuItem>
               
@@ -285,14 +287,14 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
                 >
                   <span className="flex items-center gap-2">
                     <StandardIcon size="xs" styleType="outline" colorScheme="success"><CheckCircle /></StandardIcon>
-                    Grupos donde está
+                    {t('groupsWhereItIs')}
                   </span>
                 </StandardDropdownMenu.SubMenuItem>
               )}
             </>
           ) : (
             <div className="px-3 py-4 text-center">
-              <StandardText size="sm" colorShade="subtle">Error al cargar datos</StandardText>
+              <StandardText size="sm" colorShade="subtle">{t('errorLoadingData')}</StandardText>
             </div>
           )}
         </StandardDropdownMenu.Content>
@@ -301,15 +303,15 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
       <StandardDialog open={showAddConfirm} onOpenChange={setShowAddConfirm}>
         <StandardDialog.Content size="sm">
           <StandardDialog.Header>
-            <StandardDialog.Title>Confirmar Adición al Grupo</StandardDialog.Title>
+            <StandardDialog.Title>{t('confirmAddTitle')}</StandardDialog.Title>
             <StandardDialog.Description>
-              ¿Estás seguro de que quieres agregar este artículo al grupo &ldquo;{selectedGroupForAdd?.name}&rdquo;?
+              {t('confirmAddDescription', { groupName: selectedGroupForAdd?.name ?? '' })}
             </StandardDialog.Description>
           </StandardDialog.Header>
           <StandardDialog.Footer>
-            <StandardButton styleType="outline" onClick={() => setShowAddConfirm(false)} disabled={isAdding}>Cancelar</StandardButton>
+            <StandardButton styleType="outline" onClick={() => setShowAddConfirm(false)} disabled={isAdding}>{t('cancelButton')}</StandardButton>
             <StandardButton styleType="solid" colorScheme="primary" onClick={handleAddToGroup} disabled={isAdding}>
-              {isAdding ? 'Agregando...' : 'Agregar al Grupo'}
+              {isAdding ? t('addingButton') : t('addToGroupButton')}
             </StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>
@@ -319,44 +321,47 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
          <StandardPopupWindow.Content size="lg">
            <StandardPopupWindow.Header>
              <StandardPopupWindow.Title>
-               Detalles del Grupo: {selectedGroupForDetails?.name}
+               {t('groupDetailsTitle', { groupName: selectedGroupForDetails?.name ?? '' })}
              </StandardPopupWindow.Title>
              <StandardPopupWindow.Description>
                <div className="flex items-center gap-2 mt-2">
-                 <StandardIcon 
-                   size="sm" 
+                 <StandardIcon
+                   size="sm"
                    styleType="outline"
                    colorScheme={selectedGroupForDetails?.visibility === 'public' ? 'primary' : 'neutral'}
                  >
                    {selectedGroupForDetails?.visibility === 'public' ? <Globe /> : <Lock />}
                  </StandardIcon>
                  <StandardText size="sm">
-                   Grupo {selectedGroupForDetails?.visibility === "public" ? "público" : "privado"} • {selectedGroupForDetails?.article_count} artículo{selectedGroupForDetails?.article_count !== 1 ? "s" : ""}
+                   {t('groupSummary', {
+                     visibility: selectedGroupForDetails?.visibility === 'public' ? t('publicGroupLabel') : t('privateGroupLabel'),
+                     count: selectedGroupForDetails?.article_count ?? 0,
+                   })}
                  </StandardText>
                </div>
              </StandardPopupWindow.Description>
            </StandardPopupWindow.Header>
-           
+
            <StandardPopupWindow.Body className="space-y-4">
              {groupDetails?.description && (
                <div>
                  <StandardText size="sm" weight="semibold" className="mb-2">
-                   Descripción:
+                   {t('descriptionLabel')}
                  </StandardText>
                  <StandardText size="sm" colorShade="subtle">
                    {groupDetails.description}
                  </StandardText>
                </div>
              )}
-             
+
              <div>
                <StandardText size="sm" weight="semibold" className="mb-3">
-                 Artículos en este grupo:
+                 {t('articlesInGroupLabel')}
                </StandardText>
                {isLoadingDetails ? (
                  <div className="flex justify-center py-8">
                    <StandardText size="sm" colorShade="subtle">
-                     Cargando artículos...
+                     {t('loadingArticles')}
                    </StandardText>
                  </div>
                ) : groupArticlesData.length > 0 ? (
@@ -365,24 +370,24 @@ export default function ArticleGroupManager({ articleId, hasGroups = false, isLo
                    data={groupArticlesData}
                    columns={groupArticlesColumns}
                    enableTruncation={true}
-                   filterPlaceholder="Buscar artículos..."
+                   filterPlaceholder={t('searchArticlesPlaceholder')}
                  >
                    <StandardTable.Table />
                  </StandardTable>
                ) : (
                  <StandardText size="sm" colorShade="subtle" className="italic text-center py-4">
-                   No hay artículos en este grupo
+                   {t('noArticlesInGroup')}
                  </StandardText>
                )}
              </div>
            </StandardPopupWindow.Body>
-           
+
            <StandardPopupWindow.Footer>
-             <StandardButton 
-               styleType="outline" 
+             <StandardButton
+               styleType="outline"
                onClick={() => setShowGroupDetails(false)}
              >
-               Cerrar
+               {t('closeButton')}
              </StandardButton>
            </StandardPopupWindow.Footer>
          </StandardPopupWindow.Content>

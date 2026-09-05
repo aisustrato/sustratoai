@@ -16,6 +16,7 @@ interface Phase {
 	created_at: string;
 }
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import FaseForm from "../../components/FaseForm";
 import {
@@ -46,6 +47,7 @@ import { StandardButton } from "@/components/ui/StandardButton";
 
 export default function EditarFasePage() {
 	const router = useRouter();
+	const t = useTranslations("datosMaestrosPages.fasesEditarPage");
 	const { id } = useParams<{ id: string }>();
 	const faseId = Array.isArray(id) ? id[0] : id || "";
 	const { proyectoActual } = useAuth();
@@ -61,7 +63,7 @@ export default function EditarFasePage() {
 	useEffect(() => {
 		const cargarFase = async () => {
 			if (!proyectoActual?.id) {
-				setError("No se ha seleccionado un proyecto");
+				setError(t("errorNoProject"));
 				setLoading(false);
 				return;
 			}
@@ -73,13 +75,13 @@ export default function EditarFasePage() {
 				);
 
 				if (fetchError) {
-					throw new Error(fetchError.message || "Error al cargar la fase");
+					throw new Error(fetchError.message || t("errorLoadingPhase"));
 				}
 
 				const faseEncontrada = fases?.find((f) => f.id === id);
 
 				if (!faseEncontrada) {
-					throw new Error("Fase no encontrada");
+					throw new Error(t("errorPhaseNotFound"));
 				}
 
 				// Asegurarse de que la fase tenga todos los campos requeridos y los tipos correctos
@@ -111,49 +113,47 @@ export default function EditarFasePage() {
 				}
 			} catch {
 				console.error("Error cargando la fase");
-				setError("Error desconocido al cargar la fase");
+				setError(t("errorUnknownLoading"));
 			} finally {
 				setLoading(false);
 			}
 		};
 
 		cargarFase();
-	}, [id, proyectoActual?.id]);
+	}, [id, proyectoActual?.id, t]);
 
 	const handlePopulate = async () => {
 		if (!fase || !proyectoActual?.id) {
-			toast.error("Error", {
-				description:
-					"No se pudo obtener la información necesaria para iniciar el proceso.",
+			toast.error(t("toastErrorMissingDataTitle"), {
+				description: t("toastErrorMissingDataDescription"),
 			});
 			return;
 		}
 
 		setPopulating(true);
-		const toastId = toast.loading("Poblando fase inicial...", {
-			description:
-				"Añadiendo todos los artículos del proyecto a la fase 1. Esto puede tardar unos segundos.",
+		const toastId = toast.loading(t("toastPopulatingTitle"), {
+			description: t("toastPopulatingDescription"),
 		});
 
 		try {
 			const result = await populateInitialPhaseUniverse(proyectoActual.id);
 
 			if (result.success) {
-				toast.success("¡Éxito!", {
+				toast.success(t("toastPopulateSuccessTitle"), {
 					id: toastId,
-					description: `Se han añadido ${result.data.count} artículos a la fase.`,
+					description: t("toastPopulateSuccessDescription", { count: result.data.count }),
 				});
 				setHasEligibleArticles(true);
 			} else {
-				toast.error("Error al poblar la fase", {
+				toast.error(t("toastPopulateErrorTitle"), {
 					id: toastId,
-					description: result.error || "Ocurrió un error inesperado.",
+					description: result.error || t("toastPopulateErrorGeneric"),
 				});
 			}
 		} catch {
-			toast.error("Error inesperado", {
+			toast.error(t("toastPopulateUnexpectedTitle"), {
 				id: toastId,
-				description: "Ocurrió un error en el servidor. Inténtalo de nuevo.",
+				description: t("toastPopulateUnexpectedDescription"),
 			});
 		} finally {
 			setPopulating(false);
@@ -162,14 +162,14 @@ export default function EditarFasePage() {
 
 	const handleSubmit = async (formData: FormData) => {
 		if (!proyectoActual?.id) {
-			const errorMsg = "No se ha seleccionado un proyecto";
-			toast.error("Error", { description: errorMsg });
+			const errorMsg = t("errorNoProject");
+			toast.error(t("toastErrorNoProjectTitle"), { description: errorMsg });
 			return { error: { message: errorMsg } };
 		}
 
 		if (!fase?.id) {
-			const errorMsg = "No se ha encontrado la fase a editar";
-			toast.error("Error", { description: errorMsg });
+			const errorMsg = t("errorNoPhaseToEdit");
+			toast.error(t("toastErrorNoPhaseTitle"), { description: errorMsg });
 			return { error: { message: errorMsg } };
 		}
 
@@ -186,8 +186,8 @@ export default function EditarFasePage() {
 
 			if (updateError) {
 				const errorMsg =
-					updateError.message || "Error al actualizar los detalles de la fase";
-				toast.error("Error al guardar", {
+					updateError.message || t("toastErrorSavingDetails");
+				toast.error(t("toastErrorSavingTitle"), {
 					description: errorMsg,
 					icon: <AlertCircle className="h-5 w-5 text-destructive" />,
 				});
@@ -215,8 +215,8 @@ export default function EditarFasePage() {
 
 				if (statusError) {
 					const errorMsg =
-						statusError.message || "Error al actualizar el estado de la fase";
-					toast.error("Error al actualizar", {
+						statusError.message || t("toastErrorUpdatingStatus");
+					toast.error(t("toastErrorUpdatingTitle"), {
 						description: errorMsg,
 						icon: <AlertCircle className="h-5 w-5 text-destructive" />,
 					});
@@ -224,8 +224,8 @@ export default function EditarFasePage() {
 				}
 			}
 
-			toast.success("Cambios guardados", {
-				description: "La fase se ha actualizado correctamente",
+			toast.success(t("toastSavedTitle"), {
+				description: t("toastSavedDescription"),
 				icon: <CheckCircle2 className="h-5 w-5 text-success" />,
 			});
 
@@ -235,8 +235,8 @@ export default function EditarFasePage() {
 			const errorMsg =
 				err instanceof Error ?
 					err.message
-				:	"Error desconocido al guardar los cambios";
-			toast.error("Error inesperado", {
+				:	t("errorUnexpectedSaving");
+			toast.error(t("toastUnexpectedTitle"), {
 				description: errorMsg,
 				icon: <AlertCircle className="h-5 w-5 text-destructive" />,
 			});
@@ -267,7 +267,7 @@ export default function EditarFasePage() {
 							<AlertCircle />
 						</StandardIcon>
 						<StandardText variant="h4" className="text-center mb-2">
-							Error al cargar la fase
+							{t("errorTitle")}
 						</StandardText>
 						<StandardText className="text-muted-foreground mb-6">
 							{error}
@@ -277,8 +277,8 @@ export default function EditarFasePage() {
 							leftIcon={RotateCw}
 							colorScheme="primary"
 							styleType="solid"
-							aria-label="Reintentar carga">
-							Reintentar
+							aria-label={t("retryButton")}>
+							{t("retryButton")}
 						</StandardButton>
 					</div>
 				</StandardCard>
@@ -295,19 +295,18 @@ export default function EditarFasePage() {
 							<AlertCircle />
 						</StandardIcon>
 						<StandardText variant="h4" className="text-center mb-2">
-							Fase no encontrada
+							{t("notFoundTitle")}
 						</StandardText>
 						<StandardText className="text-muted-foreground mb-6">
-							La fase que intentas editar no existe o no tienes permiso para
-							verla.
+							{t("notFoundDescription")}
 						</StandardText>
 						<StandardButton
 							onClick={() => router.back()}
 							leftIcon={ArrowLeft}
 							colorScheme="primary"
 							styleType="outline"
-							aria-label="Volver atrás">
-							Volver atrás
+							aria-label={t("backButton")}>
+							{t("backButton")}
 						</StandardButton>
 					</div>
 				</StandardCard>
@@ -320,24 +319,24 @@ export default function EditarFasePage() {
 			<div className="container mx-auto py-6">
 				<div className="space-y-6">
 					<StandardPageTitle
-						title={`Editar Fase: ${fase.name}`}
-						subtitle="Modifica los detalles de la fase de preclasificación"
-						description="Actualiza la información de esta fase del proceso de preclasificación de documentos."
+						title={t("pageTitle", { name: fase.name })}
+						subtitle={t("pageSubtitle")}
+						description={t("pageDescription")}
 						mainIcon={Network}
 						showBackButton={{
 							href: `/datos-maestros/fases-preclasificacion/${faseId}/ver`,
 						}}
 						breadcrumbs={[
-							{ label: "Datos Maestros", href: "/datos-maestros" },
+							{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
 							{
-								label: "Fases de Preclasificación",
+								label: t("breadcrumbFases"),
 								href: "/datos-maestros/fases-preclasificacion",
 							},
 							{
 								label: fase.name,
 								href: `/datos-maestros/fases-preclasificacion/${faseId}/ver`,
 							},
-							{ label: "Editar" },
+							{ label: t("breadcrumbEditar") },
 						]}
 					/>
 
@@ -363,20 +362,18 @@ export default function EditarFasePage() {
 										<Sparkles />
 									</StandardIcon>
 									<StandardText variant="h4">
-										Universo de Artículos de la Fase 1
+										{t("universeTitle")}
 									</StandardText>
 								</div>
 								<StandardText colorScheme="primary" className="mb-4">
-									Esta es la fase inicial. Puedes poblarla automáticamente con
-									todos los artículos de tu proyecto para comenzar la
-									preclasificación.
+									{t("universeDescription")}
 								</StandardText>
 
 								{populating ?
 									<div className="flex flex-col items-center justify-center p-8">
 										<SustratoLoadingLogo
 											showText
-											text="Añadiendo artículos..."
+											text={t("addingArticlesText")}
 										/>
 									</div>
 								: hasEligibleArticles ?
@@ -388,8 +385,7 @@ export default function EditarFasePage() {
 											<CheckCircle2 />
 										</StandardIcon>
 										<StandardText colorScheme="success">
-											Esta fase ya ha sido poblada con los artículos del
-											proyecto.
+											{t("alreadyPopulatedText")}
 										</StandardText>
 									</div>
 								:	<StandardButton
@@ -398,7 +394,7 @@ export default function EditarFasePage() {
 										leftIcon={Sparkles}
 										colorScheme="accent"
 										styleType="solid">
-										Poblar Fase 1 con todos los artículos
+										{t("populateButton")}
 									</StandardButton>
 								}
 							</div>

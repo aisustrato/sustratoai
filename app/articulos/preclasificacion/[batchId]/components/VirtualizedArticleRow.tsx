@@ -5,6 +5,7 @@
 "use client";
 
 import React, { useRef, useLayoutEffect, CSSProperties } from "react";
+import { useTranslations } from "next-intl";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardButton } from "@/components/ui/StandardButton";
@@ -117,6 +118,7 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 	articlesWithoutAI,
 	onReprocessArticle,
 }) => {
+	const t = useTranslations("articulos.virtualizedArticleRow");
 	const rowRef = useRef<HTMLDivElement>(null);
 
 	// 📐 Medir altura real y reportar cambios
@@ -227,14 +229,14 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 								<div className="flex items-center gap-2 flex-shrink-0">
 									{needsReprocessing && (
 										<StandardTooltip
-											content={`⚠️ Faltan ${missingDimensions} dimensiones por clasificar. Haz clic para reprocesar.`}
+											content={t("missingDimensionsTooltip", { count: missingDimensions })}
 											side="top"
 											trigger={
 												<StandardBadge
 													size="sm"
 													colorScheme="warning"
 													className="cursor-pointer animate-pulse">
-													⚠️ {missingDimensions} sin clasificar
+													{t("missingDimensionsBadge", { count: missingDimensions })}
 												</StandardBadge>
 											}
 										/>
@@ -244,7 +246,7 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 											size="sm"
 											colorScheme="success"
 											styleType="subtle">
-											Listo
+											{t("readyBadge")}
 										</StandardBadge>
 									)}
 
@@ -261,8 +263,8 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 											onClick={() => onOpenNotes(article.originalArticle)}
 											tooltip={
 												notesPresenceByItemId[article.originalArticle.item_id] ?
-													"Ver/editar notas"
-												:	"Crear nota"
+													t("viewEditNotesTooltip")
+												:	t("createNoteTooltip")
 											}>
 											<StickyNote size={16} />
 										</StandardButton>
@@ -280,7 +282,7 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 														article.title,
 													)
 												}
-												tooltip="Reprocesar clasificaciones con IA">
+												tooltip={t("reprocessTooltip")}>
 												<Brain size={16} />
 											</StandardButton>
 										)}
@@ -306,11 +308,11 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 													`/articulos/preclasificacion2/${batchId}`,
 												);
 												const returnLabel = encodeURIComponent(
-													`Lote #${batchNumber ?? ""}`,
+													t("batchLabelPrefix", { number: batchNumber ?? "" }),
 												);
 												window.location.href = `/articulos/detalle?articleId=${articleId}&translated=${translatedParam}&returnHref=${returnHref}&returnLabel=${returnLabel}`;
 											}}
-											tooltip="Ver detalle del artículo">
+											tooltip={t("viewArticleDetailTooltip")}>
 											<Search size={16} />
 										</StandardButton>
 
@@ -340,7 +342,7 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 												colorScheme="success"
 												styleType="solid"
 												onClick={() => approveAllForArticle(article.id)}
-												tooltip="Aprobar todas las dimensiones">
+												tooltip={t("approveAllTooltip")}>
 												<Check size={16} />
 											</StandardButton>
 										)}
@@ -474,7 +476,7 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 																size="xs"
 																colorScheme="neutral"
 																styleType="subtle"
-																tooltip="Ver historial de clasificaciones"
+																tooltip={t("viewHistoryTooltip")}
 																onClick={(e) =>
 																	handleHistoryClick(e, reviews, dimId)
 																}>
@@ -508,8 +510,8 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 																		colorScheme="success"
 																		styleType={isApproved ? "solid" : "outline"}
 																		tooltip={
-																			isApproved ? "Quitar aprobación" : (
-																				"Aprobar"
+																			isApproved ? t("removeApprovalTooltip") : (
+																				t("approveTooltip")
 																			)
 																		}
 																		onClick={() =>
@@ -533,10 +535,10 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 																		styleType={isRejected ? "solid" : "subtle"}
 																		tooltip={
 																			latestIteration >= 3 ?
-																				"Arbitraje (rechazar reconciliación)"
+																				t("arbitrationTooltip")
 																			: isRejected ?
-																				"Editar desacuerdo"
-																			:	"Desacuerdo"
+																				t("editDisagreementTooltip")
+																			:	t("disagreementTooltip")
 																		}
 																		onClick={() =>
 																			void handleDisagreementClick(

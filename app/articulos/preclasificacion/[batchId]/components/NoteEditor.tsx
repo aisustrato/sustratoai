@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { StandardPopupWindow } from '@/components/ui/StandardPopupWindow';
 import { StandardNote } from '@/components/ui/StandardNote';
 import { StandardInput } from '@/components/ui/StandardInput';
@@ -40,6 +41,7 @@ interface NoteEditorProps {
 }
 
 export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, project, showOriginalAsPrimary, onNotesChanged }): JSX.Element => {
+  const t = useTranslations('articulos.noteEditor');
   const [currentNote, setCurrentNote] = useState('');
   const [currentNoteTitle, setCurrentNoteTitle] = useState('');
   const [currentNoteVisibility, setCurrentNoteVisibility] = useState<'private' | 'public'>('private');
@@ -219,43 +221,43 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
     });
 
     if (!article) {
-      const errorMsg = 'No se puede guardar: No hay un artículo seleccionado';
+      const errorMsg = t('toastNoArticleSelected');
       console.error('[CLIENT] Error:', errorMsg);
       toast.error(errorMsg);
       console.groupEnd();
       return;
     }
-    
+
     // Obtenemos el ID del ítem del lote
     const batchItemId = article.item_id;
     if (!batchItemId) {
-      const errorMsg = 'No se puede guardar: No se pudo identificar el ítem del lote correctamente';
+      const errorMsg = t('toastNoBatchItem');
       console.error('[CLIENT] Error:', errorMsg, { article });
       toast.error(errorMsg);
       console.groupEnd();
       return;
     }
-    
+
     // Verificamos si el artículo tiene datos básicos
     if (!article.article_data) {
-      const errorMsg = 'No se puede guardar: El artículo no tiene datos válidos';
+      const errorMsg = t('toastNoArticleData');
       console.error('[CLIENT] Error:', errorMsg, { article });
       toast.error(errorMsg);
       console.groupEnd();
       return;
     }
-    
+
     if (!user) {
-      const errorMsg = 'No se puede guardar: Usuario no autenticado';
+      const errorMsg = t('toastNotAuthenticated');
       console.error('[CLIENT] Error:', errorMsg);
       toast.error(errorMsg);
       console.groupEnd();
       return;
     }
-    
+
     const projectId = project?.id || authProject?.id;
     if (!projectId) {
-      const errorMsg = 'No se puede guardar: No hay un proyecto seleccionado';
+      const errorMsg = t('toastNoProject');
       console.error('[CLIENT] Error:', errorMsg);
       toast.error(errorMsg);
       console.groupEnd();
@@ -270,7 +272,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
       const articleIdResp = await fetch(`/api/article-notes/by-batch-item?batchItemId=${encodeURIComponent(batchItemId)}`);
       const articleIdJson = await articleIdResp.json();
       if (!articleIdResp.ok || !articleIdJson?.success || !articleIdJson?.data?.articleId) {
-        const errorMsg = `No se pudo obtener el ID del artículo: ${articleIdJson?.error || articleIdResp.statusText}`;
+        const errorMsg = t('toastErrorGetArticleId', { message: articleIdJson?.error || articleIdResp.statusText });
         console.error('[CLIENT] Error:', errorMsg);
         toast.error(errorMsg);
         console.groupEnd();
@@ -281,7 +283,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
       const articleId: string = articleIdJson.data.articleId;
       
       const noteData = {
-        title: currentNoteTitle || 'sin título',
+        title: currentNoteTitle || t('untitledDefaultValue'),
         noteContent: currentNote,
         visibility: currentNoteVisibility as 'public' | 'private',
         projectId,
@@ -326,7 +328,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
       console.log('[CLIENT] Resultado de la operación:', resultJson);
 
       if (fetchResp.ok && resultJson?.success) {
-        const successMsg = existingNote ? 'Nota actualizada correctamente' : 'Nota guardada correctamente';
+        const successMsg = existingNote ? t('toastNoteUpdated') : t('toastNoteSaved');
         console.log(`[CLIENT] Éxito: ${successMsg}`);
         toast.success(successMsg);
         setHasUnsavedChanges(false);
@@ -342,14 +344,14 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
           console.warn('[CLIENT] onNotesChanged(true) lanzó una excepción no crítica:', e);
         }
       } else {
-        const errorMsg = resultJson?.error || 'Error desconocido al guardar la nota';
+        const errorMsg = resultJson?.error || t('toastErrorSavingUnknown');
         console.error('[CLIENT] Error al guardar la nota:', errorMsg);
-        toast.error(`Error al guardar la nota: ${errorMsg}`);
+        toast.error(t('toastErrorSaving', { message: errorMsg }));
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMessage = error instanceof Error ? error.message : t('toastErrorSavingUnknown');
       console.error('[CLIENT] Excepción al guardar la nota:', error);
-      toast.error(`Error inesperado al guardar la nota: ${errorMessage}`);
+      toast.error(t('toastErrorUnexpectedSaving', { message: errorMessage }));
     } finally {
       console.log('[CLIENT] Finalizando proceso de guardado');
       setIsSaving(false);
@@ -359,13 +361,13 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
 
   const handleDeleteNote = async () => {
     if (!existingNote?.id) {
-      toast.error('Error: No se puede eliminar una nota sin ID.');
+      toast.error(t('toastCannotDeleteNoId'));
       return;
     }
     const resp = await fetch(`/api/article-notes/${encodeURIComponent(existingNote.id)}`, { method: 'DELETE' });
     const json = await resp.json();
     if (resp.ok && json?.success) {
-      toast.success('Nota eliminada.');
+      toast.success(t('toastNoteDeleted'));
       // Notificar al padre que ya no hay nota
       try {
         onNotesChanged?.(false);
@@ -374,7 +376,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
       }
       onClose(); // Cerrar el editor después de eliminar
     } else {
-      toast.error(json?.error || 'Error al eliminar la nota');
+      toast.error(json?.error || t('toastErrorDeleting'));
     }
   };
 
@@ -396,13 +398,13 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
       <StandardPopupWindow open={open} onOpenChange={handleClose}>
         <StandardPopupWindow.Content size="lg" colorScheme="primary">
           <StandardPopupWindow.Header>
-            <StandardPopupWindow.Title>Nueva Nota del Artículo</StandardPopupWindow.Title>
+            <StandardPopupWindow.Title>{t('dialogTitle')}</StandardPopupWindow.Title>
             <StandardPopupWindow.Description>
               {article && (
                 <span className="text-sm">
                   {showOriginalAsPrimary
-                    ? (article.article_data?.original_title ?? 'Sin título')
-                    : (article.article_data?.translated_title ?? article.article_data?.original_title ?? 'Sin título')}
+                    ? (article.article_data?.original_title ?? t('untitledArticle'))
+                    : (article.article_data?.translated_title ?? article.article_data?.original_title ?? t('untitledArticle'))}
                 </span>
               )}
             </StandardPopupWindow.Description>
@@ -411,33 +413,33 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
           <StandardPopupWindow.Body className="flex-grow flex flex-col gap-4 overflow-y-auto">
             {isLoadingNote ? (
               <div className="flex flex-col items-center justify-center py-12">
-                <SustratoLoadingLogo 
-                  size={60} 
-                  variant="pulse" 
-                  speed="normal" 
+                <SustratoLoadingLogo
+                  size={60}
+                  variant="pulse"
+                  speed="normal"
                   className="mb-4"
                   showText={true}
-                  text="Buscando notas existentes..."
+                  text={t('loadingText')}
                 />
                 <StandardText size="sm" className="text-gray-500 dark:text-gray-400 mt-2">
-                  Cargando la nota del artículo...
+                  {t('loadingSubtitle')}
                 </StandardText>
               </div>
             ) : (
               <>
                 <div className="space-y-4">
                   <div>
-                    <StandardText size="sm" className="mb-2 font-medium">Título de la nota (opcional)</StandardText>
-                    <StandardInput 
-                      value={currentNoteTitle} 
-                      onChange={handleNoteTitleChange} 
-                      placeholder="Título de la nota (se guardará como 'sin título' si se deja vacío)" 
-                      colorScheme="primary" 
-                      size="md" 
+                    <StandardText size="sm" className="mb-2 font-medium">{t('noteTitleLabel')}</StandardText>
+                    <StandardInput
+                      value={currentNoteTitle}
+                      onChange={handleNoteTitleChange}
+                      placeholder={t('noteTitlePlaceholder')}
+                      colorScheme="primary"
+                      size="md"
                     />
                   </div>
                   <div>
-                    <StandardText size="sm" className="mb-2 font-medium">Visibilidad de la nota</StandardText>
+                    <StandardText size="sm" className="mb-2 font-medium">{t('visibilityLabel')}</StandardText>
                     <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div className="flex items-center gap-2">
                         <StandardCheckbox
@@ -446,13 +448,13 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
                           onChange={(e) => handleNoteVisibilityChange(e.target.checked)}
                           colorScheme="primary"
                           size="md"
-                          label="🌐 Hacer nota pública (visible para el equipo)"
+                          label={t('publicCheckboxLabel')}
                           labelClassName="text-sm font-medium text-gray-900 dark:text-gray-300 cursor-pointer"
                         />
                       </div>
                       {currentNoteVisibility === 'private' && (
                         <StandardText size="xs" className="text-gray-500 ml-6">
-                          🔒 Actualmente privada (solo tú puedes verla)
+                          {t('privateHint')}
                         </StandardText>
                       )}
                     </div>
@@ -462,7 +464,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
                   <StandardNote
                     value={currentNote}
                     onChange={handleNoteContentChange}
-                    placeholder="Escribe tus notas sobre este artículo..."
+                    placeholder={t('notePlaceholder')}
                     colorScheme="primary"
                     size="lg"
                     minimalToolbar={true}
@@ -482,13 +484,13 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
             <div className="flex justify-between w-full">
               <div>
                 {existingNote && (
-                  <StandardButton styleType="outline" colorScheme="danger" onClick={() => setShowDeleteConfirm(true)}>Eliminar Nota</StandardButton>
+                  <StandardButton styleType="outline" colorScheme="danger" onClick={() => setShowDeleteConfirm(true)}>{t('deleteNoteButton')}</StandardButton>
                 )}
               </div>
               <div className="flex gap-2">
-                <StandardButton styleType="outline" onClick={handleClose}>Cerrar</StandardButton>
+                <StandardButton styleType="outline" onClick={handleClose}>{t('closeButton')}</StandardButton>
                 <StandardButton styleType="solid" colorScheme="primary" onClick={handleSaveNote} disabled={isSaving}>
-                  {isSaving ? 'Guardando...' : (existingNote ? 'Actualizar Nota' : 'Guardar Nota')}
+                  {isSaving ? t('savingButton') : (existingNote ? t('updateNoteButton') : t('saveNoteButton'))}
                 </StandardButton>
               </div>
             </div>
@@ -500,37 +502,37 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
       <StandardDialog open={showPublicWarning} onOpenChange={setShowPublicWarning}>
         <StandardDialog.Content size="sm" colorScheme="warning">
           <StandardDialog.Header>
-            <StandardDialog.Title>⚠️ Confirmar Visibilidad Pública</StandardDialog.Title>
+            <StandardDialog.Title>{t('publicWarningTitle')}</StandardDialog.Title>
             <StandardDialog.Description>
-              Estás a punto de hacer esta nota visible para todo el equipo del proyecto.
+              {t('publicWarningDescription')}
             </StandardDialog.Description>
           </StandardDialog.Header>
           <StandardDialog.Body>
             <div className="space-y-3">
               <StandardText size="sm" className="text-gray-600 dark:text-gray-400">
-                Una vez que la nota sea pública:
+                {t('publicWarningIntro')}
               </StandardText>
               <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 dark:text-gray-400 ml-4">
-                <li>Todos los miembros del equipo podrán verla</li>
-                <li>Aparecerá en las vistas compartidas del proyecto</li>
-                <li>Podrás cambiarla de vuelta a privada más tarde si lo deseas</li>
+                <li>{t('publicWarningBullet1')}</li>
+                <li>{t('publicWarningBullet2')}</li>
+                <li>{t('publicWarningBullet3')}</li>
               </ul>
             </div>
           </StandardDialog.Body>
           <StandardDialog.Footer>
-            <StandardButton 
-              styleType="outline" 
-              colorScheme="neutral" 
+            <StandardButton
+              styleType="outline"
+              colorScheme="neutral"
               onClick={() => setShowPublicWarning(false)}
             >
-              Cancelar
+              {t('cancelButton')}
             </StandardButton>
-            <StandardButton 
-              styleType="solid" 
-              colorScheme="warning" 
+            <StandardButton
+              styleType="solid"
+              colorScheme="warning"
               onClick={confirmPublicVisibility}
             >
-              Sí, hacer pública
+              {t('confirmPublicButton')}
             </StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>
@@ -539,12 +541,12 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
       <StandardDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <StandardDialog.Content size="md">
           <StandardDialog.Header>
-            <StandardDialog.Title>Confirmar Eliminación</StandardDialog.Title>
-            <StandardDialog.Description>¿Estás seguro de que quieres eliminar esta nota? Esta acción no puede ser revertida.</StandardDialog.Description>
+            <StandardDialog.Title>{t('confirmDeleteTitle')}</StandardDialog.Title>
+            <StandardDialog.Description>{t('confirmDeleteDescription')}</StandardDialog.Description>
           </StandardDialog.Header>
           <StandardDialog.Footer>
-            <StandardButton styleType="outline" onClick={() => setShowDeleteConfirm(false)}>Cancelar</StandardButton>
-            <StandardButton styleType="solid" colorScheme="danger" onClick={handleDeleteNote}>Eliminar Definitivamente</StandardButton>
+            <StandardButton styleType="outline" onClick={() => setShowDeleteConfirm(false)}>{t('cancelButton')}</StandardButton>
+            <StandardButton styleType="solid" colorScheme="danger" onClick={handleDeleteNote}>{t('confirmDeleteButton')}</StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>
       </StandardDialog>
@@ -552,12 +554,12 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
       <StandardDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
         <StandardDialog.Content size="md">
           <StandardDialog.Header>
-            <StandardDialog.Title>Cambios sin Guardar</StandardDialog.Title>
-            <StandardDialog.Description>Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar?</StandardDialog.Description>
+            <StandardDialog.Title>{t('unsavedChangesTitle')}</StandardDialog.Title>
+            <StandardDialog.Description>{t('unsavedChangesDescription')}</StandardDialog.Description>
           </StandardDialog.Header>
           <StandardDialog.Footer>
-            <StandardButton styleType="outline" onClick={() => setShowCloseConfirm(false)}>Cancelar</StandardButton>
-            <StandardButton styleType="solid" colorScheme="primary" onClick={confirmClose}>Cerrar sin Guardar</StandardButton>
+            <StandardButton styleType="outline" onClick={() => setShowCloseConfirm(false)}>{t('cancelButton')}</StandardButton>
+            <StandardButton styleType="solid" colorScheme="primary" onClick={confirmClose}>{t('closeWithoutSavingButton')}</StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>
       </StandardDialog>

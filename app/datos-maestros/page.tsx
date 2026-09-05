@@ -2,6 +2,7 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
+import { useTranslations } from "next-intl";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
@@ -25,58 +26,59 @@ import {
 
 //#region [main] - 🔧 COMPONENT 🔧
 export default function DatosMaestrosHome() {
+  const t = useTranslations("datosMaestrosPages.indexPage");
   //#region [render] - 🎨 RENDER SECTION 🎨
   return (
     <div className="container mx-auto py-8">
       <StandardPageTitle
-        title="Datos Maestros"
-        description="Configura tu proyecto de investigación siguiendo un flujo estructurado: desde la definición básica hasta la creación de lotes de trabajo para el análisis colaborativo."
-        breadcrumbs={[{ label: "Datos Maestros" }]}
+        title={t("pageTitle")}
+        description={t("pageDescription")}
+        breadcrumbs={[{ label: t("breadcrumbDatosMaestros") }]}
         showBackButton={{ href: "/" }}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-        {[ 
+        {[
           {
             href: "/datos-maestros/proyecto",
             icon: ClipboardList,
-            title: "1. Proyecto",
-            description: "Establece los datos básicos del proyecto: nombre, descripción, objetivos y módulos que estarán activos para tu investigación."
+            title: t("step1Title"),
+            description: t("step1Description")
           },
           {
             href: "/datos-maestros/roles",
             icon: Shield,
-            title: "2. Roles y Permisos",
-            description: "Define los roles de investigación y establece los permisos específicos que determinan las acciones disponibles para cada tipo de colaborador."
+            title: t("step2Title"),
+            description: t("step2Description")
           },
           {
             href: "/datos-maestros/miembros",
             icon: User,
-            title: "3. Miembros del Equipo",
-            description: "Incorpora a los investigadores y colaboradores al proyecto, asignándoles los roles correspondientes según su participación."
+            title: t("step3Title"),
+            description: t("step3Description")
           },
           {
             href: "/datos-maestros/cargar-articulos",
             icon: FileUp,
-            title: "4. Cargar Artículos Académicos",
-            description: "Importa el corpus de artículos académicos que conformarán el universo de análisis de tu proyecto de investigación."
+            title: t("step4Title"),
+            description: t("step4Description")
           },
           {
             href: "/datos-maestros/fases-preclasificacion",
             icon: Network,
-            title: "5. Fases de Preclasificación",
-            description: "Diseña las etapas secuenciales de análisis que guiarán el proceso de evaluación y categorización de los artículos."
+            title: t("step5Title"),
+            description: t("step5Description")
           },
           {
             href: "/datos-maestros/dimensiones",
             icon: LayoutGrid,
-            title: "6. Dimensiones de Análisis",
-            description: "Configura las dimensiones y categorías específicas que se utilizarán para preclasificar los artículos en cada fase del proceso."
+            title: t("step6Title"),
+            description: t("step6Description")
           },
           {
             href: "/datos-maestros/lote",
             icon: Boxes,
-            title: "7. Lotes de Trabajo",
-            description: "Genera los lotes de artículos que serán distribuidos secuencialmente entre los miembros del equipo para el análisis colaborativo."
+            title: t("step7Title"),
+            description: t("step7Description")
           },
         ].map(({ href, icon: Icon, title, description }) => (
           <StandardCard

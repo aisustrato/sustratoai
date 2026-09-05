@@ -33,10 +33,12 @@ import {
 	BarChart3, // Added for Análisis de Preclasificación
 } from "lucide-react";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { StandardFontThemeSwitcher } from "@/components/ui/StandardFontThemeSwitcher";
+import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 import { SustratoLogo } from "@/components/ui/sustrato-logo";
 import { useRipple } from "@/components/ripple/RippleProvider";
 import { StandardText } from "@/components/ui/StandardText";
@@ -161,6 +163,8 @@ interface NavItem {
 
 export function StandardNavbar() {
 	const pathname = usePathname();
+	const t = useTranslations("nav");
+	const tCommon = useTranslations("common");
 	const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [scrolled, setScrolled] = useState(false);
@@ -324,7 +328,7 @@ export function StandardNavbar() {
 		const menuItems: NavItem[] = [
 			{
 				id: "inicio",
-				label: "Inicio",
+				label: t("inicio"),
 				href: "/",
 				icon: (isActive) => createMenuIcon(Home, isActive),
 			},
@@ -388,27 +392,27 @@ export function StandardNavbar() {
 		if (proyectoActual.module_bibliography) {
 			menuItems.push({
 				id: "articulos",
-				label: "Artículos",
+				label: t("articulos"),
 				href: "/articulos",
 				icon: () => createMenuIcon(BookOpen),
 				submenu: [
 					{
-						label: "Preclasificación",
+						label: t("preclasificacion"),
 						href: "/articulos/preclasificacion",
 						icon: () => createMenuIcon(Filter),
 					},
 					{
-						label: "Análisis de Preclasificación",
+						label: t("analisisPreclasificacion"),
 						href: "/articulos/analisis-preclasificacion",
 						icon: () => createMenuIcon(BarChart3),
 					},
 					{
-						label: "Grupos",
+						label: t("grupos"),
 						href: "/articulos/grupos",
 						icon: () => createMenuIcon(MapPin),
 					},
 					{
-						label: "Notas",
+						label: t("notas"),
 						href: "/articulos/notas",
 						icon: () => createMenuIcon(FileText),
 					},
@@ -441,42 +445,42 @@ export function StandardNavbar() {
 		// Menú de Datos Maestros siempre está disponible si hay un proyecto
 		menuItems.push({
 			id: "datos-maestros",
-			label: "Datos Maestros",
+			label: t("datosMaestros"),
 			href: "/datos-maestros",
 			icon: (isActive) => createMenuIcon(Settings, isActive),
 			submenu: [
 				{
-					label: "Proyecto",
+					label: t("proyecto"),
 					href: "/datos-maestros/proyecto",
 					icon: (isActive) => createMenuIcon(ClipboardList, isActive),
 				},
 				{
-					label: "Roles Proyecto",
+					label: t("rolesProyecto"),
 					href: "/datos-maestros/roles",
 					icon: (isActive) => createMenuIcon(Shield, isActive),
 				},
 				{
-					label: "Miembros Proyecto",
+					label: t("miembrosProyecto"),
 					href: "/datos-maestros/miembros",
 					icon: (isActive) => createMenuIcon(User, isActive),
 				},
 				{
-					label: "Cargar Artículos",
+					label: t("cargarArticulos"),
 					href: "/datos-maestros/cargar-articulos",
 					icon: (isActive) => createMenuIcon(FileUp, isActive),
 				},
 				{
-					label: "Fases de Preclasificación",
+					label: t("fasesPreclasificacion"),
 					href: "/datos-maestros/fases-preclasificacion",
 					icon: (isActive) => createMenuIcon(Network, isActive),
 				},
 				{
-					label: "Dimensiones",
+					label: t("dimensiones"),
 					href: "/datos-maestros/dimensiones",
 					icon: (isActive) => createMenuIcon(LayoutGrid, isActive),
 				},
 				{
-					label: "Lotes",
+					label: t("lotes"),
 					href: "/datos-maestros/lote",
 					icon: (isActive) => createMenuIcon(Boxes, isActive),
 				},
@@ -486,27 +490,27 @@ export function StandardNavbar() {
 		// Menú Personal siempre está disponible si hay un proyecto
 		menuItems.push({
 			id: "personal",
-			label: "Personal",
+			label: t("personal"),
 			href: "/personal",
 			icon: (isActive) => createMenuIcon(User, isActive),
 			submenu: [
 				{
-					label: "Historial",
+					label: t("historial"),
 					href: "/personal/historial_ai",
 					icon: (isActive) => createMenuIcon(ClipboardList, isActive),
 				},
 				{
-					label: "Publicaciones",
+					label: t("publicaciones"),
 					href: "/personal/papers",
 					icon: (isActive) => createMenuIcon(FileText, isActive),
 				},
 				{
-					label: "Configuración",
+					label: t("configuracion"),
 					href: "/personal/configuracion",
 					icon: (isActive) => createMenuIcon(Settings, isActive),
 				},
 				{
-					label: "Consumo AI",
+					label: t("consumoAi"),
 					href: "/personal/consumo-ai",
 					icon: (isActive) => createMenuIcon(LayoutDashboard, isActive),
 				},
@@ -514,7 +518,7 @@ export function StandardNavbar() {
 		});
 
 		return menuItems;
-	}, [proyectoActual]);
+	}, [proyectoActual, t]);
 
 	// Manejo de submenús
 	// eslint-disable-next-line react-hooks/rules-of-hooks
@@ -628,7 +632,7 @@ export function StandardNavbar() {
 												"mt-0.5"
 											)
 										}>
-										cultivando sinergias humano·AI
+										{tCommon("tagline")}
 									</StandardText>
 								</div>
 							</Link>
@@ -877,7 +881,7 @@ export function StandardNavbar() {
 														</StandardText>
 														{item.disabled && (
 															<span className="ml-2 text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">
-																Próximamente
+																{t("comingSoon")}
 															</span>
 														)}
 													</Link>
@@ -896,6 +900,7 @@ export function StandardNavbar() {
 									<StandardFontThemeSwitcher />
 								)}
 								{stageConfig.showDarkModeSwitchInNavbar && <ThemeSwitcher />}
+								<LocaleSwitcher />
 								<UserAvatar
 									showFontSwitcher={!stageConfig.showFontSwitcherInNavbar}
 									showThemeSwitcher={!stageConfig.showDarkModeSwitchInNavbar}
@@ -917,8 +922,8 @@ export function StandardNavbar() {
 												NAVBAR_RIPPLE_SCALE,
 											)
 										}
-										aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
-										tooltip={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}>
+										aria-label={mobileMenuOpen ? t("closeMenu") : t("openMenu")}
+										tooltip={mobileMenuOpen ? t("closeMenu") : t("openMenu")}>
 										{mobileMenuOpen ?
 											<StandardIcon className="h-6 w-6">
 												<X className="h-full w-full" />
@@ -974,6 +979,7 @@ export function StandardNavbar() {
 									}}>
 									<StandardFontThemeSwitcher />
 									<ThemeSwitcher />
+									<LocaleSwitcher />
 								</div>
 
 								{/* En modo móvil, siempre mostrar los menús dentro del menú hamburguesa */}
@@ -1187,7 +1193,7 @@ export function StandardNavbar() {
 													</StandardText>
 													{item.disabled && (
 														<span className="ml-2 text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">
-															Próximamente
+															{t("comingSoon")}
 														</span>
 													)}
 												</Link>

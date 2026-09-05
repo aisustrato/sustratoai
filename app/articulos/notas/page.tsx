@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
 import NotesTabsClient from "./NotesTabsClient";
@@ -13,6 +14,12 @@ import type { Database } from "@/lib/database.types";
 import type { DetailedNote } from "@/lib/actions/article-notes-actions";
 import ArticleNotesTitleClient from "./ArticleNotesTitleClient";
 
+// Depende de datos por-sesión (usuario, proyecto activo) — nunca fue candidata
+// a prerender estático. Sin esto, `getTranslations()` falla en build intentando
+// pre-renderizarla estáticamente (i18n/request.ts llama a cookies(), que no
+// existe fuera de un request real).
+export const dynamic = "force-dynamic";
+
 type PageProps = {
 	searchParams?: Record<string, string | string[] | undefined>;
 };
@@ -20,6 +27,8 @@ type PageProps = {
 export default async function ArticleNotesPage({
 	searchParams = {},
 }: PageProps) {
+	const t = await getTranslations("articulos.notasPage");
+
 	// Obtener usuario autenticado en servidor
 	const user = await getCurrentUser();
 
@@ -29,14 +38,14 @@ export default async function ArticleNotesPage({
 			<StandardPageBackground variant="default">
 				<div className="p-4 sm:p-6">
 					<ArticleNotesTitleClient
-						title="Notas de Artículos"
-						subtitle="Gestiona y organiza tus notas por visibilidad"
+						title={t("pageTitle")}
+						subtitle={t("pageSubtitleDefault")}
 						backHref="/articulos"
 					/>
 					<div className="mt-6">
 						<StandardEmptyState
-							title="Inicia sesión para ver tus notas"
-							description="Necesitas estar autenticado para acceder a tus notas privadas y públicas del proyecto."
+							title={t("loginRequiredTitle")}
+							description={t("loginRequiredDescription")}
 						/>
 					</div>
 				</div>
@@ -56,14 +65,14 @@ export default async function ArticleNotesPage({
 			<StandardPageBackground variant="default">
 				<div className="p-4 sm:p-6">
 					<ArticleNotesTitleClient
-						title="Notas de Artículos"
-						subtitle="Gestiona y organiza tus notas por visibilidad"
+						title={t("pageTitle")}
+						subtitle={t("pageSubtitleDefault")}
 						backHref="/articulos"
 					/>
 					<div className="mt-6">
 						<StandardEmptyState
-							title="Selecciona un proyecto activo"
-							description="No encontramos un proyecto activo asociado a tu usuario. Selecciona o activa un proyecto para ver sus notas."
+							title={t("selectActiveProjectTitle")}
+							description={t("selectActiveProjectDescription")}
 						/>
 					</div>
 				</div>
@@ -239,11 +248,11 @@ export default async function ArticleNotesPage({
 		<StandardPageBackground variant="default">
 			<div className="p-4 sm:p-6">
 				<ArticleNotesTitleClient
-					title="Notas de Artículos"
+					title={t("pageTitle")}
 					subtitle={
 						proyectoActivo ?
-							`Proyecto activo: ${proyectoActivo.name}`
-						:	"Gestiona y organiza tus notas por visibilidad"
+							t("pageSubtitleActiveProject", { name: proyectoActivo.name })
+						:	t("pageSubtitleDefault")
 					}
 					backHref="/articulos"
 				/>

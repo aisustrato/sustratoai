@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardSelect } from "@/components/ui/StandardSelect";
@@ -53,14 +54,20 @@ type DiscrepancyFilterType =
 	| "pending_reconciliation"
 	| "only_iter1";
 
-const ITEMS_PER_PAGE_OPTIONS = [
-	{ value: "10", label: "10 por página" },
-	{ value: "25", label: "25 por página" },
-	{ value: "50", label: "50 por página" },
-	{ value: "100", label: "100 por página" },
+type AnalisisDiscrepanciasTranslator = ReturnType<
+	typeof useTranslations<"articulos.analisisDiscrepancias">
+>;
+
+const makeItemsPerPageOptions = (t: AnalisisDiscrepanciasTranslator) => [
+	{ value: "10", label: t("itemsPerPage10") },
+	{ value: "25", label: t("itemsPerPage25") },
+	{ value: "50", label: t("itemsPerPage50") },
+	{ value: "100", label: t("itemsPerPage100") },
 ];
 
 export default function AnalisisDiscrepanciasPage() {
+	const t = useTranslations("articulos.analisisDiscrepancias");
+	const ITEMS_PER_PAGE_OPTIONS = useMemo(() => makeItemsPerPageOptions(t), [t]);
 	const { proyectoActual } = useAuth();
 
 	// Fases
@@ -118,11 +125,11 @@ export default function AnalisisDiscrepanciasPage() {
 			}
 		} catch (error) {
 			console.error("Error cargando fases:", error);
-			toast.error("Error al cargar las fases");
+			toast.error(t("toastErrorLoadingPhases"));
 		} finally {
 			setIsLoadingPhase(false);
 		}
-	}, [proyectoActual?.id]);
+	}, [proyectoActual?.id, t]);
 
 	useEffect(() => {
 		loadPhases();
@@ -142,15 +149,15 @@ export default function AnalisisDiscrepanciasPage() {
 			if (result.success) {
 				setAnalysisData(result.data);
 			} else {
-				toast.error(result.error || "Error al cargar datos de discrepancias");
+				toast.error(result.error || t("toastErrorLoadingDiscrepancyData"));
 			}
 		} catch (error) {
 			console.error("Error cargando discrepancias:", error);
-			toast.error("Error al cargar análisis de discrepancias");
+			toast.error(t("toastErrorLoadingDiscrepancyAnalysis"));
 		} finally {
 			setIsLoading(false);
 		}
-	}, [proyectoActual?.id, selectedPhaseIds]);
+	}, [proyectoActual?.id, selectedPhaseIds, t]);
 
 	useEffect(() => {
 		if (selectedPhaseIds.length > 0) {
@@ -234,14 +241,14 @@ export default function AnalisisDiscrepanciasPage() {
 	// Navegación a detalle de artículo
 	const handleNavigateToArticle = useCallback((articleId: string) => {
 		const returnHref = encodeURIComponent("/articulos/analisis-discrepancias");
-		const returnLabel = encodeURIComponent("Análisis de Discrepancias");
+		const returnLabel = encodeURIComponent(t("pageTitle"));
 		window.location.href = `/articulos/detalle?articleId=${articleId}&returnHref=${returnHref}&returnLabel=${returnLabel}`;
-	}, []);
+	}, [t]);
 
 	// Función de exportación a CSV con hash SHA-256
 	const handleExportToCSV = useCallback(async () => {
 		if (!filteredDetails || filteredDetails.length === 0) {
-			toast.error("No hay datos para exportar");
+			toast.error(t("toastNoDataToExport"));
 			return;
 		}
 
@@ -252,23 +259,23 @@ export default function AnalisisDiscrepanciasPage() {
 
 			// Encabezados
 			const headers = [
-				"Correlativo",
-				"Título Artículo",
-				"Título Traducido",
-				"Dimensión",
-				"Lote",
-				"IA Iter1 - Valor",
-				"IA Iter1 - Confianza",
-				"IA Iter1 - Justificación",
-				"Humano Iter2 - Valor",
-				"Humano Iter2 - Confianza",
-				"Humano Iter2 - Justificación",
-				"¿Acuerdo?",
-				"Reconciliación Iter3 - Valor",
-				"Reconciliación Iter3 - Confianza",
-				"Reconciliación Iter3 - Justificación",
-				"Reconciliación Iter3 - Status",
-				"Status Final",
+				t("csvHeaderCorrelativo"),
+				t("csvHeaderArticleTitle"),
+				t("csvHeaderTranslatedTitle"),
+				t("csvHeaderDimension"),
+				t("csvHeaderBatch"),
+				t("csvHeaderAIIter1Value"),
+				t("csvHeaderAIIter1Confidence"),
+				t("csvHeaderAIIter1Rationale"),
+				t("csvHeaderHumanIter2Value"),
+				t("csvHeaderHumanIter2Confidence"),
+				t("csvHeaderHumanIter2Rationale"),
+				t("csvHeaderAgreement"),
+				t("csvHeaderReconciliationIter3Value"),
+				t("csvHeaderReconciliationIter3Confidence"),
+				t("csvHeaderReconciliationIter3Rationale"),
+				t("csvHeaderReconciliationIter3Status"),
+				t("csvHeaderFinalStatus"),
 			];
 			csvRows.push(headers.map((h) => `"${h}"`).join(","));
 
@@ -289,7 +296,7 @@ export default function AnalisisDiscrepanciasPage() {
 					detail.iter2?.value?.replace(/"/g, '""') || "",
 					detail.iter2?.confidence?.toString() || "",
 					(detail.iter2?.rationale || "").replace(/"/g, '""'),
-					detail.isAgreement ? "Sí" : "No",
+					detail.isAgreement ? t("csvYes") : t("csvNo"),
 					detail.iter3?.value?.replace(/"/g, '""') || "",
 					detail.iter3?.confidence?.toString() || "",
 					(detail.iter3?.rationale || "").replace(/"/g, '""'),
@@ -353,11 +360,11 @@ export default function AnalisisDiscrepanciasPage() {
 			window.URL.revokeObjectURL(url);
 
 			toast.success(
-				`Exportados ${filteredDetails.length} registros. Hash: ${hashHex.substring(0, 16)}...`,
+				t("toastExportSuccess", { count: filteredDetails.length, hash: hashHex.substring(0, 16) }),
 			);
 		} catch (error) {
 			console.error("Error al exportar:", error);
-			toast.error("Error al exportar datos");
+			toast.error(t("toastErrorExporting"));
 		} finally {
 			setIsExporting(false);
 		}
@@ -367,6 +374,7 @@ export default function AnalisisDiscrepanciasPage() {
 		selectedPhaseIds,
 		filterType,
 		filterDimension,
+		t,
 	]);
 
 	// Columnas de la tabla
@@ -374,7 +382,7 @@ export default function AnalisisDiscrepanciasPage() {
 		() => [
 			{
 				accessorKey: "correlativo",
-				header: "#",
+				header: t("columnCorrelativo"),
 				size: 60,
 				cell: ({ row }) => (
 					<StandardText size="sm" weight="semibold">
@@ -384,7 +392,7 @@ export default function AnalisisDiscrepanciasPage() {
 			},
 			{
 				accessorKey: "articleTitle",
-				header: "Artículo",
+				header: t("columnArticle"),
 				size: 250,
 				cell: ({ row }) => (
 					<div className="max-w-xs">
@@ -400,7 +408,7 @@ export default function AnalisisDiscrepanciasPage() {
 			},
 			{
 				accessorKey: "dimensionName",
-				header: "Dimensión",
+				header: t("columnDimension"),
 				size: 150,
 				cell: ({ row }) => (
 					<StandardBadge size="sm" colorScheme="primary" styleType="outline">
@@ -410,7 +418,7 @@ export default function AnalisisDiscrepanciasPage() {
 			},
 			{
 				id: "iter1_value",
-				header: "IA (Iter 1)",
+				header: t("columnIter1AI"),
 				size: 140,
 				cell: ({ row }) => {
 					if (!row.original.iter1) {
@@ -430,7 +438,7 @@ export default function AnalisisDiscrepanciasPage() {
 			},
 			{
 				id: "iter1_rationale",
-				header: "Justificación IA",
+				header: t("columnIter1Rationale"),
 				size: 250,
 				cell: ({ row }) => {
 					if (!row.original.iter1?.rationale) {
@@ -453,13 +461,13 @@ export default function AnalisisDiscrepanciasPage() {
 			},
 			{
 				id: "iter2_value",
-				header: "Humano (Iter 2)",
+				header: t("columnIter2Human"),
 				size: 140,
 				cell: ({ row }) => {
 					if (!row.original.iter2) {
 						return (
 							<StandardText size="sm" colorShade="subtle">
-								Sin revisión
+								{t("noReview")}
 							</StandardText>
 						);
 					}
@@ -473,7 +481,7 @@ export default function AnalisisDiscrepanciasPage() {
 			},
 			{
 				id: "iter2_rationale",
-				header: "Justificación Humano",
+				header: t("columnIter2Rationale"),
 				size: 250,
 				cell: ({ row }) => {
 					if (!row.original.iter2?.rationale) {
@@ -496,7 +504,7 @@ export default function AnalisisDiscrepanciasPage() {
 			},
 			{
 				id: "agreement",
-				header: "Resultado",
+				header: t("columnResult"),
 				size: 130,
 				cell: ({ row }) => {
 					if (!row.original.iter2) {
@@ -505,22 +513,22 @@ export default function AnalisisDiscrepanciasPage() {
 								size="sm"
 								colorScheme="neutral"
 								styleType="outline">
-								Solo IA
+								{t("onlyAI")}
 							</StandardBadge>
 						);
 					}
 					return row.original.isAgreement ?
 							<StandardBadge size="sm" colorScheme="success">
-								Acuerdo
+								{t("agreementBadge")}
 							</StandardBadge>
 						:	<StandardBadge size="sm" colorScheme="danger">
-								Discrepancia
+								{t("discrepancyBadge")}
 							</StandardBadge>;
 				},
 			},
 			{
 				id: "iter3_value",
-				header: "Reconciliación (Iter 3)",
+				header: t("columnIter3Reconciliation"),
 				size: 160,
 				cell: ({ row }) => {
 					if (!row.original.iter3) {
@@ -530,7 +538,7 @@ export default function AnalisisDiscrepanciasPage() {
 									size="sm"
 									colorScheme="warning"
 									styleType="outline">
-									Pendiente
+									{t("pendingBadge")}
 								</StandardBadge>
 							);
 						}
@@ -542,9 +550,9 @@ export default function AnalisisDiscrepanciasPage() {
 					}
 					const statusBadge =
 						row.original.iter3.status === "reconciled" ?
-							{ color: "primary" as const, label: "Reconciliado" }
+							{ color: "primary" as const, label: t("reconciledBadge") }
 						: row.original.iter3.status === "disputed" ?
-							{ color: "danger" as const, label: "Disputado" }
+							{ color: "danger" as const, label: t("disputedBadge") }
 						:	{
 								color: "neutral" as const,
 								label: row.original.iter3.status || "—",
@@ -570,7 +578,7 @@ export default function AnalisisDiscrepanciasPage() {
 			},
 			{
 				id: "iter3_rationale",
-				header: "Justificación Reconciliación",
+				header: t("columnIter3Rationale"),
 				size: 250,
 				cell: ({ row }) => {
 					if (!row.original.iter3?.rationale) {
@@ -593,7 +601,7 @@ export default function AnalisisDiscrepanciasPage() {
 			},
 			{
 				id: "actions",
-				header: "Acciones",
+				header: t("columnActions"),
 				size: 80,
 				cell: ({ row }) => (
 					<div className="flex gap-1">
@@ -605,7 +613,7 @@ export default function AnalisisDiscrepanciasPage() {
 								setSelectedDetail(row.original);
 								setShowTimeline(true);
 							}}
-							tooltip="Ver historial de iteraciones">
+							tooltip={t("viewIterationHistoryTooltip")}>
 							<GitCompareArrows size={14} />
 						</StandardButton>
 						<StandardButton
@@ -613,7 +621,7 @@ export default function AnalisisDiscrepanciasPage() {
 							size="sm"
 							iconOnly
 							onClick={() => handleNavigateToArticle(row.original.articleId)}
-							tooltip="Ver detalle del artículo">
+							tooltip={t("viewArticleDetailTooltip")}>
 							<ExternalLink size={14} />
 						</StandardButton>
 					</div>
@@ -623,13 +631,13 @@ export default function AnalisisDiscrepanciasPage() {
 				},
 			},
 		],
-		[handleNavigateToArticle],
+		[handleNavigateToArticle, t],
 	);
 
 	// Breadcrumbs
 	const breadcrumbs = [
-		{ label: "Artículos", href: "/articulos" },
-		{ label: "Análisis de Discrepancias" },
+		{ label: t("breadcrumbArticulos"), href: "/articulos" },
+		{ label: t("pageTitle") },
 	];
 
 	// Loading
@@ -638,7 +646,7 @@ export default function AnalisisDiscrepanciasPage() {
 			<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
 				<SustratoLoadingLogo size={64} />
 				<StandardText colorShade="subtle">
-					Cargando información del proyecto...
+					{t("loadingProjectInfo")}
 				</StandardText>
 			</div>
 		);
@@ -648,7 +656,7 @@ export default function AnalisisDiscrepanciasPage() {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
 				<SustratoLoadingLogo size={64} />
-				<StandardText colorShade="subtle">Cargando fase activa...</StandardText>
+				<StandardText colorShade="subtle">{t("loadingActivePhase")}</StandardText>
 			</div>
 		);
 	}
@@ -658,10 +666,10 @@ export default function AnalisisDiscrepanciasPage() {
 			<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
 				<GitCompareArrows className="h-12 w-12 text-neutral-300" />
 				<StandardText size="lg" weight="semibold">
-					No hay fases disponibles
+					{t("noPhasesAvailableTitle")}
 				</StandardText>
 				<StandardText colorShade="subtle">
-					Crea una fase desde la gestión de fases para comenzar el análisis.
+					{t("noPhasesAvailableDescription")}
 				</StandardText>
 			</div>
 		);
@@ -681,7 +689,7 @@ export default function AnalisisDiscrepanciasPage() {
 			{allPhases.length > 1 && (
 				<div className="flex items-center gap-3">
 					<StandardText size="sm" weight="medium">
-						Analizar fase:
+						{t("analyzePhaseLabel")}
 					</StandardText>
 					<div className="w-80">
 						<StandardSelect
@@ -697,17 +705,17 @@ export default function AnalisisDiscrepanciasPage() {
 								}
 								setCurrentPage(1);
 							}}
-							placeholder="Seleccionar fase"
+							placeholder={t("selectPhasePlaceholder")}
 							options={[
 								...allPhases.map((phase) => ({
 									value: phase.id,
-									label: `Fase ${phase.phase_number}: ${phase.name}${
-										phase.id === activePhase?.id ? " (Activa)" : ""
+									label: `${t("phaseOptionLabel", { number: phase.phase_number, name: phase.name })}${
+										phase.id === activePhase?.id ? t("activePhaseSuffix") : ""
 									}`,
 								})),
 								{
 									value: "multiple",
-									label: `Todas las Fases (${allPhases.length})`,
+									label: t("allPhasesOption", { count: allPhases.length }),
 								},
 							]}
 							defaultValue="multiple"
@@ -718,17 +726,17 @@ export default function AnalisisDiscrepanciasPage() {
 
 			{/* Título */}
 			<StandardPageTitle
-				title="Análisis de Discrepancias"
+				title={t("pageTitle")}
 				subtitle={
 					selectedPhaseIds.length === 1 ?
-						`Fase: ${
-							allPhases.find((p) => p.id === selectedPhaseIds[0])?.name ||
-							activePhase?.name ||
-							"Sin nombre"
-						}`
-					:	`Análisis Multifase (${selectedPhaseIds.length} fases)`
+						t("phaseSubtitle", {
+							name: allPhases.find((p) => p.id === selectedPhaseIds[0])?.name ||
+								activePhase?.name ||
+								t("unnamedPhase"),
+						})
+					:	t("multiphaseSubtitle", { count: selectedPhaseIds.length })
 				}
-				description="Comparación global entre clasificación IA (iter 1), revisión humana (iter 2) y reconciliación (iter 3). Navega al historial de iteraciones para cada par artículo-dimensión."
+				description={t("pageDescription")}
 				mainIcon={GitCompareArrows}
 				breadcrumbs={breadcrumbs}
 			/>
@@ -741,7 +749,7 @@ export default function AnalisisDiscrepanciasPage() {
 						hasOutline
 						className="p-3 text-center">
 						<StandardText size="xs" colorShade="subtle" className="block">
-							Total Pares
+							{t("kpiTotalPairs")}
 						</StandardText>
 						<StandardText size="xl" weight="bold">
 							{summary.totalPairs}
@@ -753,7 +761,7 @@ export default function AnalisisDiscrepanciasPage() {
 						hasOutline
 						className="p-3 text-center">
 						<StandardText size="xs" colorShade="subtle" className="block">
-							Acuerdos
+							{t("kpiAgreements")}
 						</StandardText>
 						<StandardText size="xl" weight="bold" colorScheme="success">
 							{summary.agreements}
@@ -773,7 +781,7 @@ export default function AnalisisDiscrepanciasPage() {
 						hasOutline
 						className="p-3 text-center">
 						<StandardText size="xs" colorShade="subtle" className="block">
-							Discrepancias
+							{t("kpiDiscrepancies")}
 						</StandardText>
 						<StandardText size="xl" weight="bold" colorScheme="danger">
 							{summary.discrepancies}
@@ -785,7 +793,7 @@ export default function AnalisisDiscrepanciasPage() {
 						hasOutline
 						className="p-3 text-center">
 						<StandardText size="xs" colorShade="subtle" className="block">
-							Reconciliados
+							{t("kpiReconciled")}
 						</StandardText>
 						<StandardText size="xl" weight="bold" colorScheme="primary">
 							{summary.reconciled}
@@ -797,7 +805,7 @@ export default function AnalisisDiscrepanciasPage() {
 						hasOutline
 						className="p-3 text-center">
 						<StandardText size="xs" colorShade="subtle" className="block">
-							En Disputa
+							{t("kpiDisputed")}
 						</StandardText>
 						<StandardText size="xl" weight="bold" colorScheme="danger">
 							{summary.disputed}
@@ -809,7 +817,7 @@ export default function AnalisisDiscrepanciasPage() {
 						hasOutline
 						className="p-3 text-center">
 						<StandardText size="xs" colorShade="subtle" className="block">
-							Pend. Acción Humana
+							{t("kpiPendingHumanAction")}
 						</StandardText>
 						<StandardText size="xl" weight="bold" colorScheme="warning">
 							{summary.pendingReconciliation}
@@ -821,7 +829,7 @@ export default function AnalisisDiscrepanciasPage() {
 						hasOutline
 						className="p-3 text-center">
 						<StandardText size="xs" colorShade="subtle" className="block">
-							Solo IA
+							{t("kpiOnlyAI")}
 						</StandardText>
 						<StandardText size="xl" weight="bold" colorScheme="neutral">
 							{summary.onlyIter1}
@@ -835,7 +843,7 @@ export default function AnalisisDiscrepanciasPage() {
 				<div className="flex flex-col items-center justify-center py-16 gap-4">
 					<SustratoLoadingLogo size={64} />
 					<StandardText colorShade="subtle">
-						Analizando discrepancias entre iteraciones...
+						{t("loadingDiscrepancies")}
 					</StandardText>
 				</div>
 			)}
@@ -850,7 +858,7 @@ export default function AnalisisDiscrepanciasPage() {
 								size="sm"
 								onClick={() => setShowFilters(!showFilters)}
 								leftIcon={Filter}>
-								Filtros
+								{t("filtersButton")}
 							</StandardButton>
 
 							{(filterType !== "all" || filterDimension !== "all") && (
@@ -862,7 +870,7 @@ export default function AnalisisDiscrepanciasPage() {
 										setFilterDimension("all");
 									}}
 									leftIcon={X}>
-									Limpiar filtros
+									{t("clearFiltersButton")}
 								</StandardButton>
 							)}
 						</div>
@@ -879,7 +887,7 @@ export default function AnalisisDiscrepanciasPage() {
 									filteredDetails.length === 0
 								}
 								leftIcon={Download}>
-								{isExporting ? "Exportando..." : "Exportar CSV"}
+								{isExporting ? t("exportingButton") : t("exportCsvButton")}
 							</StandardButton>
 
 							<StandardButton
@@ -889,7 +897,7 @@ export default function AnalisisDiscrepanciasPage() {
 								onClick={() => setShowTable(!showTable)}
 								leftIcon={showTable ? X : BarChart3}
 								defaultChecked={true}>
-								{showTable ? "Ocultar Tabla" : "Mostrar Tabla"}
+								{showTable ? t("hideTableButton") : t("showTableButton")}
 							</StandardButton>
 
 							<StandardButton
@@ -898,7 +906,7 @@ export default function AnalisisDiscrepanciasPage() {
 								size="sm"
 								onClick={() => setShowVisualization(!showVisualization)}
 								leftIcon={BarChart3}>
-								{showVisualization ? "Ocultar" : "Ver"} gráficos
+								{showVisualization ? t("hideChartsButton") : t("showChartsButton")}
 							</StandardButton>
 						</div>
 					</div>
@@ -912,43 +920,43 @@ export default function AnalisisDiscrepanciasPage() {
 						{/* Filtro por tipo */}
 						<div>
 							<StandardText size="sm" weight="semibold" className="mb-2 block">
-								Tipo de Resultado
+								{t("resultTypeLabel")}
 							</StandardText>
 							<div className="flex flex-wrap gap-2">
 								{[
 									{
 										key: "all" as const,
-										label: "Todos",
+										label: t("filterAll"),
 										icon: null,
 										color: "neutral" as const,
 									},
 									{
 										key: "agreement" as const,
-										label: "Acuerdos",
+										label: t("filterAgreements"),
 										icon: CheckCircle2,
 										color: "success" as const,
 									},
 									{
 										key: "discrepancy" as const,
-										label: "Discrepancias",
+										label: t("filterDiscrepanciesLabel"),
 										icon: XCircle,
 										color: "danger" as const,
 									},
 									{
 										key: "reconciled" as const,
-										label: "Reconciliados",
+										label: t("filterReconciled"),
 										icon: Scale,
 										color: "primary" as const,
 									},
 									{
 										key: "disputed" as const,
-										label: "En Disputa",
+										label: t("filterDisputed"),
 										icon: AlertTriangle,
 										color: "danger" as const,
 									},
 									{
 										key: "pending_reconciliation" as const,
-										label: "Pend. Acción Humana",
+										label: t("filterPendingHumanAction"),
 										icon: Clock,
 										color: "warning" as const,
 									},
@@ -972,7 +980,7 @@ export default function AnalisisDiscrepanciasPage() {
 									size="sm"
 									weight="semibold"
 									className="mb-2 block">
-									Dimensión
+									{t("dimensionLabel")}
 								</StandardText>
 								<div className="w-64">
 									<StandardSelect
@@ -981,7 +989,7 @@ export default function AnalisisDiscrepanciasPage() {
 											if (typeof val === "string") setFilterDimension(val);
 										}}
 										options={[
-											{ value: "all", label: "Todas las dimensiones" },
+											{ value: "all", label: t("allDimensionsOption") },
 											...uniqueDimensions,
 										]}
 										size="sm"
@@ -1007,17 +1015,17 @@ export default function AnalisisDiscrepanciasPage() {
 					<div className="flex items-center justify-between p-4 border-b">
 						<div className="flex items-center gap-4">
 							<StandardText size="sm" colorShade="subtle">
-								Total: {totalItems} par{totalItems !== 1 ? "es" : ""}
+								{t("totalPairsLabel", { count: totalItems })}
 							</StandardText>
 							{filterType !== "all" && (
 								<StandardBadge size="sm" colorScheme="accent">
-									Filtro: {filterType}
+									{t("filterBadgePrefix", { filterType })}
 								</StandardBadge>
 							)}
 						</div>
 						<div className="flex items-center gap-2">
 							<StandardText size="sm" colorShade="subtle">
-								Mostrar:
+								{t("showLabel")}
 							</StandardText>
 							<StandardSelect
 								options={ITEMS_PER_PAGE_OPTIONS}
@@ -1038,10 +1046,10 @@ export default function AnalisisDiscrepanciasPage() {
 						<div className="flex flex-col items-center justify-center py-16 gap-2">
 							<GitCompareArrows className="h-12 w-12 text-neutral-300" />
 							<StandardText size="lg" weight="semibold">
-								Sin resultados
+								{t("emptyResultsTitle")}
 							</StandardText>
 							<StandardText colorShade="subtle">
-								No hay pares artículo-dimensión con los filtros seleccionados.
+								{t("emptyResultsDescription")}
 							</StandardText>
 						</div>
 					:	<StandardTable
@@ -1050,7 +1058,7 @@ export default function AnalisisDiscrepanciasPage() {
 							enableTruncation={true}
 							colorScheme="neutral"
 							enableKeywordHighlighting={true}
-							keywordHighlightPlaceholder="Buscar en tabla...">
+							keywordHighlightPlaceholder={t("searchInTablePlaceholder")}>
 							<StandardTable.Table />
 						</StandardTable>
 					}
@@ -1084,7 +1092,7 @@ export default function AnalisisDiscrepanciasPage() {
 					<div className="relative w-full max-w-lg bg-white dark:bg-neutral-900 shadow-xl overflow-y-auto">
 						<div className="sticky top-0 bg-white dark:bg-neutral-900 z-10 p-4 border-b flex items-center justify-between">
 							<StandardText size="sm" weight="semibold">
-								Historial de Iteraciones
+								{t("iterationHistoryTitle")}
 							</StandardText>
 							<StandardButton
 								styleType="ghost"

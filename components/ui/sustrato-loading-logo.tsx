@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { SustratoLogo } from "./sustrato-logo";
 import { cn } from "@/lib/utils";
 import { useDesignTokens } from "@/app/providers/DesignTokensProvider";
@@ -27,10 +28,11 @@ export function SustratoLoadingLogo({
   primaryColor,
   accentColor,
   showText = false,
-  text = "Cargando...",
+  text,
   breathingEffect = true,
   colorTransition = true,
 }: SustratoLoadingLogoProps) {
+  const t = useTranslations("designSystem.loadingLogo");
   const { tokens } = useDesignTokens();
   const [progress, setProgress] = useState(0);
   const [colorPhase, setColorPhase] = useState(0);
@@ -354,7 +356,7 @@ export function SustratoLoadingLogo({
             weight="medium"
             colorScheme="primary"
           >
-            {text}
+            {text ?? t("loadingDefault")}
           </StandardText>
         </div>
       )}

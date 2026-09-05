@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardCard } from "@/components/ui/StandardCard";
@@ -14,11 +15,16 @@ import {
 } from "lucide-react";
 import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustratoLogoWithFixedText";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
+import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 
 export default function SignUpPage() {
+	const t = useTranslations("auth.signup");
 	return (
 		/* CORRECCIÓN FINAL: Volvemos a 'gradient' que es el real. Adiós a la alucinación 'dots' */
 		<StandardPageBackground variant="gradient" bubbles={true}>
+			<div className="fixed top-4 right-4 z-50">
+				<LocaleSwitcher />
+			</div>
 			<div className="flex items-center justify-center min-h-screen p-4">
 				<StandardCard 
                     className="max-w-3xl w-full" 
@@ -42,14 +48,14 @@ export default function SignUpPage() {
 							weight="bold"
 							colorScheme="primary"
 							className="text-center tracking-tight">
-							Infraestructura Forense para la <span className="text-secondary">Cognición Aumentada</span>
+							{t("heading")} <span className="text-secondary">{t("headingHighlight")}</span>
 						</StandardText>
 						<StandardText
 							asElement="p"
 							size="lg"
 							colorScheme="neutral"
 							className="text-center max-w-2xl mx-auto italic text-muted-foreground">
-							&quot;Cultivando sinergias humano·AI bajo la Ética de Moebius&quot;
+							{t("quote")}
 						</StandardText>
 					</StandardCard.Header>
 
@@ -58,11 +64,9 @@ export default function SignUpPage() {
 						{/* Manifiesto Breve */}
 						<div className="prose prose-slate max-w-none text-center">
 							<StandardText asElement="p" size="md" colorScheme="neutral" className="leading-relaxed">
-								Sustrato.ai ha evolucionado. Ya no es una herramienta de productividad, 
-								es un <strong>Búnker de Integridad Epistémica</strong>. 
-								En una era de métricas sintéticas, reivindicamos la <strong>Soberanía Cognitiva</strong>: 
-								el derecho a investigar con herramientas que amplifican la intuición humana 
-								y dejan un rastro auditable, en lugar de reemplazar el pensamiento.
+								{t("manifestoBefore")} <strong>{t("manifestoBunker")}</strong>.{" "}
+								{t("manifestoMiddle")} <strong>{t("manifestoSovereignty")}</strong>:{" "}
+								{t("manifestoAfter")}
 							</StandardText>
 						</div>
 
@@ -74,7 +78,7 @@ export default function SignUpPage() {
 										<FileText className="text-blue-600" size={24} />
 									</div>
 									<StandardText asElement="h3" weight="bold" size="sm" className="uppercase tracking-widest text-slate-500 mb-1">
-										Registro Inmutable
+										{t("immutableRecord")}
 									</StandardText>
 									<Link href="https://doi.org/10.5281/zenodo.18274097" target="_blank" className="hover:opacity-70 transition-opacity">
 										<StandardText asElement="p" weight="bold" size="md" colorScheme="primary" className="font-mono">
@@ -82,7 +86,7 @@ export default function SignUpPage() {
 										</StandardText>
 									</Link>
 									<StandardText asElement="span" size="xs" className="text-green-600 mt-2 font-medium">
-										● Validado (CERN/Zenodo)
+										● {t("validated")}
 									</StandardText>
 								</StandardCard.Content>
 							</StandardCard>
@@ -93,7 +97,7 @@ export default function SignUpPage() {
 										<Fingerprint className="text-emerald-600" size={24} />
 									</div>
 									<StandardText asElement="h3" weight="bold" size="sm" className="uppercase tracking-widest text-slate-500 mb-1">
-										Investigador F0
+										{t("researcherF0")}
 									</StandardText>
 									<Link href="https://orcid.org/0009-0003-4251-2733" target="_blank" className="hover:opacity-70 transition-opacity">
 										<StandardText asElement="p" weight="bold" size="md" colorScheme="primary" className="font-mono">
@@ -101,7 +105,7 @@ export default function SignUpPage() {
 										</StandardText>
 									</Link>
 									<StandardText asElement="span" size="xs" colorScheme="neutral" className="mt-2">
-										Rodolfo Leiva (Independent Researcher)
+										{t("independentResearcher")}
 									</StandardText>
 								</StandardCard.Content>
 							</StandardCard>
@@ -112,36 +116,35 @@ export default function SignUpPage() {
 							<div className="flex items-center justify-center gap-2 mb-4">
 								<Scale className="text-primary" size={20} />
 								<StandardText asElement="h3" weight="bold" size="lg" colorScheme="primary">
-									Estado: Beta Restringida
+									{t("betaStatus")}
 								</StandardText>
 							</div>
 							<StandardText asElement="p" size="sm" colorScheme="neutral" className="text-center mb-6 max-w-lg mx-auto">
-								Estamos ordenando el jardín. El acceso directo está restringido para garantizar 
-								la estabilidad del entorno, pero <strong>todos son bienvenidos</strong> a colaborar, 
-								auditar o apoyar. La puerta no está cerrada, solo tiene portero.
+								{t("betaDescriptionBefore")} <strong>{t("betaDescriptionBold")}</strong>{" "}
+								{t("betaDescriptionAfter")}
 							</StandardText>
 
 							<div className="flex flex-col sm:flex-row gap-4 justify-center">
 								<Link href="mailto:etica.fractal@proton.me">
-									<StandardButton 
-										size="lg" 
-										colorScheme="primary" 
+									<StandardButton
+										size="lg"
+										colorScheme="primary"
 										leftIcon={Mail}
 										className="w-full sm:w-auto shadow-md"
 									>
-										Contactar Proyecto
+										{t("contactProject")}
 									</StandardButton>
 								</Link>
-								
+
 								<Link href="https://github.com/rodolfo-leiva/sustrato.ai" target="_blank">
-									<StandardButton 
-										size="lg" 
-										styleType="outline" 
-										colorScheme="neutral" 
+									<StandardButton
+										size="lg"
+										styleType="outline"
+										colorScheme="neutral"
 										leftIcon={Github}
 										className="w-full sm:w-auto bg-white"
 									>
-										Auditar Código (GitHub)
+										{t("auditCode")}
 									</StandardButton>
 								</Link>
 							</div>
@@ -150,7 +153,7 @@ export default function SignUpPage() {
 						{/* Enlace discreto para Login */}
 						<div className="text-center pt-4">
 							<Link href="/login" className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-primary transition-colors">
-								<span>Acceso a Nodos Activos</span>
+								<span>{t("activeNodesAccess")}</span>
 								<ArrowRight size={14} />
 							</Link>
 						</div>
@@ -164,7 +167,7 @@ export default function SignUpPage() {
 							colorScheme="neutral"
 							colorShade="subtle"
 							className="font-mono opacity-60">
-							v0.9.1 (Auditoría Pública) • Santiago, Chile • 2026 • Open Science
+							{t("footer")}
 						</StandardText>
 					</StandardCard.Footer>
 				</StandardCard>

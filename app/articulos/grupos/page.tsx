@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { StandardEmptyState } from "@/components/ui/StandardEmptyState";
 import { StandardButton } from "@/components/ui/StandardButton";
@@ -16,6 +17,12 @@ import {
 import { getLatestTranslationsForArticles } from "@/lib/actions/article-actions";
 import type { Database } from "@/lib/database.types";
 import GroupsPageClient from "./GroupsPageClient";
+
+// Depende de datos por-sesión (usuario, proyecto activo) — nunca fue candidata
+// a prerender estático. Sin esto, `getTranslations()` falla en build intentando
+// pre-renderizarla estáticamente (i18n/request.ts llama a cookies(), que no
+// existe fuera de un request real).
+export const dynamic = "force-dynamic";
 
 export type GroupItemForClient = {
 	article_id: string;
@@ -45,6 +52,7 @@ export default async function ArticleGroupsPage({
 }: {
 	searchParams?: { [key: string]: string | string[] | undefined };
 }) {
+	const t = await getTranslations("articulos.gruposPage");
 	const user = await getCurrentUser();
 
 	if (!user) {
@@ -52,14 +60,14 @@ export default async function ArticleGroupsPage({
 			<StandardPageBackground variant="default">
 				<div className="p-4 sm:p-6">
 					<div className="mb-2 flex items-center justify-between">
-						<StandardText preset="title">Grupos de Artículos</StandardText>
+						<StandardText preset="title">{t("pageTitle")}</StandardText>
 						<StandardButton asChild styleType="outline" colorScheme="neutral">
-							<a href="/articulos">Volver</a>
+							<a href="/articulos">{t("backButtonLabel")}</a>
 						</StandardButton>
 					</div>
 					<StandardEmptyState
-						title="Inicia sesión para gestionar grupos"
-						description="Necesitas estar autenticado para ver y administrar tus grupos."
+						title={t("loginRequiredTitle")}
+						description={t("loginRequiredDescription")}
 					/>
 				</div>
 			</StandardPageBackground>
@@ -77,14 +85,14 @@ export default async function ArticleGroupsPage({
 			<StandardPageBackground variant="default">
 				<div className="p-4 sm:p-6">
 					<div className="mb-2 flex items-center justify-between">
-						<StandardText preset="title">Grupos de Artículos</StandardText>
+						<StandardText preset="title">{t("pageTitle")}</StandardText>
 						<StandardButton asChild styleType="outline" colorScheme="neutral">
-							<a href="/articulos">Volver</a>
+							<a href="/articulos">{t("backButtonLabel")}</a>
 						</StandardButton>
 					</div>
 					<StandardEmptyState
-						title="Selecciona un proyecto activo"
-						description="No encontramos un proyecto activo asociado a tu usuario. Selecciona o activa un proyecto para gestionar sus grupos."
+						title={t("selectActiveProjectTitle")}
+						description={t("selectActiveProjectDescription")}
 					/>
 				</div>
 			</StandardPageBackground>

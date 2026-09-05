@@ -3,6 +3,7 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/auth-provider";
 import {
@@ -31,6 +32,7 @@ import { toast as sonnerToast } from "sonner"; // Aunque no hay submits, por si 
 //#region [main] - 🔧 COMPONENT 🔧
 export default function VerDimensionPage() {
 	//#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HELPER FUNCTIONS 🧰
+	const t = useTranslations("datosMaestrosPages.dimensionesVerPage");
 	const router = useRouter();
 	const params = useParams();
 	const searchParams = useSearchParams();
@@ -54,9 +56,9 @@ export default function VerDimensionPage() {
 		if (!proyectoActual?.id || !dimensionId || !activePhaseId) {
 			if (!loadingProyectos) {
 				setErrorPage(
-					!dimensionId ? "ID de dimensión no especificado."
-					: !activePhaseId ? "Fase no especificada."
-					: "Proyecto no seleccionado.",
+					!dimensionId ? t("idNotSpecified")
+					: !activePhaseId ? t("phaseNotSpecified")
+					: t("projectNotSelected"),
 				);
 			}
 			setIsPageLoading(false);
@@ -76,22 +78,22 @@ export default function VerDimensionPage() {
 					setDimensionActual(dim);
 				} else {
 					setErrorPage(
-						`Dimensión con ID "${dimensionId}" no encontrada en la fase activa.`,
+						t("notFoundInActivePhase", { id: dimensionId }),
 					);
 				}
 			} else {
 				setErrorPage(
-					resultado.error || "Error al cargar los datos de la dimensión.",
+					resultado.error || t("errorLoadingDataFallback"),
 				);
-				sonnerToast.error("Error al Cargar Datos", {
+				sonnerToast.error(t("errorLoadingDataTitle"), {
 					description: resultado.error,
 				});
 			}
 		} catch (err) {
 			const errorMsg =
-				err instanceof Error ? err.message : "Error desconocido.";
-			setErrorPage(`Error inesperado al cargar la dimensión: ${errorMsg}`);
-			sonnerToast.error("Error Inesperado", { description: errorMsg });
+				err instanceof Error ? err.message : t("unknownError");
+			setErrorPage(t("unexpectedErrorLoading", { message: errorMsg }));
+			sonnerToast.error(t("unexpectedErrorTitle"), { description: errorMsg });
 		} finally {
 			setIsPageLoading(false);
 		}
@@ -103,6 +105,7 @@ export default function VerDimensionPage() {
 		setErrorPage,
 		setIsPageLoading,
 		setDimensionActual,
+		t,
 	]);
 
 	useEffect(() => {
@@ -176,7 +179,7 @@ export default function VerDimensionPage() {
 					}}>
 					<SustratoLoadingLogo
 						showText
-						text="Cargando detalle de la dimensión..."
+						text={t("loadingDetail")}
 					/>
 				</div>
 			</div>
@@ -200,7 +203,7 @@ export default function VerDimensionPage() {
 								<AlertTriangle className="h-12 w-12 text-danger-fg mb-4" />
 							</StandardIcon>
 							<StandardText size="lg" weight="bold" colorScheme="danger">
-								Error al Cargar Dimensión
+								{t("errorLoadingDimensionTitle")}
 							</StandardText>
 						</StandardCard.Header>
 						<StandardCard.Content className="text-center">
@@ -214,7 +217,7 @@ export default function VerDimensionPage() {
 								<StandardIcon>
 									<ArrowLeft />
 								</StandardIcon>
-								Volver a Dimensiones
+								{t("backToDimensionsButton")}
 							</StandardButton>
 						</StandardCard.Footer>
 					</StandardCard>
@@ -241,11 +244,10 @@ export default function VerDimensionPage() {
 					accentPlacement="none" // No border prop originally
 				>
 					<StandardText size="lg" weight="semibold">
-						Dimensión no disponible
+						{t("notAvailableTitle")}
 					</StandardText>
 					<StandardText colorScheme="neutral" className="mt-2">
-						No se pudo cargar la información de la dimensión. Intenta volver a
-						la lista.
+						{t("notAvailableDescription")}
 					</StandardText>
 					<StandardButton
 						onClick={handleVolver}
@@ -254,7 +256,7 @@ export default function VerDimensionPage() {
 						<StandardIcon>
 							<ArrowLeft />
 						</StandardIcon>
-						Volver a Dimensiones
+						{t("backToDimensionsButton")}
 					</StandardButton>
 				</StandardCard>
 			</div>
@@ -267,19 +269,19 @@ export default function VerDimensionPage() {
 				{" "}
 				{/* Centrar contenido */}
 				<StandardPageTitle
-					title={`Detalle de Dimensión: ${dimensionActual.name}`}
-					subtitle="Visualizando la configuración de esta dimensión de clasificación."
+					title={t("pageTitle", { name: dimensionActual.name })}
+					subtitle={t("pageSubtitle")}
 					mainIcon={Eye} // Icono para ver
 					breadcrumbs={[
-						{ label: "Datos Maestros", href: "/datos-maestros" },
+						{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
 						{
-							label: "Dimensiones",
+							label: t("breadcrumbDimensiones"),
 							href:
 								activePhaseId ?
 									`/datos-maestros/dimensiones?phase=${activePhaseId}`
 								:	"/datos-maestros/dimensiones",
 						},
-						{ label: "Ver" },
+						{ label: t("breadcrumbVer") },
 					]}
 					showBackButton={{
 						href:
@@ -296,7 +298,7 @@ export default function VerDimensionPage() {
 								styleType="outline"
 								size="sm"
 								leftIcon={Edit}>
-								Editar Dimensión
+								{t("editButton")}
 							</StandardButton>
 						:	undefined
 					}

@@ -5,13 +5,14 @@
 import { useFontTheme } from "@/app/font-provider";
 import { ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { useDesignTokens } from "@/app/providers/DesignTokensProvider";
 import { fontThemeConfig, type FontTheme } from "@/lib/fonts";
 
 import { useAuth } from "@/app/auth-provider";
 import { actualizarPreferenciasUI } from "@/lib/actions/project-dashboard-actions";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import type { FontSelectorTokens } from "@/lib/theme/components/font-selector-tokens";
 import type {
 	ButtonTokens,
@@ -22,6 +23,7 @@ import type {
 } from "@/app/providers/DesignTokensProvider";
 
 export function StandardFontThemeSwitcher() {
+	const t = useTranslations("navChrome.fontThemeSwitcher");
 	const { fontTheme, setFontTheme } = useFontTheme();
 	const auth = useAuth();
 	const { tokens: designTokens } = useDesignTokens();
@@ -80,104 +82,107 @@ export function StandardFontThemeSwitcher() {
 		}),
 	};
 
-	const fontStyles = [
-		{
-			id: "sustrato",
-			name: "Fuente Sustrato",
-			headingStyle: {
-				fontFamily: "var(--font-ubuntu), 'Ubuntu', sans-serif",
-				fontWeight: "700",
+	const fontStyles = useMemo(
+		() => [
+			{
+				id: "sustrato",
+				name: t("fontSustrato"),
+				headingStyle: {
+					fontFamily: "var(--font-ubuntu), 'Ubuntu', sans-serif",
+					fontWeight: "700",
+				},
+				bodyStyle: {
+					fontFamily: "var(--font-ubuntu), 'Ubuntu', sans-serif",
+					fontWeight: "400",
+				},
 			},
-			bodyStyle: {
-				fontFamily: "var(--font-ubuntu), 'Ubuntu', sans-serif",
-				fontWeight: "400",
+			{
+				id: "classic",
+				name: t("fontClassic"),
+				headingStyle: {
+					fontFamily: fontThemeConfig.classic.heading,
+					fontWeight: fontThemeConfig.classic.headingWeight,
+				},
+				bodyStyle: {
+					fontFamily: fontThemeConfig.classic.body,
+					fontWeight: fontThemeConfig.classic.bodyWeight,
+				},
 			},
-		},
-		{
-			id: "classic",
-			name: "Fuente Clásica",
-			headingStyle: {
-				fontFamily: fontThemeConfig.classic.heading,
-				fontWeight: fontThemeConfig.classic.headingWeight,
+			{
+				id: "technical",
+				name: t("fontTechnical"),
+				headingStyle: {
+					fontFamily: fontThemeConfig.technical.heading,
+					fontWeight: fontThemeConfig.technical.headingWeight,
+					letterSpacing: fontThemeConfig.technical.letterSpacingHeadings,
+				},
+				bodyStyle: {
+					fontFamily: fontThemeConfig.technical.body,
+					fontWeight: fontThemeConfig.technical.bodyWeight,
+					letterSpacing: fontThemeConfig.technical.letterSpacingBody,
+				},
 			},
-			bodyStyle: {
-				fontFamily: fontThemeConfig.classic.body,
-				fontWeight: fontThemeConfig.classic.bodyWeight,
+			{
+				id: "creative",
+				name: t("fontCreative"),
+				headingStyle: {
+					fontFamily: fontThemeConfig.creative.heading,
+					fontWeight: fontThemeConfig.creative.headingWeight,
+					letterSpacing: fontThemeConfig.creative.letterSpacingHeadings,
+				},
+				bodyStyle: {
+					fontFamily: fontThemeConfig.creative.body,
+					fontWeight: fontThemeConfig.creative.bodyWeight,
+					letterSpacing: fontThemeConfig.creative.letterSpacingBody,
+				},
 			},
-		},
-		{
-			id: "technical",
-			name: "Fuente Técnica",
-			headingStyle: {
-				fontFamily: fontThemeConfig.technical.heading,
-				fontWeight: fontThemeConfig.technical.headingWeight,
-				letterSpacing: fontThemeConfig.technical.letterSpacingHeadings,
+			{
+				id: "accessible",
+				name: t("fontAccessible"),
+				headingStyle: {
+					fontFamily: fontThemeConfig.accessible.heading,
+					fontWeight: fontThemeConfig.accessible.headingWeight,
+					letterSpacing: fontThemeConfig.accessible.letterSpacingHeadings,
+				},
+				bodyStyle: {
+					fontFamily: fontThemeConfig.accessible.body,
+					fontWeight: fontThemeConfig.accessible.bodyWeight,
+					letterSpacing: fontThemeConfig.accessible.letterSpacingBody,
+				},
 			},
-			bodyStyle: {
-				fontFamily: fontThemeConfig.technical.body,
-				fontWeight: fontThemeConfig.technical.bodyWeight,
-				letterSpacing: fontThemeConfig.technical.letterSpacingBody,
+			{
+				id: "modern",
+				name: t("fontModern"),
+				headingStyle: {
+					fontFamily: fontThemeConfig.modern.heading,
+					fontWeight: fontThemeConfig.modern.headingWeight,
+				},
+				bodyStyle: {
+					fontFamily: fontThemeConfig.modern.body,
+					fontWeight: fontThemeConfig.modern.bodyWeight,
+				},
 			},
-		},
-		{
-			id: "creative",
-			name: "Fuente Creativa",
-			headingStyle: {
-				fontFamily: fontThemeConfig.creative.heading,
-				fontWeight: fontThemeConfig.creative.headingWeight,
-				letterSpacing: fontThemeConfig.creative.letterSpacingHeadings,
+			{
+				id: "minimalist",
+				name: t("fontMinimalist"),
+				headingStyle: {
+					fontFamily: fontThemeConfig.minimalist.heading,
+					fontWeight: fontThemeConfig.minimalist.headingWeight,
+					letterSpacing: fontThemeConfig.minimalist.letterSpacingHeadings,
+				},
+				bodyStyle: {
+					fontFamily: fontThemeConfig.minimalist.body,
+					fontWeight: fontThemeConfig.minimalist.bodyWeight,
+					letterSpacing: fontThemeConfig.minimalist.letterSpacingBody,
+				},
 			},
-			bodyStyle: {
-				fontFamily: fontThemeConfig.creative.body,
-				fontWeight: fontThemeConfig.creative.bodyWeight,
-				letterSpacing: fontThemeConfig.creative.letterSpacingBody,
-			},
-		},
-		{
-			id: "accessible",
-			name: "Fuente Accesible",
-			headingStyle: {
-				fontFamily: fontThemeConfig.accessible.heading,
-				fontWeight: fontThemeConfig.accessible.headingWeight,
-				letterSpacing: fontThemeConfig.accessible.letterSpacingHeadings,
-			},
-			bodyStyle: {
-				fontFamily: fontThemeConfig.accessible.body,
-				fontWeight: fontThemeConfig.accessible.bodyWeight,
-				letterSpacing: fontThemeConfig.accessible.letterSpacingBody,
-			},
-		},
-		{
-			id: "modern",
-			name: "Fuente Moderna",
-			headingStyle: {
-				fontFamily: fontThemeConfig.modern.heading,
-				fontWeight: fontThemeConfig.modern.headingWeight,
-			},
-			bodyStyle: {
-				fontFamily: fontThemeConfig.modern.body,
-				fontWeight: fontThemeConfig.modern.bodyWeight,
-			},
-		},
-		{
-			id: "minimalist",
-			name: "Fuente Minimalista",
-			headingStyle: {
-				fontFamily: fontThemeConfig.minimalist.heading,
-				fontWeight: fontThemeConfig.minimalist.headingWeight,
-				letterSpacing: fontThemeConfig.minimalist.letterSpacingHeadings,
-			},
-			bodyStyle: {
-				fontFamily: fontThemeConfig.minimalist.body,
-				fontWeight: fontThemeConfig.minimalist.bodyWeight,
-				letterSpacing: fontThemeConfig.minimalist.letterSpacingBody,
-			},
-		},
-	];
+		],
+		[t],
+	);
 
 	const getCurrentFontPairName = () => {
 		const currentFont = fontStyles.find((font) => font.id === fontTheme);
-		return currentFont ? currentFont.name : "Default";
+		return currentFont ? currentFont.name : t("defaultFallback");
 	};
 
 	const getCurrentFontStyle = () => {
@@ -185,7 +190,7 @@ export function StandardFontThemeSwitcher() {
 		return currentFont ? currentFont.bodyStyle : fontStyles[0].bodyStyle;
 	};
 
-	const sampleBodyText = "Este es un ejemplo de texto con esta fuente.";
+	const sampleBodyText = t("sampleText");
 
 	const handleSelectFont = async (newFontPairId: string) => {
 		setIsOpen(false); // Cerrar el menú desplegable
@@ -235,8 +240,7 @@ export function StandardFontThemeSwitcher() {
 				);
 			} else {
 				toast.error(
-					result.error ||
-						"Ups! Tuvimos un problema al guardar tu preferencia de fuente. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.",
+					result.error || t("toastErrorSaving"),
 				);
 				console.error(
 					"[FontThemeSwitcher v1.3] Error en persistencia desde actualizarPreferenciasUI:",
@@ -251,7 +255,7 @@ export function StandardFontThemeSwitcher() {
 			const errorMessage =
 				error instanceof Error ?
 					error.message
-				:	"Ups! Hubo una excepción al guardar tu preferencia de fuente. Es posible que en tu próximo inicio de sesión se cargue la configuración anterior.";
+				:	t("toastErrorException");
 			toast.error(errorMessage);
 		}
 	};

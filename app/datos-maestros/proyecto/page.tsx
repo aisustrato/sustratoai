@@ -1,5 +1,6 @@
 //. 📍 app/datos-maestros/proyecto/page.tsx
 
+import { getTranslations } from "next-intl/server";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { ProjectEditForm } from "./components/ProjectEditForm";
 import { ProjectPageTitle } from "./components/ProjectPageTitle";
@@ -8,6 +9,12 @@ import { obtenerProyectosConSettingsUsuario } from "@/lib/actions/project-dashbo
 import { createSupabaseServerClient } from "@/lib/server";
 import { StandardAlert } from "@/components/ui/StandardAlert";
 
+// Depende de datos por-sesión (usuario, proyecto activo) — nunca fue candidata
+// a prerender estático. Sin esto, `getTranslations()` falla en build intentando
+// pre-renderizarla estáticamente (i18n/request.ts llama a cookies(), que no
+// existe fuera de un request real).
+export const dynamic = "force-dynamic";
+
 // 📚 DOCUMENTACIÓN 📚
 /**
  * @description Página para editar los datos maestros del proyecto.
@@ -15,6 +22,7 @@ import { StandardAlert } from "@/components/ui/StandardAlert";
  * @returns {Promise<JSX.Element>} La página de edición del proyecto.
  */
 export default async function ProjectDataPage() {
+  const t = await getTranslations("datosMaestrosPages.proyectoPage");
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -25,7 +33,7 @@ export default async function ProjectDataPage() {
         <div className="container mx-auto py-6 text-center">
           <StandardAlert
             colorScheme="danger"
-            message={<div><p className="font-bold">Acceso denegado</p><p>Debes iniciar sesión para ver esta página.</p></div>}
+            message={<div><p className="font-bold">{t("accessDeniedTitle")}</p><p>{t("accessDeniedMessage")}</p></div>}
           />
         </div>
       </StandardPageBackground>
@@ -40,7 +48,7 @@ export default async function ProjectDataPage() {
         <div className="container mx-auto py-6 text-center">
           <StandardAlert
             colorScheme="danger"
-            message={<div><p className="font-bold">Error al cargar proyectos</p><p>{projectsResult.error}</p></div>}
+            message={<div><p className="font-bold">{t("errorLoadingProjectsTitle")}</p><p>{projectsResult.error}</p></div>}
           />
         </div>
       </StandardPageBackground>
@@ -57,7 +65,7 @@ export default async function ProjectDataPage() {
         <div className="container mx-auto py-6 text-center">
            <StandardAlert
             colorScheme="primary"
-            message={<div><p className="font-bold">No hay proyecto activo</p><p>Por favor, selecciona un proyecto desde el dashboard para continuar.</p></div>}
+            message={<div><p className="font-bold">{t("noActiveProjectTitle")}</p><p>{t("noActiveProjectMessage")}</p></div>}
           />
         </div>
       </StandardPageBackground>
@@ -74,24 +82,24 @@ export default async function ProjectDataPage() {
       <div className="container mx-auto py-6">
         <div className="space-y-6">
                     <ProjectPageTitle
-            title="Datos del Proyecto"
-            subtitle="Edición de la información principal del proyecto"
-            description="Modifica el nombre, descripción y las propuestas que definen el marco de la investigación."
+            title={t("pageTitle")}
+            subtitle={t("pageSubtitle")}
+            description={t("pageDescription")}
             showBackButton={{ href: "/datos-maestros" }}
             breadcrumbs={[
-              { label: "Datos Maestros", href: "/datos-maestros" },
-              { label: "Proyecto" },
+              { label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+              { label: t("breadcrumbProyecto") },
             ]}
           />
           {projectDetailsResult.success ? (
-            <ProjectEditForm 
-              initialProjectData={projectDetailsResult.data.project} 
+            <ProjectEditForm
+              initialProjectData={projectDetailsResult.data.project}
               isReadOnly={isReadOnly}
             />
           ) : (
             <StandardAlert
               colorScheme="danger"
-              message={<div><p className="font-bold">Error al cargar el proyecto</p><p>{projectDetailsResult.error}</p></div>}
+              message={<div><p className="font-bold">{t("errorLoadingProjectTitle")}</p><p>{projectDetailsResult.error}</p></div>}
             />
           )}
         </div>

@@ -2,7 +2,8 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { Search, Sprout } from "lucide-react";
 import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
@@ -25,11 +26,13 @@ interface SearchFiltersPanelProps {
 	isSearching: boolean;
 }
 
-const DOCUMENT_TYPE_OPTIONS: SelectOption[] = [
-	{ value: "article", label: "Artículo" },
-	{ value: "preprint", label: "Preprint" },
-	{ value: "review", label: "Review" },
-	{ value: "book-chapter", label: "Capítulo de libro" },
+const makeDocumentTypeOptions = (
+	t: ReturnType<typeof useTranslations<"datosMaestrosPages.searchFiltersPanel">>,
+): SelectOption[] => [
+	{ value: "article", label: t("documentTypeArticle") },
+	{ value: "preprint", label: t("documentTypePreprint") },
+	{ value: "review", label: t("documentTypeReview") },
+	{ value: "book-chapter", label: t("documentTypeBookChapter") },
 ];
 //#endregion ![def]
 
@@ -39,6 +42,8 @@ export function SearchFiltersPanel({
 	onHarvestBySeed,
 	isSearching,
 }: SearchFiltersPanelProps) {
+	const t = useTranslations("datosMaestrosPages.searchFiltersPanel");
+	const DOCUMENT_TYPE_OPTIONS = useMemo(() => makeDocumentTypeOptions(t), [t]);
 	const [keywords, setKeywords] = useState("");
 	const [yearFrom, setYearFrom] = useState("");
 	const [yearTo, setYearTo] = useState("");
@@ -69,12 +74,11 @@ export function SearchFiltersPanel({
 			<StandardCard accentPlacement="top">
 				<StandardCard.Header>
 					<StandardCard.Title className="flex items-center gap-2">
-						<Search className="h-4 w-4" /> Búsqueda en OpenAlex
+						<Search className="h-4 w-4" /> {t("searchSectionTitle")}
 					</StandardCard.Title>
 					<StandardCard.Subtitle>
 						<StandardText size="sm" colorScheme="secondary">
-							Trae resultados a la mesa de triaje (máx. 200 por búsqueda). No
-							se insertan directo a la base de artículos.
+							{t("searchSectionSubtitle")}
 						</StandardText>
 					</StandardCard.Subtitle>
 				</StandardCard.Header>
@@ -82,20 +86,20 @@ export function SearchFiltersPanel({
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<div className="md:col-span-2">
 							<StandardFormField
-								label="Palabras clave"
+								label={t("keywordsLabel")}
 								htmlFor="keywords"
-								hint="Busca en título y abstract. Soporta AND/OR/NOT."
+								hint={t("keywordsHint")}
 							>
 								<StandardInput
 									id="keywords"
-									placeholder="ej. cognitive load AND remote work"
+									placeholder={t("keywordsPlaceholder")}
 									value={keywords}
 									onChange={(e) => setKeywords(e.target.value)}
 								/>
 							</StandardFormField>
 						</div>
 
-						<StandardFormField label="Año desde" htmlFor="year-from">
+						<StandardFormField label={t("yearFromLabel")} htmlFor="year-from">
 							<StandardInput
 								id="year-from"
 								type="number"
@@ -105,7 +109,7 @@ export function SearchFiltersPanel({
 							/>
 						</StandardFormField>
 
-						<StandardFormField label="Año hasta" htmlFor="year-to">
+						<StandardFormField label={t("yearToLabel")} htmlFor="year-to">
 							<StandardInput
 								id="year-to"
 								type="number"
@@ -115,7 +119,7 @@ export function SearchFiltersPanel({
 							/>
 						</StandardFormField>
 
-						<StandardFormField label="Mínimo de citas" htmlFor="min-citations">
+						<StandardFormField label={t("minCitationsLabel")} htmlFor="min-citations">
 							<StandardInput
 								id="min-citations"
 								type="number"
@@ -125,7 +129,7 @@ export function SearchFiltersPanel({
 							/>
 						</StandardFormField>
 
-						<StandardFormField label="Tipo de documento" htmlFor="doc-types">
+						<StandardFormField label={t("documentTypeLabel")} htmlFor="doc-types">
 							<StandardSelect
 								id="doc-types"
 								multiple
@@ -134,13 +138,13 @@ export function SearchFiltersPanel({
 								onChange={(value) =>
 									setDocumentTypes(Array.isArray(value) ? value : [])
 								}
-								placeholder="Todos"
+								placeholder={t("documentTypePlaceholder")}
 							/>
 						</StandardFormField>
 
 						<div className="md:col-span-2">
 							<StandardCheckbox
-								label="Solo acceso abierto (Open Access)"
+								label={t("openAccessOnlyLabel")}
 								checked={isOaOnly}
 								onChange={(e) => setIsOaOnly(e.target.checked)}
 							/>
@@ -154,7 +158,7 @@ export function SearchFiltersPanel({
 						loading={isSearching}
 						disabled={!canSearch}
 					>
-						Buscar
+						{t("searchButton")}
 					</StandardButton>
 				</StandardCard.Actions>
 			</StandardCard>
@@ -162,31 +166,30 @@ export function SearchFiltersPanel({
 			<StandardCard accentPlacement="top" colorScheme="secondary">
 				<StandardCard.Header>
 					<StandardCard.Title className="flex items-center gap-2">
-						<Sprout className="h-4 w-4" /> Búsqueda por semilla
+						<Sprout className="h-4 w-4" /> {t("seedSectionTitle")}
 					</StandardCard.Title>
 					<StandardCard.Subtitle>
 						<StandardText size="sm" colorScheme="secondary">
-							Dado el DOI de un artículo, trae sus citas (quién lo cita) o sus
-							referencias (a quién cita él).
+							{t("seedSectionSubtitle")}
 						</StandardText>
 					</StandardCard.Subtitle>
 				</StandardCard.Header>
 				<StandardCard.Content>
 					<div className="space-y-4">
-						<StandardFormField label="DOI del artículo semilla" htmlFor="seed-doi">
+						<StandardFormField label={t("seedDoiLabel")} htmlFor="seed-doi">
 							<StandardInput
 								id="seed-doi"
-								placeholder="10.1234/example.2023.12345"
+								placeholder={t("seedDoiPlaceholder")}
 								value={seedDoi}
 								onChange={(e) => setSeedDoi(e.target.value)}
 							/>
 						</StandardFormField>
 						<StandardRadioGroup
 							name="seed-direction"
-							label="Dirección"
+							label={t("directionLabel")}
 							options={[
-								{ value: "citations", label: "Citas (quién lo cita)" },
-								{ value: "references", label: "Referencias (a quién cita)" },
+								{ value: "citations", label: t("directionCitations") },
+								{ value: "references", label: t("directionReferences") },
 							]}
 							value={seedDirection}
 							onChange={(value: string) =>
@@ -205,7 +208,7 @@ export function SearchFiltersPanel({
 						loading={isSearching}
 						disabled={!seedDoi.trim()}
 					>
-						Buscar por semilla
+						{t("searchBySeedButton")}
 					</StandardButton>
 				</StandardCard.Actions>
 			</StandardCard>

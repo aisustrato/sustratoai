@@ -6,6 +6,7 @@ import { useMemo, useEffect } from "react";
 import { useForm, Controller, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 
 import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardTextarea } from "@/components/ui/StandardTextarea";
@@ -30,79 +31,81 @@ import {
 //#endregion ![head]
 
 //#region [def] - 📦 SCHEMA, TYPES & PROPS 📦
-const formSchema = z.object({
-	emailUsuario: z
-		.string()
-		.email("Email inválido")
-		.min(1, "El email es requerido"),
-	rolId: z.string().min(1, "Debe seleccionar un rol"),
-	esUsuarioNuevo: z.boolean().optional(),
+type MiembroFormTranslator = ReturnType<typeof useTranslations<"datosMaestros.miembroForm">>;
 
-	firstName: z
-		.string()
-		.max(50, "El nombre no puede exceder los 50 caracteres.")
-		.optional()
-		.refine((val) => !val || val.length === 0 || val.length >= 3, {
-			message: "Si ingresas un nombre, debe tener al menos 3 caracteres.",
-		}),
+const makeFormSchema = (t: MiembroFormTranslator) =>
+	z.object({
+		emailUsuario: z
+			.string()
+			.email(t("validation.emailInvalid"))
+			.min(1, t("validation.emailRequired")),
+		rolId: z.string().min(1, t("validation.rolRequired")),
+		esUsuarioNuevo: z.boolean().optional(),
 
-	lastName: z
-		.string()
-		.max(50, "El apellido no puede exceder los 50 caracteres.")
-		.optional()
-		.refine((val) => !val || val.length === 0 || val.length >= 3, {
-			message: "Si ingresas un apellido, debe tener al menos 3 caracteres.",
-		}),
+		firstName: z
+			.string()
+			.max(50, t("validation.firstNameMax"))
+			.optional()
+			.refine((val) => !val || val.length === 0 || val.length >= 3, {
+				message: t("validation.firstNameMin"),
+			}),
 
-	displayName: z
-		.string()
-		.max(100, "El nombre para mostrar no puede exceder los 100 caracteres.")
-		.optional()
-		.refine((val) => !val || val.length === 0 || val.length >= 3, {
-			message:
-				"Si ingresas un nombre para mostrar, debe tener al menos 3 caracteres.",
-		}),
+		lastName: z
+			.string()
+			.max(50, t("validation.lastNameMax"))
+			.optional()
+			.refine((val) => !val || val.length === 0 || val.length >= 3, {
+				message: t("validation.lastNameMin"),
+			}),
 
-	institution: z
-		.string()
-		.max(100, "La institución no puede exceder los 100 caracteres.")
-		.optional()
-		.refine((val) => !val || val.length === 0 || val.length >= 3, {
-			message: "Si ingresas una institución, debe tener al menos 3 caracteres.",
-		}),
+		displayName: z
+			.string()
+			.max(100, t("validation.displayNameMax"))
+			.optional()
+			.refine((val) => !val || val.length === 0 || val.length >= 3, {
+				message: t("validation.displayNameMin"),
+			}),
 
-	phone: z
-		.string()
-		.max(25, "El teléfono no puede exceder los 25 caracteres.")
-		.optional()
-		.refine(
-			(val) => {
-				if (!val || val.trim() === "") return true;
-				const soloNumeros = val.replace(/[^0-9]/g, "");
-				return /^[0-9+\-\s()]*$/.test(val) && soloNumeros.length >= 7;
-			},
-			{
-				message: "Formato de teléfono inválido o muy corto (mín. 7 dígitos).",
-			}
-		),
+		institution: z
+			.string()
+			.max(100, t("validation.institutionMax"))
+			.optional()
+			.refine((val) => !val || val.length === 0 || val.length >= 3, {
+				message: t("validation.institutionMin"),
+			}),
 
-	notes: z
-		.string()
-		.max(500, "Las notas no pueden exceder los 500 caracteres.")
-		.optional(),
+		phone: z
+			.string()
+			.max(25, t("validation.phoneMax"))
+			.optional()
+			.refine(
+				(val) => {
+					if (!val || val.trim() === "") return true;
+					const soloNumeros = val.replace(/[^0-9]/g, "");
+					return /^[0-9+\-\s()]*$/.test(val) && soloNumeros.length >= 7;
+				},
+				{
+					message: t("validation.phoneInvalid"),
+				}
+			),
 
-	language: z.string().optional(),
+		notes: z
+			.string()
+			.max(500, t("validation.notesMax"))
+			.optional(),
 
-	pronouns: z
-		.string()
-		.max(30, "Los pronombres no pueden exceder los 30 caracteres.")
-		.optional()
-		.refine((val) => !val || val.length === 0 || val.length >= 2, {
-			message: "Si ingresas pronombres, deben tener al menos 2 caracteres.",
-		}),
-});
+		language: z.string().optional(),
 
-export type MiembroFormValues = z.infer<typeof formSchema>;
+		pronouns: z
+			.string()
+			.max(30, t("validation.pronounsMax"))
+			.optional()
+			.refine((val) => !val || val.length === 0 || val.length >= 2, {
+				message: t("validation.pronounsMin"),
+			}),
+	});
+
+export type MiembroFormValues = z.infer<ReturnType<typeof makeFormSchema>>;
 
 interface MiembroFormProps {
 	modo: "crear" | "editar" | "ver";
@@ -124,6 +127,9 @@ export const MiembroForm = ({
 	loading = false,
 }: MiembroFormProps) => {
 	//#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
+	const t = useTranslations("datosMaestros.miembroForm");
+	const formSchema = useMemo(() => makeFormSchema(t), [t]);
+
 	const initialFormValues = useMemo(() => {
 		if (modo === "crear") {
 			return valoresIniciales && Object.keys(valoresIniciales).length > 0
@@ -238,11 +244,11 @@ export const MiembroForm = ({
 						size="md"
 						colorScheme="tertiary"
 						className="pb-2 border-b">
-						Información del Miembro
+						{t("sectionMember")}
 					</StandardText>
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
 						<StandardFormField
-							label="Email del Usuario"
+							label={t("emailLabel")}
 							htmlFor="mf-emailUsuario"
 							isRequired={isFieldRequired("emailUsuario")}
 							error={form.formState.errors.emailUsuario?.message}
@@ -250,8 +256,8 @@ export const MiembroForm = ({
 								isReadOnlyEffective
 									? undefined
 									: modo === "editar"
-									? "El email no se puede modificar una vez creado."
-									: "Email principal para el inicio de sesión y contacto."
+									? t("emailHintEdit")
+									: t("emailHintCreate")
 							}>
 							<Controller
 								name="emailUsuario"
@@ -260,7 +266,7 @@ export const MiembroForm = ({
 									<StandardInput
 										id="mf-emailUsuario"
 										type="email"
-										placeholder="correo@ejemplo.com"
+										placeholder={t("emailPlaceholder")}
 										leadingIcon={Mail}
 										error={
 											!isReadOnlyEffective
@@ -283,22 +289,18 @@ export const MiembroForm = ({
 						</StandardFormField>
 
 						<StandardFormField
-							label="Rol en el Proyecto"
+							label={t("rolLabel")}
 							htmlFor="mf-rolId"
 							isRequired={isFieldRequired("rolId")}
 							error={form.formState.errors.rolId?.message}
-							hint={
-								isReadOnlyEffective
-									? undefined
-									: "El rol define los permisos del miembro en este proyecto."
-							}>
+							hint={isReadOnlyEffective ? undefined : t("rolHint")}>
 							<Controller
 								name="rolId"
 								control={form.control}
 								render={({ field, fieldState }) => (
 									<StandardSelect
 										id="mf-rolId"
-										placeholder="Selecciona un rol"
+										placeholder={t("rolPlaceholder")}
 										options={rolesDisponibles}
 										leadingIcon={Briefcase}
 										error={
@@ -327,8 +329,8 @@ export const MiembroForm = ({
 								<StandardCheckbox
 									checked={!!field.value}
 									onChange={(e) => field.onChange(e.target.checked)}
-									label="Es un usuario nuevo (todavía no tiene cuenta en Sustrato)"
-									description="Se le crea la cuenta con una contraseña provisoria que vas a poder copiar al terminar, para pasársela directamente. La puede cambiar después por su cuenta."
+									label={t("isNewUserLabel")}
+									description={t("isNewUserDescription")}
 								/>
 							)}
 						/>
@@ -341,12 +343,12 @@ export const MiembroForm = ({
 						size="md"
 						colorScheme="tertiary"
 						className="pt-4 pb-2 border-b">
-						Información Adicional de Perfil (Opcional)
+						{t("sectionProfile")}
 					</StandardText>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
 						<StandardFormField
-							label="Nombre(s)"
+							label={t("firstNameLabel")}
 							htmlFor="mf-firstName"
 							isRequired={isFieldRequired("firstName")}
 							error={form.formState.errors.firstName?.message}>
@@ -356,7 +358,7 @@ export const MiembroForm = ({
 								render={({ field, fieldState }) => (
 									<StandardInput
 										id="mf-firstName"
-										placeholder="Nombre(s) de pila"
+										placeholder={t("firstNamePlaceholder")}
 										leadingIcon={User}
 										error={
 											!isReadOnlyEffective
@@ -375,7 +377,7 @@ export const MiembroForm = ({
 						</StandardFormField>
 
 						<StandardFormField
-							label="Apellido(s)"
+							label={t("lastNameLabel")}
 							htmlFor="mf-lastName"
 							isRequired={isFieldRequired("lastName")}
 							error={form.formState.errors.lastName?.message}>
@@ -385,7 +387,7 @@ export const MiembroForm = ({
 								render={({ field, fieldState }) => (
 									<StandardInput
 										id="mf-lastName"
-										placeholder="Apellido(s)"
+										placeholder={t("lastNamePlaceholder")}
 										leadingIcon={User}
 										error={
 											!isReadOnlyEffective
@@ -404,22 +406,18 @@ export const MiembroForm = ({
 						</StandardFormField>
 
 						<StandardFormField
-							label="Nombre para Mostrar"
+							label={t("displayNameLabel")}
 							htmlFor="mf-displayName"
 							isRequired={isFieldRequired("displayName")}
 							error={form.formState.errors.displayName?.message}
-							hint={
-								isReadOnlyEffective
-									? undefined
-									: "Ej: 'Dra. Ada L.' o 'Ada Lovelace'"
-							}>
+							hint={isReadOnlyEffective ? undefined : t("displayNameHint")}>
 							<Controller
 								name="displayName"
 								control={form.control}
 								render={({ field, fieldState }) => (
 									<StandardInput
 										id="mf-displayName"
-										placeholder="Cómo se mostrará públicamente"
+										placeholder={t("displayNamePlaceholder")}
 										leadingIcon={User}
 										error={
 											!isReadOnlyEffective
@@ -439,7 +437,7 @@ export const MiembroForm = ({
 						</StandardFormField>
 
 						<StandardFormField
-							label="Institución"
+							label={t("institutionLabel")}
 							htmlFor="mf-institution"
 							isRequired={isFieldRequired("institution")}
 							error={form.formState.errors.institution?.message}>
@@ -449,7 +447,7 @@ export const MiembroForm = ({
 								render={({ field, fieldState }) => (
 									<StandardInput
 										id="mf-institution"
-										placeholder="Institución o afiliación principal"
+										placeholder={t("institutionPlaceholder")}
 										leadingIcon={Building}
 										error={
 											!isReadOnlyEffective
@@ -468,7 +466,7 @@ export const MiembroForm = ({
 						</StandardFormField>
 
 						<StandardFormField
-							label="Teléfono"
+							label={t("phoneLabel")}
 							htmlFor="mf-phone"
 							isRequired={isFieldRequired("phone")}
 							error={form.formState.errors.phone?.message}>
@@ -488,7 +486,7 @@ export const MiembroForm = ({
 										<StandardInput
 											id="mf-phone"
 											type="tel"
-											placeholder="Ej: +56 (2) 1234-5678"
+											placeholder={t("phonePlaceholder")}
 											leadingIcon={Phone}
 											error={
 												!isReadOnlyEffective
@@ -511,7 +509,7 @@ export const MiembroForm = ({
 						</StandardFormField>
 
 						<StandardFormField
-							label="Lenguaje Preferido"
+							label={t("languageLabel")}
 							htmlFor="mf-language"
 							isRequired={isFieldRequired("language")}
 							error={form.formState.errors.language?.message}>
@@ -521,11 +519,11 @@ export const MiembroForm = ({
 								render={({ field, fieldState }) => (
 									<StandardSelect
 										id="mf-language"
-										placeholder="Selecciona un idioma"
+										placeholder={t("languagePlaceholder")}
 										options={[
-											{ value: "es", label: "Español" },
-											{ value: "en", label: "Inglés" },
-											{ value: "pt", label: "Portugués" },
+											{ value: "es", label: t("languageEs") },
+											{ value: "en", label: t("languageEn") },
+											{ value: "pt", label: t("languagePt") },
 										]}
 										leadingIcon={Languages}
 										error={
@@ -545,23 +543,19 @@ export const MiembroForm = ({
 						</StandardFormField>
 
 						<StandardFormField
-							label="Pronombres"
+							label={t("pronounsLabel")}
 							htmlFor="mf-pronouns"
 							isRequired={isFieldRequired("pronouns")}
 							error={form.formState.errors.pronouns?.message}
 							className="md:col-span-2"
-							hint={
-								isReadOnlyEffective
-									? undefined
-									: "Para asegurar una comunicación respetuosa."
-							}>
+							hint={isReadOnlyEffective ? undefined : t("pronounsHint")}>
 							<Controller
 								name="pronouns"
 								control={form.control}
 								render={({ field, fieldState }) => (
 									<StandardInput
 										id="mf-pronouns"
-										placeholder="Ej: él/ella, elle, they/them"
+										placeholder={t("pronounsPlaceholder")}
 										leadingIcon={MessageSquare}
 										error={
 											!isReadOnlyEffective
@@ -582,19 +576,19 @@ export const MiembroForm = ({
 					</div>
 
 					<StandardFormField
-						label="Notas Adicionales"
+						label={t("notesLabel")}
 						htmlFor="mf-notes"
 						isRequired={isFieldRequired("notes")}
 						error={form.formState.errors.notes?.message}
 						className="col-span-full"
-						hint={isReadOnlyEffective ? undefined : "Máximo 500 caracteres."}>
+						hint={isReadOnlyEffective ? undefined : t("notesHint")}>
 						<Controller
 							name="notes"
 							control={form.control}
 							render={({ field, fieldState }) => (
 								<StandardTextarea
 									id="mf-notes"
-									placeholder="Información adicional relevante sobre el miembro..."
+									placeholder={t("notesPlaceholder")}
 									rows={4}
 									error={
 										!isReadOnlyEffective ? fieldState.error?.message : undefined
@@ -629,11 +623,11 @@ export const MiembroForm = ({
 								}>
 								{modo === "crear"
 									? loading || form.formState.isSubmitting
-										? "Agregando..."
-										: "Agregar Miembro"
+										? t("submitCreating")
+										: t("submitCreate")
 									: loading || form.formState.isSubmitting
-									? "Guardando..."
-									: "Guardar Cambios"}
+									? t("submitSaving")
+									: t("submitSave")}
 							</StandardButton>
 						</div>
 					)}

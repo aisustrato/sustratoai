@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 
 // Definición de colores por tema
 const themeColors = {
@@ -308,6 +309,7 @@ export function SustratoLogoWithTextRotating({
   textClassName?: string;
   variant?: "horizontal" | "vertical";
 }) {
+  const t = useTranslations("common");
   const { theme } = useTheme();
   const [textColors, setTextColors] = useState({
     primary: "#3D7DF6", // Blue theme primary default
@@ -389,7 +391,7 @@ export function SustratoLogoWithTextRotating({
           <div
             className={`${getSubtextSize()} text-neutral-500 dark:text-neutral-400 ml-0.5 mt-0.5 italic`}
           >
-            cultivando sinergias humano·AI
+            {t("tagline")}
           </div>
         )}
 
@@ -397,7 +399,7 @@ export function SustratoLogoWithTextRotating({
           <div
             className={`${getSubtextSize()} text-neutral-500 dark:text-neutral-400 italic`}
           >
-            cultivando sinergias humano·AI
+            {t("tagline")}
           </div>
         )}
       </div>

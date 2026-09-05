@@ -1,4 +1,5 @@
 // app/articulos/detalle/ArticlePreclassificationSection.tsx
+import { getTranslations } from "next-intl/server";
 import { StandardCard, StandardCardHeader, StandardCardTitle, StandardCardSubtitle, StandardCardContent } from "@/components/ui/StandardCard";
 import { StandardText } from "@/components/ui/StandardText";
 import { getPreclassificationByArticleId } from "@/lib/actions/preclassification-actions";
@@ -6,6 +7,7 @@ import { getBatchesForPhaseDisplay } from "@/lib/actions/batch-actions";
 import ArticlePreclassificationSummary, { type PhaseSummaryView } from "./ArticlePreclassificationSummary";
 
 export default async function ArticlePreclassificationSection({ articleId }: { articleId: string }) {
+  const t = await getTranslations("articulos.articlePreclassificationSection");
   if (!articleId) return null;
 
   const res = await getPreclassificationByArticleId(articleId);
@@ -14,11 +16,11 @@ export default async function ArticlePreclassificationSection({ articleId }: { a
       <StandardCard colorScheme="danger" styleType="subtle" shadow="sm">
         <StandardCardHeader>
           <StandardCardTitle>
-            <StandardText size="md" weight="semibold">Preclasificación</StandardText>
+            <StandardText size="md" weight="semibold">{t("title")}</StandardText>
           </StandardCardTitle>
           <StandardCardSubtitle>
             <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
-              Error al cargar datos: {res.error}
+              {t("errorLoadingData", { message: res.error })}
             </StandardText>
           </StandardCardSubtitle>
         </StandardCardHeader>
@@ -57,11 +59,11 @@ export default async function ArticlePreclassificationSection({ articleId }: { a
       <StandardCard colorScheme="neutral" styleType="subtle" shadow="sm">
         <StandardCardHeader>
           <StandardCardTitle>
-            <StandardText size="md" weight="semibold">Preclasificación</StandardText>
+            <StandardText size="md" weight="semibold">{t("title")}</StandardText>
           </StandardCardTitle>
           <StandardCardSubtitle>
             <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
-              No hay datos de preclasificación aún para este artículo.
+              {t("noDataYet")}
             </StandardText>
           </StandardCardSubtitle>
         </StandardCardHeader>
@@ -73,11 +75,11 @@ export default async function ArticlePreclassificationSection({ articleId }: { a
     <StandardCard colorScheme="neutral" styleType="subtle" shadow="lg">
       <StandardCardHeader>
         <StandardCardTitle>
-          <StandardText size="md" weight="semibold">Preclasificación</StandardText>
+          <StandardText size="md" weight="semibold">{t("title")}</StandardText>
         </StandardCardTitle>
         <StandardCardSubtitle>
           <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
-            Clasificaciones por dimensiones y revisores, agrupadas por fase.
+            {t("subtitle")}
           </StandardText>
         </StandardCardSubtitle>
       </StandardCardHeader>

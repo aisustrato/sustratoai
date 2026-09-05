@@ -4,6 +4,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { SidebarNav } from "@/components/ui/sidebar-nav";
@@ -15,29 +16,29 @@ import { LayoutProvider } from "@/app/contexts/layout-context";
 //#endregion ![head]
 
 //#region [main] - 🔧 COMPONENT 🔧
-const sidebarNavItems = [
+const makeSidebarNavItems = (t: ReturnType<typeof useTranslations<"articulos.articulosLayout">>) => [
   {
-    title: "Base Original",
+    title: t("navBaseOriginal"),
     href: "/articulos/base-original",
     icon: Database,
   },
   {
-    title: "Preclasificación",
+    title: t("navPreclasificacion"),
     href: "/articulos/preclasificacion",
     icon: Filter,
   },
   {
-    title: "Análisis Preclasificación",
+    title: t("navAnalisisPreclasificacion"),
     href: "/articulos/analisis-preclasificacion",
     icon: BarChart3,
   },
   {
-    title: "Grupos",
+    title: t("navGrupos"),
     href: "/articulos/grupos",
     icon: MapPin,
   },
   {
-    title: "Notas",
+    title: t("navNotas"),
     href: "/articulos/notas",
     icon: FileText,
   },
@@ -48,6 +49,8 @@ export default function ArticulosLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const t = useTranslations("articulos.articulosLayout");
+  const sidebarNavItems = useMemo(() => makeSidebarNavItems(t), [t]);
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
@@ -197,7 +200,7 @@ export default function ArticulosLayout({
                           colorShade="pure"
                           className="whitespace-nowrap"
                         >
-                          Artículos
+                          {t("sidebarTitle")}
                         </StandardText>
                       </motion.div>
                     )}

@@ -11,6 +11,7 @@ import {
 	Suspense,
 } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
 	Brain,
 	Globe,
@@ -62,13 +63,14 @@ interface NotesButtonCellProps {
 
 const NotesButtonCell: React.FC<NotesButtonCellProps> = memo(
 	({ article, hasNotes, onOpenNotes }) => {
+		const t = useTranslations("articulos.batchPage");
 		const style = hasNotes ? "solid" : "outline";
 		return (
 			<StandardButton
 				styleType={style}
 				iconOnly={true}
 				onClick={() => onOpenNotes(article)}
-				tooltip={hasNotes ? "Ver/editar notas" : "Crear nota"}>
+				tooltip={hasNotes ? t("notesButtonViewEdit") : t("notesButtonCreate")}>
 				<StickyNote size={16} />
 			</StandardButton>
 		);
@@ -78,6 +80,7 @@ const NotesButtonCell: React.FC<NotesButtonCellProps> = memo(
 NotesButtonCell.displayName = "NotesButtonCell";
 
 const BatchDetailPage = () => {
+	const t = useTranslations("articulos.batchPage");
 	const params = useParams();
 	// router no es necesario: las actualizaciones realtime parchean estado local
 	const auth = useAuth();
@@ -187,18 +190,18 @@ const BatchDetailPage = () => {
 			if (!resp.ok) {
 				const { error: apiError } = (await resp
 					.json()
-					.catch(() => ({ error: "Error desconocido" }))) as { error?: string };
+					.catch(() => ({ error: t("unknownError") }))) as { error?: string };
 				throw new Error(apiError || `HTTP ${resp.status}`);
 			}
 			const { data } = (await resp.json()) as { data: BatchDetails };
 			setBatchDetails(data);
 			loadGroupsPresence(data.rows);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Error desconocido");
+			setError(err instanceof Error ? err.message : t("unknownError"));
 		} finally {
 			setArticlesLoading(false);
 		}
-	}, [batchId, loadGroupsPresence]);
+	}, [batchId, loadGroupsPresence, t]);
 
 	const refreshNotesPresence = useCallback(async () => {
 		await loadBatchDetails();
@@ -318,16 +321,16 @@ const BatchDetailPage = () => {
 	const handleReprocessArticle = useCallback(
 		async (articleItemId: string, articleTitle: string) => {
 			if (!auth.user?.id || !auth.proyectoActual?.id) {
-				toast.error("Debes estar autenticado para reprocesar artículos.");
+				toast.error(t("toastMustBeAuthenticated"));
 				return;
 			}
 
 			// Confirmar con el usuario
 			const confirmed = await showDialog({
-				title: "⚠️ Reprocesar Artículo",
-				message: `¿Deseas reprocesar el artículo "${articleTitle}"?\n\nEsto generará clasificaciones de IA para las dimensiones faltantes.`,
-				confirmText: "Sí, reprocesar",
-				cancelText: "Cancelar",
+				title: t("reprocessConfirmTitle"),
+				message: t("reprocessConfirmMessage", { title: articleTitle }),
+				confirmText: t("reprocessConfirmYes"),
+				cancelText: t("cancelButton"),
 				colorScheme: "warning",
 			});
 
@@ -341,14 +344,14 @@ const BatchDetailPage = () => {
 			const result = await startSingleArticlePreclassification(articleItemId);
 
 			if (!result.success) {
-				toast.error(result.error || "Error al iniciar reprocesamiento");
+				toast.error(result.error || t("toastErrorStartingReprocess"));
 				return;
 			}
 
 			// Iniciar job en el JobManager
 			startJob({
 				type: "PRECLASSIFY_BATCH",
-				title: `Reprocesando artículo`,
+				title: t("reprocessingJobTitle"),
 				payload: {
 					batchId: batchId,
 					userId: auth.user!.id,
@@ -357,11 +360,9 @@ const BatchDetailPage = () => {
 				},
 			});
 
-			toast.success(
-				"Reprocesamiento iniciado. Monitorea el progreso en el JobManager.",
-			);
+			toast.success(t("toastReprocessStarted"));
 		},
-		[auth.user?.id, auth.proyectoActual?.id, batchId, showDialog, startJob],
+		[auth.user?.id, auth.proyectoActual?.id, batchId, showDialog, startJob, t],
 	);
 
 	// Función para iniciar la preclasificación
@@ -375,7 +376,7 @@ const BatchDetailPage = () => {
 			// 🎨 ARQUITECTURA LIMPIA: Page solo dispara el trabajo, PreclassificationJobHandler maneja TODO lo demás
 			startJob({
 				type: "PRECLASSIFY_BATCH",
-				title: `Preclasificación Lote #${batchDetails?.batch_number || batchId}`,
+				title: t("preclassificationJobTitle", { batchNumber: batchDetails?.batch_number || batchId }),
 				payload: {
 					batchId: batchId,
 					userId: auth.user.id,
@@ -576,19 +577,13 @@ const BatchDetailPage = () => {
 
 		// Validar condiciones
 		if (iter1Pending > 0) {
-			issues.push(
-				`${iter1Pending} dimensión(es) en iteración 1 sin aprobar (deben estar en 'validated')`,
-			);
+			issues.push(t("issueIter1Pending", { count: iter1Pending }));
 		}
 		if (iter2Incomplete > 0) {
-			issues.push(
-				`${iter2Incomplete} dimensión(es) en iteración 2 (estado incompleto, falta reconciliación)`,
-			);
+			issues.push(t("issueIter2Incomplete", { count: iter2Incomplete }));
 		}
 		if (iter3Pending > 0) {
-			issues.push(
-				`${iter3Pending} dimensión(es) en iteración 3 sin decisión (deben estar en 'reconciled' o 'disputed')`,
-			);
+			issues.push(t("issueIter3Pending", { count: iter3Pending }));
 		}
 
 		return {
@@ -604,7 +599,7 @@ const BatchDetailPage = () => {
 				iter3Pending,
 			},
 		};
-	}, [batchDetails?.rows, batchDetails?.dimensions]);
+	}, [batchDetails?.rows, batchDetails?.dimensions, t]);
 
 	// 🔒 Detectar si el lote está CERRADO (todas las reviews con is_final = true)
 	const isBatchClosed = useMemo(() => {
@@ -672,7 +667,7 @@ const BatchDetailPage = () => {
 					article_title:
 						row.article_data?.translated_title ||
 						row.article_data?.original_title ||
-						"Sin título",
+						t("untitled"),
 					missing_dimensions: totalDimensions - dimensionsWithAI,
 				});
 			}
@@ -680,7 +675,7 @@ const BatchDetailPage = () => {
 
 		console.log(`[DEBUG] Resultado: ${result.length} artículos necesitan AI`);
 		return result;
-	}, [batchDetails?.rows, batchDetails?.dimensions]);
+	}, [batchDetails?.rows, batchDetails?.dimensions, t]);
 
 	// Transformar datos para las tarjetas: ordenar por correlativo desc y enumerar desde 1
 	const cardData = useMemo(() => {
@@ -711,9 +706,9 @@ const BatchDetailPage = () => {
 
 			return {
 				id: article.item_id,
-				title: primaryTitle || "Sin título",
-				abstract: primaryAbstract || "Sin abstract",
-				ai_summary: article.article_data.translation_summary || "Sin resumen",
+				title: primaryTitle || t("untitled"),
+				abstract: primaryAbstract || t("noAbstract"),
+				ai_summary: article.article_data.translation_summary || t("noSummary"),
 				year: article.article_data.publication_year?.toString() || "N/A",
 				journal: article.article_data.journal || "N/A",
 				secondaryTitle,
@@ -723,7 +718,7 @@ const BatchDetailPage = () => {
 				displayIndex: idx + 1,
 			};
 		});
-	}, [batchDetails, showOriginalAsPrimary]);
+	}, [batchDetails, showOriginalAsPrimary, t]);
 
 	// Renderizado principal con guards
 	if (articlesLoading) {
@@ -731,7 +726,7 @@ const BatchDetailPage = () => {
 			<StandardPageBackground>
 				<div className="flex flex-col items-center justify-center h-screen">
 					<SustratoLoadingLogo />
-					<StandardText>Cargando datos del lote...</StandardText>
+					<StandardText>{t("loadingBatchData")}</StandardText>
 				</div>
 			</StandardPageBackground>
 		);
@@ -741,7 +736,7 @@ const BatchDetailPage = () => {
 		return (
 			<StandardPageBackground>
 				<div className="flex flex-col items-center justify-center h-screen">
-					<StandardText colorScheme="danger">Error: {error}</StandardText>
+					<StandardText colorScheme="danger">{t("errorPrefix", { message: error })}</StandardText>
 				</div>
 			</StandardPageBackground>
 		);
@@ -752,7 +747,7 @@ const BatchDetailPage = () => {
 			<StandardPageBackground>
 				<div className="flex flex-col items-center justify-center h-screen">
 					<StandardText>
-						No se encontraron detalles para este lote.
+						{t("noBatchDetailsFound")}
 					</StandardText>
 				</div>
 			</StandardPageBackground>
@@ -763,13 +758,13 @@ const BatchDetailPage = () => {
 		<StandardPageBackground>
 			<div className="p-4">
 				<StandardPageTitle
-					title={`Lote de Preclasificación #${batchDetails.batch_number}${isBatchClosed ? " 🔒 (CERRADO)" : ""}`}
-					subtitle={`Total de artículos: ${batchDetails.rows.length}${isBatchClosed ? " • Lote finalizado - No se permiten cambios" : ""}`}
+					title={`${t("batchTitle", { batchNumber: batchDetails.batch_number })}${isBatchClosed ? t("batchClosedSuffix") : ""}`}
+					subtitle={`${t("batchSubtitle", { count: batchDetails.rows.length })}${isBatchClosed ? t("batchClosedSubtitleSuffix") : ""}`}
 					showBackButton={{ href: "/articulos/preclasificacion" }}
 					breadcrumbs={[
-						{ label: "Artículos", href: "/articulos" },
-						{ label: "Preclasificación", href: "/articulos/preclasificacion" },
-						{ label: `Lote #${batchDetails.batch_number}` },
+						{ label: t("breadcrumbArticulos"), href: "/articulos" },
+						{ label: t("breadcrumbPreclasificacion"), href: "/articulos/preclasificacion" },
+						{ label: t("breadcrumbBatchNumber", { batchNumber: batchDetails.batch_number }) },
 					]}
 				/>
 				<div className="flex items-center gap-4 my-4">
@@ -780,8 +775,8 @@ const BatchDetailPage = () => {
 							onClick={handleStartPreclassification}
 							disabled={isStartingPreclassification}>
 							{isStartingPreclassification ?
-								"Iniciando..."
-							:	"Iniciar Preclasificación con IA"}
+								t("startingButton")
+							:	t("startPreclassificationButton")}
 						</StandardButton>
 					)}
 					{/* Botón de reconciliación: visible cuando hay discrepancias pendientes (independiente del status del lote) */}
@@ -796,7 +791,7 @@ const BatchDetailPage = () => {
 								}
 								startJob({
 									type: "RECONCILE_BATCH",
-									title: `Reconciliación Lote #${batchDetails.batch_number}`,
+									title: t("reconciliationJobTitle", { batchNumber: batchDetails.batch_number }),
 									payload: {
 										batchId: batchId,
 										userId: auth.user.id,
@@ -805,7 +800,7 @@ const BatchDetailPage = () => {
 									},
 								});
 							}}>
-							Revisar Discrepancias con IA ({discrepancies.length})
+							{t("reviewDiscrepanciesButton", { count: discrepancies.length })}
 						</StandardButton>
 					)}
 
@@ -815,22 +810,22 @@ const BatchDetailPage = () => {
 							content={
 								<div className="space-y-1">
 									<StandardText size="sm" weight="bold">
-										⚠️ Artículos sin clasificaciones de IA:
+										{t("articlesWithoutAITitle")}
 									</StandardText>
 									{articlesWithoutAI.slice(0, 3).map((art) => (
 										<StandardText key={art.article_item_id} size="xs">
 											• {art.article_title.substring(0, 50)}...
 											<br />
-											(Faltan {art.missing_dimensions} dimensiones)
+											{t("missingDimensions", { count: art.missing_dimensions })}
 										</StandardText>
 									))}
 									{articlesWithoutAI.length > 3 && (
 										<StandardText size="xs">
-											...y {articlesWithoutAI.length - 3} más
+											{t("andMoreArticles", { count: articlesWithoutAI.length - 3 })}
 										</StandardText>
 									)}
 									<StandardText size="xs" className="mt-2">
-										Haz clic en el botón de reprocesar en cada artículo
+										{t("clickToReprocessHint")}
 									</StandardText>
 								</div>
 							}
@@ -840,8 +835,7 @@ const BatchDetailPage = () => {
 									colorScheme="warning"
 									size="lg"
 									className="cursor-help">
-									⚠️ {articlesWithoutAI.length} artículo
-									{articlesWithoutAI.length !== 1 ? "s" : ""} sin clasificar
+									{t("articlesWithoutAIBadge", { count: articlesWithoutAI.length })}
 								</StandardBadge>
 							}
 						/>
@@ -852,8 +846,8 @@ const BatchDetailPage = () => {
 						<StandardTooltip
 							content={
 								batchFinalizationValidation.canFinalize ?
-									"Hacer oficiales todos los cambios y cerrar el análisis del lote"
-								:	`No se puede finalizar:\n${batchFinalizationValidation.issues.join("\n")}`
+									t("finalizeTooltipCanFinalize")
+								:	t("finalizeTooltipCannot", { issues: batchFinalizationValidation.issues.join("\n") })
 							}
 							side="bottom"
 							trigger={
@@ -872,10 +866,10 @@ const BatchDetailPage = () => {
 									disabled={!batchFinalizationValidation.canFinalize}
 									onClick={() => {
 										showDialog({
-											title: "⚠️ Finalizar Lote",
-											content: `¿Confirmas que deseas finalizar el lote #${batchDetails?.batch_number}?\n\n⚠️ Esta acción marcará todas las clasificaciones como finales y NO PODRÁS modificarlas posteriormente.\n\n🔒 Esta acción es irreversible.`,
-											confirmText: "Sí, Finalizar Lote",
-											cancelText: "Cancelar",
+											title: t("finalizeDialogTitle"),
+											content: t("finalizeDialogContent", { batchNumber: batchDetails?.batch_number }),
+											confirmText: t("finalizeDialogConfirm"),
+											cancelText: t("cancelButton"),
 											colorScheme: "danger",
 											onConfirm: async () => {
 												try {
@@ -892,12 +886,12 @@ const BatchDetailPage = () => {
 
 													if (!response.ok || !result.success) {
 														const errorMsg =
-															result.error || "Error al finalizar lote";
+															result.error || t("toastErrorFinalizing");
 														throw new Error(errorMsg);
 													}
 
-													toast.success("Lote finalizado exitosamente", {
-														description: `${result.data.updatedCount} clasificaciones marcadas como finales`,
+													toast.success(t("toastFinalizeSuccess"), {
+														description: t("toastFinalizeSuccessDescription", { count: result.data.updatedCount }),
 													});
 
 													await loadBatchDetails();
@@ -905,15 +899,15 @@ const BatchDetailPage = () => {
 													const msg =
 														error instanceof Error ?
 															error.message
-														:	"Error desconocido";
-													toast.error("Error al finalizar lote", {
+														:	t("unknownError");
+													toast.error(t("toastErrorFinalizing"), {
 														description: msg,
 													});
 												}
 											},
 										});
 									}}>
-									Finalizar Lote
+									{t("finalizeButton")}
 								</StandardButton>
 							}
 						/>
@@ -923,19 +917,19 @@ const BatchDetailPage = () => {
 						leftIcon={Globe}
 						onClick={() => setShowOriginalAsPrimary(!showOriginalAsPrimary)}
 						styleType="outline">
-						{showOriginalAsPrimary ? "Ver Traducción" : "Ver Original"}
+						{showOriginalAsPrimary ? t("viewTranslationButton") : t("viewOriginalButton")}
 					</StandardButton>
 					{/* Toggle de Vista Compacta */}
 					<div className="flex items-center gap-2">
-						<StandardText size="sm">Vista compacta</StandardText>
+						<StandardText size="sm">{t("compactViewLabel")}</StandardText>
 						<StandardSwitch
 							checked={compactView}
 							onCheckedChange={setCompactView}
 							colorScheme="accent">
 							<StandardTabsList>
-								<StandardTabsTrigger value="grid">Tarjetas</StandardTabsTrigger>
-								<StandardTabsTrigger value="rows">Filas</StandardTabsTrigger>
-								<StandardTabsTrigger value="table">Tabla</StandardTabsTrigger>
+								<StandardTabsTrigger value="grid">{t("tabCards")}</StandardTabsTrigger>
+								<StandardTabsTrigger value="rows">{t("tabRows")}</StandardTabsTrigger>
+								<StandardTabsTrigger value="table">{t("tabTable")}</StandardTabsTrigger>
 							</StandardTabsList>
 						</StandardSwitch>
 					</div>
@@ -947,10 +941,10 @@ const BatchDetailPage = () => {
 						onClick={handleApproveAllBatch}
 						disabled={isBulkPersisting}>
 						{allMarked ?
-							"Desmarcar todo el lote"
+							t("unmarkAllButton")
 						: isBulkPersisting ?
-							"Procesando..."
-						:	"Marcar OK todo el lote"}
+							t("processingButton")
+						:	t("markAllOkButton")}
 					</StandardButton>
 				</div>
 
@@ -983,7 +977,7 @@ const BatchDetailPage = () => {
 							/>
 						</div>
 					:	<div className="p-4 text-sm text-gray-500 dark:text-gray-400">
-							Otras vistas (tarjetas/filas) están en desarrollo en esta rama.
+							{t("otherViewsInDevelopment")}
 						</div>
 					}
 				</div>

@@ -11,6 +11,7 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 
 import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardTextarea } from "@/components/ui/StandardTextarea";
@@ -29,23 +30,26 @@ import {
 //#endregion ![head]
 
 //#region [def] - 📦 SCHEMA, TYPES, PROPS & CONSTANTS 📦
-const rolFormSchema = z.object({
-	role_name: z
-		.string()
-		.min(3, "El nombre del rol debe tener al menos 3 caracteres.")
-		.max(100, "El nombre del rol no puede exceder los 100 caracteres."),
-	role_description: z
-		.string()
-		.max(500, "La descripción no puede exceder los 500 caracteres.")
-		.nullable()
-		.optional(),
-	can_manage_master_data: z.boolean(),
-	can_create_batches: z.boolean(),
-	can_upload_files: z.boolean(),
-	can_bulk_edit_master_data: z.boolean(),
-});
+type RolFormTranslator = ReturnType<typeof useTranslations<"datosMaestros.rolForm">>;
 
-export type RolFormValues = z.infer<typeof rolFormSchema>;
+const makeRolFormSchema = (t: RolFormTranslator) =>
+	z.object({
+		role_name: z
+			.string()
+			.min(3, t("validation.nameMin"))
+			.max(100, t("validation.nameMax")),
+		role_description: z
+			.string()
+			.max(500, t("validation.descriptionMax"))
+			.nullable()
+			.optional(),
+		can_manage_master_data: z.boolean(),
+		can_create_batches: z.boolean(),
+		can_upload_files: z.boolean(),
+		can_bulk_edit_master_data: z.boolean(),
+	});
+
+export type RolFormValues = z.infer<ReturnType<typeof makeRolFormSchema>>;
 
 interface RolFormProps {
 	modo: "crear" | "editar" | "ver";
@@ -56,41 +60,39 @@ interface RolFormProps {
 	isEditingForm?: boolean; // NUEVA PROP para el estilo de edición
 }
 
-// permissionFields is now a module-level constant.
-const permissionFields: {
-	name: keyof Pick<
-		RolFormValues,
-		| "can_manage_master_data"
-		| "can_create_batches"
-		| "can_upload_files"
-		| "can_bulk_edit_master_data"
-	>;
-	label: string;
-	hint: string;
-	icon: React.ElementType;
-}[] = [
+type PermissionFieldName = keyof Pick<
+	RolFormValues,
+	| "can_manage_master_data"
+	| "can_create_batches"
+	| "can_upload_files"
+	| "can_bulk_edit_master_data"
+>;
+
+const makePermissionFields = (
+	t: RolFormTranslator,
+): { name: PermissionFieldName; label: string; hint: string; icon: React.ElementType }[] => [
 	{
 		name: "can_manage_master_data",
-		label: "Gestionar Datos Maestros",
-		hint: "Permite crear, editar y eliminar miembros, roles, y otros datos clave del proyecto.",
+		label: t("permManageMasterData"),
+		hint: t("permManageMasterDataHint"),
 		icon: DatabaseZap,
 	},
 	{
 		name: "can_create_batches",
-		label: "Crear Lotes de Trabajo",
-		hint: "Permite iniciar y configurar nuevos lotes de análisis o procesamiento.",
+		label: t("permCreateBatches"),
+		hint: t("permCreateBatchesHint"),
 		icon: ListChecks,
 	},
 	{
 		name: "can_upload_files",
-		label: "Subir Archivos",
-		hint: "Permite cargar archivos (documentos, imágenes, datos) al proyecto.",
+		label: t("permUploadFiles"),
+		hint: t("permUploadFilesHint"),
 		icon: UploadCloud,
 	},
 	{
 		name: "can_bulk_edit_master_data",
-		label: "Edición Masiva de Datos Maestros",
-		hint: "Permite realizar cambios en múltiples registros de datos maestros a la vez.",
+		label: t("permBulkEdit"),
+		hint: t("permBulkEditHint"),
 		icon: Edit,
 	},
 ];
@@ -106,7 +108,9 @@ export const RolForm = ({
 	isEditingForm = false, // Valor por defecto para la nueva prop
 }: RolFormProps) => {
 	//#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
-	// permissionFields constant has been moved outside the component.
+	const t = useTranslations("datosMaestros.rolForm");
+	const rolFormSchema = useMemo(() => makeRolFormSchema(t), [t]);
+	const permissionFields = useMemo(() => makePermissionFields(t), [t]);
 
 	const defaultFormValues: RolFormValues = useMemo(() => {
 		return {
@@ -172,22 +176,18 @@ export const RolForm = ({
 			onSubmit={form.handleSubmit(handleFormSubmit, onInvalidSubmit)}
 			className="space-y-6">
 			<StandardFormField
-				label="Nombre del Rol"
+				label={t("nameLabel")}
 				htmlFor="rf-role_name"
 				isRequired={true}
 				error={form.formState.errors.role_name?.message}
-				hint={
-					isReadOnlyEffective
-						? undefined
-						: "Nombre único y descriptivo para el rol."
-				}>
+				hint={isReadOnlyEffective ? undefined : t("nameHint")}>
 				<Controller
 					name="role_name"
 					control={form.control}
 					render={({ field, fieldState }) => (
 						<StandardInput
 							id="rf-role_name"
-							placeholder="Ej: Investigador Principal, Transcriptor"
+							placeholder={t("namePlaceholder")}
 							leadingIcon={Shield}
 							error={
 								!isReadOnlyEffective ? fieldState.error?.message : undefined
@@ -204,21 +204,17 @@ export const RolForm = ({
 			</StandardFormField>
 
 			<StandardFormField
-				label="Descripción del Rol"
+				label={t("descriptionLabel")}
 				htmlFor="rf-role_description"
 				error={form.formState.errors.role_description?.message}
-				hint={
-					isReadOnlyEffective
-						? undefined
-						: "Detalla las responsabilidades y el propósito de este rol (opcional)."
-				}>
+				hint={isReadOnlyEffective ? undefined : t("descriptionHint")}>
 				<Controller
 					name="role_description"
 					control={form.control}
 					render={({ field, fieldState }) => (
 						<StandardTextarea
 							id="rf-role_description"
-							placeholder="Describe brevemente qué puede hacer un usuario con este rol..."
+							placeholder={t("descriptionPlaceholder")}
 							rows={3}
 							maxLength={500}
 							showCharacterCount={!isReadOnlyEffective}
@@ -240,7 +236,7 @@ export const RolForm = ({
 			{/* //#region [render_sub] - PERMISOS ESPECÍFICOS 🛡️ */}
 			<div>
 				<StandardText preset="body" weight="medium" className="mb-3 block">
-					Permisos Específicos del Rol
+					{t("permissionsTitle")}
 				</StandardText>
 				<div className="space-y-4 rounded-md border p-4 shadow-sm bg-card">
 					{permissionFields.map((perm) => (
@@ -294,9 +290,9 @@ export const RolForm = ({
 							(modo === "editar" && !form.formState.isDirty)
 						}
 						loadingText={
-							modo === "crear" ? "Creando Rol..." : "Guardando Cambios..."
+							modo === "crear" ? t("submitCreating") : t("submitSaving")
 						}>
-						{modo === "crear" ? "Crear Rol" : "Guardar Cambios"}
+						{modo === "crear" ? t("submitCreate") : t("submitSave")}
 					</StandardButton>
 				</div>
 			)}

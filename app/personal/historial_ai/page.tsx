@@ -10,6 +10,8 @@
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/app/providers/I18nProvider";
 import { useAuth } from "@/app/auth-provider";
 import { getMyRecentJobs, type JobHistoryRow } from "@/lib/actions/job-history-actions";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
@@ -23,7 +25,7 @@ import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { ColumnDef } from "@tanstack/react-table";
 import { History, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { es } from "date-fns/locale";
+import { es, enUS } from "date-fns/locale";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
@@ -39,8 +41,11 @@ interface HistorialAIPageState {
 
 //#region [main] - 🎯 COMPONENT 🎯
 export default function HistorialAIPage() {
+	const t = useTranslations("personal.historialAi");
+	const { locale } = useLocale();
+	const dateFnsLocale = locale === "en" ? enUS : es;
 	const { user, proyectoActual } = useAuth();
-	
+
 	const [state, setState] = useState<HistorialAIPageState>({
 		historial: [],
 		currentPage: 1,
@@ -53,7 +58,7 @@ export default function HistorialAIPage() {
 	// Función para cargar datos
 	const cargarHistorial = useCallback(async () => {
 		if (!user || !proyectoActual) {
-			setState(prev => ({ ...prev, isLoading: false, error: "Usuario o proyecto no disponible" }));
+			setState(prev => ({ ...prev, isLoading: false, error: t("errorUserOrProjectUnavailable") }));
 			return;
 		}
 
@@ -83,13 +88,13 @@ export default function HistorialAIPage() {
 				setState(prev => ({ ...prev, isLoading: false, error: resultado.error }));
 			}
 		} catch (error) {
-			setState(prev => ({ 
-				...prev, 
-				isLoading: false, 
-				error: error instanceof Error ? error.message : "Error desconocido" 
+			setState(prev => ({
+				...prev,
+				isLoading: false,
+				error: error instanceof Error ? error.message : t("errorUnknown")
 			}));
 		}
-	}, [user, proyectoActual]);
+	}, [user, proyectoActual, t]);
 
 	// Cargar datos al montar el componente
 	useEffect(() => {
@@ -102,7 +107,7 @@ export default function HistorialAIPage() {
 	}, []);
 
 	// Función para obtener badge de estado
-	const getStatusBadge = (status: string) => {
+	const getStatusBadge = useCallback((status: string) => {
 		switch (status) {
 			case "completed":
 				return (
@@ -112,7 +117,7 @@ export default function HistorialAIPage() {
 						size="sm"
 						leftIcon={CheckCircle}
 					>
-						Completado
+						{t("statusCompleted")}
 					</StandardBadge>
 				);
 			case "running":
@@ -123,7 +128,7 @@ export default function HistorialAIPage() {
 						size="sm"
 						leftIcon={Clock}
 					>
-						En proceso
+						{t("statusRunning")}
 					</StandardBadge>
 				);
 			case "failed":
@@ -134,7 +139,7 @@ export default function HistorialAIPage() {
 						size="sm"
 						leftIcon={XCircle}
 					>
-						Fallido
+						{t("statusFailed")}
 					</StandardBadge>
 				);
 			default:
@@ -145,17 +150,17 @@ export default function HistorialAIPage() {
 						size="sm"
 						leftIcon={AlertCircle}
 					>
-						Pendiente
+						{t("statusPending")}
 					</StandardBadge>
 				);
 		}
-	};
+	}, [t]);
 
 	// Definición de columnas para la tabla
 	const columns: ColumnDef<JobHistoryRow>[] = useMemo(() => [
 		{
 			accessorKey: "job_type",
-			header: "Tipo de Trabajo",
+			header: t("columnJobType"),
 			cell: ({ row }) => {
 				const jobType = row.getValue("job_type") as string;
 				return (
@@ -164,14 +169,14 @@ export default function HistorialAIPage() {
 						colorScheme="primary"
 						colorShade="pure"
 					>
-						{jobType === "TRANSLATION" ? "Traducción" : jobType || "N/A"}
+						{jobType === "TRANSLATION" ? t("jobTypeTranslation") : jobType || "N/A"}
 					</StandardText>
 				);
 			},
 		},
 		{
 			accessorKey: "description",
-			header: "Descripción",
+			header: t("columnDescription"),
 			cell: ({ row }) => {
 				const description = row.getValue("description") as string;
 				return (
@@ -180,14 +185,14 @@ export default function HistorialAIPage() {
 						colorScheme="primary"
 						colorShade="pure"
 					>
-						{description || "Sin descripción"}
+						{description || t("noDescription")}
 					</StandardText>
 				);
 			},
 		},
 		{
 			accessorKey: "ai_model",
-			header: "Modelo IA",
+			header: t("columnAiModel"),
 			cell: ({ row }) => {
 				const model = row.getValue("ai_model") as string;
 				return (
@@ -203,12 +208,12 @@ export default function HistorialAIPage() {
 		},
 		{
 			accessorKey: "status",
-			header: "Estado",
+			header: t("columnStatus"),
 			cell: ({ row }) => getStatusBadge(row.getValue("status")),
 		},
 		{
 			accessorKey: "input_tokens",
-			header: "Tokens Entrada",
+			header: t("columnInputTokens"),
 			cell: ({ row }) => {
 				const tokens = row.getValue("input_tokens") as number | null;
 				return (
@@ -224,7 +229,7 @@ export default function HistorialAIPage() {
 		},
 		{
 			accessorKey: "output_tokens",
-			header: "Tokens Salida",
+			header: t("columnOutputTokens"),
 			cell: ({ row }) => {
 				const tokens = row.getValue("output_tokens") as number | null;
 				return (
@@ -240,7 +245,7 @@ export default function HistorialAIPage() {
 		},
 		{
 			accessorKey: "started_at",
-			header: "Fecha Inicio",
+			header: t("columnStartDate"),
 			cell: ({ row }) => {
 				const date = new Date(row.getValue("started_at"));
 				return (
@@ -249,14 +254,14 @@ export default function HistorialAIPage() {
 						colorScheme="secondary"
 						colorShade="pure"
 					>
-						{formatDistanceToNow(date, { addSuffix: true, locale: es })}
+						{formatDistanceToNow(date, { addSuffix: true, locale: dateFnsLocale })}
 					</StandardText>
 				);
 			},
 		},
 		{
 			accessorKey: "completed_at",
-			header: "Fecha Fin",
+			header: t("columnEndDate"),
 			cell: ({ row }) => {
 				const date = row.getValue("completed_at");
 				if (!date) return (
@@ -268,12 +273,12 @@ export default function HistorialAIPage() {
 						colorScheme="secondary"
 						colorShade="pure"
 					>
-						{formatDistanceToNow(new Date(date as string), { addSuffix: true, locale: es })}
+						{formatDistanceToNow(new Date(date as string), { addSuffix: true, locale: dateFnsLocale })}
 					</StandardText>
 				);
 			},
 		},
-	], []);
+	], [t, dateFnsLocale, getStatusBadge]);
 
 	// Datos paginados
 	const paginatedData = useMemo(() => {
@@ -290,7 +295,7 @@ export default function HistorialAIPage() {
 				size={40}
 				variant="spin-pulse"
 				showText={true}
-				text="Cargando historial..."
+				text={t("loadingHistory")}
 			/>
 		</div>
 	);
@@ -299,7 +304,7 @@ export default function HistorialAIPage() {
 	const ErrorComponent = ({ error }: { error: string }) => (
 		<StandardEmptyState
 			icon={XCircle}
-			title="Error al cargar el historial"
+			title={t("errorLoadingTitle")}
 			description={error}
 		/>
 	);
@@ -308,8 +313,8 @@ export default function HistorialAIPage() {
 	const EmptyComponent = () => (
 		<StandardEmptyState
 			icon={History}
-			title="No hay historial disponible"
-			description="Aún no has realizado trabajos de IA en este proyecto."
+			title={t("emptyTitle")}
+			description={t("emptyDescription")}
 		/>
 	);
 
@@ -317,8 +322,8 @@ export default function HistorialAIPage() {
 	return (
 		<div className="space-y-6">
 			<StandardPageTitle
-				title="Historial de IA"
-				description="Revisa tu consumo y historial de trabajos de inteligencia artificial"
+				title={t("pageTitle")}
+				description={t("pageDescription")}
 				mainIcon={History}
 			/>
 
@@ -341,14 +346,14 @@ export default function HistorialAIPage() {
 								colorScheme="secondary"
 								colorShade="pure"
 							>
-								Mostrando {paginatedData.length} de {state.totalItems} trabajos
+								{t("showingCount", { shown: paginatedData.length, total: state.totalItems })}
 							</StandardText>
 						</div>
 
 						<StandardTable
 							data={paginatedData}
 							columns={columns}
-							filterPlaceholder="Buscar en el historial..."
+							filterPlaceholder={t("searchPlaceholder")}
 						>
 							<StandardTable.Table />
 						</StandardTable>

@@ -10,6 +10,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useDesignTokens } from "@/app/providers/DesignTokensProvider";
 import {
@@ -72,7 +73,7 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 		{
 			value = "",
 			onChange,
-			placeholder = "Escribe tu nota aquí...",
+			placeholder,
 			colorScheme = "neutral",
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			size, // Disponible para uso futuro - parte de la interfaz pública
@@ -93,6 +94,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 		ref,
 	) => {
 		//#region [sub_bridge] - 🌉 THE BRIDGE 🌉
+		const t = useTranslations("designSystem.standardNote");
+		const finalPlaceholder = placeholder ?? t("placeholder");
 		const validVariants: StandardNoteBetaVariant[] = [
 			"default",
 			"primary",
@@ -551,20 +554,20 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 
 		// Handlers específicos para cada formato
 		const handleBold = React.useCallback(
-			() => insertText("**", "**", "texto en negrita"),
-			[insertText],
+			() => insertText("**", "**", t("insertBoldText")),
+			[insertText, t],
 		);
 		const handleItalic = React.useCallback(
-			() => insertText("*", "*", "texto en itálica"),
-			[insertText],
+			() => insertText("*", "*", t("insertItalicText")),
+			[insertText, t],
 		);
 		const handleHighlight = React.useCallback(
-			() => insertText("<mark>", "</mark>", "texto resaltado"),
-			[insertText],
+			() => insertText("<mark>", "</mark>", t("insertHighlightText")),
+			[insertText, t],
 		);
 		const handleLink = React.useCallback(
-			() => insertText("[", "](https://)", "texto del enlace"),
-			[insertText],
+			() => insertText("[", "](https://)", t("insertLinkText")),
+			[insertText, t],
 		);
 		const handleH1 = React.useCallback(
 			() => applyLineFormat("# "),
@@ -697,8 +700,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 								colorScheme="neutral"
 								leftIcon={Bold}
 								onClick={handleBold}
-								tooltip="Aplicar formato de negrita al texto seleccionado">
-								{!minimalToolbar && "Negrita"}
+								tooltip={t("boldTooltip")}>
+								{!minimalToolbar && t("boldLabel")}
 							</StandardButton>
 							<StandardButton
 								size="sm"
@@ -706,8 +709,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 								colorScheme="neutral"
 								leftIcon={Italic}
 								onClick={handleItalic}
-								tooltip="Aplicar formato de cursiva al texto seleccionado">
-								{!minimalToolbar && "Cursiva"}
+								tooltip={t("italicTooltip")}>
+								{!minimalToolbar && t("italicLabel")}
 							</StandardButton>
 							<StandardButton
 								size="sm"
@@ -715,8 +718,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 								colorScheme="neutral"
 								leftIcon={Highlighter}
 								onClick={handleHighlight}
-								tooltip="Resaltar texto importante">
-								{!minimalToolbar && "Resaltado"}
+								tooltip={t("highlightTooltip")}>
+								{!minimalToolbar && t("highlightLabel")}
 							</StandardButton>
 						</div>
 
@@ -731,7 +734,7 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 									size="xs"
 									colorScheme="neutral"
 									className="opacity-70 font-medium mr-2">
-									Estructura:
+									{t("structureGroupLabel")}
 								</StandardText>
 							)}
 							<StandardButton
@@ -740,8 +743,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 								colorScheme="neutral"
 								leftIcon={Heading1}
 								onClick={handleH1}
-								tooltip="Crear título principal de sección">
-								{!minimalToolbar && "Título"}
+								tooltip={t("h1Tooltip")}>
+								{!minimalToolbar && t("h1Label")}
 							</StandardButton>
 							<StandardButton
 								size="sm"
@@ -749,8 +752,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 								colorScheme="neutral"
 								leftIcon={Heading2}
 								onClick={handleH2}
-								tooltip="Crear subtítulo de sección">
-								{!minimalToolbar && "Subtítulo"}
+								tooltip={t("h2Tooltip")}>
+								{!minimalToolbar && t("h2Label")}
 							</StandardButton>
 							<StandardButton
 								size="sm"
@@ -758,8 +761,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 								colorScheme="neutral"
 								leftIcon={Heading3}
 								onClick={handleH3}
-								tooltip="Crear sección menor">
-								{!minimalToolbar && "Sección"}
+								tooltip={t("h3Tooltip")}>
+								{!minimalToolbar && t("h3Label")}
 							</StandardButton>
 						</div>
 
@@ -774,7 +777,7 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 									size="xs"
 									colorScheme="neutral"
 									className="opacity-70 font-medium mr-2">
-									Organización:
+									{t("organizationGroupLabel")}
 								</StandardText>
 							)}
 							<StandardButton
@@ -783,8 +786,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 								colorScheme="neutral"
 								leftIcon={List}
 								onClick={handleBulletList}
-								tooltip="Crear lista con viñetas">
-								{!minimalToolbar && "Lista"}
+								tooltip={t("bulletListTooltip")}>
+								{!minimalToolbar && t("bulletListLabel")}
 							</StandardButton>
 							<StandardButton
 								size="sm"
@@ -792,8 +795,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 								colorScheme="neutral"
 								leftIcon={ListOrdered}
 								onClick={handleOrderedList}
-								tooltip="Crear lista numerada">
-								{!minimalToolbar && "Numerada"}
+								tooltip={t("orderedListTooltip")}>
+								{!minimalToolbar && t("orderedListLabel")}
 							</StandardButton>
 							<StandardButton
 								size="sm"
@@ -801,8 +804,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 								colorScheme="neutral"
 								leftIcon={Link}
 								onClick={handleLink}
-								tooltip="Insertar enlace a referencia o recurso">
-								{!minimalToolbar && "Enlace"}
+								tooltip={t("linkTooltip")}>
+								{!minimalToolbar && t("linkLabel")}
 							</StandardButton>
 						</div>
 
@@ -817,7 +820,7 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 									size="xs"
 									colorScheme="neutral"
 									className="opacity-70 font-medium mr-2">
-									Acciones:
+									{t("actionsGroupLabel")}
 								</StandardText>
 							)}
 							<StandardButton
@@ -826,8 +829,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 								colorScheme="neutral"
 								leftIcon={Copy}
 								onClick={handleCopyToClipboard}
-								tooltip="Copiar contenido al portapapeles">
-								{!minimalToolbar && "Copiar"}
+								tooltip={t("copyTooltip")}>
+								{!minimalToolbar && t("copyLabel")}
 							</StandardButton>
 							<StandardButton
 								size="sm"
@@ -835,8 +838,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 								colorScheme="neutral"
 								leftIcon={Download}
 								onClick={handleDownloadMarkdown}
-								tooltip="Descargar como archivo .md">
-								{!minimalToolbar && "Descargar"}
+								tooltip={t("downloadTooltip")}>
+								{!minimalToolbar && t("downloadLabel")}
 							</StandardButton>
 						</div>
 
@@ -851,7 +854,7 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 									size="xs"
 									colorScheme="neutral"
 									className="opacity-70 font-medium mr-2">
-									Vista:
+									{t("viewGroupLabel")}
 								</StandardText>
 							)}
 
@@ -863,8 +866,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 									colorScheme="primary"
 									leftIcon={Columns2}
 									onClick={handleDividedMode}
-									tooltip="Vista dividida: editor y preview lado a lado">
-									{!minimalToolbar && "Dividido"}
+									tooltip={t("dividedTooltip")}>
+									{!minimalToolbar && t("dividedLabel")}
 								</StandardButton>
 							)}
 
@@ -876,8 +879,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 									colorScheme="primary"
 									leftIcon={Edit3}
 									onClick={handleEditorMode}
-									tooltip="Solo editor: enfoque completo en la escritura">
-									{!minimalToolbar && "Editor"}
+									tooltip={t("editorTooltip")}>
+									{!minimalToolbar && t("editorLabel")}
 								</StandardButton>
 							)}
 
@@ -889,8 +892,8 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 									colorScheme="primary"
 									leftIcon={EyeOff}
 									onClick={handlePreviewMode}
-									tooltip="Solo preview: revisión del documento final">
-									{!minimalToolbar && "Preview"}
+									tooltip={t("previewTooltip")}>
+									{!minimalToolbar && t("previewLabel")}
 								</StandardButton>
 							)}
 
@@ -906,15 +909,16 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 									:	EyeOff
 								}
 								disabled={true}
-								tooltip={`Modo activo: ${
-									effectiveViewMode === "divided" ? "Vista dividida"
-									: effectiveViewMode === "editor" ? "Solo editor"
-									: "Solo preview"
-								}`}>
+								tooltip={t("activeModeTooltip", {
+									mode:
+										effectiveViewMode === "divided" ? t("modeDividedShort")
+										: effectiveViewMode === "editor" ? t("modeEditorShort")
+										: t("modePreviewShort"),
+								})}>
 								{!minimalToolbar &&
-									(effectiveViewMode === "divided" ? "Dividido"
-									: effectiveViewMode === "editor" ? "Editor"
-									: "Preview")}
+									(effectiveViewMode === "divided" ? t("dividedLabel")
+									: effectiveViewMode === "editor" ? t("editorLabel")
+									: t("previewLabel"))}
 							</StandardButton>
 						</div>
 					</div>
@@ -961,7 +965,7 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 								)}
 								value={internalValue || ""}
 								onChange={handleChange}
-								placeholder={placeholder}
+								placeholder={finalPlaceholder}
 								disabled={disabled}
 								readOnly={readOnly}
 							/>
@@ -1034,7 +1038,7 @@ const StandardNote = React.forwardRef<HTMLDivElement, StandardNoteProps>(
 							)}
 							value={internalValue || ""}
 							onChange={handleChange}
-							placeholder={placeholder}
+							placeholder={finalPlaceholder}
 							disabled={disabled}
 							readOnly={readOnly}
 						/>

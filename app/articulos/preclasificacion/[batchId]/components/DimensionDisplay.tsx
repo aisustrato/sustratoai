@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { StandardBadge } from "@/components/ui/StandardBadge";
 import { StandardText } from "@/components/ui/StandardText";
 import { ClassificationReview } from "@/lib/types/preclassification-types";
@@ -31,6 +32,7 @@ export const DimensionDisplay: React.FC<DimensionDisplayProps> = ({
 	optionEmoticons,
 	variant = "default",
 }) => {
+	const t = useTranslations("articulos.dimensionDisplay");
 	const confidenceInfo =
 		review?.confidence ? confidenceMap[review.confidence] : null;
 	// Resolver emoticon de forma robusta ante diferencias menores de formato
@@ -136,7 +138,7 @@ export const DimensionDisplay: React.FC<DimensionDisplayProps> = ({
 						</div>
 
 				:	<StandardText size="xs" className="italic text-gray-400">
-						Sin revisión aún
+						{t("noReviewYet")}
 					</StandardText>
 				}
 			</div>

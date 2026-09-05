@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
@@ -14,41 +15,42 @@ import { FileCheck, MapPin, FileText, Database, BarChart3 } from "lucide-react";
 
 //#region [main] - 🔧 COMPONENT 🔧
 export default function ArticulosHome() {
+  const t = useTranslations("articulos.articulosIndexPage");
   //#region [render] - 🎨 RENDER SECTION 🎨
   return (
     <div className="container mx-auto py-8">
       <StandardPageTitle
-        title="Gestión de Artículos"
-        description="Administra los artículos de tu proyecto: preclasificación, carga masiva y exploración de documentos."
-        breadcrumbs={[{ label: "Artículos" }]}
+        title={t("pageTitle")}
+        description={t("pageDescription")}
+        breadcrumbs={[{ label: t("breadcrumbArticulos") }]}
         showBackButton={{ href: "/" }}
       />
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {[
           {
             href: "/articulos/base-original",
             icon: Database,
-            title: "Base Original",
-            description: "Visualiza todos los artículos cargados en su estado original."
+            title: t("cardBaseOriginalTitle"),
+            description: t("cardBaseOriginalDescription")
           },
           {
             href: "/articulos/preclasificacion",
             icon: FileCheck,
-            title: "Preclasificación",
-            description: "Revisa y clasifica los artículos según criterios de inclusión y exclusión."
+            title: t("cardPreclasificacionTitle"),
+            description: t("cardPreclasificacionDescription")
           },
           {
             href: "/articulos/grupos",
             icon: MapPin,
-            title: "Grupos",
-            description: "Gestiona y navega los grupos temáticos de tus artículos."
+            title: t("cardGruposTitle"),
+            description: t("cardGruposDescription")
           },
           {
             href: "/articulos/notas",
             icon: FileText,
-            title: "Notas",
-            description: "Crea y organiza notas asociadas a tus artículos."
+            title: t("cardNotasTitle"),
+            description: t("cardNotasDescription")
           },
         ].map((item, index) => (
           <Link href={item.href} key={index} className="group">
@@ -69,7 +71,7 @@ export default function ArticulosHome() {
                 </StandardText>
                 <div className="mt-4 flex justify-end">
                   <StandardText variant="small" className="text-primary font-medium flex items-center">
-                    Acceder
+                    {t("accessLabel")}
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1">
                       <path d="M5 12h14"></path>
                       <path d="m12 5 7 7-7 7"></path>

@@ -9,6 +9,7 @@
 
 import * as React from "react";
 import { useMemo, useState, useRef, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Slot } from "@radix-ui/react-slot";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -88,6 +89,7 @@ const StandardButton = React.forwardRef<HTMLButtonElement, StandardButtonProps>(
 		ref,
 	) => {
 		// 💎 CORE: Tokens precalculados - NO recalcula en cada render
+		const t = useTranslations("designSystem.standardButton");
 		const { tokens } = useDesignTokens();
 		const buttonRef = useRef<HTMLButtonElement | null>(null);
 		const triggerRipple = useRipple();
@@ -342,7 +344,7 @@ const StandardButton = React.forwardRef<HTMLButtonElement, StandardButtonProps>(
 					{/* Para iconOnly, el loadingText se muestra si iconOnly es false. Si es true, solo el spinner. */}
 					{!iconOnly && (
 						<span>
-							{loadingText === undefined ? "Cargando..." : loadingText}
+							{loadingText === undefined ? t("loadingDefault") : loadingText}
 						</span>
 					)}
 				</>

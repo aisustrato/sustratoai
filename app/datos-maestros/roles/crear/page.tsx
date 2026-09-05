@@ -4,6 +4,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import React, { useState, useEffect } from "react"; // useCallback no es necesario aquí
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import { RolForm, type RolFormValues } from "../components/RolForm";
 import { agregarRolAProyecto } from "@/lib/actions/proyect-role-actions";
@@ -26,6 +27,7 @@ import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo"; // 
 //#region [main] - 🔧 COMPONENT 🔧
 export default function CrearRolPage() {
   const router = useRouter();
+  const t = useTranslations("datosMaestrosPages.rolesCrearPage");
   const { proyectoActual } = useAuth(); // Obtener solo proyectoActual
   //#region [sub] - 🧰 HOOKS, STATE, EFFECTS & HANDLERS 🧰
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,18 +42,18 @@ export default function CrearRolPage() {
     // Simular una comprobación o carga inicial si fuera necesario
     // Por ahora, solo verificamos si hay un proyecto actual.
     if (!proyectoActual?.id) {
-      setPageError("No hay un proyecto seleccionado para agregar el rol. Por favor, selecciona un proyecto activo.");
+      setPageError(t("noProjectError"));
     }
     setIsPageLoading(false); // Terminar la carga de la página
-  }, [proyectoActual]);
+  }, [proyectoActual, t]);
 
 
   const handleCrearRol = async (data: RolFormValues) => {
     if (!proyectoActual?.id) {
-      sonnerToast.error("Error de Proyecto", {
-        description: "No se ha seleccionado un proyecto válido para agregar el rol.",
+      sonnerToast.error(t("toastProjectErrorTitle"), {
+        description: t("toastProjectErrorDescription"),
       });
-      setPageError("No hay un proyecto seleccionado."); // Actualizar error de página también
+      setPageError(t("noProjectErrorShort")); // Actualizar error de página también
       return;
     }
 
@@ -71,14 +73,14 @@ export default function CrearRolPage() {
     const resultado = await agregarRolAProyecto(payload);
 
     if (resultado.success) {
-      sonnerToast.success("Rol Creado", {
-        description: `El rol "${resultado.data.role_name}" ha sido agregado exitosamente al proyecto.`,
+      sonnerToast.success(t("toastCreatedTitle"), {
+        description: t("toastCreatedDescription", { roleName: resultado.data.role_name }),
       });
       router.push("/datos-maestros/roles");
     } else {
       console.error("Error al crear el rol:", resultado.error);
-      sonnerToast.error("Error al Crear Rol", {
-        description: resultado.error || "No se pudo agregar el rol. Inténtalo de nuevo.",
+      sonnerToast.error(t("toastErrorTitle"), {
+        description: resultado.error || t("toastErrorFallback"),
       });
       // Si el error es por nombre duplicado, por ejemplo, podrías querer pasarlo al form
       // setError("role_name", { type: "server", message: resultado.error }); // Ejemplo
@@ -94,7 +96,7 @@ export default function CrearRolPage() {
     return (
       <div>
         <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <SustratoLoadingLogo size={50} showText text="Cargando configuración..." />
+          <SustratoLoadingLogo size={50} showText text={t("loadingConfig")} />
         </div>
       </div>
     );
@@ -118,7 +120,7 @@ export default function CrearRolPage() {
             <StandardCard.Header className="items-center flex flex-col text-center">
               <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
               <StandardText preset="subheading" weight="bold" colorScheme="danger">
-                {puedeGestionarRoles ? "Error de Configuración" : "Acceso Denegado"}
+                {puedeGestionarRoles ? t("configErrorTitle") : t("accessDeniedTitle")}
               </StandardText>
             </StandardCard.Header>
             <StandardCard.Content className="text-center">
@@ -130,7 +132,7 @@ export default function CrearRolPage() {
                   styleType="outline"
                   leftIcon={ArrowLeft}
                 >
-                  Ir a Inicio
+                  {t("goHomeButton")}
                 </StandardButton>
               </Link>
             </StandardCard.Footer>
@@ -158,12 +160,12 @@ export default function CrearRolPage() {
             <StandardCard.Header className="items-center flex flex-col text-center">
               <StandardIcon><AlertTriangle className="h-12 w-12 text-danger-fg mb-4" /></StandardIcon>
               <StandardText preset="subheading" weight="bold" colorScheme="danger">
-                Acceso Denegado
+                {t("accessDeniedTitle")}
               </StandardText>
             </StandardCard.Header>
             <StandardCard.Content className="text-center">
               <StandardText>
-                No tienes los permisos necesarios para crear nuevos roles en este proyecto.
+                {t("accessDeniedDescription")}
               </StandardText>
             </StandardCard.Content>
             <StandardCard.Footer className="flex justify-center">
@@ -172,7 +174,7 @@ export default function CrearRolPage() {
                   styleType="outline"
                   leftIcon={ArrowLeft}
                 >
-                  Volver al Listado de Roles
+                  {t("backToListButton")}
                 </StandardButton>
               </Link>
             </StandardCard.Footer>
@@ -189,13 +191,13 @@ export default function CrearRolPage() {
       <div className="container mx-auto py-8">
         <div className="max-w-3xl mx-auto">
           <StandardPageTitle
-            title="Agregar Nuevo Rol al Proyecto"
-            subtitle={`Define un nuevo conjunto de permisos para el proyecto "${proyectoActual?.name || "..."}"`}
+            title={t("pageTitle")}
+            subtitle={t("pageSubtitle", { projectName: proyectoActual?.name || "..." })}
             mainIcon={ShieldPlus}
             breadcrumbs={[
-              { label: "Datos Maestros", href: "/datos-maestros" },
-              { label: "Roles", href: "/datos-maestros/roles" },
-              { label: "Crear Rol" }
+              { label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+              { label: t("breadcrumbRoles"), href: "/datos-maestros/roles" },
+              { label: t("breadcrumbCrear") }
             ]}
             showBackButton={{ href: "/datos-maestros/roles" }}
           />

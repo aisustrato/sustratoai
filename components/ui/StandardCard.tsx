@@ -23,6 +23,7 @@ import {
 	useState,
 } from "react";
 import { Check, Square } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import {
 	useDesignTokens,
@@ -202,6 +203,7 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 		ref,
 	) => {
 		// 🌉 THE BRIDGE - Tokens del Provider
+		const t = useTranslations("designSystem.standardCard");
 		const { tokens } = useDesignTokens();
 		const triggerRipple = useRipple();
 
@@ -518,7 +520,7 @@ const StandardCardRoot = forwardRef<HTMLDivElement, StandardCardProps>(
 								)}
 								aria-pressed={selected}
 								aria-label={
-									selected ? "Deseleccionar tarjeta" : "Seleccionar tarjeta"
+									selected ? t("deselectCard") : t("selectCard")
 								}>
 								{selected ?
 									<Check

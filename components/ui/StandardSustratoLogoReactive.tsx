@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useDesignTokens } from "@/app/providers/DesignTokensProvider";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -221,6 +222,7 @@ export function StandardSustratoLogoWithText({
 	textClassName?: string;
 	variant?: "horizontal" | "vertical";
 }) {
+	const t = useTranslations("common");
 	const { tokens: designTokens } = useDesignTokens();
 	const [textColors, setTextColors] = useState({
 		primary: designTokens?.text?.colors?.primary?.pure || "#3D7DF6",
@@ -289,7 +291,7 @@ export function StandardSustratoLogoWithText({
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.5, delay: 0.4 }}
 						className={`${getSubtextSize()} text-neutral-500 dark:text-neutral-400 ml-0.5 mt-0.5 italic`}>
-						cultivando sinergias humano·AI
+						{t("tagline")}
 					</motion.div>
 				)}
 
@@ -299,7 +301,7 @@ export function StandardSustratoLogoWithText({
 						animate={{ opacity: 1 }}
 						transition={{ duration: 0.5, delay: 0.4 }}
 						className={`${getSubtextSize()} text-neutral-500 dark:text-neutral-400 italic`}>
-						cultivando sinergias humano·AI
+						{t("tagline")}
 					</motion.div>
 				)}
 			</div>

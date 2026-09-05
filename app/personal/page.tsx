@@ -10,12 +10,14 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 //#endregion ![head]
 
 //#region [main] - 🔧 COMPONENT 🔧
 export default function PersonalPage() {
+	const t = useTranslations("personal.indexPage");
 	const router = useRouter();
 
 	useEffect(() => {
@@ -31,7 +33,7 @@ export default function PersonalPage() {
 					size={50}
 					variant="spin-pulse"
 					showText={true}
-					text="Redirigiendo..."
+					text={t("redirecting")}
 				/>
 			</div>
 		</StandardPageBackground>

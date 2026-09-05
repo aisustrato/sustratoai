@@ -4,6 +4,7 @@
 //#region [head] - 🏷️ IMPORTS 🏷️
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/app/auth-provider";
 import {
 	obtenerDetallesMiembroProyecto,
@@ -35,6 +36,7 @@ export type SelectOption = { value: string; label: string };
 //#region [main] - 🔧 COMPONENT 🔧
 export default function VerMiembroPage() {
   //#region [sub] - 🧰 HOOKS, STATE, LOGIC & HANDLERS 🧰
+	const t = useTranslations("datosMaestrosPages.miembrosVerPage");
 	const router = useRouter();
 	const params = useParams();
 	const memberId = params?.id ? String(params.id) : "";
@@ -65,14 +67,14 @@ export default function VerMiembroPage() {
 
 		if (!proyectoActual?.id) {
 			if (isMounted) {
-				setError("No hay un proyecto seleccionado.");
+				setError(t("errorNoProject"));
 				setIsLoading(false);
 			}
 			return;
 		}
 		if (!memberId) {
 			if (isMounted) {
-				setError("ID de miembro no especificado.");
+				setError(t("errorNoMemberId"));
 				setIsLoading(false);
 			}
 			return;
@@ -101,16 +103,16 @@ export default function VerMiembroPage() {
 			}
 
 			if (!resultadoMiembro.success) {
-				setError(resultadoMiembro.error || "Error al cargar datos del miembro");
+				setError(resultadoMiembro.error || t("errorLoadingMemberData"));
 			} else if (!resultadoMiembro.data) {
-				setError("No se encontró información para este miembro.");
+				setError(t("errorMemberNotFound"));
 			} else {
 				setMiembro(resultadoMiembro.data);
 			}
 		} catch (err) {
 			console.error("Error al cargar datos:", err);
 			if (isMounted) {
-				setError(`Error inesperado al cargar datos: ${(err as Error).message}`);
+				setError(t("errorUnexpectedLoading", { message: (err as Error).message }));
 			}
 		} finally {
 			if (isMounted) {
@@ -120,7 +122,7 @@ export default function VerMiembroPage() {
 		return () => {
 			isMounted = false;
 		}; // Cleanup function para el useCallback
-	}, [proyectoActual?.id, memberId]);
+	}, [proyectoActual?.id, memberId, t]);
 
 	useEffect(() => {
 		// Usamos isMounted en cargarDatosCompletos para evitar actualizaciones después de desmontar
@@ -132,15 +134,15 @@ export default function VerMiembroPage() {
 			// Si no hay proyecto o memberId, no estamos cargando activamente desde el servidor.
 			// Decidir qué error mostrar y asegurarse que isLoading sea false.
 			if (!proyectoActual?.id) {
-				setError("Esperando selección de proyecto...");
+				setError(t("waitingProjectSelection"));
 			} else if (!memberId) {
-				setError("ID de miembro no especificado.");
+				setError(t("errorNoMemberId"));
 			}
 			setIsLoading(false); // Importante: poner a false si no se cumplen las condiciones de carga
 		}
 
 		// No es necesaria la limpieza ya que usamos isMounted en cargarDatosCompletos
-	}, [proyectoActual?.id, memberId, cargarDatosCompletos]);
+	}, [proyectoActual?.id, memberId, cargarDatosCompletos, t]);
 
 	const handleVolver = () => {
 		router.push("/datos-maestros/miembros");
@@ -151,14 +153,14 @@ export default function VerMiembroPage() {
 	};
 
 	const getNombreMiembro = (): string => {
-		if (!miembro?.profile) return "Miembro";
+		if (!miembro?.profile) return t("defaultMemberName");
 		const { public_display_name, first_name, last_name } = miembro.profile;
 		if (public_display_name) return public_display_name;
 		if (first_name || last_name)
 			return `${first_name || ""} ${last_name || ""}`.trim();
 		return (
 			miembro.profile?.public_contact_email ||
-			`Usuario ID: ${miembro.user_id.substring(0, 8)}...`
+			t("userIdFallback", { id: miembro.user_id.substring(0, 8) })
 		);
 	};
 
@@ -167,8 +169,8 @@ export default function VerMiembroPage() {
 				emailUsuario:
 					miembro.profile?.public_contact_email ||
 					(miembro.user_id
-						? `No disponible (ID: ${miembro.user_id.substring(0, 8)}...)`
-						: "Email no disponible"),
+						? t("unavailableEmailWithId", { id: miembro.user_id.substring(0, 8) })
+						: t("unavailableEmail")),
 				rolId: miembro.project_role_id || "",
 				firstName: miembro.profile?.first_name || "",
 				lastName: miembro.profile?.last_name || "",
@@ -190,7 +192,7 @@ export default function VerMiembroPage() {
 					size={50}
 					variant="spin-pulse"
 					showText
-					text="Cargando datos del miembro..."
+					text={t("loadingMemberData")}
 				/>
 			</div>
 		);
@@ -202,14 +204,14 @@ export default function VerMiembroPage() {
 				<div className="container mx-auto py-6">
 					<div className="space-y-6">
 						<PageHeader
-							title="Error"
+							title={t("errorTitle")}
 							description={error}
 							actions={
 								<StandardButton
 									onClick={handleVolver}
 									styleType="outline">
 									<StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
-									Volver a Miembros
+									{t("backToMembers")}
 								</StandardButton>
 							}
 						/>
@@ -225,17 +227,17 @@ export default function VerMiembroPage() {
 				<div className="container mx-auto py-6">
 					<div className="space-y-6">
 						<PageHeader
-							title="Miembro no encontrado"
+							title={t("memberNotFoundTitle")}
 							description={
 								error ||
-								"No se pudo cargar la información del miembro o el miembro no existe."
+								t("memberNotFoundDescription")
 							}
 							actions={
 								<StandardButton
 									onClick={handleVolver}
 									styleType="outline">
 									<StandardIcon><ArrowLeft className="h-4 w-4" /></StandardIcon>
-									Volver a Miembros
+									{t("backToMembers")}
 								</StandardButton>
 							}
 						/>
@@ -250,13 +252,13 @@ export default function VerMiembroPage() {
 			<div className="container mx-auto py-6">
 				<div className="space-y-6">
 					<StandardPageTitle
-						title={`Detalle de ${getNombreMiembro()}`}
-						subtitle="Información del miembro en el proyecto (solo lectura)"
+						title={t("detailOf", { name: getNombreMiembro() })}
+						subtitle={t("viewSubtitle")}
 						mainIcon={User}
 						breadcrumbs={[
-							{ label: "Datos Maestros", href: "/datos-maestros" },
-							{ label: "Miembros ", href: "/datos-maestros/miembros" },
-							{ label: "Verr Miembro" },
+							{ label: t("breadcrumbDatosMaestros"), href: "/datos-maestros" },
+							{ label: t("breadcrumbMiembros"), href: "/datos-maestros/miembros" },
+							{ label: t("breadcrumbVer") },
 						]}
 						showBackButton={{ href: "/datos-maestros/miembros" }}
 					/>
@@ -265,11 +267,11 @@ export default function VerMiembroPage() {
 							<StandardButton
 									onClick={handleEditar}
 									colorScheme="primary"
-                
+
 								leftIcon={PenLine}
 								>
-								
-									Editar Miembro
+
+									{t("editMemberButton")}
 								</StandardButton>
               </div>
 						)}
@@ -293,15 +295,13 @@ export default function VerMiembroPage() {
 					{error && miembro && (
 						<div className="mt-4 p-4 bg-warning-muted text-warning-foreground rounded-md text-center ">
 							<StandardText preset="caption">
-								Advertencia:
+								{t("warningPrefix")}
 							</StandardText>
 							<StandardText preset="caption" className="mt-1">
 								{error}
 							</StandardText>
 							<StandardText preset="caption" size="xs" className="mt-1 opacity-80">
-								(Se muestran los datos de miembro disponibles. Alguna
-								información adicional, como la lista completa de roles, podría
-								no haberse cargado correctamente).
+								{t("warningPartialData")}
 							</StandardText>
 						</div>
 					)}
