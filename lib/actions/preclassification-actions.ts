@@ -14,6 +14,7 @@ import {
 	createDimensionVersionResolver,
 	getOrCreateCurrentDimensionVersionId,
 } from "@/lib/preclassification/dimension-versioning";
+import { logAiInteraction } from "@/lib/preclassification/ai-interaction-log";
 import type { ResultadoOperacion } from "./types";
 import type {
 	BatchWithCounts,
@@ -1080,6 +1081,7 @@ export async function saveBatchTranslations(
 			language: "es",
 			translator_system: article.translator_system,
 			translated_by: article.translated_by,
+			ai_interaction_id: article.aiInteractionId ?? null,
 		}));
 
 		// 🚨 FILOSOFÍA: Usar INSERT (no UPSERT) para que falle RUIDOSAMENTE si hay duplicados
@@ -2175,6 +2177,23 @@ async function runPreclassificationJob(
 				console.log(rawResponse);
 				console.log("=".repeat(100));
 
+				// 🔧 Fase 2 (auditoría append-only): un chunk clasifica varios
+				// artículos con UN solo prompt/respuesta — se registra una sola
+				// vez por chunk y se liga a TODAS las reviews que salen de él.
+				const { interactionId: chunkInteractionId } = await logAiInteraction(
+					admin,
+					{
+						jobId,
+						step: "classification",
+						promptSent: prompt,
+						responseReceived: rawResponse,
+						aiModel: "deepseek-chat",
+						inputTokens: usage?.promptTokenCount ?? null,
+						outputTokens: usage?.candidatesTokenCount ?? null,
+						success: true,
+					},
+				);
+
 				let cleanResult = result.trim();
 				if (cleanResult.startsWith("```json")) {
 					cleanResult = cleanResult
@@ -2295,6 +2314,7 @@ async function runPreclassificationJob(
 								dimension_version_id: await resolveDimensionVersion(
 									foundDimension.id,
 								),
+								ai_interaction_id: chunkInteractionId,
 								reviewer_type: "ai",
 								reviewer_id: userId,
 								iteration: attemptNumber,
@@ -2398,6 +2418,20 @@ async function runPreclassificationJob(
 					"STACK TRACE:",
 					chunkError instanceof Error ? chunkError.stack : "No disponible",
 				);
+
+				await logAiInteraction(admin, {
+					jobId,
+					step: "classification",
+					promptSent: prompt || "(no se llegó a construir el prompt)",
+					responseReceived: rawResponse || null,
+					aiModel: "deepseek-chat",
+					success: false,
+					errorMessage:
+						chunkError instanceof Error
+							? chunkError.message
+							: "Error desconocido",
+				});
+
 				console.error(
 					"TIPO DE ERROR:",
 					chunkError instanceof Error ?
@@ -3388,12 +3422,16 @@ async function runTranslationJob(
 			let lastError = "";
 
 			while (!success && retryCount <= MAX_RETRIES_PER_ARTICLE) {
+				// 🔧 Fase 2 (auditoría append-only): se registra CADA intento —
+				// éxito o fallo — con el prompt exacto y la respuesta cruda de la
+				// IA, antes de descartarlos. `rawResult` queda `null` si el intento
+				// falló por una excepción de red (nunca hubo respuesta que loguear).
+				const prompt = buildTranslationPrompt(
+					article.title || "",
+					article.abstract || "",
+				);
+				let rawResult: string | null = null;
 				try {
-					const prompt = buildTranslationPrompt(
-						article.title || "",
-						article.abstract || "",
-					);
-
 					console.log(
 						`📤 [runTranslationJob] Enviando prompt a DeepSeek (intento ${retryCount + 1}/${MAX_RETRIES_PER_ARTICLE + 1})`,
 					);
@@ -3403,6 +3441,7 @@ async function runTranslationJob(
 						prompt,
 						deepSeekApiKey,
 					);
+					rawResult = result;
 
 					// Acumular tokens
 					totalInputTokens += usage?.promptTokenCount || 0;
@@ -3423,6 +3462,17 @@ async function runTranslationJob(
 						);
 					}
 
+					const { interactionId } = await logAiInteraction(admin, {
+						jobId,
+						step: "translation",
+						promptSent: prompt,
+						responseReceived: rawResult,
+						aiModel: "deepseek-chat",
+						inputTokens: usage?.promptTokenCount ?? null,
+						outputTokens: usage?.candidatesTokenCount ?? null,
+						success: true,
+					});
+
 					// Guardamos la traducción exitosa
 					translatedArticlesPayload.push({
 						articleId: article.id,
@@ -3431,6 +3481,7 @@ async function runTranslationJob(
 						summary: parsedResult.translatedSummary,
 						translated_by: userId,
 						translator_system: "deepseek-chat",
+						aiInteractionId: interactionId,
 					});
 
 					success = true;
@@ -3445,6 +3496,16 @@ async function runTranslationJob(
 						`❌ [runTranslationJob] Error en artículo ${i + 1}, intento ${retryCount}:`,
 						lastError,
 					);
+
+					await logAiInteraction(admin, {
+						jobId,
+						step: "translation",
+						promptSent: prompt,
+						responseReceived: rawResult,
+						aiModel: "deepseek-chat",
+						success: false,
+						errorMessage: lastError,
+					});
 
 					if (retryCount > MAX_RETRIES_PER_ARTICLE) {
 						// Agotamos reintentos, fallar el job completo
@@ -3517,6 +3578,7 @@ async function runTranslationJob(
 				completed_at: new Date().toISOString(),
 				input_tokens: totalInputTokens,
 				output_tokens: totalOutputTokens,
+				ai_model: "deepseek-chat", // 🔧 antes no se registraba para jobs de traducción
 				details: {
 					batchId,
 					total: totalArticles,
@@ -6268,6 +6330,12 @@ async function runDiscrepancyReconciliationJob(
 				`   📍 Item: ${discrepancy.article_batch_item_id}, Dimensión: ${discrepancy.dimension_id}`,
 			);
 
+			// 🔧 Fase 2 (auditoría append-only): declaradas fuera del try para
+			// poder loguear el intento fallido en el catch si la excepción
+			// ocurre después de tener prompt/respuesta pero antes de terminar.
+			let prompt = "";
+			let rawResult: string | null = null;
+
 			try {
 				// 1. Obtener datos del artículo
 				const { data: item } = await admin
@@ -6334,7 +6402,7 @@ async function runDiscrepancyReconciliationJob(
 				}
 
 				// 4. Construir prompt de reconciliación
-				const prompt = buildReconciliationPrompt(
+				prompt = buildReconciliationPrompt(
 					batchData.projects,
 					dimension as DimensionForReconciliation,
 					item.articles as ArticleDataForReconciliation,
@@ -6355,6 +6423,7 @@ async function runDiscrepancyReconciliationJob(
 					prompt,
 					deepSeekApiKey,
 				);
+				rawResult = result;
 
 				console.log(`\n📥 [${jobId}] RESPUESTA RECIBIDA DE DEEPSEEK:`);
 				console.log("=".repeat(100));
@@ -6389,6 +6458,18 @@ async function runDiscrepancyReconciliationJob(
 						"Respuesta de IA incompleta: falta value, confidence o rationale",
 					);
 				}
+
+				const { interactionId: reconciliationInteractionId } =
+					await logAiInteraction(admin, {
+						jobId,
+						step: "reconciliation",
+						promptSent: prompt,
+						responseReceived: rawResult,
+						aiModel: "deepseek-chat",
+						inputTokens: usage?.promptTokenCount ?? null,
+						outputTokens: usage?.candidatesTokenCount ?? null,
+						success: true,
+					});
 
 				// Validar que agrees_with_human esté presente
 				if (typeof parsedResult.agrees_with_human !== "boolean") {
@@ -6475,6 +6556,7 @@ async function runDiscrepancyReconciliationJob(
 					dimension_version_id: await resolveDimensionVersion(
 						discrepancy.dimension_id,
 					),
+					ai_interaction_id: reconciliationInteractionId,
 					reviewer_type: "ai",
 					reviewer_id: userId,
 					iteration: 3, // 🎯 ITERACIÓN 3 - Reconciliación de IA
@@ -6507,6 +6589,21 @@ async function runDiscrepancyReconciliationJob(
 				);
 				console.error("   Item:", discrepancy.article_batch_item_id);
 				console.error("   Dimensión:", discrepancy.dimension_id);
+
+				if (prompt) {
+					await logAiInteraction(admin, {
+						jobId,
+						step: "reconciliation",
+						promptSent: prompt,
+						responseReceived: rawResult,
+						aiModel: "deepseek-chat",
+						success: false,
+						errorMessage:
+							discrepancyError instanceof Error
+								? discrepancyError.message
+								: "Error desconocido",
+					});
+				}
 				// Continuar con la siguiente discrepancia
 			}
 

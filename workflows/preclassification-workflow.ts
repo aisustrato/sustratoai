@@ -25,6 +25,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/server";
 import { callDeepSeekAPI } from "@/lib/deepseek/api";
 import { resolveDeepSeekApiKey } from "@/lib/deepseek/resolve-key";
 import { createDimensionVersionResolver } from "@/lib/preclassification/dimension-versioning";
+import { logAiInteraction } from "@/lib/preclassification/ai-interaction-log";
 import type { Database } from "@/lib/database.types";
 //#endregion ![head]
 
@@ -272,13 +273,20 @@ async function processChunkStep(
 	const chunkFailedArticles: ArticleForPrompt[] = [];
 	const chunkSuccessfulReviews: ReviewInsert[] = [];
 
+	// 🔧 Fase 2 (auditoría append-only): fuera del try para poder loguear el
+	// intento fallido en el catch si la excepción ocurre después de llamar
+	// a la IA.
+	let prompt = "";
+	let rawResult: string | null = null;
+
 	try {
-		const prompt = buildPreclassificationPrompt(project, dimensions, chunk);
+		prompt = buildPreclassificationPrompt(project, dimensions, chunk);
 		const { result, usage } = await callDeepSeekAPI(
 			DEEPSEEK_MODEL,
 			prompt,
 			apiKey,
 		);
+		rawResult = result;
 
 		let cleanResult = result.trim();
 		if (cleanResult.startsWith("```json")) {
@@ -291,6 +299,17 @@ async function processChunkStep(
 		if (!Array.isArray(parsedResult)) {
 			throw new Error("La respuesta de la IA no es un array válido");
 		}
+
+		const { interactionId: chunkInteractionId } = await logAiInteraction(admin, {
+			jobId,
+			step: "classification",
+			promptSent: prompt,
+			responseReceived: rawResult,
+			aiModel: DEEPSEEK_MODEL,
+			inputTokens: usage?.promptTokenCount ?? null,
+			outputTokens: usage?.candidatesTokenCount ?? null,
+			success: true,
+		});
 
 		for (const item of parsedResult) {
 			const currentArticle = chunk.find((art) => art.id === item.itemId);
@@ -374,6 +393,7 @@ async function processChunkStep(
 						dimension_version_id: await resolveDimensionVersion(
 							foundDimension.id,
 						),
+						ai_interaction_id: chunkInteractionId,
 						reviewer_type: "ai",
 						reviewer_id: userId,
 						iteration: attemptNumber,
@@ -409,6 +429,18 @@ async function processChunkStep(
 			`❌❌ [${jobId}] Error crítico procesando chunk completo (intento ${attemptNumber}):`,
 			chunkError instanceof Error ? chunkError.message : chunkError,
 		);
+		if (prompt) {
+			await logAiInteraction(admin, {
+				jobId,
+				step: "classification",
+				promptSent: prompt,
+				responseReceived: rawResult,
+				aiModel: DEEPSEEK_MODEL,
+				success: false,
+				errorMessage:
+					chunkError instanceof Error ? chunkError.message : "Error desconocido",
+			});
+		}
 		return {
 			success: false,
 			failedArticles: chunk,

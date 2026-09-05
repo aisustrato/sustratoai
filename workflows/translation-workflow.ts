@@ -23,6 +23,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/server";
 import { callDeepSeekAPI } from "@/lib/deepseek/api";
 import { resolveDeepSeekApiKey } from "@/lib/deepseek/resolve-key";
 import { saveBatchTranslations } from "@/lib/actions/preclassification-actions";
+import { logAiInteraction } from "@/lib/preclassification/ai-interaction-log";
 import type { TranslatedArticlePayload } from "@/lib/types/preclassification-types";
 //#endregion ![head]
 
@@ -139,17 +140,20 @@ async function translateArticleStep(
 	let lastError = "";
 
 	for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+		// 🔧 Fase 2 (auditoría append-only): fuera del try para poder loguear
+		// el intento fallido en el catch.
+		const prompt = buildTranslationPrompt(
+			article.title || "",
+			article.abstract || "",
+		);
+		let rawResult: string | null = null;
 		try {
-			const prompt = buildTranslationPrompt(
-				article.title || "",
-				article.abstract || "",
-			);
-
 			const { result, usage } = await callDeepSeekAPI(
 				DEEPSEEK_MODEL,
 				prompt,
 				apiKey,
 			);
+			rawResult = result;
 
 			const cleanedString = result
 				.replace(/`{3}json\n?/, "")
@@ -162,6 +166,19 @@ async function translateArticleStep(
 				);
 			}
 
+			// 🔧 Fase 2 (auditoría append-only): se registra el prompt exacto y
+			// la respuesta cruda antes de descartarlos.
+			const { interactionId } = await logAiInteraction(admin, {
+				jobId,
+				step: "translation",
+				promptSent: prompt,
+				responseReceived: result,
+				aiModel: DEEPSEEK_MODEL,
+				inputTokens: usage?.promptTokenCount ?? null,
+				outputTokens: usage?.candidatesTokenCount ?? null,
+				success: true,
+			});
+
 			return {
 				translation: {
 					articleId: article.id,
@@ -170,12 +187,22 @@ async function translateArticleStep(
 					summary: parsedResult.translatedSummary,
 					translated_by: userId,
 					translator_system: DEEPSEEK_MODEL,
+					aiInteractionId: interactionId,
 				},
 				inputTokens: usage?.promptTokenCount || 0,
 				outputTokens: usage?.candidatesTokenCount || 0,
 			};
 		} catch (error) {
 			lastError = error instanceof Error ? error.message : "Error desconocido";
+			await logAiInteraction(admin, {
+				jobId,
+				step: "translation",
+				promptSent: prompt,
+				responseReceived: rawResult,
+				aiModel: DEEPSEEK_MODEL,
+				success: false,
+				errorMessage: lastError,
+			});
 			if (attempt === MAX_RETRIES) {
 				throw new Error(
 					`Artículo ${index + 1} falló después de ${MAX_RETRIES} reintentos: ${lastError}`,
@@ -227,6 +254,7 @@ async function finalizeTranslationJobStep(
 			completed_at: new Date().toISOString(),
 			input_tokens: totalInputTokens,
 			output_tokens: totalOutputTokens,
+			ai_model: DEEPSEEK_MODEL,
 			details: {
 				batchId,
 				total: translations.length,

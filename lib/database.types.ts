@@ -73,6 +73,62 @@ export type Database = {
           },
         ]
       }
+      ai_prompt_interactions: {
+        Row: {
+          ai_model: string
+          created_at: string
+          error_message: string | null
+          id: string
+          input_tokens: number | null
+          job_id: string
+          output_tokens: number | null
+          prompt_sent: string
+          prompt_sha256: string
+          response_received: string | null
+          response_sha256: string | null
+          step: string
+          success: boolean
+        }
+        Insert: {
+          ai_model: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_tokens?: number | null
+          job_id: string
+          output_tokens?: number | null
+          prompt_sent: string
+          prompt_sha256: string
+          response_received?: string | null
+          response_sha256?: string | null
+          step: string
+          success?: boolean
+        }
+        Update: {
+          ai_model?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_tokens?: number | null
+          job_id?: string
+          output_tokens?: number | null
+          prompt_sent?: string
+          prompt_sha256?: string
+          response_received?: string | null
+          response_sha256?: string | null
+          step?: string
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_prompt_interactions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "ai_job_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_abstract_highlights: {
         Row: {
           article_id: string
@@ -243,6 +299,7 @@ export type Database = {
       }
       article_dimension_reviews: {
         Row: {
+          ai_interaction_id: string | null
           article_batch_item_id: string
           article_id: string
           classification_value: string | null
@@ -261,6 +318,7 @@ export type Database = {
           status: Database["public"]["Enums"]["batch_preclass_status"] | null
         }
         Insert: {
+          ai_interaction_id?: string | null
           article_batch_item_id: string
           article_id: string
           classification_value?: string | null
@@ -279,6 +337,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["batch_preclass_status"] | null
         }
         Update: {
+          ai_interaction_id?: string | null
           article_batch_item_id?: string
           article_id?: string
           classification_value?: string | null
@@ -297,6 +356,13 @@ export type Database = {
           status?: Database["public"]["Enums"]["batch_preclass_status"] | null
         }
         Relationships: [
+          {
+            foreignKeyName: "article_dimension_reviews_ai_interaction_id_fkey"
+            columns: ["ai_interaction_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_interactions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "article_dimension_reviews_article_id_fkey"
             columns: ["article_id"]
@@ -464,6 +530,7 @@ export type Database = {
       article_translations: {
         Row: {
           abstract: string | null
+          ai_interaction_id: string | null
           article_id: string
           created_at: string | null
           id: string
@@ -476,6 +543,7 @@ export type Database = {
         }
         Insert: {
           abstract?: string | null
+          ai_interaction_id?: string | null
           article_id: string
           created_at?: string | null
           id?: string
@@ -488,6 +556,7 @@ export type Database = {
         }
         Update: {
           abstract?: string | null
+          ai_interaction_id?: string | null
           article_id?: string
           created_at?: string | null
           id?: string
@@ -499,6 +568,13 @@ export type Database = {
           translator_system?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "article_translations_ai_interaction_id_fkey"
+            columns: ["ai_interaction_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_interactions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "article_translations_article_id_fkey"
             columns: ["article_id"]
