@@ -154,6 +154,11 @@ export async function bulkSetPrevalidatedForBatch(
 		const supabase = await createSupabaseServerClient();
 		const admin = await createSupabaseServiceRoleClient();
 
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+		if (!user) return { success: false, error: "Usuario no autenticado." };
+
 		// 1) Obtener items del lote
 		const { data: items, error: itemsErr } = await supabase
 			.from("article_batch_items")
@@ -167,16 +172,15 @@ export async function bulkSetPrevalidatedForBatch(
 		const itemIds = (items || []).map((i) => i.id);
 		if (itemIds.length === 0) return { success: true, data: { updated: 0 } };
 
-		// 2) Obtener todas las revisiones AI de esos items
-		type ReviewRow =
-			Database["public"]["Tables"]["article_dimension_reviews"]["Row"];
+		// 2) Obtener todas las revisiones de esos items (de cualquier autor: se
+		// necesita el estado MÁS RECIENTE de cada par item+dimensión, sin importar
+		// si esa última fila la escribió la IA o un humano).
 		const { data: reviews, error: revErr } = await supabase
 			.from("article_dimension_reviews")
 			.select(
-				"id, article_batch_item_id, dimension_id, iteration, reviewer_type, prevalidated",
+				"id, article_batch_item_id, article_id, dimension_id, classification_value, option_id, confidence_score, rationale, iteration, reviewer_type, prevalidated",
 			)
-			.in("article_batch_item_id", itemIds)
-			.eq("reviewer_type", "ai");
+			.in("article_batch_item_id", itemIds);
 		if (revErr)
 			return {
 				success: false,
@@ -184,8 +188,8 @@ export async function bulkSetPrevalidatedForBatch(
 			};
 
 		// 3) Tomar la última por (item, dim)
-		const latestByPair = new Map<string, ReviewRow>();
-		for (const r of (reviews || []) as ReviewRow[]) {
+		const latestByPair = new Map<string, ReviewRowWithOptionalFields>();
+		for (const r of (reviews || []) as ReviewRowWithOptionalFields[]) {
 			const key = `${r.article_batch_item_id}__${r.dimension_id}`;
 			const current = latestByPair.get(key);
 			if (
@@ -196,107 +200,106 @@ export async function bulkSetPrevalidatedForBatch(
 			}
 		}
 
-		// 4) Preparar updates con status según iteración y acción
-		const updatesIter1Approve: string[] = []; // validated
-		const updatesIter3Approve: string[] = []; // reconciled
-		const updatesIter3Reject: string[] = []; // disputed
-		const updatesOther: string[] = []; // solo prevalidated
+		// 4) Preparar inserts con status según iteración y acción.
+		// 🔧 APPEND-ONLY: antes esto hacía UPDATE directo sobre la fila existente
+		// (perdiendo quién aprobó/rechazó y cuándo). Ahora cada cambio de
+		// prevalidated/status se registra como una fila NUEVA (reviewer_type:
+		// "human", reviewer_id: quien aprueba/rechaza), copiando el contenido de
+		// la fila anterior — que queda intacta.
+		const rowsIter1Approve: ReviewRowWithOptionalFields[] = []; // validated
+		const rowsIter3Approve: ReviewRowWithOptionalFields[] = []; // reconciled
+		const rowsIter3Reject: ReviewRowWithOptionalFields[] = []; // disputed
+		const rowsOther: ReviewRowWithOptionalFields[] = []; // solo prevalidated
 
 		for (const [, row] of latestByPair) {
 			if ((row.prevalidated ?? false) !== prevalidated) {
 				if (prevalidated) {
 					// ✅ APROBAR: determinar status según iteración
 					if (row.iteration === 1) {
-						updatesIter1Approve.push(row.id);
+						rowsIter1Approve.push(row);
 					} else if (row.iteration && row.iteration >= 3) {
-						updatesIter3Approve.push(row.id);
+						rowsIter3Approve.push(row);
 					} else {
-						updatesOther.push(row.id);
+						rowsOther.push(row);
 					}
 				} else {
 					// ❌ RECHAZAR: solo iter 3+ cambia a disputed
 					if (row.iteration && row.iteration >= 3) {
-						updatesIter3Reject.push(row.id);
+						rowsIter3Reject.push(row);
 					} else {
-						updatesOther.push(row.id);
+						rowsOther.push(row);
 					}
 				}
 			}
 		}
 
 		const totalToUpdate =
-			updatesIter1Approve.length +
-			updatesIter3Approve.length +
-			updatesIter3Reject.length +
-			updatesOther.length;
+			rowsIter1Approve.length +
+			rowsIter3Approve.length +
+			rowsIter3Reject.length +
+			rowsOther.length;
 		if (totalToUpdate === 0) return { success: true, data: { updated: 0 } };
 
-		// 5) Actualizar en lotes según status
+		const buildInsertRow = (
+			row: ReviewRowWithOptionalFields,
+			status: string,
+		): ReviewInsertWithOptionalFields => ({
+			article_batch_item_id: row.article_batch_item_id,
+			article_id: row.article_id,
+			dimension_id: row.dimension_id,
+			classification_value: row.classification_value,
+			option_id: row.option_id ?? null,
+			confidence_score: row.confidence_score,
+			rationale: row.rationale,
+			reviewer_type: "human",
+			reviewer_id: user.id,
+			iteration: (row.iteration ?? 0) + 1,
+			prevalidated,
+			is_final: false,
+			status: status as ReviewRowWithOptionalFields["status"],
+		});
+
+		// 5) Insertar en lotes según status
 		const chunkSize = 500;
 		let totalUpdated = 0;
 
-		// Iter 1 aprobado: validated
-		for (let i = 0; i < updatesIter1Approve.length; i += chunkSize) {
-			const slice = updatesIter1Approve.slice(i, i + chunkSize);
-			const { data: updRows, error: updErr } = await admin
-				.from("article_dimension_reviews")
-				.update({ prevalidated, status: "validated" })
-				.in("id", slice)
-				.select("id");
-			if (updErr)
-				return {
-					success: false,
-					error: `Error actualizando revisiones iter1: ${updErr.message}`,
-				};
-			totalUpdated += updRows?.length || 0;
-		}
+		const insertChunked = async (
+			rows: ReviewRowWithOptionalFields[],
+			statusFor: (row: ReviewRowWithOptionalFields) => string,
+			label: string,
+		) => {
+			for (let i = 0; i < rows.length; i += chunkSize) {
+				const slice = rows
+					.slice(i, i + chunkSize)
+					.map((row) => buildInsertRow(row, statusFor(row)));
+				const { data: insRows, error: insErr } = await admin
+					.from("article_dimension_reviews")
+					.insert(slice)
+					.select("id");
+				if (insErr)
+					throw new Error(
+						`Error registrando revisiones ${label}: ${insErr.message}`,
+					);
+				totalUpdated += insRows?.length || 0;
+			}
+		};
 
-		// Iter 3 aprobado: reconciled
-		for (let i = 0; i < updatesIter3Approve.length; i += chunkSize) {
-			const slice = updatesIter3Approve.slice(i, i + chunkSize);
-			const { data: updRows, error: updErr } = await admin
-				.from("article_dimension_reviews")
-				.update({ prevalidated, status: "reconciled" })
-				.in("id", slice)
-				.select("id");
-			if (updErr)
-				return {
-					success: false,
-					error: `Error actualizando revisiones iter3: ${updErr.message}`,
-				};
-			totalUpdated += updRows?.length || 0;
-		}
-
-		// Iter 3 rechazado: disputed
-		for (let i = 0; i < updatesIter3Reject.length; i += chunkSize) {
-			const slice = updatesIter3Reject.slice(i, i + chunkSize);
-			const { data: updRows, error: updErr } = await admin
-				.from("article_dimension_reviews")
-				.update({ prevalidated, status: "disputed" })
-				.in("id", slice)
-				.select("id");
-			if (updErr)
-				return {
-					success: false,
-					error: `Error actualizando revisiones iter3 rejected: ${updErr.message}`,
-				};
-			totalUpdated += updRows?.length || 0;
-		}
-
-		// Otros: solo prevalidated
-		for (let i = 0; i < updatesOther.length; i += chunkSize) {
-			const slice = updatesOther.slice(i, i + chunkSize);
-			const { data: updRows, error: updErr } = await admin
-				.from("article_dimension_reviews")
-				.update({ prevalidated })
-				.in("id", slice)
-				.select("id");
-			if (updErr)
-				return {
-					success: false,
-					error: `Error actualizando revisiones otras: ${updErr.message}`,
-				};
-			totalUpdated += updRows?.length || 0;
+		try {
+			await insertChunked(rowsIter1Approve, () => "validated", "iter1");
+			await insertChunked(rowsIter3Approve, () => "reconciled", "iter3");
+			await insertChunked(rowsIter3Reject, () => "disputed", "iter3 rejected");
+			// "Otros": solo cambia `prevalidated`, el status se conserva tal cual estaba.
+			await insertChunked(
+				rowsOther,
+				(row) => row.status ?? "review_pending",
+				"otras",
+			);
+		} catch (chunkError) {
+			const msg =
+				chunkError instanceof Error
+					? chunkError.message
+					: "Error desconocido";
+			return { success: false, error: msg };
 		}
 
 		return { success: true, data: { updated: totalUpdated } };
@@ -358,14 +361,20 @@ export async function updateDimensionStatus(
 		}
 		const db = createSupabaseUserClient(session.access_token);
 
-		// Buscar la última revisión AI por iteración
-		console.log("📊 [updateDimensionStatus] Buscando review AI...");
+		// Buscar la última revisión (de cualquier autor) para este par item+dimensión.
+		// 🔧 APPEND-ONLY: antes esto filtraba solo reviewer_type="ai" y hacía UPDATE
+		// sobre esa fila, perdiendo para siempre quién aprobó/rechazó y cuándo. Ahora
+		// se busca la última revisión sin importar su autor (para copiar su contenido
+		// hacia adelante) y el cambio de status se registra como una FILA NUEVA con la
+		// identidad del humano que actúa — la fila anterior queda intacta.
+		console.log("📊 [updateDimensionStatus] Buscando última revisión...");
 		const { data: reviewRow, error: findErr } = await supabase
 			.from("article_dimension_reviews")
-			.select("id, iteration, status")
+			.select(
+				"id, article_id, classification_value, option_id, confidence_score, rationale, prevalidated, iteration, status",
+			)
 			.eq("article_batch_item_id", articleBatchItemId)
 			.eq("dimension_id", dimensionId)
-			.eq("reviewer_type", "ai")
 			.order("iteration", { ascending: false, nullsFirst: false })
 			.limit(1)
 			.single();
@@ -379,44 +388,63 @@ export async function updateDimensionStatus(
 		});
 
 		if (findErr || !reviewRow) {
-			console.error("❌ [updateDimensionStatus] No se encontró review AI");
+			console.error("❌ [updateDimensionStatus] No se encontró revisión previa");
 			return {
 				success: false,
-				error: `No se encontró revisión AI para el item ${articleBatchItemId} y dimensión ${dimensionId}.`,
+				error: `No se encontró revisión para el item ${articleBatchItemId} y dimensión ${dimensionId}.`,
 			};
 		}
 
-		// Actualizar status directamente
-		console.log("📊 [updateDimensionStatus] Actualizando status en BD...", {
-			reviewId: reviewRow.id,
+		// Insertar una nueva iteración con el status actualizado, en vez de sobrescribir.
+		console.log("📊 [updateDimensionStatus] Insertando nueva iteración...", {
+			basedOnReviewId: reviewRow.id,
 			oldStatus: reviewRow.status,
 			newStatus,
 		});
 
-		const { data: updatedRows, error: updateErr } = await db
+		const nextIteration = (reviewRow.iteration ?? 0) + 1;
+		const insertRow: ReviewInsertWithOptionalFields = {
+			article_batch_item_id: articleBatchItemId,
+			article_id: reviewRow.article_id,
+			dimension_id: dimensionId,
+			classification_value: reviewRow.classification_value,
+			option_id: (reviewRow as ReviewRowWithOptionalFields).option_id ?? null,
+			confidence_score: reviewRow.confidence_score,
+			rationale: reviewRow.rationale,
+			reviewer_type: "human",
+			reviewer_id: user.id,
+			iteration: nextIteration,
+			prevalidated: reviewRow.prevalidated,
+			is_final: false,
+			status: newStatus,
+		};
+
+		const { data: insertedRows, error: insertErr } = await db
 			.from("article_dimension_reviews")
-			.update({ status: newStatus })
-			.eq("id", reviewRow.id)
+			.insert(insertRow)
 			.select("id");
 
-		console.log("📊 [updateDimensionStatus] Resultado UPDATE:", {
-			success: !updateErr,
-			rowsUpdated: updatedRows?.length,
-			error: updateErr?.message,
+		console.log("📊 [updateDimensionStatus] Resultado INSERT:", {
+			success: !insertErr,
+			rowsInserted: insertedRows?.length,
+			error: insertErr?.message,
 		});
 
-		if (updateErr) {
-			console.error("❌ [updateDimensionStatus] Error en UPDATE:", updateErr);
+		if (insertErr) {
+			console.error("❌ [updateDimensionStatus] Error en INSERT:", insertErr);
 			return {
 				success: false,
-				error: `Error actualizando status: ${updateErr.message}`,
+				error: `Error registrando status: ${insertErr.message}`,
 			};
 		}
 
-		console.log("✅ [updateDimensionStatus] Status actualizado exitosamente");
+		console.log("✅ [updateDimensionStatus] Status registrado exitosamente");
 		return {
 			success: true,
-			data: { updated: updatedRows?.length || 0, reviewId: reviewRow.id },
+			data: {
+				updated: insertedRows?.length || 0,
+				reviewId: insertedRows?.[0]?.id,
+			},
 		};
 	} catch (error) {
 		const msg = error instanceof Error ? error.message : "Error desconocido.";
@@ -1768,13 +1796,30 @@ async function runSingleArticlePreclassificationJob(
 			throw new Error(`Valor de confianza no reconocido: "${confidenceText}"`);
 		};
 
-		// 🔄 Eliminar clasificaciones IA existentes para evitar duplicados
-		console.log(`🗑️ [${jobId}] Eliminando clasificaciones IA existentes...`);
-		await admin
+		// 🔧 APPEND-ONLY: antes esto borraba (`DELETE`) las clasificaciones IA
+		// previas del artículo para "evitar duplicados" — eso destruía el juicio
+		// original de la IA sin dejar rastro, rompiendo cualquier auditoría del
+		// proceso. En vez de borrar, el reproceso se registra como una NUEVA
+		// iteración por dimensión (misma idea que ya usa `submitHumanReview`):
+		// se consulta la iteración máxima existente por dimensión para este
+		// artículo y las nuevas filas continúan esa numeración.
+		const { data: existingIterations, error: iterFetchError } = await admin
 			.from("article_dimension_reviews")
-			.delete()
-			.eq("article_batch_item_id", articleItemId)
-			.eq("reviewer_type", "ai");
+			.select("dimension_id, iteration")
+			.eq("article_batch_item_id", articleItemId);
+		if (iterFetchError) {
+			throw new Error(
+				`Error consultando iteraciones existentes: ${iterFetchError.message}`,
+			);
+		}
+		const maxIterationByDimension = new Map<string, number>();
+		for (const row of existingIterations || []) {
+			const current = maxIterationByDimension.get(row.dimension_id) ?? 0;
+			maxIterationByDimension.set(
+				row.dimension_id,
+				Math.max(current, row.iteration ?? 0),
+			);
+		}
 
 		// Procesar clasificaciones
 		const reviewsToInsert: ReviewInsertWithOptionalFields[] = [];
@@ -1875,13 +1920,16 @@ async function runSingleArticlePreclassificationJob(
 
 				const confidenceScore = mapConfidenceToScore(confidenceText);
 
+				const nextIteration =
+					(maxIterationByDimension.get(foundDimension.id) ?? 0) + 1;
+
 				reviewsToInsert.push({
 					article_batch_item_id: itemId,
 					article_id: articleId, // 🆕 Agregar article_id requerido
 					dimension_id: foundDimension.id,
 					reviewer_type: "ai",
 					reviewer_id: userId, // 🆕 Agregar reviewer_id requerido (usuario que inició el proceso)
-					iteration: 1,
+					iteration: nextIteration,
 					classification_value: valueToSave,
 					confidence_score: confidenceScore,
 					rationale: rationale || "",
@@ -2593,6 +2641,12 @@ export async function finalizeBatch(batchId: string): Promise<
 		}
 
 		// Marcar todas las reviews como is_final = true
+		// ⚠️ DEUDA CONOCIDA (auditoría append-only, Fase 0): esto es un UPDATE en
+		// filas existentes, no una fila nueva — no queda registro append-only de
+		// quién finalizó el lote ni cuándo, solo el flag mutado. Se deja así por
+		// ahora (bajo impacto: es metadato de estado, no el contenido del juicio
+		// de la IA/humano) — si se quiere cerrar del todo, convertir a un evento
+		// de finalización separado en vez de mutar `is_final` in-place.
 		const itemIds = items.map((i) => i.id);
 		const { data: updated, error: updateReviewsErr } = await admin
 			.from("article_dimension_reviews")
