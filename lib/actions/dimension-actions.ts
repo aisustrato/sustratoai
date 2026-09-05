@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/server";
 import { callDeepSeekAPI } from "@/lib/deepseek/api";
 import { resolveDeepSeekApiKey } from "@/lib/deepseek/resolve-key";
 import type { Database } from "@/lib/database.types";
+import { getOrCreateCurrentDimensionVersionId } from "@/lib/preclassification/dimension-versioning";
 
 // ========================================================================
 //	TYPE ALIASES FROM DATABASE SCHEMA
@@ -468,6 +469,40 @@ export async function updateDimension(
 		}
 
 		const effectiveType = currentDimensionTyped.type;
+
+		// 🔧 SELLADO (Fase 1, auditoría append-only): si esta dimensión ya fue
+		// usada en al menos una clasificación, se sella el contenido ACTUAL
+		// (pre-edición) en `preclass_dimension_versions` antes de aplicar el
+		// cambio. La dimensión sigue siendo editable — nunca se bloquea — pero
+		// la definición que vieron las clasificaciones existentes queda
+		// congelada con su hash, para siempre disponible en la auditoría.
+		const { count: reviewCount, error: reviewCountError } = await supabase
+			.from("article_dimension_reviews")
+			.select("*", { count: "exact", head: true })
+			.eq("dimension_id", dimensionId);
+		if (reviewCountError)
+			return {
+				success: false,
+				error: `Error verificando uso de la dimensión: ${reviewCountError.message}`,
+				errorCode: "USAGE_CHECK_FAILED",
+			};
+		if (reviewCount && reviewCount > 0) {
+			const sealResult = await getOrCreateCurrentDimensionVersionId(
+				supabase,
+				dimensionId,
+				currentUser.id,
+			);
+			if (!sealResult.versionId) {
+				return {
+					success: false,
+					error: `Error sellando versión previa de la dimensión: ${sealResult.error}`,
+					errorCode: "DIMENSION_SEAL_FAILED",
+				};
+			}
+			console.log(
+				`[${opId}] Dimensión en uso (${reviewCount} clasificaciones) — versión pre-edición sellada: ${sealResult.versionId}`,
+			);
+		}
 
 		const dimensionUpdates: PreclassDimensionUpdate =
 			{} as PreclassDimensionUpdate;

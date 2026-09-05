@@ -24,6 +24,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/server";
 import { callDeepSeekAPI } from "@/lib/deepseek/api";
 import { resolveDeepSeekApiKey } from "@/lib/deepseek/resolve-key";
+import { createDimensionVersionResolver } from "@/lib/preclassification/dimension-versioning";
 import type { Database } from "@/lib/database.types";
 //#endregion ![head]
 
@@ -264,6 +265,9 @@ async function processChunkStep(
 	"use step";
 	const admin = await createSupabaseServiceRoleClient();
 	const { apiKey } = await resolveDeepSeekApiKey(userId, admin);
+	// Sellado de versiones (Fase 1, auditoría append-only con SHA-256):
+	// cacheado dentro de este step, ver lib/preclassification/dimension-versioning.ts.
+	const resolveDimensionVersion = createDimensionVersionResolver(admin, userId);
 
 	const chunkFailedArticles: ArticleForPrompt[] = [];
 	const chunkSuccessfulReviews: ReviewInsert[] = [];
@@ -367,6 +371,9 @@ async function processChunkStep(
 						article_id: articleId,
 						article_batch_item_id: item.itemId,
 						dimension_id: foundDimension.id,
+						dimension_version_id: await resolveDimensionVersion(
+							foundDimension.id,
+						),
 						reviewer_type: "ai",
 						reviewer_id: userId,
 						iteration: attemptNumber,

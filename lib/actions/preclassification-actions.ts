@@ -10,6 +10,10 @@ import {
 import { callDeepSeekAPI } from "@/lib/deepseek/api";
 import { resolveDeepSeekApiKey } from "@/lib/deepseek/resolve-key";
 import type { Database } from "@/lib/database.types";
+import {
+	createDimensionVersionResolver,
+	getOrCreateCurrentDimensionVersionId,
+} from "@/lib/preclassification/dimension-versioning";
 import type { ResultadoOperacion } from "./types";
 import type {
 	BatchWithCounts,
@@ -240,13 +244,21 @@ export async function bulkSetPrevalidatedForBatch(
 			rowsOther.length;
 		if (totalToUpdate === 0) return { success: true, data: { updated: 0 } };
 
-		const buildInsertRow = (
+		// Resuelve (y sella si hace falta) la versión vigente de cada dimensión,
+		// cacheada en memoria — evita re-hashear la misma dimensión por cada fila.
+		const resolveDimensionVersion = createDimensionVersionResolver(
+			admin,
+			user.id,
+		);
+
+		const buildInsertRow = async (
 			row: ReviewRowWithOptionalFields,
 			status: string,
-		): ReviewInsertWithOptionalFields => ({
+		): Promise<ReviewInsertWithOptionalFields> => ({
 			article_batch_item_id: row.article_batch_item_id,
 			article_id: row.article_id,
 			dimension_id: row.dimension_id,
+			dimension_version_id: await resolveDimensionVersion(row.dimension_id),
 			classification_value: row.classification_value,
 			option_id: row.option_id ?? null,
 			confidence_score: row.confidence_score,
@@ -269,9 +281,11 @@ export async function bulkSetPrevalidatedForBatch(
 			label: string,
 		) => {
 			for (let i = 0; i < rows.length; i += chunkSize) {
-				const slice = rows
-					.slice(i, i + chunkSize)
-					.map((row) => buildInsertRow(row, statusFor(row)));
+				const slice = await Promise.all(
+					rows
+						.slice(i, i + chunkSize)
+						.map((row) => buildInsertRow(row, statusFor(row))),
+				);
 				const { data: insRows, error: insErr } = await admin
 					.from("article_dimension_reviews")
 					.insert(slice)
@@ -403,10 +417,19 @@ export async function updateDimensionStatus(
 		});
 
 		const nextIteration = (reviewRow.iteration ?? 0) + 1;
+		const { versionId: dimensionVersionId, error: sealError } =
+			await getOrCreateCurrentDimensionVersionId(supabase, dimensionId, user.id);
+		if (sealError) {
+			console.error(
+				"❌ [updateDimensionStatus] Error sellando versión de dimensión:",
+				sealError,
+			);
+		}
 		const insertRow: ReviewInsertWithOptionalFields = {
 			article_batch_item_id: articleBatchItemId,
 			article_id: reviewRow.article_id,
 			dimension_id: dimensionId,
+			dimension_version_id: dimensionVersionId,
 			classification_value: reviewRow.classification_value,
 			option_id: (reviewRow as ReviewRowWithOptionalFields).option_id ?? null,
 			confidence_score: reviewRow.confidence_score,
@@ -578,10 +601,20 @@ export async function submitHumanReview(
 		const statusForReview =
 			nextIteration >= 3 ? "disputed" : "reconciliation_pending";
 
+		const { versionId: dimensionVersionId, error: sealError } =
+			await getOrCreateCurrentDimensionVersionId(db, dimension_id, user.id);
+		if (sealError) {
+			console.error(
+				"❌ [submitHumanReview] Error sellando versión de dimensión:",
+				sealError,
+			);
+		}
+
 		const insertRow: ReviewInsertWithOptionalFields = {
 			article_batch_item_id,
 			article_id: itemRow.article_id,
 			dimension_id,
+			dimension_version_id: dimensionVersionId,
 			classification_value: human_value.trim(),
 			option_id: human_option_id ?? null,
 			confidence_score: Number(human_confidence),
@@ -1823,6 +1856,10 @@ async function runSingleArticlePreclassificationJob(
 
 		// Procesar clasificaciones
 		const reviewsToInsert: ReviewInsertWithOptionalFields[] = [];
+		const resolveDimensionVersion = createDimensionVersionResolver(
+			admin,
+			userId,
+		);
 
 		for (const result of parsedResults) {
 			const itemId = result.itemId;
@@ -1922,11 +1959,15 @@ async function runSingleArticlePreclassificationJob(
 
 				const nextIteration =
 					(maxIterationByDimension.get(foundDimension.id) ?? 0) + 1;
+				const dimensionVersionId = await resolveDimensionVersion(
+					foundDimension.id,
+				);
 
 				reviewsToInsert.push({
 					article_batch_item_id: itemId,
 					article_id: articleId, // 🆕 Agregar article_id requerido
 					dimension_id: foundDimension.id,
+					dimension_version_id: dimensionVersionId,
 					reviewer_type: "ai",
 					reviewer_id: userId, // 🆕 Agregar reviewer_id requerido (usuario que inició el proceso)
 					iteration: nextIteration,
@@ -2059,6 +2100,13 @@ async function runPreclassificationJob(
 		const articulosParaRepechaje: ArticleForPrompt[] = [];
 		const clasificacionesExitosasTemporales: ReviewInsertWithOptionalFields[] =
 			[];
+
+		// Sellado de versiones (Fase 1, auditoría append-only): una sola
+		// resolución/hash por dimensión para todo el job, cacheada.
+		const resolveDimensionVersion = createDimensionVersionResolver(
+			admin,
+			userId,
+		);
 
 		// 🛡️ FUNCIÓN ROBUSTA PARA MAPEAR CONFIDENCE_SCORE
 		const mapConfidenceToScore = (confidenceText: string): number => {
@@ -2244,6 +2292,9 @@ async function runPreclassificationJob(
 								article_id: articleId,
 								article_batch_item_id: item.itemId,
 								dimension_id: foundDimension.id,
+								dimension_version_id: await resolveDimensionVersion(
+									foundDimension.id,
+								),
 								reviewer_type: "ai",
 								reviewer_id: userId,
 								iteration: attemptNumber,
@@ -2565,12 +2616,25 @@ export async function submitHumanDiscrepancy(
 
 		// Usar cliente admin para inserción con posible option_id
 		const admin = await createSupabaseServiceRoleClient();
+		const { versionId: dimensionVersionId, error: sealError } =
+			await getOrCreateCurrentDimensionVersionId(
+				admin,
+				payload.dimension_id,
+				userId,
+			);
+		if (sealError) {
+			console.error(
+				"❌ [submitHumanDiscrepancy] Error sellando versión de dimensión:",
+				sealError,
+			);
+		}
 		const { data, error } = await admin
 			.from("article_dimension_reviews")
 			.insert({
 				article_id: articleId,
 				article_batch_item_id: payload.article_batch_item_id,
 				dimension_id: payload.dimension_id,
+				dimension_version_id: dimensionVersionId,
 				reviewer_type: "human",
 				reviewer_id: userId,
 				iteration: 2,
@@ -6159,6 +6223,12 @@ async function runDiscrepancyReconciliationJob(
 			})
 			.eq("id", jobId);
 
+		// Sellado de versiones (Fase 1, auditoría append-only): cacheado por job.
+		const resolveDimensionVersion = createDimensionVersionResolver(
+			admin,
+			userId,
+		);
+
 		// Array para almacenar clasificaciones exitosas (iteración 3)
 		const clasificacionesIteracion3: ReviewInsertWithOptionalFields[] = [];
 
@@ -6402,6 +6472,9 @@ async function runDiscrepancyReconciliationJob(
 					article_id: item.article_id,
 					article_batch_item_id: discrepancy.article_batch_item_id,
 					dimension_id: discrepancy.dimension_id,
+					dimension_version_id: await resolveDimensionVersion(
+						discrepancy.dimension_id,
+					),
 					reviewer_type: "ai",
 					reviewer_id: userId,
 					iteration: 3, // 🎯 ITERACIÓN 3 - Reconciliación de IA
