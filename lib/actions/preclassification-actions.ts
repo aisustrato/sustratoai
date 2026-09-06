@@ -268,7 +268,9 @@ export async function bulkSetPrevalidatedForBatch(
 			reviewer_id: user.id,
 			iteration: (row.iteration ?? 0) + 1,
 			prevalidated,
-			is_final: false,
+			// 🎯 Misma regla que updateDimensionStatus: la respuesta humana a un
+			// veredicto de iteración 3+ (el "4to ok") sella la dimensión.
+			is_final: (row.iteration ?? 0) >= 3,
 			status: status as ReviewRowWithOptionalFields["status"],
 		});
 
@@ -418,6 +420,15 @@ export async function updateDimensionStatus(
 		});
 
 		const nextIteration = (reviewRow.iteration ?? 0) + 1;
+		// 🎯 REGLA DE NEGOCIO (confirmada con el operador): la iteración 3 es el
+		// veredicto final de la IA — no hay más iteraciones de IA después de
+		// esa. La respuesta del humano a ese veredicto (iteración 4, de acuerdo
+		// o en desacuerdo) es la ÚLTIMA palabra y sella la dimensión de
+		// inmediato (is_final=true), para no dejar la puerta abierta a un loop
+		// infinito de aprobar/rechazar. Un desacuerdo en esa 4ª respuesta queda
+		// igual de sellado — su disputa queda registrada en el status
+		// "disputed" para que el equipo la revise después, no reabre el ciclo.
+		const isFinalResponse = (reviewRow.iteration ?? 0) >= 3;
 		const { versionId: dimensionVersionId, error: sealError } =
 			await getOrCreateCurrentDimensionVersionId(supabase, dimensionId, user.id);
 		if (sealError) {
@@ -439,7 +450,7 @@ export async function updateDimensionStatus(
 			reviewer_id: user.id,
 			iteration: nextIteration,
 			prevalidated: reviewRow.prevalidated,
-			is_final: false,
+			is_final: isFinalResponse,
 			status: newStatus,
 		};
 
