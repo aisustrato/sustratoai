@@ -48,6 +48,9 @@ interface VirtualizedArticleRowProps {
 		string,
 		Record<string, "none" | "approved" | "rejected">
 	>;
+	// Celdas (`${articleId}:${dimId}`) con una petición de aprobar/rechazar en
+	// curso — se usa para deshabilitar el botón y evitar doble envío.
+	pendingCells: Set<string>;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	reviewMeta: any;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -99,6 +102,7 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 	dimensionIconById,
 	optionEmoticonsByDimId,
 	dimensionStatusByArticle,
+	pendingCells,
 	reviewMeta,
 	articleMeta,
 	notesPresenceByItemId,
@@ -415,6 +419,13 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 												dimensionStatusByArticle[article.id]?.[dimId] || "none";
 											const isApproved = dimStatus === "approved";
 											const isRejected = dimStatus === "rejected";
+											// 🔧 FIX: deshabilita el botón mientras la petición de
+											// aprobar/rechazar de ESTA celda está en curso, para
+											// que un doble clic no dispare dos peticiones que
+											// compiten por insertar la "siguiente iteración".
+											const isCellPending = pendingCells.has(
+												`${article.id}:${dimId}`,
+											);
 
 											// 🔒 VERIFICAR SI LA DIMENSIÓN ESTÁ FINALIZADA (lote cerrado)
 											const isFinal = latestReview?.is_final === true;
@@ -509,6 +520,7 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 																		size="sm"
 																		colorScheme="success"
 																		styleType={isApproved ? "solid" : "outline"}
+																		disabled={isCellPending}
 																		tooltip={
 																			isApproved ? t("removeApprovalTooltip") : (
 																				t("approveTooltip")
@@ -533,6 +545,7 @@ export const VirtualizedArticleRow: React.FC<VirtualizedArticleRowProps> = ({
 																			)
 																		}
 																		styleType={isRejected ? "solid" : "subtle"}
+																		disabled={isCellPending}
 																		tooltip={
 																			latestIteration >= 3 ?
 																				t("arbitrationTooltip")

@@ -252,6 +252,16 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 		statusRef.current = dimensionStatusByArticle;
 	}, [dimensionStatusByArticle]);
 
+	// 🔧 FIX: el botón de aprobar/rechazar no bloqueaba la celda mientras la
+	// petición seguía en curso — un doble clic (o clic muy rápido) disparaba
+	// dos peticiones casi simultáneas para la misma celda, cada una leyendo la
+	// "última revisión" antes de que la otra terminara de insertar la suya,
+	// produciendo iteraciones de más en el historial. `pendingCellsRef` es un
+	// ref (no state) a propósito: el chequeo debe ser síncrono, antes de que
+	// React llegue a re-renderizar entre dos clics casi simultáneos.
+	const pendingCellsRef = useRef<Set<string>>(new Set());
+	const [pendingCells, setPendingCells] = useState<Set<string>>(new Set());
+
 	const setDimensionStatus = useCallback(
 		(
 			articleId: string,
@@ -363,50 +373,67 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 			status: "none" | "approved" | "rejected",
 			maxIteration: number = 1, // Iteración máxima actual
 		) => {
-			const prev = statusRef.current[articleId]?.[dimId] || "none";
+			// 🔧 Guard síncrono: si ya hay una petición en curso para esta misma
+			// celda, ignorar el segundo disparo en vez de mandar dos peticiones
+			// que compiten por "cuál es la última iteración".
+			const cellKey = `${articleId}:${dimId}`;
+			if (pendingCellsRef.current.has(cellKey)) return;
+			pendingCellsRef.current.add(cellKey);
+			setPendingCells((prev) => new Set(prev).add(cellKey));
 
-			// Mapear status UI a status BD según iteración
-			let dbStatus: "validated" | "reconciled" | "disputed" | "review_pending";
+			try {
+				const prev = statusRef.current[articleId]?.[dimId] || "none";
 
-			if (status === "approved") {
-				// Aprobar: iter 1 = validated, iter 3+ = reconciled
-				dbStatus = maxIteration >= 3 ? "reconciled" : "validated";
-			} else if (status === "rejected") {
-				// Rechazar: iter 3+ = disputed, iter 1-2 = review_pending
-				dbStatus = maxIteration >= 3 ? "disputed" : "review_pending";
-			} else {
-				// none = volver a review_pending
-				dbStatus = "review_pending";
-			}
+				// Mapear status UI a status BD según iteración
+				let dbStatus: "validated" | "reconciled" | "disputed" | "review_pending";
 
-			// Update optimista
-			setDimensionStatus(articleId, dimId, status);
-			const result = await persistDimensionStatus(articleId, dimId, dbStatus);
-
-			if (!result.ok) {
-				setDimensionStatus(articleId, dimId, prev);
-				toast.error(t("toastSaveError", { message: result.error || t("toastGenericError") }));
-			} else {
-				// Mensajes específicos según iteración y acción
-				let message = t("toastDimensionUpdated");
 				if (status === "approved") {
-					message =
-						maxIteration >= 3 ?
-							t("toastDimensionReconciled")
-						:	t("toastDimensionApproved");
+					// Aprobar: iter 1 = validated, iter 3+ = reconciled
+					dbStatus = maxIteration >= 3 ? "reconciled" : "validated";
 				} else if (status === "rejected") {
-					message =
-						maxIteration >= 3 ?
-							t("toastDimensionSentToArbitration")
-						:	t("toastDimensionRejected");
+					// Rechazar: iter 3+ = disputed, iter 1-2 = review_pending
+					dbStatus = maxIteration >= 3 ? "disputed" : "review_pending";
 				} else {
-					message = t("toastDimensionReset");
+					// none = volver a review_pending
+					dbStatus = "review_pending";
 				}
-				toast.success(message);
 
-				// 🚫 SIN REALTIME: El estado optimista se mantiene (no hay recarga automática)
-				// La UI refleja inmediatamente el cambio y persiste visualmente
-				// Solo se limpia si el usuario recarga la página manualmente
+				// Update optimista
+				setDimensionStatus(articleId, dimId, status);
+				const result = await persistDimensionStatus(articleId, dimId, dbStatus);
+
+				if (!result.ok) {
+					setDimensionStatus(articleId, dimId, prev);
+					toast.error(t("toastSaveError", { message: result.error || t("toastGenericError") }));
+				} else {
+					// Mensajes específicos según iteración y acción
+					let message = t("toastDimensionUpdated");
+					if (status === "approved") {
+						message =
+							maxIteration >= 3 ?
+								t("toastDimensionReconciled")
+							:	t("toastDimensionApproved");
+					} else if (status === "rejected") {
+						message =
+							maxIteration >= 3 ?
+								t("toastDimensionSentToArbitration")
+							:	t("toastDimensionRejected");
+					} else {
+						message = t("toastDimensionReset");
+					}
+					toast.success(message);
+
+					// 🚫 SIN REALTIME: El estado optimista se mantiene (no hay recarga automática)
+					// La UI refleja inmediatamente el cambio y persiste visualmente
+					// Solo se limpia si el usuario recarga la página manualmente
+				}
+			} finally {
+				pendingCellsRef.current.delete(cellKey);
+				setPendingCells((prevSet) => {
+					const next = new Set(prevSet);
+					next.delete(cellKey);
+					return next;
+				});
 			}
 		},
 		[persistDimensionStatus, setDimensionStatus, t],
@@ -830,6 +857,7 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 			dimensionIconById,
 			optionEmoticonsByDimId,
 			dimensionStatusByArticle,
+			pendingCells,
 			reviewMeta,
 			articleMeta,
 			notesPresenceByItemId,
@@ -857,6 +885,7 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 			dimensionIconById,
 			optionEmoticonsByDimId,
 			dimensionStatusByArticle,
+			pendingCells,
 			reviewMeta,
 			articleMeta,
 			notesPresenceByItemId,
@@ -933,10 +962,17 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 										.sort((a, b) => (a.iteration ?? 0) - (b.iteration ?? 0))
 										.map((review, idx) => {
 											const isAI = review.reviewer_type === "ai";
+											// 🔧 FIX: antes se adivinaba la etiqueta solo por el
+											// NÚMERO de iteración (1=IA, 2=humano, 3+=reconciliación
+											// IA) — pero desde que aprobar/rechazar también avanza
+											// la iteración (Fase 0, auditoría append-only), una
+											// simple aprobación humana puede aterrizar en iteración
+											// 3 o más y quedaba mal etiquetada como "Reconciliación
+											// (IA)". Se usa el campo real `reviewer_type`.
 											const iterLabel =
 												review.iteration === 1 ? t("iterationInitialAI")
-												: review.iteration === 2 ? t("iterationHumanReview")
-												: t("iterationReconciliationAI");
+												: isAI ? t("iterationReconciliationAI")
+												: t("iterationHumanReview");
 											const bgColor = isAI ? "bg-accent/10" : "bg-primary/10";
 											const borderColor =
 												isAI ? "border-accent/30" : "border-primary/30";
