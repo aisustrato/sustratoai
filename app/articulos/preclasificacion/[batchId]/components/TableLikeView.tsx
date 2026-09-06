@@ -439,26 +439,31 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 		[persistDimensionStatus, setDimensionStatus, t],
 	);
 
-	// 🎯 Callback para modal de desacuerdo (después de setAndPersistDimensionStatus)
+	// 🎯 Callback para modal de desacuerdo (después de que HumanDisagreementModal
+	// ya guardó la revisión humana vía submitHumanReview -- ver su handleSubmit).
+	//
+	// 🔧 FIX BUG GORDO: esto llamaba a `setAndPersistDimensionStatus`, que
+	// además de actualizar el color local TAMBIÉN vuelve a escribir en el
+	// backend (updateDimensionStatus). Como submitHumanReview YA insertó la
+	// fila correcta con su status real (reconciliation_pending/disputed), esta
+	// segunda llamada insertaba una fila EXTRA copiando el contenido hacia
+	// adelante -- con un status mal calculado, porque tampoco recibía la
+	// iteración real (quedaba con el default de la función, 1). Esa fila
+	// fantasma, sumada al bug de etiquetado por número de iteración (ya
+	// corregido arriba), es lo que se veía como una "reconciliación de IA"
+	// que nunca ocurrió. Ahora solo actualiza el color local -- sin volver a
+	// tocar el backend, que ya quedó correcto.
 	const handleModalSubmitted = useCallback(
 		(ok: boolean) => {
 			if (ok && selectedArticle && selectedDimId) {
-				// Aplicar rechazo con un pequeño delay para que el cierre del popup sea visible
+				// Pequeño delay para que el cierre del popup sea visible antes del
+				// cambio de color.
 				setTimeout(() => {
-					setAndPersistDimensionStatus(
-						selectedArticle.id!,
-						selectedDimId!,
-						"rejected",
-					);
+					setDimensionStatus(selectedArticle.id!, selectedDimId!, "rejected");
 				}, REJECTION_EFFECT_DELAY_MS);
 			}
 		},
-		[
-			selectedArticle,
-			selectedDimId,
-			setAndPersistDimensionStatus,
-			REJECTION_EFFECT_DELAY_MS,
-		],
+		[selectedArticle, selectedDimId, setDimensionStatus, REJECTION_EFFECT_DELAY_MS],
 	);
 
 	// Handler para clic en botón Aprobar
