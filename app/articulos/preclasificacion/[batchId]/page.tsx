@@ -241,6 +241,25 @@ const BatchDetailPage = () => {
 		scheduleSilentRefetch();
 	}, [scheduleSilentRefetch]);
 
+	// 🔧 FIX: PreclassificationJobHandler/TranslationJobHandler disparan un
+	// evento "batch-updated" (window.dispatchEvent) al terminar el job en
+	// background — pero solo la página de LISTADO de lotes
+	// (app/articulos/preclasificacion/page.tsx) lo escuchaba. Esta página de
+	// DETALLE, donde el usuario realmente ve el progreso y espera el
+	// resultado, nunca se refrescaba sola: había que salir y volver a entrar
+	// para que apareciera la preclasificación recién terminada.
+	useEffect(() => {
+		const handleBatchUpdate = (event: Event) => {
+			const customEvent = event as CustomEvent<{ batchId: string }>;
+			if (customEvent.detail?.batchId !== batchId) return;
+			void loadBatchDetails({ silent: true });
+		};
+		window.addEventListener("batch-updated", handleBatchUpdate);
+		return () => {
+			window.removeEventListener("batch-updated", handleBatchUpdate);
+		};
+	}, [batchId, loadBatchDetails]);
+
 	const refreshNotesPresence = useCallback(async () => {
 		await loadBatchDetails();
 	}, [loadBatchDetails]);
@@ -529,24 +548,21 @@ const BatchDetailPage = () => {
 				const maxIteration = Math.max(...reviews.map((r) => r.iteration ?? 0));
 				const status = latestReview.status;
 
-				// Discrepancia: hay iter 1 (IA) + iter 2 (humano) sin iter 3
-				// O bien: status es review_pending o reconciliation_pending en iter 2
-				const hasAI = reviews.some(
-					(r) => r.iteration === 1 && r.reviewer_type === "ai",
-				);
-				const hasHuman = reviews.some(
-					(r) => r.iteration === 2 && r.reviewer_type === "human",
-				);
-
-				// Condición 1: Hay IA e iter 2 humano, sin iter 3
-				const needsReconciliation = hasAI && hasHuman && maxIteration === 2;
-
-				// Condición 2: Status indica que necesita reconciliación
+				// 🔧 FIX: antes también se marcaba como discrepancia con solo
+				// detectar "hay fila IA en iter 1 + fila humana en iter 2"
+				// (`needsReconciliation`, sin mirar el status). Eso confundía un
+				// simple APROBADO (que desde la Fase 0 de auditoría append-only
+				// también inserta una fila humana en iter 2, para no perder el
+				// juicio original de la IA) con un desacuerdo real pendiente de
+				// reconciliar. El status ya es la señal correcta y completa:
+				// submitHumanReview siempre deja status "reconciliation_pending"
+				// (o "disputed" en iter 3+) cuando hay un desacuerdo de verdad;
+				// una aprobación deja "validated".
 				const statusNeedsReconciliation =
 					maxIteration === 2 &&
 					(status === "review_pending" || status === "reconciliation_pending");
 
-				if (needsReconciliation || statusNeedsReconciliation) {
+				if (statusNeedsReconciliation) {
 					result.push({
 						article_batch_item_id: row.item_id,
 						dimension_id: dimId,
@@ -594,24 +610,26 @@ const BatchDetailPage = () => {
 				const iter = latestReview.iteration ?? 1;
 				const status = latestReview.status;
 
-				// Analizar según iteración
-				if (iter === 1) {
-					if (status === "validated") {
-						iter1Validated++;
-					} else {
-						iter1Pending++;
-					}
-				} else if (iter === 2) {
-					// Iteración 2 es un estado intermedio - no puede cerrarse
-					iter2Incomplete++;
+				// 🔧 FIX: antes se clasificaba primero por NÚMERO de iteración
+				// (iter===2 siempre "incompleto"), lo que rompía con la Fase 0 de
+				// auditoría append-only: aprobar una dimensión ahora inserta una
+				// fila nueva en iteración 2 (para no perder el juicio original de
+				// la IA), aunque su status sea "validated". Se clasifica primero
+				// por STATUS (la señal real de si está resuelto o no) y solo se
+				// usa la iteración para decidir QUÉ TIPO de pendiente es.
+				if (status === "validated") {
+					iter1Validated++;
+				} else if (status === "reconciled") {
+					iter3Reconciled++;
+				} else if (status === "disputed") {
+					iter3Disputed++;
 				} else if (iter >= 3) {
-					if (status === "reconciled") {
-						iter3Reconciled++;
-					} else if (status === "disputed") {
-						iter3Disputed++;
-					} else {
-						iter3Pending++;
-					}
+					iter3Pending++;
+				} else if (iter === 2) {
+					// Iteración 2 sin resolver todavía (review_pending/reconciliation_pending)
+					iter2Incomplete++;
+				} else {
+					iter1Pending++;
 				}
 			});
 		});
