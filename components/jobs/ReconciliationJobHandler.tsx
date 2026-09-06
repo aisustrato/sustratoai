@@ -116,7 +116,17 @@ export function ReconciliationJobHandler({ job }: ReconciliationJobHandlerProps)
                   
                   // 🧹 LIMPIAR PROTECCIÓN GLOBAL: Permitir futuras ejecuciones del lote
                   runningReconciliations.delete(batchId);
-                  
+
+                  // 🔧 FIX: router.refresh() no sirve acá -- la página de
+                  // detalle del lote trae sus datos con fetch() client-side a
+                  // un useState, no via props de Server Component, así que
+                  // refresh() no la actualiza. PreclassificationJobHandler y
+                  // TranslationJobHandler ya disparan este evento; a este le
+                  // faltaba, por eso el botón "enviar desacuerdo a la IA"
+                  // seguía mostrándose como si nunca se hubiera enviado hasta
+                  // salir y volver a entrar a la página.
+                  window.dispatchEvent(new CustomEvent('batch-updated', { detail: { batchId } }));
+
                   router.refresh();
                   completeJob(job.id);
                   cleanupRef.current?.();
