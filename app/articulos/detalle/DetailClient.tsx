@@ -7,19 +7,16 @@ import type { Database } from "@/lib/database.types";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardSwitch } from "@/components/ui/StandardSwitch";
 import { StandardBadge } from "@/components/ui/StandardBadge";
-import { StandardButton } from "@/components/ui/StandardButton";
-import { useTextHighlighting } from "@/hooks/use-text-highlighting";
-import { Highlighter, Eraser, Loader2 } from "lucide-react";
+import { StandardMDJViewerClient } from "@/components/mdj-viewer/StandardMDJViewerClient";
+import {
+  getAnnotations,
+  createAnnotation,
+  type VersionType,
+} from "@/lib/actions/article-annotations-actions";
+import type { Anotacion } from "@/lib/mdj/types";
 
 type ArticleRow = Database["public"]["Tables"]["articles"]["Row"];
 type TranslationRow = Database["public"]["Tables"]["article_translations"]["Row"];
-type HighlightMetadata = {
-  id: string;
-  text: string;
-  startOffset: number;
-  endOffset: number;
-  timestamp: string;
-};
 
 export default function DetailClient({
   article,
@@ -43,74 +40,41 @@ export default function DetailClient({
 
   // Obtener parámetros necesarios para la persistencia
   const articleId = searchParams?.get("articleId") || "";
-  const projectId = article.project_id || "";
-  const versionType = showTranslated ? "translated" : "original";
+  const versionType: VersionType = showTranslated ? "translated" : "original";
 
-  // Callbacks para persistencia de resaltados
-  const handleSaveHighlights = React.useCallback(async (data: {
-    articleId: string;
-    projectId: string;
-    versionType: 'original' | 'translated';
-    highlightedContent: string;
-    highlightsMetadata: HighlightMetadata[];
-  }) => {
-    console.log('🔄 [DetailClient] Guardando resaltados via API...');
-    try {
-      const res = await fetch('/api/article-highlights/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+  // Anotaciones (frase notable / nota / referencia) del abstract mostrado
+  const [anotaciones, setAnotaciones] = React.useState<Anotacion[]>([]);
+  const [loadingAnotaciones, setLoadingAnotaciones] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!articleId) return;
+    let cancelado = false;
+    setLoadingAnotaciones(true);
+    getAnnotations(articleId, versionType)
+      .then((res) => {
+        if (cancelado) return;
+        if (res.success) {
+          setAnotaciones(res.data);
+        } else {
+          console.error("[DetailClient] Error al cargar anotaciones:", res.error);
+          setAnotaciones([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelado) setLoadingAnotaciones(false);
       });
-      const json = await res.json();
-      if (!res.ok || !json?.success) {
-        throw new Error(json?.error || t('toastErrorSavingHighlights'));
-      }
-      console.log('✅ [DetailClient] Resaltados guardados:', json);
-    } catch (error) {
-      console.error('❌ [DetailClient] Error al guardar resaltados:', error);
-      throw error; // Re-lanzar para que el hook maneje el error
-    }
-  }, [t]);
+    return () => {
+      cancelado = true;
+    };
+  }, [articleId, versionType]);
 
-  const handleDeleteHighlights = React.useCallback(async (data: {
-    articleId: string;
-    versionType: 'original' | 'translated';
-  }) => {
-    console.log('🔄 [DetailClient] Eliminando resaltados via API...');
-    try {
-      const res = await fetch('/api/article-highlights/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
-      if (!res.ok || !json?.success) {
-        throw new Error(json?.error || t('toastErrorDeletingHighlights'));
-      }
-      console.log('✅ [DetailClient] Resaltados eliminados:', json);
-    } catch (error) {
-      console.error('❌ [DetailClient] Error al eliminar resaltados:', error);
-      throw error; // Re-lanzar para que el hook maneje el error
-    }
-  }, [t]);
-
-  // Hook para manejo de resaltado de texto SIN llamadas client-side a BD
-  const {
-    highlightedTexts,
-    isLoading,
-    isSaving,
-    containerRef,
-    captureSelection,
-    highlightSelectedText,
-    clearHighlights,
-    hasSelection,
-  } = useTextHighlighting({
-    articleId,
-    projectId,
-    versionType,
-    onSave: handleSaveHighlights,
-    onDelete: handleDeleteHighlights
-  });
+  const handleAgregarAnotacion = React.useCallback(
+    async (anotacion: Anotacion) => {
+      if (!articleId) return { ok: false };
+      return createAnnotation({ articleId, versionType, anotacion });
+    },
+    [articleId, versionType],
+  );
 
   const updateUrl = React.useCallback(
     (translated: boolean) => {
@@ -139,27 +103,6 @@ export default function DetailClient({
 
   const authors = Array.isArray(article.authors) ? article.authors : [];
   const aiSummary = latest?.summary ?? null;
-
-  // Manejar selección de texto y mostrar botón de resaltado
-  const [showHighlightButton, setShowHighlightButton] = React.useState(false);
-
-  React.useEffect(() => {
-    const handleSelectionChange = () => {
-      const selection = window.getSelection();
-      const hasText = selection && selection.toString().trim().length > 0;
-      
-      if (hasText) {
-        // Capturar la selección exacta cuando el usuario selecciona texto
-        captureSelection();
-      }
-      
-      // Usar la función hasSelection del hook para determinar si mostrar el botón
-      setShowHighlightButton(hasSelection());
-    };
-
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
-  }, [captureSelection, hasSelection]);
 
   return (
     <div className="space-y-4">
@@ -192,47 +135,6 @@ export default function DetailClient({
             </StandardBadge>
           )}
         </div>
-
-        {/* Botones de resaltado */}
-        <div className="flex items-center gap-2">
-          {isLoading && (
-            <div className="flex items-center gap-1 text-sm text-neutral-500">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {t('loadingHighlights')}
-            </div>
-          )}
-          {isSaving && (
-            <div className="flex items-center gap-1 text-sm text-neutral-500">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {t('savingLabel')}
-            </div>
-          )}
-          {showHighlightButton && (
-            <StandardButton
-              size="sm"
-              colorScheme="accent"
-              styleType="outline"
-              onClick={highlightSelectedText}
-              disabled={isSaving}
-              leftIcon={Highlighter}
-              className="animate-in fade-in-0 zoom-in-95 duration-200"
-            >
-              {t('highlightButton')}
-            </StandardButton>
-          )}
-          {highlightedTexts.length > 0 && (
-            <StandardButton
-              size="sm"
-              colorScheme="neutral"
-              styleType="outline"
-              onClick={clearHighlights}
-              disabled={isSaving}
-              leftIcon={Eraser}
-            >
-              {t('clearButton')}
-            </StandardButton>
-          )}
-        </div>
       </div>
 
       {/* Autores */}
@@ -248,13 +150,17 @@ export default function DetailClient({
           {showTranslated ? t('summaryTranslatedLabel') : t('summaryLabel')}
         </StandardText>
         {shownAbstract ? (
-          <div 
-            className="select-text text-base leading-relaxed"
-            style={{ fontFamily: 'inherit' }}
-            ref={containerRef}
-          >
-            {shownAbstract}
-          </div>
+          !loadingAnotaciones && (
+            <StandardMDJViewerClient
+              key={versionType}
+              md={shownAbstract}
+              artefactoId={article.id}
+              anotaciones={anotaciones}
+              onAgregarFraseNotable={handleAgregarAnotacion}
+              onAgregarNota={handleAgregarAnotacion}
+              onAgregarReferencia={handleAgregarAnotacion}
+            />
+          )
         ) : (
           <StandardText colorScheme="neutral" colorShade="subtle">—</StandardText>
         )}

@@ -180,6 +180,62 @@ export type Database = {
           },
         ]
       }
+      article_annotations: {
+        Row: {
+          article_id: string
+          created_at: string
+          created_by: string
+          fragmento: string
+          id: string
+          nodo_id: string
+          nota_texto: string | null
+          offset_fin: number
+          offset_inicio: number
+          semaforo: string | null
+          tipo: string
+          validado: boolean | null
+          version_type: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          created_by: string
+          fragmento: string
+          id?: string
+          nodo_id: string
+          nota_texto?: string | null
+          offset_fin: number
+          offset_inicio: number
+          semaforo?: string | null
+          tipo: string
+          validado?: boolean | null
+          version_type: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          created_by?: string
+          fragmento?: string
+          id?: string
+          nodo_id?: string
+          nota_texto?: string | null
+          offset_fin?: number
+          offset_inicio?: number
+          semaforo?: string | null
+          tipo?: string
+          validado?: boolean | null
+          version_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_annotations_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_batch_items: {
         Row: {
           ai_keywords: string[] | null
