@@ -284,43 +284,59 @@ export const TableLikeView: React.FC<TableLikeViewProps> = ({
 	// Inicializar el estado UI desde el status de las revisiones (arquitectura nueva)
 	useEffect(() => {
 		if (!cardData || cardData.length === 0) return;
-		const initialState: Record<
-			string,
-			Record<string, "none" | "approved" | "rejected">
-		> = {};
-		for (const article of cardData) {
-			const perArticle: Record<string, "none" | "approved" | "rejected"> = {};
-			for (const dimId of dimensionOrder) {
-				const reviews: ClassificationReview[] =
-					article.classifications?.[dimId] ?? [];
+		setDimensionStatusByArticle((prevState) => {
+			const initialState: Record<
+				string,
+				Record<string, "none" | "approved" | "rejected">
+			> = {};
+			for (const article of cardData) {
+				const perArticle: Record<string, "none" | "approved" | "rejected"> =
+					{};
+				for (const dimId of dimensionOrder) {
+					// 🔧 FIX pestañeo: si esta celda tiene una escritura en curso
+					// (ver pendingCellsRef), el refetch en segundo plano puede
+					// haber tomado su foto ANTES de que esa escritura terminara de
+					// comprometerse en la base de datos — reconstruir desde esa
+					// foto haría "retroceder" la celda un instante, aunque la
+					// escritura sí haya sido exitosa. Se preserva el valor
+					// optimista mientras la celda siga pendiente; el próximo
+					// refetch (ya sin nada en vuelo) trae el dato confirmado.
+					if (pendingCellsRef.current.has(`${article.id}:${dimId}`)) {
+						perArticle[dimId] = prevState[article.id]?.[dimId] ?? "none";
+						continue;
+					}
 
-				if (reviews.length === 0) {
-					perArticle[dimId] = "none";
-					continue;
+					const reviews: ClassificationReview[] =
+						article.classifications?.[dimId] ?? [];
+
+					if (reviews.length === 0) {
+						perArticle[dimId] = "none";
+						continue;
+					}
+
+					// Obtener la ÚLTIMA review (mayor iteración), sea AI o humana
+					const latestReview = [...reviews].sort(
+						(a, b) => (b.iteration ?? 0) - (a.iteration ?? 0),
+					)[0];
+
+					// 🎯 LEER STATUS de la última review (sin importar si es AI o humana)
+					// validated | reconciled → aprobado
+					// disputed → rechazado
+					// review_pending | reconciliation_pending | pending → neutral
+					const status = latestReview.status;
+
+					if (status === "validated" || status === "reconciled") {
+						perArticle[dimId] = "approved";
+					} else if (status === "disputed") {
+						perArticle[dimId] = "rejected";
+					} else {
+						perArticle[dimId] = "none";
+					}
 				}
-
-				// Obtener la ÚLTIMA review (mayor iteración), sea AI o humana
-				const latestReview = [...reviews].sort(
-					(a, b) => (b.iteration ?? 0) - (a.iteration ?? 0),
-				)[0];
-
-				// 🎯 LEER STATUS de la última review (sin importar si es AI o humana)
-				// validated | reconciled → aprobado
-				// disputed → rechazado
-				// review_pending | reconciliation_pending | pending → neutral
-				const status = latestReview.status;
-
-				if (status === "validated" || status === "reconciled") {
-					perArticle[dimId] = "approved";
-				} else if (status === "disputed") {
-					perArticle[dimId] = "rejected";
-				} else {
-					perArticle[dimId] = "none";
-				}
+				initialState[article.id] = perArticle;
 			}
-			initialState[article.id] = perArticle;
-		}
-		setDimensionStatusByArticle(initialState);
+			return initialState;
+		});
 	}, [cardData, dimensionOrder]);
 
 	// Persistir status directamente (sin usar prevalidated obsoleto)
