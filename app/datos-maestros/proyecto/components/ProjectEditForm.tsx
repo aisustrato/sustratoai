@@ -19,7 +19,7 @@ import { StandardCard } from "@/components/ui/StandardCard";
 import { StandardFormField } from "@/components/ui/StandardFormField";
 import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardTextarea } from "@/components/ui/StandardTextarea";
-import { StandardNote } from "@/components/ui/StandardNote";
+import { StandardMDNoteViewer } from "@/components/ui/StandardMDNoteViewer";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { SustratoLoadingLogo } from "@/components/ui/sustrato-loading-logo";
 import { Save } from "lucide-react";
@@ -225,19 +225,12 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
               hint={t("proposalHint")}
               htmlFor="proposal"
             >
-              <StandardNote
-                value={formData.proposal}
+              <StandardMDNoteViewer
+                md={formData.proposal}
                 onChange={(value) => handleNoteChange('proposal', value)}
-                placeholder={t("proposalPlaceholder")}
-                colorScheme="primary"
-                size="lg"
-                minimalToolbar={true}
-                viewMode="divided"
-                showToolbar={true}
-                livePreview={true}
-                previewDebounceMs={300}
-                minHeight="400px"
-                disabled={isReadOnly}
+                vistaInicial="split"
+                modoInicial={isReadOnly ? "lectura" : "edicion"}
+                altura="400px"
               />
             </StandardFormField>
 
@@ -247,19 +240,12 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
                 hint={t("proposalBibliographyHint")}
                 htmlFor="proposal_bibliography"
               >
-                <StandardNote
-                  value={formData.proposal_bibliography}
+                <StandardMDNoteViewer
+                  md={formData.proposal_bibliography}
                   onChange={(value) => handleNoteChange('proposal_bibliography', value)}
-                  placeholder={t("proposalBibliographyPlaceholder")}
-                  colorScheme="primary"
-                  size="lg"
-                  minimalToolbar={true}
-                  viewMode="divided"
-                  showToolbar={true}
-                  livePreview={true}
-                  previewDebounceMs={300}
-                  minHeight="400px"
-                  disabled={isReadOnly}
+                  vistaInicial="split"
+                  modoInicial={isReadOnly ? "lectura" : "edicion"}
+                  altura="400px"
                 />
               </StandardFormField>
             )}
@@ -270,19 +256,12 @@ export function ProjectEditForm({ initialProjectData, isReadOnly = false }: Proj
                 hint={t("proposalInterviewsHint")}
                 htmlFor="proposal_interviews"
               >
-                <StandardNote
-                  value={formData.proposal_interviews}
+                <StandardMDNoteViewer
+                  md={formData.proposal_interviews}
                   onChange={(value) => handleNoteChange('proposal_interviews', value)}
-                  placeholder={t("proposalInterviewsPlaceholder")}
-                  colorScheme="primary"
-                  size="lg"
-                  minimalToolbar={true}
-                  viewMode="divided"
-                  showToolbar={true}
-                  livePreview={true}
-                  previewDebounceMs={300}
-                  minHeight="400px"
-                  disabled={isReadOnly}
+                  vistaInicial="split"
+                  modoInicial={isReadOnly ? "lectura" : "edicion"}
+                  altura="400px"
                 />
               </StandardFormField>
             )}

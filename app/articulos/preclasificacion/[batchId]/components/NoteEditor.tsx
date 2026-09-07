@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { StandardPopupWindow } from '@/components/ui/StandardPopupWindow';
-import { StandardNote } from '@/components/ui/StandardNote';
+import { StandardMDNoteViewer } from '@/components/ui/StandardMDNoteViewer';
 import { StandardInput } from '@/components/ui/StandardInput';
 import { StandardCheckbox } from '@/components/ui/StandardCheckbox';
 import { StandardButton } from '@/components/ui/StandardButton';
@@ -51,8 +51,6 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-  // Estado para controlar el modo de visualización del StandardNote
-  const [noteViewMode, setNoteViewMode] = useState<'divided' | 'editor' | 'preview'>('divided');
   // Estado para controlar si se está cargando una nota existente
   const [isLoadingNote, setIsLoadingNote] = useState(false);
 
@@ -461,18 +459,12 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, 
                   </div>
                 </div>
                 <div className="flex-grow flex flex-col">
-                  <StandardNote
-                    value={currentNote}
+                  <StandardMDNoteViewer
+                    md={currentNote}
                     onChange={handleNoteContentChange}
-                    placeholder={t('notePlaceholder')}
-                    colorScheme="primary"
-                    size="lg"
-                    minimalToolbar={true}
-                    viewMode={noteViewMode}
-                    onViewModeChange={setNoteViewMode}
-                    showToolbar={true}
-                    livePreview={true}
-                    previewDebounceMs={300}
+                    vistaInicial="split"
+                    modoInicial="edicion"
+                    altura="400px"
                     className="flex-grow"
                   />
                 </div>

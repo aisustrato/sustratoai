@@ -8,7 +8,7 @@ import { StandardSwitch } from "@/components/ui/StandardSwitch";
 import { StandardButton } from "@/components/ui/StandardButton";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardDialog } from "@/components/ui/StandardDialog";
-import { StandardNote } from "@/components/ui/StandardNote";
+import { StandardMDNoteViewer } from "@/components/ui/StandardMDNoteViewer";
 import { toast } from "sonner";
 import type { DetailedNote } from "@/lib/actions/article-notes-actions";
 import {
@@ -73,10 +73,6 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 	const [relatedNotes, setRelatedNotes] = React.useState<DetailedNote[]>([]);
 	const [relatedError, setRelatedError] = React.useState<string | null>(null);
 
-	// Modo de visualización del editor
-	const [noteViewMode, setNoteViewMode] = React.useState<
-		"divided" | "editor" | "preview"
-	>("divided");
 	const controlId = React.useId();
 
 	// Ref para auto-scroll al anclar por URL
@@ -138,7 +134,6 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 		// Si se solicitó edición, activamos edición; si no, nos quedamos en vista
 		if (autoOpenMode === "editor") {
 			setIsEditing(true);
-			setNoteViewMode("divided");
 		}
 		if (autoScrollIntoView && containerRef.current) {
 			// Timeout para asegurar que el layout esté listo
@@ -412,18 +407,12 @@ const StandardCardWithContent: React.FC<StandardCardWithContentProps> = ({
 					<div className="mt-3">
 						{isEditing ?
 							<div className="flex flex-col gap-3">
-								<StandardNote
-									value={content}
+								<StandardMDNoteViewer
+									md={content}
 									onChange={setContent}
-									placeholder={t("contentPlaceholder")}
-									colorScheme="primary"
-									size="lg"
-									minimalToolbar={true}
-									viewMode={noteViewMode}
-									onViewModeChange={setNoteViewMode}
-									showToolbar={true}
-									livePreview={true}
-									previewDebounceMs={300}
+									vistaInicial="split"
+									modoInicial="edicion"
+									altura="350px"
 									className="flex-grow"
 								/>
 							</div>

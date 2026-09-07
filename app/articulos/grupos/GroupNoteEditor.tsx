@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { StandardPopupWindow } from "@/components/ui/StandardPopupWindow";
-import { StandardNote } from "@/components/ui/StandardNote";
+import { StandardMDNoteViewer } from "@/components/ui/StandardMDNoteViewer";
 import { StandardInput } from "@/components/ui/StandardInput";
 import { StandardCheckbox } from "@/components/ui/StandardCheckbox";
 import { StandardButton } from "@/components/ui/StandardButton";
@@ -165,17 +165,12 @@ export default function GroupNoteEditor({ open, onClose, articleId, articleTitle
             </div>
 
             <div className="flex-grow flex flex-col">
-              <StandardNote
-                value={currentNote}
+              <StandardMDNoteViewer
+                md={currentNote}
                 onChange={handleNoteContentChange}
-                placeholder={t("notePlaceholder")}
-                colorScheme="primary"
-                size="lg"
-                minimalToolbar={true}
-                viewMode="divided"
-                showToolbar={true}
-                livePreview={true}
-                previewDebounceMs={300}
+                vistaInicial="split"
+                modoInicial="edicion"
+                altura="400px"
                 className="flex-grow"
               />
             </div>

@@ -434,7 +434,11 @@ export function StandardMDNoteViewer({
     [modo],
   );
 
-  if (!docPreview || docPreview.nodos.length === 0) {
+  // 🔧 FIX: este guard bloqueaba TODO el componente (incluyendo el textarea
+  // de edición) cuando el md estaba vacío -- exactamente el caso normal al
+  // crear una nota nueva. Ahora solo aplica en modo lectura, donde no hay
+  // nada editable que mostrar de todos modos.
+  if (modo === "lectura" && (!docPreview || docPreview.nodos.length === 0)) {
     return (
       <div className="text-neutral-500 dark:text-neutral-400 italic py-8 text-center">
         Sin contenido para mostrar
