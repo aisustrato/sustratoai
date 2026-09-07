@@ -7001,23 +7001,28 @@ export async function validateBatchForFinalization(batchId: string): Promise<{
 			const iter = review.iteration ?? 1;
 			const status = review.status;
 
-			if (iter === 1) {
-				if (status === "validated") {
-					stats.iter1Validated++;
-				} else {
-					stats.iter1Pending++;
-				}
-			} else if (iter === 2) {
-				// Iteración 2 es un estado intermedio - no puede cerrarse
-				stats.iter2Incomplete++;
+			// 🔧 FIX: esta es una segunda copia (server-side) de la misma
+			// clasificación que ya se corrigió en el memo `batchFinalizationValidation`
+			// de app/articulos/preclasificacion/[batchId]/page.tsx -- no se había
+			// detectado que estaba duplicada acá. Clasificaba primero por NÚMERO
+			// de iteración (iter===2 siempre "incompleto"), lo que rompía con la
+			// Fase 0 de auditoría append-only: aprobar una dimensión inserta una
+			// fila nueva en iteración 2 con status "validated", que quedaba mal
+			// contada como pendiente para siempre y bloqueaba el cierre del lote
+			// aunque el botón (ya corregido del lado cliente) mostrara que se
+			// podía cerrar. Se clasifica primero por STATUS.
+			if (status === "validated") {
+				stats.iter1Validated++;
+			} else if (status === "reconciled") {
+				stats.iter3Reconciled++;
+			} else if (status === "disputed") {
+				stats.iter3Disputed++;
 			} else if (iter >= 3) {
-				if (status === "reconciled") {
-					stats.iter3Reconciled++;
-				} else if (status === "disputed") {
-					stats.iter3Disputed++;
-				} else {
-					stats.iter3Pending++;
-				}
+				stats.iter3Pending++;
+			} else if (iter === 2) {
+				stats.iter2Incomplete++;
+			} else {
+				stats.iter1Pending++;
 			}
 		});
 
