@@ -5,7 +5,7 @@
 import { createSupabaseServerClient } from "@/lib/server";
 import type { Anotacion } from "@/lib/mdj/types";
 
-export type VersionType = "original" | "translated";
+export type VersionType = "original" | "translated" | "full_text";
 
 export type ResultadoOperacion<T> =
 	| { success: true; data: T }

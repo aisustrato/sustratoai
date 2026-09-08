@@ -468,6 +468,66 @@ export type Database = {
           },
         ]
       }
+      article_full_documents: {
+        Row: {
+          article_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          error_message: string | null
+          id: string
+          is_current: boolean
+          markdown_content: string | null
+          replaces_id: string | null
+          status: string
+          storage_path: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          error_message?: string | null
+          id?: string
+          is_current?: boolean
+          markdown_content?: string | null
+          replaces_id?: string | null
+          status?: string
+          storage_path: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          error_message?: string | null
+          id?: string
+          is_current?: boolean
+          markdown_content?: string | null
+          replaces_id?: string | null
+          status?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_full_documents_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_full_documents_replaces_id_fkey"
+            columns: ["replaces_id"]
+            isOneToOne: false
+            referencedRelation: "article_full_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_group_items: {
         Row: {
           added_at: string | null
@@ -8212,6 +8272,7 @@ export type Database = {
         | "RECONCILIATION"
         | "TRANSLATION"
         | "cognetica_metabolizacion"
+        | "article_pdf_processing"
       note_visibility: "private" | "project" | "public"
       paragraph_status:
         | "draft"
@@ -8451,6 +8512,7 @@ export const Constants = {
         "RECONCILIATION",
         "TRANSLATION",
         "cognetica_metabolizacion",
+        "article_pdf_processing",
       ],
       note_visibility: ["private", "project", "public"],
       paragraph_status: [

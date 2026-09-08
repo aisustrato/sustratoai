@@ -2009,7 +2009,15 @@
       "aiSummaryLabel": "Resumen AI",
       "doiLabel": "DOI: {doi}",
       "translatorLabel": "Traductor: {system}",
-      "annotationHint": "Podés seleccionar texto para marcar una frase, dejar una nota o citar una referencia"
+      "annotationHint": "Podés seleccionar texto para marcar una frase, dejar una nota o citar una referencia",
+      "fullDocumentToggle": "Documento completo",
+      "fullDocumentLoading": "Cargando documento...",
+      "fullDocumentUploadTitle": "Subí el PDF completo del artículo para analizarlo",
+      "fullDocumentUploadButton": "Subir PDF",
+      "fullDocumentReplaceTitle": "Reemplazar el PDF completo (la versión anterior queda en el historial)",
+      "fullDocumentReplaceButton": "Reemplazar PDF",
+      "fullDocumentProcessing": "Procesando documento...",
+      "fullDocumentErrorPrefix": "Error al procesar el documento anterior"
     },
     "keywordHighlighter": {
       "highlightTooltip": "Resaltar palabra clave en valores de dimensión",

@@ -2009,7 +2009,15 @@
       "aiSummaryLabel": "AI Summary",
       "doiLabel": "DOI: {doi}",
       "translatorLabel": "Translator: {system}",
-      "annotationHint": "You can select text to highlight a phrase, leave a note, or cite a reference"
+      "annotationHint": "You can select text to highlight a phrase, leave a note, or cite a reference",
+      "fullDocumentToggle": "Full document",
+      "fullDocumentLoading": "Loading document...",
+      "fullDocumentUploadTitle": "Upload the full article PDF to analyze it",
+      "fullDocumentUploadButton": "Upload PDF",
+      "fullDocumentReplaceTitle": "Replace the full PDF (the previous version stays in the history)",
+      "fullDocumentReplaceButton": "Replace PDF",
+      "fullDocumentProcessing": "Processing document...",
+      "fullDocumentErrorPrefix": "Error processing the previous document"
     },
     "keywordHighlighter": {
       "highlightTooltip": "Highlight keyword in dimension values",

@@ -7,7 +7,10 @@ import type { Database } from "@/lib/database.types";
 import { StandardText } from "@/components/ui/StandardText";
 import { StandardSwitch } from "@/components/ui/StandardSwitch";
 import { StandardBadge } from "@/components/ui/StandardBadge";
+import { StandardButton } from "@/components/ui/StandardButton";
+import { StandardFileUpload } from "@/components/ui/StandardFileUpload";
 import { StandardMDJViewerClient } from "@/components/mdj-viewer/StandardMDJViewerClient";
+import { ArticlePdfJobHandler } from "@/components/jobs/ArticlePdfJobHandler";
 import {
   getAnnotations,
   createAnnotation,
@@ -15,7 +18,13 @@ import {
   deleteAnnotation,
   type VersionType,
 } from "@/lib/actions/article-annotations-actions";
+import {
+  getCurrentArticlePdfDocument,
+  uploadArticlePdf,
+  type ArticleFullDocument,
+} from "@/lib/actions/article-pdf-actions";
 import type { Anotacion } from "@/lib/mdj/types";
+import { ChevronDown, ChevronUp, FileText } from "lucide-react";
 
 type ArticleRow = Database["public"]["Tables"]["articles"]["Row"];
 type TranslationRow = Database["public"]["Tables"]["article_translations"]["Row"];
@@ -89,6 +98,123 @@ export default function DetailClient({
   const handleBorrarAnotacion = React.useCallback(async (anotacionId: string) => {
     return deleteAnnotation(anotacionId);
   }, []);
+
+  // Documento completo (Fase 2): subir PDF, procesarlo vía Replicate/Marker
+  // (workflows/article-pdf-workflow.ts), leer/anotar el MDJ resultante. Nunca
+  // se pisa una versión: subir un PDF nuevo marca la anterior is_current=false.
+  const [mostrarDocumentoCompleto, setMostrarDocumentoCompleto] = React.useState(false);
+  const [fullDocument, setFullDocument] = React.useState<ArticleFullDocument | null>(null);
+  const [loadingFullDocument, setLoadingFullDocument] = React.useState(false);
+  const [uploadingPdf, setUploadingPdf] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
+  const [processingJobId, setProcessingJobId] = React.useState<string | null>(null);
+  const [fullDocAnotaciones, setFullDocAnotaciones] = React.useState<Anotacion[]>([]);
+  const [loadingFullDocAnotaciones, setLoadingFullDocAnotaciones] = React.useState(false);
+
+  const recargarFullDocument = React.useCallback(async () => {
+    if (!articleId) return;
+    setLoadingFullDocument(true);
+    const res = await getCurrentArticlePdfDocument(articleId);
+    if (res.success) {
+      // Si quedó "processing" de una sesión anterior (ej. recarga de página a
+      // mitad de proceso), no hay jobId a mano para reconectar el Realtime —
+      // el usuario puede refrescar más tarde para ver el resultado.
+      setFullDocument(res.data);
+    } else {
+      console.error("[DetailClient] Error al cargar documento completo:", res.error);
+    }
+    setLoadingFullDocument(false);
+  }, [articleId]);
+
+  React.useEffect(() => {
+    recargarFullDocument();
+  }, [recargarFullDocument]);
+
+  React.useEffect(() => {
+    if (!articleId || fullDocument?.status !== "ready") {
+      setFullDocAnotaciones([]);
+      return;
+    }
+    let cancelado = false;
+    setLoadingFullDocAnotaciones(true);
+    getAnnotations(articleId, "full_text")
+      .then((res) => {
+        if (cancelado) return;
+        if (res.success) setFullDocAnotaciones(res.data);
+      })
+      .finally(() => {
+        if (!cancelado) setLoadingFullDocAnotaciones(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [articleId, fullDocument?.status]);
+
+  const handleAgregarAnotacionCompleto = React.useCallback(
+    async (anotacion: Anotacion) => {
+      if (!articleId) return { ok: false };
+      return createAnnotation({ articleId, versionType: "full_text", anotacion });
+    },
+    [articleId],
+  );
+
+  const handleEditarAnotacionCompleto = React.useCallback(
+    async (anotacion: Anotacion) => {
+      if (!articleId) return { ok: false };
+      return editAnnotation({ articleId, versionType: "full_text", anotacion });
+    },
+    [articleId],
+  );
+
+  const handleSeleccionarPdf = React.useCallback(
+    async (file: File) => {
+      if (!articleId) return;
+      setUploadingPdf(true);
+      setUploadError(null);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("articleId", articleId);
+        const uploadResult = await uploadArticlePdf(formData);
+        if (!uploadResult.ok) {
+          setUploadError(uploadResult.error);
+          return;
+        }
+
+        const res = await fetch("/api/workflows/article-pdf/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ documentId: uploadResult.documentId }),
+        });
+        const startResult = await res.json();
+        if (!startResult.success) {
+          setUploadError(startResult.error || "No se pudo iniciar el procesamiento del PDF.");
+          return;
+        }
+
+        setFullDocument({ id: uploadResult.documentId, status: "processing", markdownContent: null, errorMessage: null });
+        setProcessingJobId(startResult.data.jobId);
+      } catch (error) {
+        setUploadError(error instanceof Error ? error.message : "Error desconocido al subir el PDF.");
+      } finally {
+        setUploadingPdf(false);
+      }
+    },
+    [articleId],
+  );
+
+  const handleJobCompletado = React.useCallback(() => {
+    setProcessingJobId(null);
+    recargarFullDocument();
+  }, [recargarFullDocument]);
+
+  const handleJobFallido = React.useCallback(
+    (errorMessage: string) => {
+      setProcessingJobId(null);
+      setFullDocument((prev) => (prev ? { ...prev, status: "error", errorMessage } : prev));
+    },
+    [],
+  );
 
   // Hint de descubribilidad: nadie lee manuales. Dos mecanismos combinados, ambos
   // por-navegador (localStorage), sin backend:
@@ -228,6 +354,93 @@ export default function DetailClient({
           )
         ) : (
           <StandardText colorScheme="neutral" colorShade="subtle">—</StandardText>
+        )}
+      </div>
+
+      {/* Documento completo (Fase 2): subir PDF, procesar vía Replicate/Marker, anotar el MDJ */}
+      <div>
+        <StandardButton
+          size="sm"
+          styleType="outline"
+          colorScheme="neutral"
+          leftIcon={FileText}
+          rightIcon={mostrarDocumentoCompleto ? ChevronUp : ChevronDown}
+          onClick={() => setMostrarDocumentoCompleto((v) => !v)}
+        >
+          {t('fullDocumentToggle')}
+        </StandardButton>
+
+        {mostrarDocumentoCompleto && (
+          <div className="mt-3 space-y-3">
+            {loadingFullDocument ? (
+              <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
+                {t('fullDocumentLoading')}
+              </StandardText>
+            ) : processingJobId ? (
+              <ArticlePdfJobHandler
+                jobId={processingJobId}
+                onCompleted={handleJobCompletado}
+                onFailed={handleJobFallido}
+              />
+            ) : !fullDocument || fullDocument.status === "error" ? (
+              <div className="space-y-2">
+                {fullDocument?.status === "error" && (
+                  <StandardText size="sm" colorScheme="danger">
+                    {t('fullDocumentErrorPrefix')}: {fullDocument.errorMessage}
+                  </StandardText>
+                )}
+                {uploadError && (
+                  <StandardText size="sm" colorScheme="danger">
+                    {uploadError}
+                  </StandardText>
+                )}
+                <StandardFileUpload
+                  onFileSelect={handleSeleccionarPdf}
+                  accept="application/pdf"
+                  maxSizeMB={50}
+                  disabled={uploadingPdf}
+                  title={t('fullDocumentUploadTitle')}
+                  buttonText={t('fullDocumentUploadButton')}
+                />
+              </div>
+            ) : fullDocument.status === "processing" ? (
+              <StandardText size="sm" colorScheme="neutral" colorShade="subtle">
+                {t('fullDocumentProcessing')}
+              </StandardText>
+            ) : (
+              <div className="space-y-3">
+                <StandardFileUpload
+                  onFileSelect={handleSeleccionarPdf}
+                  accept="application/pdf"
+                  maxSizeMB={50}
+                  disabled={uploadingPdf}
+                  title={t('fullDocumentReplaceTitle')}
+                  buttonText={t('fullDocumentReplaceButton')}
+                />
+                {uploadError && (
+                  <StandardText size="sm" colorScheme="danger">
+                    {uploadError}
+                  </StandardText>
+                )}
+                {!loadingFullDocAnotaciones && fullDocument.markdownContent && (
+                  <StandardMDJViewerClient
+                    md={fullDocument.markdownContent}
+                    artefactoId={article.id}
+                    tipoArtefacto="transcripcion_pdf"
+                    anotaciones={fullDocAnotaciones}
+                    onAgregarFraseNotable={handleAgregarAnotacionCompleto}
+                    onAgregarNota={handleAgregarAnotacionCompleto}
+                    onAgregarReferencia={handleAgregarAnotacionCompleto}
+                    onEditarNota={handleEditarAnotacionCompleto}
+                    onBorrarNota={handleBorrarAnotacion}
+                    onEditarReferencia={handleEditarAnotacionCompleto}
+                    onBorrarReferencia={handleBorrarAnotacion}
+                    onBorrarFraseNotable={handleBorrarAnotacion}
+                  />
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
