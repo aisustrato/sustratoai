@@ -2004,17 +2004,12 @@
       "viewTranslated": "Ver traducido",
       "toggleTranslationAria": "Alternar traducción",
       "noTranslations": "Sin traducciones",
-      "loadingHighlights": "Cargando resaltados...",
-      "savingLabel": "Guardando...",
-      "highlightButton": "Resaltar",
-      "clearButton": "Limpiar",
       "summaryLabel": "Resumen",
       "summaryTranslatedLabel": "Resumen (traducido)",
       "aiSummaryLabel": "Resumen AI",
       "doiLabel": "DOI: {doi}",
       "translatorLabel": "Traductor: {system}",
-      "toastErrorSavingHighlights": "Error al guardar resaltados",
-      "toastErrorDeletingHighlights": "Error al eliminar resaltados"
+      "annotationHint": "Podés seleccionar texto para marcar una frase, dejar una nota o citar una referencia"
     },
     "keywordHighlighter": {
       "highlightTooltip": "Resaltar palabra clave en valores de dimensión",

@@ -50,6 +50,10 @@ export type Anotacion = {
   huerfana?: boolean;
   /** Tipo de entidad de Cognética (solo para tipo "entidad"): color + ruta. */
   entidad_tipo?: "pensador" | "concepto" | "teoria" | "disciplina" | "cita";
+  /** Nombre público de quien creó la anotación (resuelto por quien la persiste, ej. articulos/detalle) */
+  autor_nombre?: string;
+  /** Fecha de creación ISO (resuelto por quien la persiste) */
+  creado_en?: string;
 };
 
 // ── TipoNodo (string union — no derivado para evitar circularidad) ───────

@@ -2004,17 +2004,12 @@
       "viewTranslated": "View translated",
       "toggleTranslationAria": "Toggle translation",
       "noTranslations": "No translations",
-      "loadingHighlights": "Loading highlights...",
-      "savingLabel": "Saving...",
-      "highlightButton": "Highlight",
-      "clearButton": "Clear",
       "summaryLabel": "Summary",
       "summaryTranslatedLabel": "Summary (translated)",
       "aiSummaryLabel": "AI Summary",
       "doiLabel": "DOI: {doi}",
       "translatorLabel": "Translator: {system}",
-      "toastErrorSavingHighlights": "Error saving highlights",
-      "toastErrorDeletingHighlights": "Error deleting highlights"
+      "annotationHint": "You can select text to highlight a phrase, leave a note, or cite a reference"
     },
     "keywordHighlighter": {
       "highlightTooltip": "Highlight keyword in dimension values",

@@ -18,8 +18,8 @@ import type { Anotacion } from "@/lib/mdj/types";
 interface NotaTooltipProps {
   anotacion: Anotacion;
   activa?: boolean;
-  onEditar?: (anotacion: Anotacion) => void;
-  onBorrar?: (anotacionId: string) => void;
+  onEditar?: (anotacion: Anotacion) => Promise<{ ok: boolean }>;
+  onBorrar?: (anotacionId: string) => Promise<{ ok: boolean }>;
   /** Contenido del trigger (texto formateado). Si no se pasa, usa anotacion.fragmento */
   children?: ReactNode;
 }
@@ -33,16 +33,41 @@ export function NotaTooltip({
 }: NotaTooltipProps) {
   const [dialogAbierto, setDialogAbierto] = useState(false);
   const [notaTexto, setNotaTexto] = useState(anotacion.nota_texto || "");
+  const [dialogBorrar, setDialogBorrar] = useState(false);
+  const [reintentando, setReintentando] = useState(false);
 
-  const handleGuardar = () => {
-    if (notaTexto.trim()) {
-      onEditar?.({ ...anotacion, nota_texto: notaTexto.trim() });
+  const handleGuardar = async () => {
+    if (!notaTexto.trim() || !onEditar) return;
+    const resultado = await onEditar({ ...anotacion, nota_texto: notaTexto.trim() });
+    if (resultado.ok) {
+      setDialogAbierto(false);
     }
-    setDialogAbierto(false);
   };
 
-  const handleBorrar = () => {
-    onBorrar?.(anotacion.id);
+  const handleBorrar = async () => {
+    if (!onBorrar) return;
+    try {
+      const resultado = await onBorrar(anotacion.id);
+      if (!resultado.ok) {
+        setDialogBorrar(true);
+      }
+    } catch {
+      setDialogBorrar(true);
+    }
+  };
+
+  const handleReintentar = async () => {
+    setReintentando(true);
+    try {
+      const resultado = await onBorrar!(anotacion.id);
+      if (resultado.ok) {
+        setDialogBorrar(false);
+      }
+    } catch {
+      // Mantener diálogo abierto
+    } finally {
+      setReintentando(false);
+    }
   };
 
   const tooltipContent = (
@@ -50,6 +75,12 @@ export function NotaTooltip({
       <div className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
         {anotacion.nota_texto || <span className="italic text-neutral-400">Sin texto</span>}
       </div>
+      {anotacion.autor_nombre && (
+        <div className="text-xs text-neutral-400 dark:text-neutral-500">
+          {anotacion.autor_nombre}
+          {anotacion.creado_en ? ` · ${new Date(anotacion.creado_en).toLocaleDateString()}` : ""}
+        </div>
+      )}
       <div className="flex gap-2 pt-1 border-t border-neutral-200 dark:border-neutral-700">
         <StandardButton
           size="xs"
@@ -129,6 +160,38 @@ export function NotaTooltip({
               onClick={handleGuardar}
             >
               Guardar
+            </StandardButton>
+          </StandardDialog.Footer>
+        </StandardDialog.Content>
+      </StandardDialog>
+
+      <StandardDialog open={dialogBorrar} onOpenChange={setDialogBorrar}>
+        <StandardDialog.Content size="md">
+          <StandardDialog.Header>
+            <StandardDialog.Title>Error al eliminar</StandardDialog.Title>
+            <StandardDialog.Description>
+              No se pudo eliminar la nota. ¿Desea reintentar?
+            </StandardDialog.Description>
+          </StandardDialog.Header>
+          <StandardDialog.Footer>
+            <StandardDialog.Close asChild>
+              <StandardButton
+                size="sm"
+                styleType="outline"
+                colorScheme="neutral"
+                disabled={reintentando}
+              >
+                Cancelar
+              </StandardButton>
+            </StandardDialog.Close>
+            <StandardButton
+              size="sm"
+              styleType="solid"
+              colorScheme="primary"
+              onClick={handleReintentar}
+              disabled={reintentando}
+            >
+              {reintentando ? "Reintentando..." : "Reintentar"}
             </StandardButton>
           </StandardDialog.Footer>
         </StandardDialog.Content>

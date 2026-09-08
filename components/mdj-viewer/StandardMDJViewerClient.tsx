@@ -66,6 +66,16 @@ interface StandardMDJViewerClientProps {
   onAgregarReferencia?: (anotacion: Anotacion) => Promise<{ ok: boolean }>;
   /** Callback externo para agregar nota — retorna Promise<{ ok: boolean }> */
   onAgregarNota?: (anotacion: Anotacion) => Promise<{ ok: boolean }>;
+  /** Callback externo para editar nota. Sin él, la edición queda solo en estado local. */
+  onEditarNota?: (anotacion: Anotacion) => Promise<{ ok: boolean }>;
+  /** Callback externo para borrar nota. Sin él, el borrado queda solo en estado local. */
+  onBorrarNota?: (anotacionId: string) => Promise<{ ok: boolean }>;
+  /** Callback externo para editar referencia. Sin él, la edición queda solo en estado local. */
+  onEditarReferencia?: (anotacion: Anotacion) => Promise<{ ok: boolean }>;
+  /** Callback externo para borrar referencia. Sin él, el borrado queda solo en estado local. */
+  onBorrarReferencia?: (anotacionId: string) => Promise<{ ok: boolean }>;
+  /** Callback externo para borrar frase notable. Sin él, el borrado queda solo en estado local. */
+  onBorrarFraseNotable?: (anotacionId: string) => Promise<{ ok: boolean }>;
 }
 
 export function StandardMDJViewerClient({
@@ -80,6 +90,11 @@ export function StandardMDJViewerClient({
   onAgregarFraseNotable,
   onAgregarReferencia,
   onAgregarNota,
+  onEditarNota,
+  onBorrarNota,
+  onEditarReferencia,
+  onBorrarReferencia,
+  onBorrarFraseNotable,
 }: StandardMDJViewerClientProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [seleccionLocal, setSeleccionLocal] = useState<SeleccionMDJ | null>(null);
@@ -295,16 +310,80 @@ export function StandardMDJViewerClient({
     }
   }, [doc, anotacionesResueltas]);
 
-  // Callbacks para notas interactivas
-  const handleEditarNota = useCallback((anotacion: Anotacion) => {
-    setAnotacionesLocales((prev) =>
-      prev.map((a) => (a.id === anotacion.id ? anotacion : a)),
-    );
-  }, []);
+  // Callbacks para editar/borrar anotaciones existentes (nota/referencia/frase notable).
+  // Editar: se actualiza el estado local optimista siempre (igual que al agregar); si hay
+  // callback externo, se llama y se devuelve su resultado para que el diálogo del tooltip
+  // decida si cerrar o mostrar error.
+  // Borrar: NO se toca el estado local hasta que el callback externo confirme éxito — si se
+  // sacara la anotación del array antes, el tooltip (con su propio diálogo de reintento abierto)
+  // se desmontaría junto con ella, rompiendo el reintento. Sin callback externo, se mantiene el
+  // comportamiento local-only de siempre (showroom, usos que no necesitan persistencia).
+  const handleEditarNota = useCallback(
+    async (anotacion: Anotacion): Promise<{ ok: boolean }> => {
+      setAnotacionesLocales((prev) =>
+        prev.map((a) => (a.id === anotacion.id ? anotacion : a)),
+      );
+      if (!onEditarNota) return { ok: true };
+      return onEditarNota(anotacion);
+    },
+    [onEditarNota],
+  );
 
-  const handleBorrarNota = useCallback((anotacionId: string) => {
-    setAnotacionesLocales((prev) => prev.filter((a) => a.id !== anotacionId));
-  }, []);
+  const handleBorrarNota = useCallback(
+    async (anotacionId: string): Promise<{ ok: boolean }> => {
+      if (!onBorrarNota) {
+        setAnotacionesLocales((prev) => prev.filter((a) => a.id !== anotacionId));
+        return { ok: true };
+      }
+      const resultado = await onBorrarNota(anotacionId);
+      if (resultado.ok) {
+        setAnotacionesLocales((prev) => prev.filter((a) => a.id !== anotacionId));
+      }
+      return resultado;
+    },
+    [onBorrarNota],
+  );
+
+  const handleEditarReferencia = useCallback(
+    async (anotacion: Anotacion): Promise<{ ok: boolean }> => {
+      setAnotacionesLocales((prev) =>
+        prev.map((a) => (a.id === anotacion.id ? anotacion : a)),
+      );
+      if (!onEditarReferencia) return { ok: true };
+      return onEditarReferencia(anotacion);
+    },
+    [onEditarReferencia],
+  );
+
+  const handleBorrarReferencia = useCallback(
+    async (anotacionId: string): Promise<{ ok: boolean }> => {
+      if (!onBorrarReferencia) {
+        setAnotacionesLocales((prev) => prev.filter((a) => a.id !== anotacionId));
+        return { ok: true };
+      }
+      const resultado = await onBorrarReferencia(anotacionId);
+      if (resultado.ok) {
+        setAnotacionesLocales((prev) => prev.filter((a) => a.id !== anotacionId));
+      }
+      return resultado;
+    },
+    [onBorrarReferencia],
+  );
+
+  const handleBorrarFraseNotable = useCallback(
+    async (anotacionId: string): Promise<{ ok: boolean }> => {
+      if (!onBorrarFraseNotable) {
+        setAnotacionesLocales((prev) => prev.filter((a) => a.id !== anotacionId));
+        return { ok: true };
+      }
+      const resultado = await onBorrarFraseNotable(anotacionId);
+      if (resultado.ok) {
+        setAnotacionesLocales((prev) => prev.filter((a) => a.id !== anotacionId));
+      }
+      return resultado;
+    },
+    [onBorrarFraseNotable],
+  );
 
   // Manejar acciones del popover de selección
   const servicios = useContext(EntidadServiciosContext);
@@ -632,6 +711,9 @@ export function StandardMDJViewerClient({
               } : undefined}
               onEditarNota={handleEditarNota}
               onBorrarNota={handleBorrarNota}
+              onEditarReferencia={handleEditarReferencia}
+              onBorrarReferencia={handleBorrarReferencia}
+              onBorrarFraseNotable={handleBorrarFraseNotable}
             />
           ))}
         </div>

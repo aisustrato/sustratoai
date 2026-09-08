@@ -67,8 +67,8 @@ interface NodoParrafoViewProps {
   onAnotacionClick?: (anotacion: Anotacion) => void;
   anotacionActiva?: string | null;
   busqueda?: BusquedaEnNodo;
-  onEditarNota?: (anotacion: Anotacion) => void;
-  onBorrarNota?: (anotacionId: string) => void;
+  onEditarNota?: (anotacion: Anotacion) => Promise<{ ok: boolean }>;
+  onBorrarNota?: (anotacionId: string) => Promise<{ ok: boolean }>;
   onEditarReferencia?: (anotacion: Anotacion) => Promise<{ ok: boolean }>;
   onBorrarReferencia?: (anotacionId: string) => Promise<{ ok: boolean }>;
   onBorrarFraseNotable?: (anotacionId: string) => Promise<{ ok: boolean }>;
@@ -357,8 +357,8 @@ function renderAnotacionInline(
         key={key}
         anotacion={a}
         activa={activa}
-        onEditar={cb.onEditarNota as ((anotacion: Anotacion) => void) | undefined}
-        onBorrar={cb.onBorrarNota as ((anotacionId: string) => void) | undefined}
+        onEditar={cb.onEditarNota as ((anotacion: Anotacion) => Promise<{ ok: boolean }>) | undefined}
+        onBorrar={cb.onBorrarNota as ((anotacionId: string) => Promise<{ ok: boolean }>) | undefined}
       >
         {at}
       </NotaTooltip>

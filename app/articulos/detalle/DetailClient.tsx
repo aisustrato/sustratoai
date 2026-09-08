@@ -11,6 +11,8 @@ import { StandardMDJViewerClient } from "@/components/mdj-viewer/StandardMDJView
 import {
   getAnnotations,
   createAnnotation,
+  editAnnotation,
+  deleteAnnotation,
   type VersionType,
 } from "@/lib/actions/article-annotations-actions";
 import type { Anotacion } from "@/lib/mdj/types";
@@ -75,6 +77,50 @@ export default function DetailClient({
     },
     [articleId, versionType],
   );
+
+  const handleEditarAnotacion = React.useCallback(
+    async (anotacion: Anotacion) => {
+      if (!articleId) return { ok: false };
+      return editAnnotation({ articleId, versionType, anotacion });
+    },
+    [articleId, versionType],
+  );
+
+  const handleBorrarAnotacion = React.useCallback(async (anotacionId: string) => {
+    return deleteAnnotation(anotacionId);
+  }, []);
+
+  // Hint de descubribilidad: nadie lee manuales. Dos mecanismos combinados, ambos
+  // por-navegador (localStorage), sin backend:
+  // 1) Global, una sola vez en la vida del navegador.
+  // 2) Por abstract, en el primer hover, y SOLO si ese abstract todavía no tiene
+  //    anotaciones (si ya tiene, es señal de que alguien del proyecto ya lo descubrió).
+  const [mostrarHintGlobal, setMostrarHintGlobal] = React.useState(false);
+  const [mostrarHintHover, setMostrarHintHover] = React.useState(false);
+
+  React.useEffect(() => {
+    try {
+      if (!window.localStorage.getItem("mdj_hint_global_seen")) {
+        setMostrarHintGlobal(true);
+        window.localStorage.setItem("mdj_hint_global_seen", "1");
+      }
+    } catch {
+      // localStorage no disponible (modo privado, etc.) — sin hint, sin romper nada
+    }
+  }, []);
+
+  const handleAbstractMouseEnter = React.useCallback(() => {
+    if (!articleId || anotaciones.length > 0 || loadingAnotaciones) return;
+    const clave = `mdj_hint_seen:${articleId}:${versionType}`;
+    try {
+      if (window.localStorage.getItem(clave)) return;
+      window.localStorage.setItem(clave, "1");
+    } catch {
+      return;
+    }
+    setMostrarHintHover(true);
+    setTimeout(() => setMostrarHintHover(false), 4000);
+  }, [articleId, versionType, anotaciones.length, loadingAnotaciones]);
 
   const updateUrl = React.useCallback(
     (translated: boolean) => {
@@ -149,17 +195,36 @@ export default function DetailClient({
         <StandardText size="sm" colorScheme="neutral" colorShade="subtle" className="mb-1">
           {showTranslated ? t('summaryTranslatedLabel') : t('summaryLabel')}
         </StandardText>
+        {mostrarHintGlobal && (
+          <StandardText size="xs" colorScheme="neutral" colorShade="subtle" className="mb-1 italic">
+            {t('annotationHint')}
+          </StandardText>
+        )}
         {shownAbstract ? (
           !loadingAnotaciones && (
-            <StandardMDJViewerClient
-              key={versionType}
-              md={shownAbstract}
-              artefactoId={article.id}
-              anotaciones={anotaciones}
-              onAgregarFraseNotable={handleAgregarAnotacion}
-              onAgregarNota={handleAgregarAnotacion}
-              onAgregarReferencia={handleAgregarAnotacion}
-            />
+            <div onMouseEnter={handleAbstractMouseEnter} className="relative">
+              {mostrarHintHover && !mostrarHintGlobal && (
+                <div className="absolute -top-6 left-0 z-20">
+                  <StandardBadge size="sm" styleType="subtle" colorScheme="accent">
+                    {t('annotationHint')}
+                  </StandardBadge>
+                </div>
+              )}
+              <StandardMDJViewerClient
+                key={versionType}
+                md={shownAbstract}
+                artefactoId={article.id}
+                anotaciones={anotaciones}
+                onAgregarFraseNotable={handleAgregarAnotacion}
+                onAgregarNota={handleAgregarAnotacion}
+                onAgregarReferencia={handleAgregarAnotacion}
+                onEditarNota={handleEditarAnotacion}
+                onBorrarNota={handleBorrarAnotacion}
+                onEditarReferencia={handleEditarAnotacion}
+                onBorrarReferencia={handleBorrarAnotacion}
+                onBorrarFraseNotable={handleBorrarAnotacion}
+              />
+            </div>
           )
         ) : (
           <StandardText colorScheme="neutral" colorShade="subtle">—</StandardText>

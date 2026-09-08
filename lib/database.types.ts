@@ -185,12 +185,16 @@ export type Database = {
           article_id: string
           created_at: string
           created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
           fragmento: string
           id: string
+          is_current: boolean
           nodo_id: string
           nota_texto: string | null
           offset_fin: number
           offset_inicio: number
+          replaces_id: string | null
           semaforo: string | null
           tipo: string
           validado: boolean | null
@@ -200,12 +204,16 @@ export type Database = {
           article_id: string
           created_at?: string
           created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           fragmento: string
           id?: string
+          is_current?: boolean
           nodo_id: string
           nota_texto?: string | null
           offset_fin: number
           offset_inicio: number
+          replaces_id?: string | null
           semaforo?: string | null
           tipo: string
           validado?: boolean | null
@@ -215,12 +223,16 @@ export type Database = {
           article_id?: string
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           fragmento?: string
           id?: string
+          is_current?: boolean
           nodo_id?: string
           nota_texto?: string | null
           offset_fin?: number
           offset_inicio?: number
+          replaces_id?: string | null
           semaforo?: string | null
           tipo?: string
           validado?: boolean | null
@@ -232,6 +244,13 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_annotations_replaces_id_fkey"
+            columns: ["replaces_id"]
+            isOneToOne: false
+            referencedRelation: "article_annotations"
             referencedColumns: ["id"]
           },
         ]

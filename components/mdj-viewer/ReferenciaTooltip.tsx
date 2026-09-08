@@ -118,6 +118,12 @@ export function ReferenciaTooltip({
       <div className="text-sm text-neutral-700 dark:text-neutral-300 italic leading-relaxed">
         &ldquo;{anotacion.fragmento}&rdquo;
       </div>
+      {anotacion.autor_nombre && (
+        <div className="text-xs text-neutral-400 dark:text-neutral-500">
+          {anotacion.autor_nombre}
+          {anotacion.creado_en ? ` · ${new Date(anotacion.creado_en).toLocaleDateString()}` : ""}
+        </div>
+      )}
       {/* Botones */}
       <div className="flex gap-2 pt-1 border-t border-neutral-200 dark:border-neutral-700">
         <StandardButton

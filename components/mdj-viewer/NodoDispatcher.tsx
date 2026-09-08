@@ -21,8 +21,8 @@ interface NodoDispatcherProps {
   onAnotacionClick?: (anotacion: Anotacion) => void;
   anotacionActiva?: string | null;
   busqueda?: BusquedaEnNodo;
-  onEditarNota?: (anotacion: Anotacion) => void;
-  onBorrarNota?: (anotacionId: string) => void;
+  onEditarNota?: (anotacion: Anotacion) => Promise<{ ok: boolean }>;
+  onBorrarNota?: (anotacionId: string) => Promise<{ ok: boolean }>;
   onEditarReferencia?: (anotacion: Anotacion) => Promise<{ ok: boolean }>;
   onBorrarReferencia?: (anotacionId: string) => Promise<{ ok: boolean }>;
   onBorrarFraseNotable?: (anotacionId: string) => Promise<{ ok: boolean }>;
