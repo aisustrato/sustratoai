@@ -30,5 +30,15 @@ const nextConfig = {
 
 // withWorkflow() habilita las directivas "use workflow"/"use step" (ver
 // docs/preclasificacion-auditoria-funcional/07_Requerimiento_Preclasificacion_Workflow_Vercel.md).
-// Aditivo: no cambia nada del comportamiento existente.
-module.exports = withNextIntl(withWorkflow(nextConfig))
+//
+// 🔧 ORDEN IMPORTA: withWorkflow() tiene que ser el wrapper MÁS EXTERNO. La
+// doc oficial (@workflow/next: "Exporting a Function") muestra explícitamente
+// cómo componerlo con next-intl, y siempre aplica withWorkflow al final
+// (outermost) — si otro plugin envuelve por fuera, su propio `webpack()`
+// puede no encadenar el de withWorkflow y el transform de "use step"/
+// "use workflow" queda descartado en silencio. Eso es justo lo que pasó acá:
+// el fix de next-intl (commit b560a92) dejó withNextIntl como wrapper más
+// externo, y desde entonces start() en cualquier workflow (traducción,
+// preclasificación, PDF de artículos) tira "invalid workflow function" —
+// nadie lo notó porque nadie corrió un batch desde ese cambio.
+module.exports = withWorkflow(withNextIntl(nextConfig))
