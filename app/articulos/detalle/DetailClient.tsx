@@ -186,9 +186,17 @@ export default function DetailClient({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ documentId: uploadResult.documentId }),
         });
-        const startResult = await res.json();
-        if (!startResult.success) {
-          setUploadError(startResult.error || "No se pudo iniciar el procesamiento del PDF.");
+        const rawBody = await res.text();
+        let startResult: { success: boolean; error?: string; data?: { jobId: string } };
+        try {
+          startResult = rawBody ? JSON.parse(rawBody) : { success: false };
+        } catch {
+          // El servidor devolvió un cuerpo no-JSON (ej. crash no manejado) —
+          // mostrar el status en vez de tapar el error con "Unexpected end of JSON input".
+          startResult = { success: false, error: `Error del servidor (status ${res.status}).` };
+        }
+        if (!startResult.success || !startResult.data) {
+          setUploadError(startResult.error || `No se pudo iniciar el procesamiento del PDF (status ${res.status}).`);
           return;
         }
 
