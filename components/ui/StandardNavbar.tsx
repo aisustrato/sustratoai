@@ -29,7 +29,6 @@ import {
 	Fingerprint, // Added for Cognetica
 	Brain, // eslint-disable-line @typescript-eslint/no-unused-vars
 	Sprout, // Added for Jardines icon
-	PenTool, // Added for Minotauro
 	BarChart3, // Added for Análisis de Preclasificación
 } from "lucide-react";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -353,11 +352,6 @@ export function StandardNavbar() {
 						label: "Jardines Cogneticos",
 						href: "/cognetica_old/jardines",
 						icon: (isActive) => createMenuIcon(Sprout, isActive),
-					},
-					{
-						label: "Minotauro - Escritura Híbrida",
-						href: "/cognetica_old/minotauro",
-						icon: (isActive) => createMenuIcon(PenTool, isActive),
 					},
 				],
 			});

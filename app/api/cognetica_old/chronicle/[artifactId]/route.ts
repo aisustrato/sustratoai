@@ -3,7 +3,7 @@
 //              Toma el corpus ya procesado (texto + elementos cogneticos extraídos)
 //              y genera 3 versiones: extendida, destilada y crónica narrativa.
 // 🔧 DECISIÓN: Guarda resultado en source_metadata.micelio_chronicle del artefacto.
-//              Usa DeepSeek (mismo modelo que Micelio en Minotauro) para coherencia.
+//              Usa DeepSeek (mismo modelo que otras metabolizaciones de Cognética) para coherencia.
 // ⚠️ ADVERTENCIA: Requiere que el artefacto ya tenga extracción cognitiva completada.
 
 import { NextRequest, NextResponse } from "next/server";
@@ -12,7 +12,7 @@ import { callDeepSeekAPI } from "@/lib/deepseek/api";
 import {
 	generateChronicleMicelioPrompt,
 	extractJSONFromResponse,
-} from "@/lib/prompts/minotauro-archetype-prompts";
+} from "@/lib/prompts/chronicle-prompts";
 import { getArtifactTextContent } from "@/lib/actions/cognetica-old-helpers";
 
 export async function POST(
