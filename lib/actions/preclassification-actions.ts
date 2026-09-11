@@ -3464,9 +3464,14 @@ async function runTranslationJob(
 						.replace(/\n?`{3}$/, "");
 					const parsedResult = JSON.parse(cleanedString);
 
+					// Chequeo de PRESENCIA de las claves, no de verdad ("truthy") — un
+					// artículo con abstract original vacío produce legítimamente una
+					// traducción vacía (DeepSeek responde bien), y un string vacío es
+					// "falsy" en JS. El chequeo viejo trataba eso como respuesta
+					// inválida y reintentaba sin parar hasta agotar los reintentos.
 					if (
-						!parsedResult.translatedTitle ||
-						!parsedResult.translatedAbstract
+						typeof parsedResult.translatedTitle !== "string" ||
+						typeof parsedResult.translatedAbstract !== "string"
 					) {
 						throw new Error(
 							"El JSON de respuesta no contiene las claves esperadas.",

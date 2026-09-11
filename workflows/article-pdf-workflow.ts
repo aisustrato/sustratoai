@@ -19,6 +19,26 @@ import { extractMarkdownFromPdf } from "@/lib/pdf-processing/marker";
 
 const STORAGE_BUCKET = "article-pdfs";
 
+//#region [helpers] - 🛠️ ERRORES 🛠️
+/**
+ * `error instanceof Error` puede dar `false` para un error que cruzó el
+ * límite step→workflow del SDK de Workflow: el mecanismo de durabilidad
+ * serializa/reconstruye el valor lanzado, y esa reconstrucción no siempre
+ * preserva la cadena de prototipos de `Error` — el `.message` original
+ * puede sobrevivir en un objeto plano aunque `instanceof Error` ya no dé
+ * `true`. Sin este chequeo adicional, el job queda con "Error desconocido"
+ * en vez del motivo real (visto en producción con translation-workflow.ts).
+ */
+function messageFromUnknownError(error: unknown): string {
+	if (error instanceof Error) return error.message;
+	if (typeof error === "object" && error !== null && "message" in error) {
+		const msg = (error as Record<string, unknown>).message;
+		if (typeof msg === "string" && msg.length > 0) return msg;
+	}
+	return typeof error === "string" ? error : "Error desconocido";
+}
+//#endregion ![helpers]
+
 //#region [steps] - 🔧 STEPS 🔧
 async function processArticlePdfStep(jobId: string, documentId: string): Promise<void> {
 	"use step";
@@ -109,8 +129,7 @@ export async function articlePdfWorkflow(jobId: string, documentId: string): Pro
 		await processArticlePdfStep(jobId, documentId);
 		await finalizeArticlePdfJobStep(jobId);
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-		await markArticlePdfJobFailedStep(jobId, errorMessage);
+		await markArticlePdfJobFailedStep(jobId, messageFromUnknownError(error));
 		throw error;
 	}
 }

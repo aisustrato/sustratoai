@@ -45,6 +45,27 @@ interface TranslateArticleResult {
 }
 //#endregion ![def]
 
+//#region [helpers] - 🛠️ ERRORES 🛠️
+/**
+ * `error instanceof Error` puede dar `false` para un error que cruzó el
+ * límite step→workflow del SDK de Workflow: el mecanismo de durabilidad
+ * serializa/reconstruye el valor lanzado, y esa reconstrucción no siempre
+ * preserva la cadena de prototipos de `Error` — el `.message` original
+ * puede sobrevivir en un objeto plano aunque `instanceof Error` ya no dé
+ * `true`. Sin este chequeo adicional, el job queda con "Error desconocido"
+ * en vez del motivo real (visto en producción: hubo que rescatar el mensaje
+ * real a mano desde `ai_prompt_interactions` para diagnosticar un caso).
+ */
+function messageFromUnknownError(error: unknown): string {
+	if (error instanceof Error) return error.message;
+	if (typeof error === "object" && error !== null && "message" in error) {
+		const msg = (error as Record<string, unknown>).message;
+		if (typeof msg === "string" && msg.length > 0) return msg;
+	}
+	return typeof error === "string" ? error : "Error desconocido";
+}
+//#endregion ![helpers]
+
 //#region [helpers] - 🛠️ PROMPT (clon exacto de buildTranslationPrompt) 🛠️
 function buildTranslationPrompt(title: string, abstract: string): string {
 	return `Eres un traductor experto y un sintetizador académico. Tu tarea tiene dos partes:
@@ -160,7 +181,15 @@ async function translateArticleStep(
 				.replace(/\n?`{3}$/, "");
 			const parsedResult = JSON.parse(cleanedString);
 
-			if (!parsedResult.translatedTitle || !parsedResult.translatedAbstract) {
+			// Chequeo de PRESENCIA de las claves, no de verdad ("truthy") — un
+			// artículo con abstract original vacío produce legítimamente una
+			// traducción vacía (DeepSeek responde bien), y un string vacío es
+			// "falsy" en JS. El chequeo viejo trataba eso como respuesta
+			// inválida y reintentaba sin parar hasta agotar los reintentos.
+			if (
+				typeof parsedResult.translatedTitle !== "string" ||
+				typeof parsedResult.translatedAbstract !== "string"
+			) {
 				throw new Error(
 					"El JSON de respuesta no contiene las claves esperadas.",
 				);
@@ -322,9 +351,7 @@ export async function translationWorkflow(
 			totalOutputTokens,
 		);
 	} catch (error) {
-		const errorMessage =
-			error instanceof Error ? error.message : "Error desconocido";
-		await markTranslationJobFailedStep(jobId, errorMessage);
+		await markTranslationJobFailedStep(jobId, messageFromUnknownError(error));
 		throw error;
 	}
 }

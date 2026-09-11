@@ -73,6 +73,26 @@ interface ChunkResult {
 export const DEEPSEEK_MODEL = "deepseek-chat";
 //#endregion ![def]
 
+//#region [helpers] - 🛠️ ERRORES 🛠️
+/**
+ * `error instanceof Error` puede dar `false` para un error que cruzó el
+ * límite step→workflow del SDK de Workflow: el mecanismo de durabilidad
+ * serializa/reconstruye el valor lanzado, y esa reconstrucción no siempre
+ * preserva la cadena de prototipos de `Error` — el `.message` original
+ * puede sobrevivir en un objeto plano aunque `instanceof Error` ya no dé
+ * `true`. Sin este chequeo adicional, el job queda con "Error desconocido"
+ * en vez del motivo real.
+ */
+function messageFromUnknownError(error: unknown): string {
+	if (error instanceof Error) return error.message;
+	if (typeof error === "object" && error !== null && "message" in error) {
+		const msg = (error as Record<string, unknown>).message;
+		if (typeof msg === "string" && msg.length > 0) return msg;
+	}
+	return typeof error === "string" ? error : "Error desconocido";
+}
+//#endregion ![helpers]
+
 //#region [helpers] - 🛠️ PROMPT (clon exacto de buildPreclassificationPrompt) 🛠️
 function buildPreclassificationPrompt(
 	project: ProjectForPrompt,
@@ -642,9 +662,7 @@ export async function preclassificationWorkflow(
 			totalOutputTokens,
 		);
 	} catch (error) {
-		const errorMessage =
-			error instanceof Error ? error.message : "Error desconocido";
-		await markClassificationJobFailedStep(jobId, errorMessage);
+		await markClassificationJobFailedStep(jobId, messageFromUnknownError(error));
 		throw error;
 	}
 }
