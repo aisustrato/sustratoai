@@ -42,6 +42,7 @@ interface HarvestResult {
 	fetchedCount: number;
 	insertedCount: number;
 	skippedDuplicates: number;
+	skippedNoAbstract: number;
 }
 //#endregion ![def]
 
@@ -73,6 +74,28 @@ async function verificarPermisoYUsuario(
 	}
 
 	return { success: true, data: { userId: currentUser.id } };
+}
+//#endregion ![helpers]
+
+//#region [helpers] - 🛠️ FILTRO DE ABSTRACT 🛠️
+/**
+ * Descarta artículos sin abstract ANTES de que lleguen a staging — nunca se
+ * muestran como candidatos seleccionables. Motivo: sin abstract, la IA de
+ * preclasificación solo tiene el título para trabajar, lo que produce
+ * decisiones metodológicamente débiles sin que quede señal visible de que
+ * fueron "a ciegas" — mejor no dejarlos entrar al corpus que arriesgar ese
+ * sesgo silencioso. (Ver conversación 2026-09-11: se descubrió al fallar
+ * traducción/preclasificación con un abstract vacío traído de OpenAlex.)
+ */
+function tieneAbstract(work: OpenAlexWorkNormalized): boolean {
+	return typeof work.abstract === "string" && work.abstract.trim().length > 0;
+}
+
+function filtrarSinAbstract(
+	works: OpenAlexWorkNormalized[],
+): { works: OpenAlexWorkNormalized[]; skippedNoAbstract: number } {
+	const conAbstract = works.filter(tieneAbstract);
+	return { works: conAbstract, skippedNoAbstract: works.length - conAbstract.length };
 }
 //#endregion ![helpers]
 
@@ -187,7 +210,8 @@ export async function searchOpenAlex(
 	if (!auth.success) return auth;
 
 	try {
-		const works = await searchOpenAlexWorks(filters);
+		const fetchedWorks = await searchOpenAlexWorks(filters);
+		const { works, skippedNoAbstract } = filtrarSinAbstract(fetchedWorks);
 		const sourceQueryLabel = `search:${JSON.stringify(filters)}`.slice(0, 500);
 		const { insertedCount, skippedDuplicates } =
 			await insertNormalizedWorksIntoStaging(
@@ -199,7 +223,12 @@ export async function searchOpenAlex(
 			);
 		return {
 			success: true,
-			data: { fetchedCount: works.length, insertedCount, skippedDuplicates },
+			data: {
+				fetchedCount: fetchedWorks.length,
+				insertedCount,
+				skippedDuplicates,
+				skippedNoAbstract,
+			},
 		};
 	} catch (error) {
 		console.error("[searchOpenAlex] Error", { projectId, filters, error });
@@ -222,7 +251,8 @@ export async function harvestBySeed(
 	if (!auth.success) return auth;
 
 	try {
-		const works = await harvestBySeedDoi(seedDoi, direction, OPENALEX_HARD_MAX_RESULTS);
+		const fetchedWorks = await harvestBySeedDoi(seedDoi, direction, OPENALEX_HARD_MAX_RESULTS);
+		const { works, skippedNoAbstract } = filtrarSinAbstract(fetchedWorks);
 		const sourceQueryLabel = `seed:${direction}:${seedDoi}`.slice(0, 500);
 		const { insertedCount, skippedDuplicates } =
 			await insertNormalizedWorksIntoStaging(
@@ -234,7 +264,12 @@ export async function harvestBySeed(
 			);
 		return {
 			success: true,
-			data: { fetchedCount: works.length, insertedCount, skippedDuplicates },
+			data: {
+				fetchedCount: fetchedWorks.length,
+				insertedCount,
+				skippedDuplicates,
+				skippedNoAbstract,
+			},
 		};
 	} catch (error) {
 		console.error("[harvestBySeed] Error", { projectId, seedDoi, direction, error });

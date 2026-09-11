@@ -1113,8 +1113,8 @@
       "breadcrumbLabel": "Pesca OpenAlex",
       "tabSearch": "Buscar",
       "tabTriage": "Triaje",
-      "toastSearchSuccess": "OpenAlex trajo {fetched} resultado(s): {inserted} nuevo(s) en staging, {skipped} duplicado(s) omitido(s).",
-      "toastSeedSuccess": "Semilla trajo {fetched} resultado(s): {inserted} nuevo(s) en staging, {skipped} duplicado(s) omitido(s)."
+      "toastSearchSuccess": "OpenAlex trajo {fetched} resultado(s): {inserted} nuevo(s) en staging, {skipped} duplicado(s) omitido(s), {skippedNoAbstract} sin abstract omitido(s).",
+      "toastSeedSuccess": "Semilla trajo {fetched} resultado(s): {inserted} nuevo(s) en staging, {skipped} duplicado(s) omitido(s), {skippedNoAbstract} sin abstract omitido(s)."
     },
     "searchFiltersPanel": {
       "documentTypeArticle": "Artículo",

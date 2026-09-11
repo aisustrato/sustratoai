@@ -1113,8 +1113,8 @@
       "breadcrumbLabel": "OpenAlex Harvest",
       "tabSearch": "Search",
       "tabTriage": "Triage",
-      "toastSearchSuccess": "OpenAlex fetched {fetched} result(s): {inserted} new in staging, {skipped} duplicate(s) skipped.",
-      "toastSeedSuccess": "Seed fetched {fetched} result(s): {inserted} new in staging, {skipped} duplicate(s) skipped."
+      "toastSearchSuccess": "OpenAlex fetched {fetched} result(s): {inserted} new in staging, {skipped} duplicate(s) skipped, {skippedNoAbstract} without abstract skipped.",
+      "toastSeedSuccess": "Seed fetched {fetched} result(s): {inserted} new in staging, {skipped} duplicate(s) skipped, {skippedNoAbstract} without abstract skipped."
     },
     "searchFiltersPanel": {
       "documentTypeArticle": "Article",

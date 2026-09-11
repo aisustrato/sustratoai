@@ -41,9 +41,14 @@ export default function HarvestOpenAlexPage() {
 		setIsSearching(true);
 		const result = await searchOpenAlex(proyectoActual.id, filters);
 		if (result.success) {
-			const { fetchedCount, insertedCount, skippedDuplicates } = result.data;
+			const { fetchedCount, insertedCount, skippedDuplicates, skippedNoAbstract } = result.data;
 			toast.success(
-				t("toastSearchSuccess", { fetched: fetchedCount, inserted: insertedCount, skipped: skippedDuplicates }),
+				t("toastSearchSuccess", {
+					fetched: fetchedCount,
+					inserted: insertedCount,
+					skipped: skippedDuplicates,
+					skippedNoAbstract,
+				}),
 			);
 			setTriageRefreshKey((k) => k + 1);
 			setActiveTab("triaje");
@@ -58,9 +63,14 @@ export default function HarvestOpenAlexPage() {
 		setIsSearching(true);
 		const result = await harvestBySeed(proyectoActual.id, seedDoi, direction);
 		if (result.success) {
-			const { fetchedCount, insertedCount, skippedDuplicates } = result.data;
+			const { fetchedCount, insertedCount, skippedDuplicates, skippedNoAbstract } = result.data;
 			toast.success(
-				t("toastSeedSuccess", { fetched: fetchedCount, inserted: insertedCount, skipped: skippedDuplicates }),
+				t("toastSeedSuccess", {
+					fetched: fetchedCount,
+					inserted: insertedCount,
+					skipped: skippedDuplicates,
+					skippedNoAbstract,
+				}),
 			);
 			setTriageRefreshKey((k) => k + 1);
 			setActiveTab("triaje");
