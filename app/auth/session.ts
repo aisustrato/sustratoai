@@ -25,21 +25,31 @@ export async function createServerSupabaseClient() {
         },
         // Establecer una cookie
         set(name, value, options) {
-          // Usar el método síncrono para establecer cookies
-          cookieStore.set({
-            name,
-            value,
-            ...options as CookieOptions
-          });
+          // Si esto corre durante el render de un Server Component (no un
+          // Server Action ni un Route Handler), Next.js prohíbe escribir
+          // cookies y tira. Es inofensivo ignorarlo acá: el middleware es
+          // quien de verdad persiste la sesión cuando corresponde.
+          try {
+            cookieStore.set({
+              name,
+              value,
+              ...options as CookieOptions
+            });
+          } catch {
+            // no-op: ver comentario arriba
+          }
         },
         // Eliminar una cookie
         remove(name, options) {
-          // Usar el método síncrono para eliminar cookies
-          cookieStore.set({
-            name,
-            value: "",
-            ...options as CookieOptions
-          });
+          try {
+            cookieStore.set({
+              name,
+              value: "",
+              ...options as CookieOptions
+            });
+          } catch {
+            // no-op: ver comentario arriba
+          }
         },
       },
     }
