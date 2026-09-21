@@ -47,25 +47,25 @@
     "password": "Contraseña",
     "confirmPassword": "Confirmar contraseña",
     "signup": {
-      "heading": "Infraestructura Forense para la",
-      "headingHighlight": "Cognición Aumentada",
-      "quote": "“Cultivando sinergias humano·AI bajo la Ética de Moebius”",
-      "manifestoBefore": "Sustrato.ai ha evolucionado. Ya no es una herramienta de productividad, es un",
-      "manifestoBunker": "Búnker de Integridad Epistémica",
-      "manifestoMiddle": "En una era de métricas sintéticas, reivindicamos la",
-      "manifestoSovereignty": "Soberanía Cognitiva",
-      "manifestoAfter": "el derecho a investigar con herramientas que amplifican la intuición humana y dejan un rastro auditable, en lugar de reemplazar el pensamiento.",
+      "heading": "Investigación cualitativa con IA,",
+      "headingHighlight": "auditable de principio a fin",
+      "quote": "“Ética es negentropía de datos”",
+      "manifestoBefore": "Sustrato.ai es un espacio para investigar con inteligencia artificial sin perder el control de lo que se concluye. Es una infraestructura de",
+      "manifestoBunker": "integridad epistémica",
+      "manifestoMiddle": "En una época de métricas sintéticas, defendemos la",
+      "manifestoSovereignty": "soberanía del investigador",
+      "manifestoAfter": "usar herramientas que amplifican la intuición humana y dejan un rastro auditable, en lugar de reemplazar el pensamiento.",
       "immutableRecord": "Registro Inmutable",
-      "validated": "Validado (CERN/Zenodo)",
-      "researcherF0": "Investigador F0",
+      "validated": "Depositado en Zenodo (CERN)",
+      "researcherF0": "Autoría",
       "independentResearcher": "Rodolfo Leiva (Independent Researcher)",
-      "betaStatus": "Estado: Beta Restringida",
-      "betaDescriptionBefore": "Estamos ordenando el jardín. El acceso directo está restringido para garantizar la estabilidad del entorno, pero",
-      "betaDescriptionBold": "todos son bienvenidos",
-      "betaDescriptionAfter": "a colaborar, auditar o apoyar. La puerta no está cerrada, solo tiene portero.",
+      "betaStatus": "Beta privada · buscamos embajadores",
+      "betaDescriptionBefore": "El acceso es por invitación mientras afinamos la plataforma. Buscamos",
+      "betaDescriptionBold": "embajadores",
+      "betaDescriptionAfter": "—personas que quieran probarla con investigación real y ayudarnos a darle forma—. Si es tu caso, o si solo quieres leer, auditar el código o colaborar, escríbenos: la puerta está abierta.",
       "contactProject": "Contactar Proyecto",
       "auditCode": "Auditar Código (GitHub)",
-      "activeNodesAccess": "Acceso a Nodos Activos",
+      "activeNodesAccess": "Ya tengo cuenta: iniciar sesión",
       "footer": "v0.9.1 (Auditoría Pública) • Santiago, Chile • 2026 • Open Science"
     },
     "resetPassword": {
@@ -111,6 +111,11 @@
       "formErrorDescription": "Por favor, revisa los campos marcados.",
       "successReady": "¡Todo listo! Tu acceso ha sido restaurado. En breves momentos te llevaremos al inicio de sesión.",
       "backToLogin": "Volver a inicio de sesión"
+    },
+    "papersBand": {
+      "title": "Publicaciones abiertas",
+      "body": "Lo que investigamos es público: papers con DOI, código y material suplementario abiertos. No necesitas cuenta para leerlos.",
+      "viewAll": "Ver publicaciones"
     }
   },
   "errors": {

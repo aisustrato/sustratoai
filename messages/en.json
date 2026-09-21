@@ -47,25 +47,25 @@
     "password": "Password",
     "confirmPassword": "Confirm password",
     "signup": {
-      "heading": "Forensic Infrastructure for",
-      "headingHighlight": "Augmented Cognition",
-      "quote": "“Cultivating human·AI synergies under Moebius Ethics”",
-      "manifestoBefore": "Sustrato.ai has evolved. It's no longer a productivity tool, it's an",
-      "manifestoBunker": "Epistemic Integrity Bunker",
-      "manifestoMiddle": "In an era of synthetic metrics, we claim",
-      "manifestoSovereignty": "Cognitive Sovereignty",
-      "manifestoAfter": "the right to research with tools that amplify human intuition and leave an auditable trail, instead of replacing thought.",
+      "heading": "Qualitative research with AI,",
+      "headingHighlight": "auditable from start to finish",
+      "quote": "“Ethics is data negentropy”",
+      "manifestoBefore": "Sustrato.ai is a space for doing research with artificial intelligence without losing control of what you conclude. It is an infrastructure for",
+      "manifestoBunker": "epistemic integrity",
+      "manifestoMiddle": "In an era of synthetic metrics, we defend the",
+      "manifestoSovereignty": "researcher's sovereignty",
+      "manifestoAfter": "to use tools that amplify human intuition and leave an auditable trail, instead of replacing thought.",
       "immutableRecord": "Immutable Record",
-      "validated": "Validated (CERN/Zenodo)",
-      "researcherF0": "Researcher F0",
+      "validated": "Deposited on Zenodo (CERN)",
+      "researcherF0": "Authorship",
       "independentResearcher": "Rodolfo Leiva (Independent Researcher)",
-      "betaStatus": "Status: Restricted Beta",
-      "betaDescriptionBefore": "We're tidying up the garden. Direct access is restricted to guarantee the stability of the environment, but",
-      "betaDescriptionBold": "everyone is welcome",
-      "betaDescriptionAfter": "to collaborate, audit or support. The door isn't closed, it just has a doorman.",
+      "betaStatus": "Private beta · we're looking for ambassadors",
+      "betaDescriptionBefore": "Access is by invitation while we fine-tune the platform. We're looking for",
+      "betaDescriptionBold": "ambassadors",
+      "betaDescriptionAfter": "—people who want to try it on real research and help us shape it—. If that's you, or if you just want to read, audit the code or collaborate, write to us: the door is open.",
       "contactProject": "Contact Project",
       "auditCode": "Audit Code (GitHub)",
-      "activeNodesAccess": "Active Nodes Access",
+      "activeNodesAccess": "I already have an account: sign in",
       "footer": "v0.9.1 (Public Audit) • Santiago, Chile • 2026 • Open Science"
     },
     "resetPassword": {
@@ -111,6 +111,11 @@
       "formErrorDescription": "Please review the marked fields.",
       "successReady": "All set! Your access has been restored. You'll be taken to login shortly.",
       "backToLogin": "Back to login"
+    },
+    "papersBand": {
+      "title": "Open publications",
+      "body": "What we research is public: papers with DOI, open code and supplementary material. You don't need an account to read them.",
+      "viewAll": "View publications"
     }
   },
   "errors": {

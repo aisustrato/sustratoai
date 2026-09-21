@@ -16,6 +16,7 @@ import {
 import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustratoLogoWithFixedText";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
+import { PapersBand } from "@/components/auth/PapersBand";
 
 export default function SignUpPage() {
 	const t = useTranslations("auth.signup");
@@ -159,6 +160,8 @@ export default function SignUpPage() {
 						</div>
 
 					</StandardCard.Content>
+
+					<PapersBand />
 
 					<StandardCard.Footer className="text-center border-t border-border/40 py-4 bg-slate-50/50 rounded-b-xl">
 						<StandardText

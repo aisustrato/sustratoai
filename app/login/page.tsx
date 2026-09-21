@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { StandardSustratoLogoWithFixedText } from "@/components/ui/StandardSustratoLogoWithFixedText";
 import { StandardPageBackground } from "@/components/ui/StandardPageBackground";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
+import { PapersBand } from "@/components/auth/PapersBand";
 
 export default function LoginPage() {
 	const t = useTranslations("auth.login");
@@ -294,6 +295,7 @@ export default function LoginPage() {
 								</form>
 							</div>
 						</div>
+						<PapersBand />
 					</StandardCard.Content>
 				</StandardCard>
 			</div>
