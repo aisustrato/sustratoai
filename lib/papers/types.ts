@@ -8,6 +8,15 @@ export interface PaperAuthor {
 	role?: string;
 }
 
+/** Versión anterior de un paper; cada una conserva su DOI de versión en Zenodo. */
+export interface PaperVersionEntry {
+	version: string;
+	doi: string;
+	zenodo_url?: string;
+	published_at?: string;
+	changelog?: string;
+}
+
 export interface Paper {
 	id: string;
 	slug: string;
@@ -31,6 +40,9 @@ export interface Paper {
 	published_at?: string | null;
 	is_published: boolean;
 	version: string;
+	concept_doi?: string | null;
+	previous_versions?: PaperVersionEntry[] | null;
+	github_url?: string | null;
 	citation_apa?: string | null;
 	license: string;
 	created_at: string;
@@ -123,6 +135,9 @@ export interface PaperDraftInput {
 	pdf_url?: string;
 	pdf_url_en?: string;
 	version: string;
+	concept_doi?: string;
+	previous_versions?: PaperVersionEntry[];
+	github_url?: string;
 	citation_apa?: string;
 	license: string;
 	language: string;

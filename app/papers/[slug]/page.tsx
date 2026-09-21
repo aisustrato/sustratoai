@@ -77,6 +77,9 @@ export async function generateMetadata({
       "DC.type": "Text.Article",
       "DC.rights": "CC-BY-4.0",
       "DC.publisher": "sustrato.ai",
+      ...(paper.concept_doi && {
+        "DC.relation.isVersionOf": `https://doi.org/${paper.concept_doi}`,
+      }),
       // Google Scholar — un <meta citation_author> repetido por autor, en
       // orden de autoría (Next.js Metadata emite un tag por elemento del
       // array; el hack anterior de `citation_author.${index}` no lo

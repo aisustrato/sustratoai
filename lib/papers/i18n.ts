@@ -80,6 +80,11 @@ export interface PaperLabels {
 	comoCitar: string;
 	descargarPdf: string;
 	verEnZenodo: string;
+	verRepositorio: string;
+	versionesAnteriores: string;
+	versionActual: string;
+	citarTodasVersiones: string;
+	citarTodasVersionesHint: string;
 	citar: string;
 	copiado: string;
 	compartir: string;
@@ -100,6 +105,11 @@ export const PAPER_LABELS: Record<PaperIdioma, PaperLabels> = {
 		comoCitar: "Cómo citar",
 		descargarPdf: "Descargar PDF",
 		verEnZenodo: "Ver en Zenodo",
+		verRepositorio: "Repositorio",
+		versionesAnteriores: "Versiones anteriores",
+		versionActual: "Versión actual",
+		citarTodasVersiones: "Citar todas las versiones",
+		citarTodasVersionesHint: "Este DOI siempre resuelve a la versión más reciente.",
 		citar: "Citar",
 		copiado: "¡Copiado!",
 		compartir: "Compartir",
@@ -118,6 +128,11 @@ export const PAPER_LABELS: Record<PaperIdioma, PaperLabels> = {
 		comoCitar: "How to cite",
 		descargarPdf: "Download PDF",
 		verEnZenodo: "View on Zenodo",
+		verRepositorio: "Repository",
+		versionesAnteriores: "Previous versions",
+		versionActual: "Current version",
+		citarTodasVersiones: "Cite all versions",
+		citarTodasVersionesHint: "This DOI always resolves to the latest version.",
 		citar: "Cite",
 		copiado: "Copied!",
 		compartir: "Share",

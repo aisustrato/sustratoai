@@ -43,6 +43,19 @@ export function PaperMetadata({ paper, idioma }: PaperMetadataProps) {
     license: "https://creativecommons.org/licenses/by/4.0/",
     keywords: contenido.keywords.join(", "),
     version: paper.version,
+    isPartOf: paper.concept_doi
+      ? {
+          "@type": "CreativeWork",
+          "@id": `https://doi.org/${paper.concept_doi}`,
+          name: `${contenido.title} (all versions)`,
+        }
+      : undefined,
+    hasPart: paper.github_url
+      ? {
+          "@type": "SoftwareSourceCode",
+          codeRepository: paper.github_url,
+        }
+      : undefined,
   };
 
   return (

@@ -27,6 +27,7 @@ export function PaperBilingualView({ paper, annexes, idioma }: PaperBilingualVie
 	const t = PAPER_LABELS[idioma];
 	const contenido = resolvePaperContentSafe(paper, idioma);
 	const slugOtroIdioma = idioma === "es" ? paper.slug_en : paper.slug;
+	const previousVersions = Array.isArray(paper.previous_versions) ? paper.previous_versions : [];
 
 	return (
 		<div className="mx-auto max-w-4xl space-y-8">
@@ -98,6 +99,37 @@ export function PaperBilingualView({ paper, annexes, idioma }: PaperBilingualVie
 				</section>
 			)}
 
+			{/* Versiones anteriores (cada una con su DOI de versión en Zenodo) */}
+			{previousVersions.length > 0 && (
+				<section className="space-y-4 border-t pt-8">
+					<h2 className="font-heading text-2xl font-bold">{t.versionesAnteriores}</h2>
+					<ul className="space-y-3">
+						{previousVersions.map((v) => (
+							<li key={v.doi} className="text-sm">
+								<span className="font-semibold">v{v.version}</span>
+								{v.published_at && (
+									<span className="text-muted-foreground">
+										{" "}
+										• {new Date(v.published_at).toLocaleDateString(t.dateLocale)}
+									</span>
+								)}
+								{" • "}
+								<a
+									href={v.zenodo_url ?? `https://doi.org/${v.doi}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-primary hover:underline">
+									{v.doi}
+								</a>
+								{v.changelog && (
+									<p className="text-xs text-muted-foreground mt-0.5">{v.changelog}</p>
+								)}
+							</li>
+						))}
+					</ul>
+				</section>
+			)}
+
 			{/* Footer: licencia, cómo citar, DOI */}
 			<footer className="space-y-4 border-t pt-8 text-sm text-muted-foreground">
 				<div>
@@ -118,6 +150,21 @@ export function PaperBilingualView({ paper, annexes, idioma }: PaperBilingualVie
 					<div>
 						<h3 className="font-semibold text-foreground mb-2">{t.comoCitar}</h3>
 						<p className="font-mono text-xs bg-muted p-3 rounded">{paper.citation_apa}</p>
+					</div>
+				)}
+				{paper.concept_doi && (
+					<div>
+						<h3 className="font-semibold text-foreground mb-2">{t.citarTodasVersiones}</h3>
+						<p>
+							<a
+								href={`https://doi.org/${paper.concept_doi}`}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-primary hover:underline">
+								{paper.concept_doi}
+							</a>
+						</p>
+						<p className="text-xs mt-1">{t.citarTodasVersionesHint}</p>
 					</div>
 				)}
 				{paper.doi && (

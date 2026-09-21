@@ -6214,11 +6214,13 @@ export type Database = {
           abstract_es: string
           authors: Json
           citation_apa: string | null
+          concept_doi: string | null
           content_md: string
           content_md_en: string | null
           created_at: string
           created_by: string | null
           doi: string | null
+          github_url: string | null
           id: string
           is_published: boolean
           keywords: string[]
@@ -6229,6 +6231,7 @@ export type Database = {
           pdf_storage_path: string | null
           pdf_url: string | null
           pdf_url_en: string | null
+          previous_versions: Json
           processing_status: string
           published_at: string | null
           slug: string
@@ -6246,11 +6249,13 @@ export type Database = {
           abstract_es: string
           authors?: Json
           citation_apa?: string | null
+          concept_doi?: string | null
           content_md: string
           content_md_en?: string | null
           created_at?: string
           created_by?: string | null
           doi?: string | null
+          github_url?: string | null
           id?: string
           is_published?: boolean
           keywords?: string[]
@@ -6261,6 +6266,7 @@ export type Database = {
           pdf_storage_path?: string | null
           pdf_url?: string | null
           pdf_url_en?: string | null
+          previous_versions?: Json
           processing_status?: string
           published_at?: string | null
           slug: string
@@ -6278,11 +6284,13 @@ export type Database = {
           abstract_es?: string
           authors?: Json
           citation_apa?: string | null
+          concept_doi?: string | null
           content_md?: string
           content_md_en?: string | null
           created_at?: string
           created_by?: string | null
           doi?: string | null
+          github_url?: string | null
           id?: string
           is_published?: boolean
           keywords?: string[]
@@ -6293,6 +6301,7 @@ export type Database = {
           pdf_storage_path?: string | null
           pdf_url?: string | null
           pdf_url_en?: string | null
+          previous_versions?: Json
           processing_status?: string
           published_at?: string | null
           slug?: string

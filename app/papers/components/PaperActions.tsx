@@ -5,7 +5,7 @@
 
 import type { Paper } from "@/lib/papers/types";
 import { StandardButton } from "@/components/ui/StandardButton";
-import { Download, ExternalLink, Quote, Share2 } from "lucide-react";
+import { Download, ExternalLink, Github, Quote, Share2 } from "lucide-react";
 import { useState } from "react";
 import {
 	PAPER_LABELS,
@@ -79,6 +79,19 @@ export function PaperActions({ paper, idioma }: PaperActionsProps) {
 						size="md"
 						leftIcon={ExternalLink}>
 						{t.verEnZenodo}
+					</StandardButton>
+				</a>
+			)}
+
+			{/* Repositorio GitHub */}
+			{paper.github_url && (
+				<a href={paper.github_url} target="_blank" rel="noopener noreferrer">
+					<StandardButton
+						styleType="outline"
+						colorScheme="neutral"
+						size="md"
+						leftIcon={Github}>
+						{t.verRepositorio}
 					</StandardButton>
 				</a>
 			)}
