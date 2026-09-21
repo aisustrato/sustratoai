@@ -8,7 +8,7 @@ import { Database } from "@/lib/database.types";
 // Crear un cliente de Supabase para el servidor
 export async function createServerSupabaseClient() {
   // Obtener el almacén de cookies de forma síncrona
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   
   // Crear el cliente de Supabase para el servidor
   return createServerClient<Database>(

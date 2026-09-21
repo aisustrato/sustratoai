@@ -3,10 +3,10 @@ import { canModifyDimensionsForPhase } from '@/lib/actions/batch-actions';
 
 export async function GET(
   _req: Request,
-  context: { params: { phaseId: string } }
+  context: { params: Promise<{ phaseId: string }> }
 ) {
   try {
-    const phaseId = context.params?.phaseId;
+    const phaseId = (await context.params)?.phaseId;
     if (!phaseId) {
       return NextResponse.json({ success: false, error: 'Falta phaseId' }, { status: 400 });
     }

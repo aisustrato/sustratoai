@@ -84,9 +84,10 @@ interface Thinker {
 export default async function ArtifactDetailPage({
 	params,
 }: {
-	params: { id: string };
+	params: Promise<{ id: string }>;
 }) {
-	const response = await getArtifactWithUrl(params.id);
+	const { id } = await params;
+	const response = await getArtifactWithUrl(id);
 
 	if (!response.success || !response.data) {
 		return notFound();

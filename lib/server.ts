@@ -23,7 +23,7 @@ export function createSupabaseUserClient(accessToken: string) {
 }
 
 export async function createSupabaseServerClient() {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -1,3 +1,4 @@
+import { ipAddress } from '@vercel/functions';
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { Redis } from '@upstash/redis';
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
     
     // 2. Rate Limiting por IP
-    const ip = request.ip ?? '127.0.0.1';
+    const ip = ipAddress(request) ?? '127.0.0.1';
     console.log(`🔍 [RATE_LIMITER] Verificando límites para IP: ${ip}`);
     const { success, limit, reset, remaining } = await ratelimit.limit(ip);
 

@@ -70,7 +70,7 @@ function RelevanceBar({ score }: { score: number }) {
 
 export default function GardenDetailPage() {
     const router = useRouter();
-    const params = useParams();
+    const params = useParams<{ gardenId: string | string[] }>();
     const gardenId = Array.isArray(params.gardenId) ? params.gardenId[0] : params.gardenId;
     const auth = useAuth();
     const [garden, setGarden] = useState<ResonanceGarden | null>(null);

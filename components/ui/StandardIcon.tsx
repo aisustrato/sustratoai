@@ -73,7 +73,7 @@ export function StandardIcon({
 							...cssVariables,
 							width: sizeValue,
 							height: sizeValue,
-							...(child.props.style || {}),
+							...((child.props as React.SVGProps<SVGSVGElement>).style || {}),
 							fill: "var(--si-fill)",
 							stroke: "var(--si-stroke)",
 							strokeWidth: "var(--si-stroke-width)",

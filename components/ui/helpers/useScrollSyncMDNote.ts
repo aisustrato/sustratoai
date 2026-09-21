@@ -22,7 +22,7 @@ interface UseScrollSyncMDNoteConfig {
 
 interface UseScrollSyncMDNoteResult {
   sourceRef: React.RefObject<HTMLDivElement | HTMLTextAreaElement | null>;
-  previewRef: React.RefObject<HTMLDivElement>;
+  previewRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function useScrollSyncMDNote({

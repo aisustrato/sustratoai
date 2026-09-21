@@ -24,11 +24,10 @@ export const dynamic = "force-dynamic";
 
 //#region [def] - 📦 TYPES 📦
 /**
- * Next.js 14: `params` es un objeto síncrono en Server Components.
- * (En Next.js 15+ pasa a Promise; ajustar entonces con `await`.)
+ * Next.js 15+: `params` es una Promise en Server Components.
  */
 interface CogneticaArtefactoPageProps {
-	params: { id: string };
+	params: Promise<{ id: string }>;
 }
 
 /** Mapeo de `ResultErrorCode` → copy en español para el alert de error. */
@@ -110,7 +109,7 @@ function emojiParaTipo(tipo: string | undefined): string | undefined {
 export default async function CogneticaArtefactoPage({
 	params,
 }: CogneticaArtefactoPageProps) {
-	const { id } = params;
+	const { id } = await params;
 	const res = await obtenerArtefactoCompleto(id);
 
 	return (

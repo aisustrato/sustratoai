@@ -12,8 +12,9 @@ import { createServerClient } from '@/lib/supabase';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { artifactId: string; format: string } }
+    props: { params: Promise<{ artifactId: string; format: string }> }
 ) {
+    const params = await props.params;
     try {
         const { artifactId, format } = params;
 

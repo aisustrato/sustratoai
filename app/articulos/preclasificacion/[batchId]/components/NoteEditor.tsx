@@ -40,7 +40,7 @@ interface NoteEditorProps {
   onNotesChanged?: (hasNotesNow: boolean) => void;
 }
 
-export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, project, showOriginalAsPrimary, onNotesChanged }): JSX.Element => {
+export const NoteEditor: React.FC<NoteEditorProps> = ({ open, onClose, article, project, showOriginalAsPrimary, onNotesChanged }): React.JSX.Element => {
   const t = useTranslations('articulos.noteEditor');
   const [currentNote, setCurrentNote] = useState('');
   const [currentNoteTitle, setCurrentNoteTitle] = useState('');

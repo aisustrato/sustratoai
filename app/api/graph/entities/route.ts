@@ -39,7 +39,7 @@ export interface EntitiesResponse {
 
 export async function GET(): Promise<NextResponse> {
   try {
-    const mockId = cookies().get(MOCK_COOKIE_NAME)?.value;
+    const mockId = (await cookies()).get(MOCK_COOKIE_NAME)?.value;
     const mockScenario = getScenario(mockId);
     if (mockScenario) {
       const response: EntitiesResponse = {
