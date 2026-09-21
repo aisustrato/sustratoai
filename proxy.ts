@@ -1,4 +1,4 @@
-// middleware.ts
+// proxy.ts
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
@@ -34,7 +34,7 @@ function shouldIgnorePathForSession(pathname: string): boolean {
 	return false;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
 	const { nextUrl } = request;
 	const { pathname, search, hash } = nextUrl;
 	const LOG_PREFIX_MW = "[MIDDLEWARE_SSR_V2]"; // Nuevo prefijo para esta versión
