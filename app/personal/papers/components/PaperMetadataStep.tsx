@@ -13,7 +13,8 @@ import { StandardTextarea } from "@/components/ui/StandardTextarea";
 import { StandardRadioGroup } from "@/components/ui/StandardRadioGroup";
 import { Send, Save, AlertCircle, CheckCircle, Languages } from "lucide-react";
 import { generatePaperSlug, isSlugAvailableClient } from "@/lib/papers/slug";
-import type { PaperDraftInput } from "@/lib/papers/types";
+import type { PaperDraftInput, PaperVersionEntry } from "@/lib/papers/types";
+import { PaperVersionsEditor } from "./PaperVersionsEditor";
 import { translatePaperContent } from "@/lib/papers/translate";
 import type { PaperIdioma } from "@/lib/papers/i18n";
 
@@ -55,6 +56,12 @@ export function PaperMetadataStep({
 	const [language, setLanguage] = useState(initialData?.language || "es");
 	const [doi, setDoi] = useState(initialData?.doi || "");
 	const [zenodoUrl, setZenodoUrl] = useState(initialData?.zenodo_url || "");
+	const [version, setVersion] = useState(initialData?.version || "1.0");
+	const [conceptDoi, setConceptDoi] = useState(initialData?.concept_doi || "");
+	const [githubUrl, setGithubUrl] = useState(initialData?.github_url || "");
+	const [previousVersions, setPreviousVersions] = useState<PaperVersionEntry[]>(
+		initialData?.previous_versions || [],
+	);
 
 	// Estados de validación
 	const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
@@ -213,10 +220,15 @@ export function PaperMetadataStep({
 		keywords_en: keywordsEn.length > 0 ? keywordsEn : undefined,
 		doi: doi || undefined,
 		zenodo_url: zenodoUrl || undefined,
+		concept_doi: conceptDoi.trim(),
+		github_url: githubUrl.trim(),
+		previous_versions: previousVersions.filter(
+			(v) => v.version.trim() && v.doi.trim(),
+		),
 		authors: initialData?.authors || [],
 		content_md: initialData?.content_md || "",
 		content_md_en: initialData?.content_md_en || undefined,
-		version: "1.0",
+		version: version.trim() || "1.0",
 		license: "CC BY 4.0",
 		language,
 		processing_status: "ready",
@@ -593,6 +605,62 @@ export function PaperMetadataStep({
 							value={zenodoUrl}
 							onChange={(e) => setZenodoUrl(e.target.value)}
 							placeholder="https://zenodo.org/record/..."
+							disabled={isSaving || isPublishing}
+						/>
+					</div>
+
+					{/* Versionado */}
+					<div>
+						<label className="block mb-2">
+							<StandardText size="sm" weight="medium">
+								Versión actual
+							</StandardText>
+						</label>
+						<StandardInput
+							value={version}
+							onChange={(e) => setVersion(e.target.value)}
+							placeholder="1.0"
+							disabled={isSaving || isPublishing}
+						/>
+					</div>
+
+					<div>
+						<label className="block mb-2">
+							<StandardText size="sm" weight="medium">
+								Concept DOI de Zenodo — todas las versiones (opcional)
+							</StandardText>
+						</label>
+						<StandardInput
+							value={conceptDoi}
+							onChange={(e) => setConceptDoi(e.target.value)}
+							placeholder="10.5281/zenodo.…"
+							disabled={isSaving || isPublishing}
+						/>
+					</div>
+
+					<div>
+						<label className="block mb-2">
+							<StandardText size="sm" weight="medium">
+								Versiones anteriores
+							</StandardText>
+						</label>
+						<PaperVersionsEditor
+							value={previousVersions}
+							onChange={setPreviousVersions}
+							disabled={isSaving || isPublishing}
+						/>
+					</div>
+
+					<div>
+						<label className="block mb-2">
+							<StandardText size="sm" weight="medium">
+								Repositorio GitHub (opcional)
+							</StandardText>
+						</label>
+						<StandardInput
+							value={githubUrl}
+							onChange={(e) => setGithubUrl(e.target.value)}
+							placeholder="https://github.com/…"
 							disabled={isSaving || isPublishing}
 						/>
 					</div>

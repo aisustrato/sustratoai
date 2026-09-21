@@ -245,6 +245,13 @@ export function PaperEditClient({ paper }: PaperEditClientProps) {
 								keywords_en:
 									Array.isArray(paper.keywords_en) ? paper.keywords_en : [],
 								doi: paper.doi || undefined,
+								zenodo_url: paper.zenodo_url || undefined,
+								version: paper.version,
+								concept_doi: paper.concept_doi || undefined,
+								github_url: paper.github_url || undefined,
+								previous_versions: Array.isArray(paper.previous_versions) ?
+									paper.previous_versions
+								:	[],
 								citation_apa: paper.citation_apa || undefined,
 								content_md: markdownContent,
 								content_md_en: markdownContentEn,
