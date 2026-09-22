@@ -34,11 +34,10 @@ import ArticleDetailActions from "./ArticleDetailActions";
 
 export const dynamic = "force-dynamic";
 
-export default async function ArticleDetailPage({
-	searchParams,
-}: {
-	searchParams?: { [key: string]: string | string[] | undefined };
+export default async function ArticleDetailPage(props: {
+	searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+	const searchParams = await props.searchParams;
 	const t = await getTranslations("articulos.detallePage");
 	const articleId = (searchParams?.articleId as string) || "";
 	const translatedParam = (searchParams?.translated as string) || "false";

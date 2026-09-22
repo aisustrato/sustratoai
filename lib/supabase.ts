@@ -49,8 +49,8 @@ export async function createServerClient() {
   
   const { createServerClient } = await import('@supabase/ssr')
   const { cookies } = await import('next/headers')
-  
-  const cookieStore = cookies()
+
+  const cookieStore = await cookies()
   
   return createServerClient<Database>(
     supabaseUrl,

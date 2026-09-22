@@ -2,14 +2,15 @@
 "use client";
 
 //#region [head] - 🏷️ IMPORTS 🏷️
+import { use } from "react";
 import { StandardPageTitle } from "@/components/ui/StandardPageTitle";
 import { StandardAlert } from "@/components/ui/StandardAlert";
 //#endregion ![head]
 
 //#region [def] - 📦 TYPES 📦
-// Next.js 14: `params` es un objeto síncrono en client components.
+// Next.js 15+: `params` es una Promise; en client components se lee con `use()`.
 interface CogneticaGrupoPageProps {
-	params: { id: string };
+	params: Promise<{ id: string }>;
 }
 //#endregion ![def]
 
@@ -20,7 +21,7 @@ interface CogneticaGrupoPageProps {
 export default function CogneticaGrupoPage({
 	params,
 }: CogneticaGrupoPageProps) {
-	const { id } = params;
+	const { id } = use(params);
 
 	return (
 		<div className="container mx-auto py-8">

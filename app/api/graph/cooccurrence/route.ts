@@ -48,7 +48,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const mockId = cookies().get(MOCK_COOKIE_NAME)?.value;
+    const mockId = (await cookies()).get(MOCK_COOKIE_NAME)?.value;
     const mockScenario = getScenario(mockId);
     if (mockScenario) {
       const edges = mockScenario.edges.filter((e) => e.weight >= minWeight);

@@ -8,16 +8,16 @@ import { getPaperById } from "@/lib/papers/queries";
 import { PaperEditClient } from "./PaperEditClient";
 
 interface PageProps {
-	params: {
+	params: Promise<{
 		paperId: string;
-	};
+	}>;
 }
 
 export default async function EditPaperPage({ params }: PageProps) {
 	// 🔍 LOG INMEDIATO: Antes de cualquier cosa
 	console.log("🚨🚨🚨 EDIT PAGE CALLED 🚨🚨🚨");
 
-	const { paperId } = params;
+	const { paperId } = await params;
 	console.log(`🔍 Paper ID from params: ${paperId}`);
 
 	// Si es un archivo de imagen, no procesar (dejar que Next.js lo maneje como estático)

@@ -2,8 +2,8 @@ import React, { useRef, useCallback, useEffect, useState } from "react";
 import { useTheme } from "@/app/theme-provider";
 
 interface ScrollSyncConfig {
-	editorRef: React.RefObject<HTMLTextAreaElement>;
-	previewRef: React.RefObject<HTMLDivElement>;
+	editorRef: React.RefObject<HTMLTextAreaElement | null>;
+	previewRef: React.RefObject<HTMLDivElement | null>;
 	content: string;
 	enabled?: boolean;
 }

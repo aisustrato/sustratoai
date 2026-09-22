@@ -47,11 +47,10 @@ export type GroupForClient = {
 	items: GroupItemForClient[];
 };
 
-export default async function ArticleGroupsPage({
-	searchParams,
-}: {
-	searchParams?: { [key: string]: string | string[] | undefined };
+export default async function ArticleGroupsPage(props: {
+	searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+	const searchParams = await props.searchParams;
 	const t = await getTranslations("articulos.gruposPage");
 	const user = await getCurrentUser();
 

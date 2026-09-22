@@ -10,7 +10,7 @@ const CACHE_STALE_WHILE_REVALIDATE = 604800; // 7 días
 
 export async function GET(
 	request: NextRequest,
-	{ params }: { params: { filename: string } },
+	{ params }: { params: Promise<{ filename: string }> },
 ) {
 	try {
 		const { filename } = await params;

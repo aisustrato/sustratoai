@@ -21,12 +21,11 @@ import ArticleNotesTitleClient from "./ArticleNotesTitleClient";
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-	searchParams?: Record<string, string | string[] | undefined>;
+	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function ArticleNotesPage({
-	searchParams = {},
-}: PageProps) {
+export default async function ArticleNotesPage(props: PageProps) {
+	const searchParams = (await props.searchParams) ?? {};
 	const t = await getTranslations("articulos.notasPage");
 
 	// Obtener usuario autenticado en servidor

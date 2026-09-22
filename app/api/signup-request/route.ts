@@ -1,14 +1,9 @@
+import { ipAddress } from '@vercel/functions';
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
 import { z } from 'zod';
-
-// 🔍 DIAGNÓSTICO: Verificar variables de entorno
-console.log('🔍 [DIAGNÓSTICO] Verificando variables de entorno:');
-console.log('📧 RESEND_API_KEY:', process.env.RESEND_API_KEY ? `✅ Configurada (${process.env.RESEND_API_KEY.substring(0, 10)}...)` : '❌ NO CONFIGURADA');
-console.log('🔗 UPSTASH_REDIS_REST_URL:', process.env.UPSTASH_REDIS_REST_URL ? `✅ Configurada (${process.env.UPSTASH_REDIS_REST_URL.substring(0, 30)}...)` : '❌ NO CONFIGURADA');
-console.log('🔑 UPSTASH_REDIS_REST_TOKEN:', process.env.UPSTASH_REDIS_REST_TOKEN ? `✅ Configurada (${process.env.UPSTASH_REDIS_REST_TOKEN.substring(0, 10)}...)` : '❌ NO CONFIGURADA');
 
 // Configuración del cliente Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -59,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
     
     // 2. Rate Limiting por IP
-    const ip = request.ip ?? '127.0.0.1';
+    const ip = ipAddress(request) ?? '127.0.0.1';
     console.log(`🔍 [RATE_LIMITER] Verificando límites para IP: ${ip}`);
     const { success, limit, reset, remaining } = await ratelimit.limit(ip);
 

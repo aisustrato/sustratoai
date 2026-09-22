@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=18.0.0"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint app components lib",
     "update-types": "npx supabase gen types typescript --project-id $(grep NEXT_PUBLIC_SUPABASE_URL .env.local | cut -d '/' -f 3 | cut -d '.' -f 1) > lib/database.types.ts"
   },
   "dependencies": {
@@ -68,16 +68,16 @@
     "js-yaml": "^4.1.1",
     "jszip": "^3.10.1",
     "lucide-react": "^0.454.0",
-    "next": "^14.2.0",
+    "next": "^16.3.5",
     "next-intl": "^4.5.7",
     "next-themes": "latest",
     "or": "^0.2.0",
     "papaparse": "^5.5.3",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.7.284",
-    "react": "^18.2.0",
+    "react": "^19.3.0",
     "react-day-picker": "8.10.1",
-    "react-dom": "^18.2.0",
+    "react-dom": "^19.3.0",
     "react-dropzone": "^15.0.0",
     "react-hook-form": "^7.51.5",
     "react-markdown": "^10.1.0",
@@ -104,17 +104,26 @@
     "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^22",
     "@types/papaparse": "^5.3.16",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@types/react-window": "^1.8.8",
     "@types/storybook__react": "^4.0.2",
     "@types/tinycolor2": "^1.4.6",
     "@types/uuid": "^10.0.0",
-    "eslint": "^8.57.1",
-    "eslint-config-next": "15.3.3",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.5",
     "postcss": "^8",
     "supabase": "^2.92.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
+  },
+  "overrides": {
+    "react-day-picker": {
+      "react": "$react"
+    },
+    "vaul": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
   }
 }

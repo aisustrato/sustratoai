@@ -571,7 +571,7 @@ const Header = ({
 	className,
 	children,
 	...props
-}: StandardCardHeaderProps): JSX.Element => {
+}: StandardCardHeaderProps): React.JSX.Element => {
 	const { noPadding } = useContext(StandardCardContext);
 	return (
 		<div className={cn("mb-3", !noPadding && "p-4 pb-0", className)} {...props}>
@@ -591,7 +591,7 @@ const Title = ({
 	applyGradient,
 	truncate,
 	...htmlProps
-}: StandardCardTitleProps): JSX.Element => (
+}: StandardCardTitleProps): React.JSX.Element => (
 	<StandardText
 		asElement="h3"
 		size={size}
@@ -620,7 +620,7 @@ const Subtitle = ({
 	applyGradient,
 	truncate,
 	...htmlProps
-}: StandardCardSubtitleProps): JSX.Element => (
+}: StandardCardSubtitleProps): React.JSX.Element => (
 	<StandardText
 		asElement="p"
 		size={size}
@@ -644,7 +644,7 @@ const Media = ({
 	className,
 	children,
 	...props
-}: StandardCardMediaProps): JSX.Element => (
+}: StandardCardMediaProps): React.JSX.Element => (
 	<div className={cn("mb-3 overflow-hidden", className)} {...props}>
 		{children}
 	</div>
@@ -701,7 +701,7 @@ const Actions = ({
 	className,
 	children,
 	...props
-}: StandardCardActionsProps): JSX.Element => {
+}: StandardCardActionsProps): React.JSX.Element => {
 	const { noPadding } = useContext(StandardCardContext);
 	return (
 		<div
@@ -721,7 +721,7 @@ const Footer = ({
 	className,
 	children,
 	...props
-}: StandardCardFooterProps): JSX.Element => (
+}: StandardCardFooterProps): React.JSX.Element => (
 	<div
 		className={cn(
 			"mt-4 pt-4 px-4 pb-2",
